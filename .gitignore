@@ -8,3 +8,4 @@ best_model_weights_backup_*.pth
 .vs/slnx.sqlite
 .vs/VSWorkspaceState.json
 /.vs
+*.sqlite
