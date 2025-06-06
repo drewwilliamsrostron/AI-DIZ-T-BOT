@@ -46,13 +46,20 @@ def robust_backtest(ensemble, data_full):
                                            signalperiod=sig_macd)
 
     extd = []
-    for i,row in enumerate(raw_data):
-        extd.append(list(row[1:6]) + [float(sma[i]), float(rsi[i]), float(macd_[i])])
-    extd = np.array(extd,dtype=np.float32)
+    for i, row in enumerate(raw_data):
+        extd.append(
+            list(row[1:6]) + [float(sma[i]), float(rsi[i]), float(macd_[i])]
+        )
+    extd = np.array(extd, dtype=np.float32)
+    # Sanitize indicator features so NaNs do not propagate into the model
+    extd = np.clip(extd, -10.0, 10.0)
+    extd = np.nan_to_num(extd)
     timestamps = raw_data[:,0]
 
     from numpy.lib.stride_tricks import sliding_window_view
-    windows = sliding_window_view(extd, (24,8)).squeeze()
+    windows = sliding_window_view(extd, (24, 8)).squeeze()
+    windows = np.clip(windows, -10.0, 10.0)
+    windows = np.nan_to_num(windows)
     windows_t = torch.tensor(windows, dtype=torch.float32, device=device)
     pred_indices, _, avg_params = ensemble.vectorized_predict(windows_t,batch_size=512)
     preds = [2]*23 + pred_indices.tolist()
