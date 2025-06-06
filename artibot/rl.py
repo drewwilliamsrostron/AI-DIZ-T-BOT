@@ -207,11 +207,10 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
             a_idx, logp, val_s= agent.pick_action(state)
             (new_lr, new_wd, nrsi, nsma, nmacdf, nmacds, nmacdsig, nthr)= agent.apply_action(a_idx)
 
-            status_sleep("Meta agent sleeping", interval)
-
-            curr2= global_composite_reward if global_composite_reward else 0.0
-            rew_delta= curr2- curr_r
-            agent.update(state, a_idx, rew_delta, new_state, logp, val_s)
+        except Exception as e:
+            global_status_message = f"Meta error: {e}"
+            traceback.print_exc()
+            status_sleep("Meta agent failed", 5.0)
 
             summary= (f"Meta Update => s:{state} => a_idx={a_idx}, r:{rew_delta:.2f}\n"
                       f" newLR={new_lr:.2e}, newWD={new_wd:.2e}, rsi={nrsi}, sma={nsma}, "
