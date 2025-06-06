@@ -96,8 +96,9 @@ def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=Tru
             if ensemble.train_steps%5==0 and ensemble.best_state_dicts:
                 ensemble.save_best_weights("best_model_weights.pth")
 
-    except:
+    except Exception as e:
         traceback.print_exc()
+        global_status_message = f"Training error: {e}"
         stop_event.set()
 
 def phemex_live_thread(connector, stop_event, poll_interval=1.0):
@@ -111,8 +112,9 @@ def phemex_live_thread(connector, stop_event, poll_interval=1.0):
             if bars:
                 global_phemex_data = bars
                 live_bars_queue.put(bars)
-        except Exception:
+        except Exception as e:
             traceback.print_exc()
+            global_status_message = f"Fetch error: {e}"
             stop_event.set()
         status_sleep("Waiting before next fetch", poll_interval)
 
