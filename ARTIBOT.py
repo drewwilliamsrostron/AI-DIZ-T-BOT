@@ -852,6 +852,18 @@ class EnsembleModel:
                         reward_loss= self.mse_loss_fn(pred_reward, scaled_target.expand_as(pred_reward))
                         loss= ce_loss + self.reward_loss_weight* reward_loss
                     self.scaler.scale(loss).backward()
+            bx= batch_x.to(self.device).contiguous().clone()
+            by= batch_y.to(self.device)
+            batch_loss=0.0
+            for model,opt_ in zip(self.models,self.optimizers):
+                opt_.zero_grad()
+                with autocast(device_type=self.device.type,
+                               enabled=(self.device.type=="cuda")):
+                    logits, _, pred_reward = model(bx)
+                    ce_loss= self.criterion(logits, by)
+                    reward_loss= self.mse_loss_fn(pred_reward, scaled_target.expand_as(pred_reward))
+                    loss= ce_loss + self.reward_loss_weight* reward_loss
+                self.scaler.scale(loss).backward()
                 self.scaler.unscale_(opt_)
                 torch.nn.utils.clip_grad_norm_(
                 model.parameters(),
