@@ -4,6 +4,7 @@ from .globals import *
 from .model import PositionalEncoding
 from .dataset import IndicatorHyperparams
 import itertools
+import traceback
 
 ###############################################################################
 # NEW: A bigger action space that includes adjusting RSI, SMA, MACD + threshold
@@ -187,49 +188,54 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
     state= np.array([prev_r, best_r, st_sharpe, abs(st_dd), st_trades, st_days], dtype=np.float32)
 
     while True:
-        if global_ai_epoch_count<1:
-            status_sleep("Meta agent waiting for training", 1.0)
-            continue
+        try:
+            if global_ai_epoch_count<1:
+                status_sleep("Meta agent waiting for training", 1.0)
+                continue
 
-        curr_r= global_composite_reward if global_composite_reward else 0.0
-        b_r= global_best_composite_reward if global_best_composite_reward else 0.0
-        st_sharpe= global_sharpe
-        st_dd= global_max_drawdown
-        st_trades= global_num_trades
-        st_days= global_days_in_profit if global_days_in_profit else 0.0
-        new_state= np.array([curr_r, b_r, st_sharpe, abs(st_dd), st_trades, st_days], dtype=np.float32)
+            curr_r= global_composite_reward if global_composite_reward else 0.0
+            b_r= global_best_composite_reward if global_best_composite_reward else 0.0
+            st_sharpe= global_sharpe
+            st_dd= global_max_drawdown
+            st_trades= global_num_trades
+            st_days= global_days_in_profit if global_days_in_profit else 0.0
+            new_state= np.array([curr_r, b_r, st_sharpe, abs(st_dd), st_trades, st_days], dtype=np.float32)
 
-        global global_status_message
-        global_status_message = "Meta agent updating"
-        a_idx, logp, val_s= agent.pick_action(state)
-        (new_lr, new_wd, nrsi, nsma, nmacdf, nmacds, nmacdsig, nthr)= agent.apply_action(a_idx)
+            global global_status_message
+            global_status_message = "Meta agent updating"
+            a_idx, logp, val_s= agent.pick_action(state)
+            (new_lr, new_wd, nrsi, nsma, nmacdf, nmacds, nmacdsig, nthr)= agent.apply_action(a_idx)
 
-        status_sleep("Meta agent sleeping", interval)
+            status_sleep("Meta agent sleeping", interval)
 
-        curr2= global_composite_reward if global_composite_reward else 0.0
-        rew_delta= curr2- curr_r
-        agent.update(state, a_idx, rew_delta, new_state, logp, val_s)
+            curr2= global_composite_reward if global_composite_reward else 0.0
+            rew_delta= curr2- curr_r
+            agent.update(state, a_idx, rew_delta, new_state, logp, val_s)
 
-        summary= (f"Meta Update => s:{state} => a_idx={a_idx}, r:{rew_delta:.2f}\n"
-                  f" newLR={new_lr:.2e}, newWD={new_wd:.2e}, rsi={nrsi}, sma={nsma}, "
-                  f"macdF={nmacdf}, macdS={nmacds}, macdSig={nmacdsig}, threshold={nthr:.5f}")
-        global_ai_adjustments_log+= "\n"+ summary
-        global_ai_adjustments= summary
+            summary= (f"Meta Update => s:{state} => a_idx={a_idx}, r:{rew_delta:.2f}\n"
+                      f" newLR={new_lr:.2e}, newWD={new_wd:.2e}, rsi={nrsi}, sma={nsma}, "
+                      f"macdF={nmacdf}, macdS={nmacds}, macdSig={nmacdsig}, threshold={nthr:.5f}")
+            global_ai_adjustments_log+= "\n"+ summary
+            global_ai_adjustments= summary
 
-        state= new_state
-        if agent.last_improvement>20:
-            # forced random reinit
-            for m in ensemble.models:
-                for layer in m.modules():
-                    if isinstance(layer, nn.Linear):
-                        nn.init.xavier_uniform_(layer.weight)
-                        if layer.bias is not None:
-                            nn.init.zeros_(layer.bias)
-            agent.last_improvement=0
-            msg= f"\n[Stagnation] Forced random reinit of primary model!\n"
-            global_ai_adjustments_log+= msg
+            state = new_state
+            if agent.last_improvement > 20:
+                # forced random reinit
+                for m in ensemble.models:
+                    for layer in m.modules():
+                        if isinstance(layer, nn.Linear):
+                            nn.init.xavier_uniform_(layer.weight)
+                            if layer.bias is not None:
+                                nn.init.zeros_(layer.bias)
+                agent.last_improvement = 0
+                msg = "\n[Stagnation] Forced random reinit of primary model!\n"
+                global_ai_adjustments_log += msg
 
-        status_sleep("Meta agent idle", 0.5)
+            status_sleep("Meta agent idle", 0.5)
+        except Exception as e:
+            global_status_message = f"Meta error: {e}"
+            traceback.print_exc()
+            status_sleep("Meta agent failed", 5.0)
 
 ###############################################################################
 # Main

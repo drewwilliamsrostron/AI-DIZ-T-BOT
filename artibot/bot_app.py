@@ -20,6 +20,7 @@ CONFIG = {
     "symbol": "BTC/USDT",
     "ADAPT_TO_LIVE": False,
     "LIVE_POLL_INTERVAL": 60.0,
+    "USE_PREV_WEIGHTS": True,
     "API": {"API_KEY_LIVE": "cbe78363-8e5f-497a-875f-e2e813146748", "API_SECRET_LIVE": "YFyZmB7SSTRM4-0z9W9NSN1SgCiDYVvm-0NGkwGuzk5hYTdjNzkwYi1mYjczLTQyNTEtOWVhZi0yZDNjNTRkN2JlZDI", "DEFAULT_TYPE": "spot"},
     "CHATGPT": {"API_KEY": "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"},
 }
@@ -29,6 +30,7 @@ def run_bot():
     global global_training_loss, global_validation_loss, global_backtest_profit, global_equity_curve
     global global_ai_adjustments_log, global_current_prediction, global_ai_confidence
     global global_ai_epoch_count, global_attention_weights_history, global_ai_adjustments
+    global global_status_message
 
     torch.backends.cudnn.deterministic=True
     torch.backends.cudnn.benchmark=False
@@ -49,12 +51,14 @@ def run_bot():
     csv_path = config["CSV_PATH"]
     data= load_csv_hourly(csv_path)
 
-    use_prev_weights = False
+    if len(data) < 10:
+        print("Error: no usable CSV data found")
+        global_status_message = "CSV load failed"
+        return
+
+    use_prev_weights = bool(config.get("USE_PREV_WEIGHTS", True))
     if os.path.isfile("best_model_weights.pth"):
-        ans = input("Use previous best_model_weights.pth? [y/N]: ").strip().lower()
-        if ans.startswith("y"):
-            use_prev_weights = True
-        else:
+        if not use_prev_weights:
             ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             backup = f"best_model_weights_backup_{ts}.pth"
             try:
@@ -62,6 +66,10 @@ def run_bot():
                 print(f"Existing weights backed up to {backup}")
             except OSError:
                 print("Failed to backup existing weights")
+        else:
+            use_prev_weights = True
+    else:
+        use_prev_weights = False
 
     device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
