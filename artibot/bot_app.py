@@ -49,6 +49,11 @@ def run_bot():
     config = CONFIG
     openai.api_key = config["CHATGPT"]["API_KEY"]
     csv_path = config["CSV_PATH"]
+    if not os.path.isabs(csv_path):
+        here = os.path.dirname(os.path.abspath(__file__))
+        csv_path = os.path.join(here, "..", csv_path)
+    csv_path = os.path.abspath(os.path.expanduser(csv_path))
+    print(f"Loading CSV data from: {csv_path}")
     data= load_csv_hourly(csv_path)
 
     if len(data) < 10:

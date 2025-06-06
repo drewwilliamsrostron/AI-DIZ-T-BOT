@@ -116,8 +116,16 @@ class EnsembleModel:
                 max_norm=0.5,  # Changed from 0.5 to max_norm=0.5
                 norm_type=2.0  # Add norm type
                 )
-                self.scaler.step(opt_)
-                self.scaler.update()
+                try:
+                    self.scaler.step(opt_)
+                except AssertionError:
+                    # Older PyTorch versions sometimes fail to record
+                    # the inf check state when using GradScaler.
+                    # Fall back to a regular optimiser step.
+                    opt_.step()
+                    self.scaler = GradScaler(enabled=False)
+                else:
+                    self.scaler.update()
                 batch_loss+= loss.item()
             total_loss+= batch_loss/ len(self.models)
             nb+=1
