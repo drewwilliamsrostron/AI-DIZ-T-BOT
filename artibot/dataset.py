@@ -63,7 +63,7 @@ class HourlyDataset(Dataset):
 
     def preprocess(self):
         data_np = np.array(self.data, dtype=np.float32)
-        closes = data_np[:, 4]
+        closes = data_np[:, 4].astype(np.float64)
         sma = np.convolve(closes, np.ones(self.sma_period) / self.sma_period, mode='same')
         rsi = talib.RSI(closes, timeperiod=14)
         macd, _, _ = talib.MACD(closes)
