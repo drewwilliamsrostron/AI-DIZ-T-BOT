@@ -839,6 +839,19 @@ class EnsembleModel:
         for m in self.models:
             m.train()
         for batch_x, batch_y in dl_train:
+            bx = batch_x.to(self.device, non_blocking=True).contiguous().clone()
+            by = batch_y.to(self.device, non_blocking=True)
+            batch_loss=0.0
+            for model,opt_ in zip(self.models,self.optimizers):
+                opt_.zero_grad()
+                with torch.autograd.set_detect_anomaly(True):
+                    with autocast(device_type=self.device.type,
+                                   enabled=(self.device.type=="cuda")):
+                        logits, _, pred_reward = model(bx)
+                        ce_loss= self.criterion(logits, by)
+                        reward_loss= self.mse_loss_fn(pred_reward, scaled_target.expand_as(pred_reward))
+                        loss= ce_loss + self.reward_loss_weight* reward_loss
+                    self.scaler.scale(loss).backward()
             bx= batch_x.to(self.device).contiguous().clone()
             by= batch_y.to(self.device)
             batch_loss=0.0
@@ -1310,8 +1323,12 @@ def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=Tru
         n_tr  = int(n_tot*0.9)
         n_val = n_tot-n_tr
         ds_train, ds_val = random_split(ds_full,[n_tr, n_val])
-        dl_train= DataLoader(ds_train,batch_size=128,shuffle=True,num_workers=2,pin_memory=True)
-        dl_val= DataLoader(ds_val,batch_size=128,shuffle=False,num_workers=2,pin_memory=True)
+        pin = ensemble.device.type == 'cuda'
+        workers = 2 if pin else 0
+        dl_train = DataLoader(ds_train, batch_size=128, shuffle=True,
+                             num_workers=workers, pin_memory=pin)
+        dl_val = DataLoader(ds_val, batch_size=128, shuffle=False,
+                           num_workers=workers, pin_memory=pin)
 
         adapt_live = bool(config.get("ADAPT_TO_LIVE",False))
         dummy_input = torch.randn(1,24,8,device=ensemble.device)
@@ -1366,8 +1383,12 @@ def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=Tru
                         ntr_= int(nt_*0.9)
                         nv_= nt_- ntr_
                         ds_tr_, ds_val_= random_split(ds_updated,[ntr_,nv_])
-                        dl_tr_= DataLoader(ds_tr_, batch_size=128, shuffle=True)
-                        dl_val_= DataLoader(ds_val_, batch_size=128, shuffle=False)
+                        pin = ensemble.device.type == 'cuda'
+                        workers = 2 if pin else 0
+                        dl_tr_ = DataLoader(ds_tr_, batch_size=128, shuffle=True,
+                                           num_workers=workers, pin_memory=pin)
+                        dl_val_ = DataLoader(ds_val_, batch_size=128, shuffle=False,
+                                            num_workers=workers, pin_memory=pin)
                         ensemble.train_one_epoch(dl_tr_, dl_val_, data, stop_event)
 
             if ensemble.train_steps%5==0 and ensemble.best_state_dicts:
