@@ -64,7 +64,7 @@ def _install_pytorch_for_env() -> None:
         pkg_line = [
             f"torch==2.2.1{suffix}",
             f"torchvision==0.17.1{suffix}",
-            f"torchaudio==2.2.2{suffix}",
+            f"torchaudio==2.2.1{suffix}",
             "--extra-index-url", index
         ]
 
@@ -85,6 +85,7 @@ def install_dependencies() -> None:
         "pandas":       "pandas",
         "numpy":        "numpy",
         "matplotlib":   "matplotlib",
+        "scikit-learn": "scikit-learn",
         "TA-Lib":       "TA-Lib"   # imported as `talib`
     }
     for import_name, pip_name in pkgs.items():

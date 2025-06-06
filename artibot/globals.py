@@ -15,7 +15,10 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import Dataset, DataLoader, random_split
-from torch.amp import autocast, GradScaler
+try:
+    from torch.amp import autocast, GradScaler
+except Exception:  # fallback for torch<2.2
+    from torch.cuda.amp import autocast, GradScaler
 import openai
 from typing import NamedTuple
 from sklearn.preprocessing import StandardScaler
