@@ -110,11 +110,26 @@ except ModuleNotFoundError:
         
         @staticmethod
         def MACD(arr, fastperiod=12, slowperiod=26, signalperiod=9):
-            res = pta.macd(pd.Series(arr),
-                           fast=fastperiod, slow=slowperiod, signal=signalperiod)
-            return (res[f"MACD_{fastperiod}_{slowperiod}_{signalperiod}"].values,
-                    res[f"MACDs_{fastperiod}_{slowperiod}_{signalperiod}"].values,
-                    res[f"MACDh_{fastperiod}_{slowperiod}_{signalperiod}"].values)
+            series = pd.Series(arr)
+            try:
+                res = pta.macd(series, fast=fastperiod, slow=slowperiod,
+                                signal=signalperiod)
+                if res is not None:
+                    return (
+                        res[f"MACD_{fastperiod}_{slowperiod}_{signalperiod}"].values,
+                        res[f"MACDs_{fastperiod}_{slowperiod}_{signalperiod}"].values,
+                        res[f"MACDh_{fastperiod}_{slowperiod}_{signalperiod}"].values,
+                    )
+            except Exception:
+                pass
+
+            # Fallback manual calculation when pandas_ta returns None or errors
+            ema_fast = series.ewm(span=fastperiod, adjust=False).mean()
+            ema_slow = series.ewm(span=slowperiod, adjust=False).mean()
+            macd = ema_fast - ema_slow
+            signal = macd.ewm(span=signalperiod, adjust=False).mean()
+            hist = macd - signal
+            return macd.values, signal.values, hist.values
 
     import sys
     sys.modules["talib"] = _TaShim()               # ✅ calls like talib.RSI(...) keep working
