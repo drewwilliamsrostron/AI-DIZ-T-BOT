@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Complex AI Trading + Continuous Training + Robust Backtest Each Epoch + Live Phemex + Tkinter GUI
 + Meta–Control via Neural Network (Policy Gradient w/ Transformer) for Hyperparameter Adjustment
@@ -121,13 +121,6 @@ except ModuleNotFoundError:
 
 
 install_dependencies()
-###############################################################################
-# Imports
-###############################################################################
-
-
-install_dependencies()
-
 ###############################################################################
 # Imports
 ###############################################################################
@@ -286,35 +279,29 @@ class HourlyDataset(Dataset):
         self.samples, self.labels = self.preprocess()
 
     def preprocess(self):
-        closes = np.array([row[4] for row in self.data], dtype=np.float64)
-        # (8) Data Augmentation: We'll do it in __getitem__ with bigger probability,
-        # so we keep normal here
+        data_np = np.array(self.data, dtype=np.float32)
+        closes = data_np[:, 4]
         sma = np.convolve(closes, np.ones(self.sma_period) / self.sma_period, mode='same')
         rsi = talib.RSI(closes, timeperiod=14)
         macd, _, _ = talib.MACD(closes)
 
-        feats = []
-        for i, row in enumerate(self.data):
-            feats.append(list(row[1:6]) + [float(sma[i]), float(rsi[i]), float(macd[i])])
-        feats = np.array(feats, dtype=np.float32)
+        feats = np.column_stack([
+            data_np[:, 1:6],
+            sma.astype(np.float32),
+            rsi.astype(np.float32),
+            macd.astype(np.float32),
+        ])
         scaler = StandardScaler()
         scaled_feats = scaler.fit_transform(feats)
 
-        X, Y = [], []
-        for i in range(self.seq_len, len(scaled_feats) - 1):
-            window = scaled_feats[i - self.seq_len : i]
-            curr_close = window[-1][3]
-            next_close = scaled_feats[i][3]
-            ret = (next_close - curr_close) / (curr_close + 1e-8)
-            if ret > self.threshold:
-                lbl = 0  # BUY
-            elif ret < -self.threshold:
-                lbl = 1  # SELL
-            else:
-                lbl = 2  # HOLD
-            X.append(window)
-            Y.append(lbl)
-        return np.array(X), np.array(Y)
+        from numpy.lib.stride_tricks import sliding_window_view
+        windows = sliding_window_view(scaled_feats, (self.seq_len, scaled_feats.shape[1]))[:, 0]
+        windows = windows[:-1]
+        last_close = windows[:, -1, 3]
+        next_close = scaled_feats[self.seq_len:, 3]
+        rets = (next_close - last_close) / (last_close + 1e-8)
+        labels = np.where(rets > self.threshold, 0, np.where(rets < -self.threshold, 1, 2))
+        return windows.astype(np.float32), labels.astype(np.int64)
 
     def __len__(self):
         return len(self.samples)
@@ -1371,19 +1358,20 @@ def csv_training_thread(ensemble, data, stop_event, config):
         traceback.print_exc()
         stop_event.set()
 
-def phemex_live_thread(connector, stop_event):
+def phemex_live_thread(connector, stop_event, poll_interval=1.0):
+    """Continuously fetch recent bars from Phemex at a configurable interval."""
     import traceback
     global global_phemex_data
     while not stop_event.is_set():
         try:
-            bars= connector.fetch_latest_bars(limit=100)
+            bars = connector.fetch_latest_bars(limit=100)
             if bars:
-                global_phemex_data= bars
+                global_phemex_data = bars
                 live_bars_queue.put(bars)
-            time.sleep(0.01)
-        except:
+        except Exception:
             traceback.print_exc()
             stop_event.set()
+        time.sleep(poll_interval)
 
 ###############################################################################
 # Connector
@@ -1714,6 +1702,7 @@ def main():
         "CSV_PATH":"Gemini_BTCUSD_1h.csv",
         "symbol":"BTC/USDT",
         "ADAPT_TO_LIVE":False,
+        "LIVE_POLL_INTERVAL":60.0,
         "API":{"API_KEY_LIVE":"","API_SECRET_LIVE":"","DEFAULT_TYPE":"spot"},
         "CHATGPT":{"API_KEY":""}
     }
@@ -1730,7 +1719,12 @@ def main():
     train_th= threading.Thread(target=csv_training_thread,args=(ensemble,data,stop_event,config), daemon=True)
     train_th.start()
 
-    phemex_th= threading.Thread(target=phemex_live_thread,args=(connector,stop_event), daemon=True)
+    poll_interval = config.get("LIVE_POLL_INTERVAL", 60.0)
+    phemex_th = threading.Thread(
+        target=phemex_live_thread,
+        args=(connector, stop_event, poll_interval),
+        daemon=True,
+    )
     phemex_th.start()
 
     ds= HourlyDataset(data, seq_len=24, threshold=GLOBAL_THRESHOLD)
