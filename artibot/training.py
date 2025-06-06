@@ -39,12 +39,23 @@ def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=Tru
             ensemble.train_steps+=1
             global global_status_message
             global_status_message = f"Training step {ensemble.train_steps}"
+            print(global_status_message, flush=True)
             tl, vl = ensemble.train_one_epoch(dl_train, dl_val, data, stop_event)
             global_training_loss.append(tl)
             if vl is not None:
                 global_validation_loss.append(vl)
             else:
                 global_validation_loss.append(None)
+            if global_backtest_profit:
+                last_pf = global_backtest_profit[-1]
+            else:
+                last_pf = 0.0
+            val_str = f"{vl:.4f}" if vl is not None else "N/A"
+            print(
+                f"Epoch {ensemble.train_steps}: loss={tl:.4f} val={val_str} "
+                f"net_pct={last_pf:.2f}",
+                flush=True,
+            )
 
             # quick "latest prediction"
             if len(data)>=24:
