@@ -154,7 +154,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import Dataset, DataLoader, random_split
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
 import openai
 from typing import NamedTuple
 from sklearn.preprocessing import StandardScaler
@@ -770,7 +770,9 @@ class EnsembleModel:
         self.optimizers = [optim.Adam(m.parameters(), lr=lr, weight_decay=weight_decay) for m in self.models]
         self.criterion = nn.CrossEntropyLoss(weight=torch.tensor([2.0,2.0,0.8]).to(device))
         self.mse_loss_fn = nn.MSELoss()
-        self.scaler = GradScaler(enabled=(device.type=='cuda'))
+        amp_on = device.type == 'cuda'
+        self.scaler = GradScaler(enabled=amp_on,
+                                 device=(device.type if amp_on else 'cpu'))
         self.best_val_loss = float('inf')
         self.best_composite_reward = float('-inf')
         self.best_state_dicts = None
@@ -837,17 +839,19 @@ class EnsembleModel:
         for m in self.models:
             m.train()
         for batch_x, batch_y in dl_train:
-            bx= batch_x.to(self.device).clone()
-            by= batch_y.to(self.device)
+            bx = batch_x.to(self.device, non_blocking=True).contiguous().clone()
+            by = batch_y.to(self.device, non_blocking=True)
             batch_loss=0.0
             for model,opt_ in zip(self.models,self.optimizers):
                 opt_.zero_grad()
-                with autocast():
-                    logits, _, pred_reward = model(bx)
-                    ce_loss= self.criterion(logits, by)
-                    reward_loss= self.mse_loss_fn(pred_reward, scaled_target.expand_as(pred_reward))
-                    loss= ce_loss + self.reward_loss_weight* reward_loss
-                self.scaler.scale(loss).backward()
+                with torch.autograd.set_detect_anomaly(True):
+                    with autocast(device_type=self.device.type,
+                                   enabled=(self.device.type=="cuda")):
+                        logits, _, pred_reward = model(bx)
+                        ce_loss= self.criterion(logits, by)
+                        reward_loss= self.mse_loss_fn(pred_reward, scaled_target.expand_as(pred_reward))
+                        loss= ce_loss + self.reward_loss_weight* reward_loss
+                    self.scaler.scale(loss).backward()
                 self.scaler.unscale_(opt_)
                 torch.nn.utils.clip_grad_norm_(
                 model.parameters(),
@@ -1307,8 +1311,12 @@ def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=Tru
         n_tr  = int(n_tot*0.9)
         n_val = n_tot-n_tr
         ds_train, ds_val = random_split(ds_full,[n_tr, n_val])
-        dl_train= DataLoader(ds_train,batch_size=128,shuffle=True,num_workers=2,pin_memory=True)
-        dl_val= DataLoader(ds_val,batch_size=128,shuffle=False,num_workers=2,pin_memory=True)
+        pin = ensemble.device.type == 'cuda'
+        workers = 2 if pin else 0
+        dl_train = DataLoader(ds_train, batch_size=128, shuffle=True,
+                             num_workers=workers, pin_memory=pin)
+        dl_val = DataLoader(ds_val, batch_size=128, shuffle=False,
+                           num_workers=workers, pin_memory=pin)
 
         adapt_live = bool(config.get("ADAPT_TO_LIVE",False))
         dummy_input = torch.randn(1,24,8,device=ensemble.device)
