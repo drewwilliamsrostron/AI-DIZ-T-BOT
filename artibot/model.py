@@ -54,7 +54,11 @@ class TradingModel(nn.Module):
         risk_frac = 0.001 + 0.499 * torch.sigmoid(out_all[:, 3])
         sl_mult   = 0.5   + 9.5   * torch.sigmoid(out_all[:, 4])
         tp_mult   = 0.5   + 9.5   * torch.sigmoid(out_all[:, 5])
+        # The reward head can explode early in training which often results in
+        # NaNs propagating through the loss.  Scale the raw value and strip any
+        # non finite numbers to keep the optimisation stable.
         pred_reward = out_all[:, 6] if out_all.shape[1] > 6 else torch.zeros_like(out_all[:,0])
+        pred_reward = 0.1 * torch.nan_to_num(pred_reward)
         return logits, TradeParams(risk_frac, sl_mult, tp_mult, w), pred_reward
 
 ###############################################################################
