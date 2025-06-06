@@ -368,7 +368,7 @@ class TradingModel(nn.Module):
 
     def forward(self, x):
         x = self.pos_encoder(x)
-        x = x.transpose(0,1)
+        x = x.transpose(0,1).contiguous()
         x = self.transformer_encoder(x)
         x = x.mean(dim=0)
         x = self.fc_proj(x)
@@ -837,7 +837,7 @@ class EnsembleModel:
         for m in self.models:
             m.train()
         for batch_x, batch_y in dl_train:
-            bx= batch_x.to(self.device)
+            bx= batch_x.to(self.device).clone()
             by= batch_y.to(self.device)
             batch_loss=0.0
             for model,opt_ in zip(self.models,self.optimizers):
@@ -1511,7 +1511,7 @@ class TransformerMetaAgent(nn.Module):
         self.value_head= nn.Linear(d_model,1)
 
     def forward(self, x):
-        x_emb= self.embed(x).unsqueeze(1).transpose(0,1)
+        x_emb= self.embed(x).unsqueeze(1).transpose(0,1).contiguous()
         x_pe= self.pos_enc(x_emb)
         x_enc= self.transformer_enc(x_pe)
         rep= x_enc.squeeze(0)
