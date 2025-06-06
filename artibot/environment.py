@@ -91,6 +91,7 @@ def install_dependencies() -> None:
         "pandas":       "pandas",
         "numpy":        "numpy",
         "matplotlib":   "matplotlib",
+        "dotenv":       "python-dotenv",
         # 'scikit-learn' installs as 'sklearn'
         "sklearn": "scikit-learn",
         "TA-Lib":       "TA-Lib"   # imported as `talib`

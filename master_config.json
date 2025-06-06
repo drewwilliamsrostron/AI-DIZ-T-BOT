@@ -1,16 +1,16 @@
 {
     "API": {
         "LIVE_TRADING": true,
-        "API_KEY_LIVE": "cbe78363-8e5f-497a-875f-e2e813146748",
-        "API_SECRET_LIVE": "YFyZmB7SSTRM4-0z9W9NSN1SgCiDYVvm-0NGkwGuzk5hYTdjNzkwYi1mYjczLTQyNTEtOWVhZi0yZDNjNTRkN2JlZDI",
-        "API_KEY_TEST": "052e3b80-bc14-4acb-abd5-c6fb172b7a25",
-        "API_SECRET_TEST": "MgvrsjefF6eVS2xTu-yGfQsAF56HoGA7N1TGLIEenuU5ZmM0YmEzOC01M2IzLTQ4ZjUtODVlZC1iY2Y1ZTBiNTYxZmE",
+        "API_KEY_LIVE": "${PHEMEX_API_KEY_LIVE}",
+        "API_SECRET_LIVE": "${PHEMEX_API_SECRET_LIVE}",
+        "API_KEY_TEST": "${PHEMEX_API_KEY_TEST}",
+        "API_SECRET_TEST": "${PHEMEX_API_SECRET_TEST}",
         "DEFAULT_TYPE": "spot"
     },
     "symbol": "BTCUSD",
     "CSV_PATH": "Gemini_BTCUSD_1h.csv",
     "ADAPT_TO_LIVE": true,
     "CHATGPT": {
-        "API_KEY": "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"
+        "API_KEY": "${OPENAI_API_KEY}"
     }
 }
