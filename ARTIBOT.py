@@ -1518,6 +1518,10 @@ class TransformerMetaAgent(nn.Module):
 class MetaTransformerRL:
     def __init__(self, ensemble, lr=1e-3):
         self.model= TransformerMetaAgent()
+        # expose the underlying action space so other methods don't
+        # need to reach into the model attribute. Without this the
+        # ``pick_action`` method fails with ``AttributeError``.
+        self.action_space = self.model.action_space
         self.opt= optim.Adam(self.model.parameters(), lr=lr)
         self.gamma= 0.95
         self.ensemble= ensemble
@@ -1554,6 +1558,14 @@ class MetaTransformerRL:
             a_idx= dist.sample().item()
             lp= dist.log_prob(torch.tensor([a_idx]))
         return a_idx, lp, val.item()
+
+    def _find_nearest_action(self, candidate):
+        """Return the index of the closest action in the action space."""
+        if not isinstance(candidate, np.ndarray):
+            candidate = np.array(candidate, dtype=float)
+        actions = np.array(self.action_space, dtype=float)
+        dists = np.linalg.norm(actions - candidate, axis=1)
+        return int(np.argmin(dists))
 
     def update(self, state_np, action_idx, reward, next_state_np, logprob, value):
         s= torch.tensor(state_np, dtype=torch.float32).unsqueeze(0)
