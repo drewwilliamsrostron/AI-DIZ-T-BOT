@@ -92,3 +92,5 @@ def compute_days_in_profit(equity_curve, init_balance):
                     total_s += (1 - f)*dt
                 else:
                     total_s += f*dt
+    return total_s/86400.0
+
