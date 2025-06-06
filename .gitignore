@@ -4,3 +4,7 @@ __pycache__/
 run.log
 gui_graph_outputs.log
 best_model_weights_backup_*.pth
+.vs/slnx.sqlite
+.vs/slnx.sqlite
+.vs/VSWorkspaceState.json
+/.vs
