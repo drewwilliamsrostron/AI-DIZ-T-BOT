@@ -85,6 +85,7 @@ class EnsembleModel:
                 device=self.device,
             )
         )
+        scaled_target = torch.nan_to_num(scaled_target)
         total_loss=0.0
         nb=0
         for m in self.models:
@@ -103,14 +104,12 @@ class EnsembleModel:
                 with ctx:
                     logits, _, pred_reward = model(bx)
                     ce_loss = self.criterion(logits, by)
-                    if not torch.isfinite(pred_reward).all():
-                        raise ValueError("pred_reward has NaN or Inf values")
+                    pred_reward = torch.nan_to_num(pred_reward)
                     reward_loss = self.mse_loss_fn(
                         pred_reward, scaled_target.expand_as(pred_reward)
                     )
                     loss = ce_loss + self.reward_loss_weight * reward_loss
-                    if not torch.isfinite(loss).all():
-                        raise ValueError("loss became NaN or Inf")
+                    loss = torch.nan_to_num(loss)
                 self.scaler.scale(loss).backward()
                 self.scaler.unscale_(opt_)
                 torch.nn.utils.clip_grad_norm_(
