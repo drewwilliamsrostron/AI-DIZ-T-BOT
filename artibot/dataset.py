@@ -74,8 +74,16 @@ class HourlyDataset(Dataset):
             rsi.astype(np.float32),
             macd.astype(np.float32),
         ])
+
+        # ``ta-lib`` leaves the first few rows as NaN which would otherwise
+        # propagate through scaling and ultimately make the training loss
+        # explode to ``nan``.  Replace them with zeros before normalisation and
+        # again afterwards to be safe.
+        feats = np.nan_to_num(feats)
+
         scaler = StandardScaler()
         scaled_feats = scaler.fit_transform(feats)
+        scaled_feats = np.nan_to_num(scaled_feats)
 
         from numpy.lib.stride_tricks import sliding_window_view
         windows = sliding_window_view(scaled_feats, (self.seq_len, scaled_feats.shape[1]))[:, 0]
@@ -84,6 +92,11 @@ class HourlyDataset(Dataset):
         next_close = scaled_feats[self.seq_len:, 3]
         rets = (next_close - last_close) / (last_close + 1e-8)
         labels = np.where(rets > self.threshold, 0, np.where(rets < -self.threshold, 1, 2))
+
+        mask = np.isfinite(windows).all(axis=(1, 2)) & np.isfinite(rets)
+        windows = windows[mask]
+        labels = labels[mask]
+
         return windows.astype(np.float32), labels.astype(np.int64)
 
     def __len__(self):
