@@ -88,9 +88,11 @@ class HourlyDataset(Dataset):
         from numpy.lib.stride_tricks import sliding_window_view
         windows = sliding_window_view(scaled_feats, (self.seq_len, scaled_feats.shape[1]))[:, 0]
         windows = windows[:-1]
-        last_close = windows[:, -1, 3]
-        next_close = scaled_feats[self.seq_len:, 3]
-        rets = (next_close - last_close) / (last_close + 1e-8)
+
+        raw_closes = closes.astype(np.float32)
+        last_close_raw = raw_closes[self.seq_len-1:-1]
+        next_close_raw = raw_closes[self.seq_len:]
+        rets = (next_close_raw - last_close_raw) / (last_close_raw + 1e-8)
         labels = np.where(rets > self.threshold, 0, np.where(rets < -self.threshold, 1, 2))
 
         mask = np.isfinite(windows).all(axis=(1, 2)) & np.isfinite(rets)
