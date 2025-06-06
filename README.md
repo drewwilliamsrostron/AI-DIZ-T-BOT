@@ -7,12 +7,19 @@ AI Trading Bot
    `CONFIG` dictionary at the top of the file. The `API` section holds your
    exchange keys while `CHATGPT` contains your OpenAI key.
    The `USE_PREV_WEIGHTS` flag controls whether an existing
-   `best_model_weights.pth` file is automatically loaded.
+   `best_model_weights.pth` file is automatically loaded.  The
+   `CSV_PATH` entry is resolved relative to the project directory so the
+   data file will be found even when you launch the bot from elsewhere.
 2. Start the bot with:
 
 ```bash
 python run_artibot.py
 ```
+
+3. On the very first run the program installs its Python dependencies via
+   `environment.py`.  This may take several minutes while the GUI remains on
+   *Initializing…* and the console prints numerous thread messages.  Simply
+   wait for installation to finish; the bot will continue automatically.
 
 The package is organised into a few self‑contained modules:
 
