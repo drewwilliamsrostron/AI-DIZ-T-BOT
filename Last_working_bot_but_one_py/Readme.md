@@ -1,0 +1,1 @@
+In this folder there is a file which contains the last kinda working version of the bot, i say working because it cycled and trained itself but then it always plateued that was it's fault and why i decided to make new versions, but even so there's lots that can be learned from this code if the main version isn't working.
