@@ -146,6 +146,7 @@ class TradingGUI:
         timestamp = datetime.datetime.now().isoformat()
         line = f"{timestamp} " + json.dumps(data)
         print(line, flush=True)
+        print(line)
         with open("gui_graph_outputs.log", "a", encoding="utf-8") as f:
             f.write(line + "\n")
 
@@ -175,7 +176,9 @@ class TradingGUI:
                     t2,b2= zip(*best_eq)
                     t2dt= [datetime.datetime.fromtimestamp(x) for x in t2]
                     self.ax_equity_train.plot(t2dt, b2, color='green', marker='.', label="Best")
-            self.ax_equity_train.legend()
+            handles, labels = self.ax_equity_train.get_legend_handles_labels()
+            if handles and any(labels):
+                self.ax_equity_train.legend(handles, labels)
         except:
             pass
         self.canvas_train.draw()
@@ -276,8 +279,12 @@ class TradingGUI:
         self.ai_log_text.delete("1.0", tk.END)
         self.ai_log_text.insert(tk.END, global_ai_adjustments_log)
 
+
         if time.time() - self.last_log_time >= self.log_interval:
             self.log_graph_data()
             self.last_log_time = time.time()
+
+        self.log_graph_data()
+
 
         self.root.after(self.update_interval, self.update_dashboard)
