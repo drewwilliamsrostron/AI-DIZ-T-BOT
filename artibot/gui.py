@@ -149,7 +149,9 @@ class TradingGUI:
                     t2,b2= zip(*best_eq)
                     t2dt= [datetime.datetime.fromtimestamp(x) for x in t2]
                     self.ax_equity_train.plot(t2dt, b2, color='green', marker='.', label="Best")
-            self.ax_equity_train.legend()
+            handles, labels = self.ax_equity_train.get_legend_handles_labels()
+            if handles and any(labels):
+                self.ax_equity_train.legend(handles, labels)
         except:
             pass
         self.canvas_train.draw()
