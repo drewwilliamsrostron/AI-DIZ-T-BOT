@@ -1,19 +1,30 @@
 """Entry point for running the trading bot.
 
 This module starts the training loop, live market polling, the
-meta–reinforcement learning agent and the Tkinter GUI. Before running the
-bot you must edit :data:`CONFIG` below with your own API credentials.
+meta–reinforcement learning agent and the Tkinter GUI. API credentials
+are loaded from environment variables so no secrets live in the codebase.
 """
+
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from a .env file if present
+load_dotenv()
 
 from .globals import *
 from .dataset import load_csv_hourly, HourlyDataset
 from .ensemble import EnsembleModel
-from .training import csv_training_thread, phemex_live_thread, PhemexConnector, save_checkpoint
+from .training import (
+    csv_training_thread,
+    phemex_live_thread,
+    PhemexConnector,
+    save_checkpoint,
+)
 from .rl import MetaTransformerRL, meta_control_loop
 from .gui import TradingGUI
 
 # ---------------------------------------------------------------------------
-# Configuration – **fill in your API keys here**
+# Configuration – credentials pulled from the environment
 # ---------------------------------------------------------------------------
 CONFIG = {
     "CSV_PATH": "Gemini_BTCUSD_1h.csv",  # historical data for initial training
@@ -21,8 +32,14 @@ CONFIG = {
     "ADAPT_TO_LIVE": False,
     "LIVE_POLL_INTERVAL": 60.0,
     "USE_PREV_WEIGHTS": True,
-    "API": {"API_KEY_LIVE": "cbe78363-8e5f-497a-875f-e2e813146748", "API_SECRET_LIVE": "YFyZmB7SSTRM4-0z9W9NSN1SgCiDYVvm-0NGkwGuzk5hYTdjNzkwYi1mYjczLTQyNTEtOWVhZi0yZDNjNTRkN2JlZDI", "DEFAULT_TYPE": "spot"},
-    "CHATGPT": {"API_KEY": "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"},
+    "API": {
+        "API_KEY_LIVE": os.environ.get("PHEMEX_API_KEY_LIVE", ""),
+        "API_SECRET_LIVE": os.environ.get("PHEMEX_API_SECRET_LIVE", ""),
+        "API_KEY_TEST": os.environ.get("PHEMEX_API_KEY_TEST", ""),
+        "API_SECRET_TEST": os.environ.get("PHEMEX_API_SECRET_TEST", ""),
+        "DEFAULT_TYPE": "spot",
+    },
+    "CHATGPT": {"API_KEY": os.environ.get("OPENAI_API_KEY", "")},
 }
 
 

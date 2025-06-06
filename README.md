@@ -4,7 +4,13 @@ A Python trading bot with an optional reinforcement learning component. The bot 
 
 ## Usage
 
-1. Edit `artibot/bot_app.py` and place your API credentials inside the `CONFIG` dictionary at the top of the file. The `API` section holds exchange keys while `CHATGPT` contains your OpenAI key. The `CSV_PATH` entry is resolved relative to the project directory so the data file is found even when you launch the bot from elsewhere.
+1. Copy `.env.example` to `.env` and add your credentials. The bot will load it automatically. Required variables are:
+
+   - `OPENAI_API_KEY` – OpenAI access key
+   - `PHEMEX_API_KEY_LIVE` and `PHEMEX_API_SECRET_LIVE`
+   - `PHEMEX_API_KEY_TEST` and `PHEMEX_API_SECRET_TEST`
+
+   The provided `master_config.json` file uses the same placeholder names so you can override other settings without storing secrets in git.
 2. Start the bot with:
 
 ```bash
@@ -18,7 +24,7 @@ python run_artibot.py
 ```
 run_artibot.py                - command line launcher
 ARTIBOT.py                    - legacy all-in-one version
-master_config.json            - example config with API keys
+master_config.json            - example config (no secrets)
 Gemini_BTCUSD_1h.csv          - sample historical data
 
 artibot/                      - current modular implementation

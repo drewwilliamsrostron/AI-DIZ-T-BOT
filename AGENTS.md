@@ -140,6 +140,17 @@ pip install -r requirements.txt                     # first run auto-installs vi
 python run_artibot.py                               # may take minutes on first install
 ```
 
+### Required Environment Variables
+
+The bot expects the following variables to be set before launching. Copy `.env.example` to `.env` and fill in your keys:
+
+- `OPENAI_API_KEY`
+- `PHEMEX_API_KEY_LIVE` and `PHEMEX_API_SECRET_LIVE`
+- `PHEMEX_API_KEY_TEST` and `PHEMEX_API_SECRET_TEST`
+
+`master_config.json` contains placeholders for these values so secrets never
+live in the repository.
+
 ---
 
 ## Testing Strategy
