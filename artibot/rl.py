@@ -174,7 +174,7 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
     global global_composite_reward, global_best_composite_reward
     global global_sharpe, global_max_drawdown, global_num_trades, global_days_in_profit
 
-    time.sleep(2.0)
+    status_sleep("Starting meta agent", 2.0)
 
     # old initial state was just 2 dims. Now we add (sharpe, dd, trades, days_in_profit)
     prev_r= global_composite_reward if global_composite_reward else 0.0
@@ -188,7 +188,7 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
 
     while True:
         if global_ai_epoch_count<1:
-            time.sleep(1.0)
+            status_sleep("Meta agent waiting for training", 1.0)
             continue
 
         curr_r= global_composite_reward if global_composite_reward else 0.0
@@ -199,10 +199,12 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
         st_days= global_days_in_profit if global_days_in_profit else 0.0
         new_state= np.array([curr_r, b_r, st_sharpe, abs(st_dd), st_trades, st_days], dtype=np.float32)
 
+        global global_status_message
+        global_status_message = "Meta agent updating"
         a_idx, logp, val_s= agent.pick_action(state)
         (new_lr, new_wd, nrsi, nsma, nmacdf, nmacds, nmacdsig, nthr)= agent.apply_action(a_idx)
 
-        time.sleep(interval)
+        status_sleep("Meta agent sleeping", interval)
 
         curr2= global_composite_reward if global_composite_reward else 0.0
         rew_delta= curr2- curr_r
@@ -227,7 +229,7 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
             msg= f"\n[Stagnation] Forced random reinit of primary model!\n"
             global_ai_adjustments_log+= msg
 
-        time.sleep(0.5)
+        status_sleep("Meta agent idle", 0.5)
 
 ###############################################################################
 # Main

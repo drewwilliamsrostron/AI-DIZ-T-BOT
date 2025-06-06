@@ -9,6 +9,7 @@ def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=Tru
     import traceback
     global global_training_loss, global_validation_loss
     global global_ai_epoch_count
+    global global_status_message
 
     try:
         ds_full = HourlyDataset(data, seq_len=24, threshold=GLOBAL_THRESHOLD)
@@ -36,6 +37,8 @@ def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=Tru
 
         while not stop_event.is_set():
             ensemble.train_steps+=1
+            global global_status_message
+            global_status_message = f"Training step {ensemble.train_steps}"
             tl, vl = ensemble.train_one_epoch(dl_train, dl_val, data, stop_event)
             global_training_loss.append(tl)
             if vl is not None:
@@ -75,6 +78,7 @@ def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=Tru
                             data.append([ts,o_,h_,l_,c_,v_])
                             changed=True
                 if changed:
+                    global_status_message = "Adapting to live data"
                     ds_updated= HourlyDataset(data, seq_len=24, threshold=GLOBAL_THRESHOLD)
                     if len(ds_updated)>10:
                         nt_= len(ds_updated)
@@ -99,9 +103,10 @@ def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=Tru
 def phemex_live_thread(connector, stop_event, poll_interval=1.0):
     """Continuously fetch recent bars from Phemex at a configurable interval."""
     import traceback
-    global global_phemex_data
+    global global_phemex_data, global_status_message
     while not stop_event.is_set():
         try:
+            global_status_message = "Fetching live data"
             bars = connector.fetch_latest_bars(limit=100)
             if bars:
                 global_phemex_data = bars
@@ -109,7 +114,7 @@ def phemex_live_thread(connector, stop_event, poll_interval=1.0):
         except Exception:
             traceback.print_exc()
             stop_event.set()
-        time.sleep(poll_interval)
+        status_sleep("Waiting before next fetch", poll_interval)
 
 ###############################################################################
 # Connector

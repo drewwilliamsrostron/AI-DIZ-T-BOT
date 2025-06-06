@@ -107,6 +107,12 @@ class TradingGUI:
         self.best_days_profit_label=ttk.Label(self.info_frame, text="Best Days in Profit: N/A", font=("Helvetica",12), foreground="darkgreen")
         self.best_days_profit_label.grid(row=15,column=1,sticky=tk.W,padx=5,pady=5)
 
+        # single-line status indicator
+        self.status_var = tk.StringVar(value=global_status_message)
+        self.status_label = ttk.Label(self.info_frame, textvariable=self.status_var,
+                                      font=("Helvetica",10,"italic"))
+        self.status_label.grid(row=16,column=0,sticky=tk.W,padx=5,pady=5,columnspan=2)
+
         self.frame_ai = ttk.Frame(root)
         self.frame_ai.pack(side=tk.RIGHT, fill=tk.Y, padx=5, pady=5)
         self.ai_output_label= ttk.Label(self.frame_ai, text="Latest AI Adjustments:", font=("Helvetica",12,"bold"))
@@ -252,5 +258,8 @@ class TradingGUI:
         self.ai_output_text.insert(tk.END, global_ai_adjustments)
         self.ai_log_text.delete("1.0", tk.END)
         self.ai_log_text.insert(tk.END, global_ai_adjustments_log)
+
+        # update status line
+        self.status_var.set(global_status_message)
 
         self.root.after(self.update_interval, self.update_dashboard)

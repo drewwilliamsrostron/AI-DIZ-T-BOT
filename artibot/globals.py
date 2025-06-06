@@ -98,3 +98,20 @@ global_phemex_data = []
 global_days_in_profit = 0.0
 live_bars_queue = queue.Queue()
 
+# Simple status indicator updated by threads
+global_status_message = "Initializing..."
+
+###############################################################################
+# Helper used by worker threads to show countdowns while sleeping
+###############################################################################
+def status_sleep(message: str, seconds: float):
+    """Sleep in 1s increments and update ``global_status_message``."""
+    end = time.monotonic() + seconds
+    while True:
+        remaining = int(end - time.monotonic())
+        if remaining <= 0:
+            break
+        global global_status_message
+        global_status_message = f"{message} ({remaining}s)"
+        time.sleep(1)
+

@@ -25,3 +25,8 @@ The package is organised into a few self‑contained modules:
 | `rl.py` | meta‑learning agent |
 | `gui.py` | simple Tkinter interface |
 | `environment.py` | installs dependencies and compatibility shims |
+
+The GUI now includes a single-line status indicator at the bottom showing
+what the bot is currently doing (training, fetching data, etc.).  When a
+background thread is waiting or sleeping, the status line displays a
+countdown so you can see the bot is still active.
