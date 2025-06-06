@@ -233,6 +233,12 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                 global_ai_adjustments_log += msg
 
             status_sleep("Meta agent idle", 0.5)
+
+        except Exception as e:
+            global_status_message = f"Meta error: {e}"
+            traceback.print_exc()
+            status_sleep("Meta agent failed", 5.0)
+
     except Exception as e:
         global global_status_message
 
@@ -280,6 +286,7 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
         global_status_message = f"Meta error: {e}"
         traceback.print_exc()
         status_sleep("Meta agent failed", 5.0)
+
 
 ###############################################################################
 # Main
