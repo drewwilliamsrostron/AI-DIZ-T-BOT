@@ -104,13 +104,29 @@ class EnsembleModel:
                     logits, _, pred_reward = model(bx)
                     ce_loss = self.criterion(logits, by)
                     if not torch.isfinite(pred_reward).all():
+
+                        logging.error(
+                            "Non‑finite pred_reward detected at step %s", self.train_steps
+                        )
+                        logging.error("pred_reward stats: min=%s max=%s", pred_reward.min().item(), pred_reward.max().item())
+                        continue
+
                         raise ValueError("pred_reward has NaN or Inf values")
+
                     reward_loss = self.mse_loss_fn(
                         pred_reward, scaled_target.expand_as(pred_reward)
                     )
                     loss = ce_loss + self.reward_loss_weight * reward_loss
                     if not torch.isfinite(loss).all():
+
+                        logging.error(
+                            "Non‑finite loss detected at step %s", self.train_steps
+                        )
+                        logging.error("ce_loss=%s reward_loss=%s", ce_loss.item(), reward_loss.item())
+                        continue
+
                         raise ValueError("loss became NaN or Inf")
+
                 self.scaler.scale(loss).backward()
                 self.scaler.unscale_(opt_)
                 torch.nn.utils.clip_grad_norm_(
