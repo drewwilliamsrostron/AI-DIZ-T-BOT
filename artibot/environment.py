@@ -85,7 +85,8 @@ def install_dependencies() -> None:
         "pandas":       "pandas",
         "numpy":        "numpy",
         "matplotlib":   "matplotlib",
-        "scikit-learn": "scikit-learn",
+        # 'scikit-learn' installs as 'sklearn'
+        "sklearn": "scikit-learn",
         "TA-Lib":       "TA-Lib"   # imported as `talib`
     }
     for import_name, pip_name in pkgs.items():
