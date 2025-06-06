@@ -117,4 +117,8 @@ class HourlyDataset(Dataset):
         # from 0.2 => 0.5 probability, and 0.01 => 0.02 stdev
         if random.random() < 0.5:
             sample += np.random.normal(0, 0.02, sample.shape)
-        return torch.tensor(sample), torch.tensor(self.labels[idx], dtype=torch.long)
+        # Explicit dtype avoids "Could not infer dtype" errors on some
+        # platforms when NumPy 2.x is installed.
+        sample_t = torch.as_tensor(sample, dtype=torch.float32)
+        label_t = torch.tensor(self.labels[idx], dtype=torch.long)
+        return sample_t, label_t

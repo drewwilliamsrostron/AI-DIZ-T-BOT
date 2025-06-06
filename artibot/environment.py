@@ -12,10 +12,16 @@ import sys, math
 try:
     import numpy as _np
 except ModuleNotFoundError:
-    # fresh venv? – install NumPy first
+    # Fresh environment – install a broadly compatible NumPy
     import subprocess, sys as _sys
-    subprocess.check_call([_sys.executable, "-m", "pip", "install", "numpy>=2.2"])
+    subprocess.check_call([_sys.executable, "-m", "pip", "install", "numpy<2"])
     import numpy as _np
+else:
+    if int(_np.__version__.split('.')[0]) >= 2:
+        import subprocess
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "numpy<2"])
+        print("Installed NumPy<2; please restart the program.")
+        sys.exit(0)
 
 # Re-export the aliases deleted in NumPy 2
 for _name, _value in {
@@ -133,8 +139,10 @@ except ModuleNotFoundError:
             hist = macd - signal
             return macd.values, signal.values, hist.values
 
-    import sys
-    sys.modules["talib"] = _TaShim()               # ✅ calls like talib.RSI(...) keep working
+import sys
+sys.modules["talib"] = _TaShim()               # ✅ calls like talib.RSI(...) keep working
 
 
-install_dependencies()
+def ensure_dependencies():
+    """Install required packages if they are missing."""
+    install_dependencies()

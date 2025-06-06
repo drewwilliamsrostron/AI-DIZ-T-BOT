@@ -220,9 +220,12 @@ def robust_backtest(ensemble, data_full):
         })
         eq_curve[-1]=(df.iloc[-1]['timestamp'], bal)
 
-    final_profit= bal- init_bal
-    net_pct= (final_profit/init_bal)*100.0
-    eff_net_pct= net_pct
+    final_profit = bal - init_bal
+    net_pct = (final_profit / init_bal) * 100.0
+    if not np.isfinite(net_pct):
+        net_pct = 0.0
+    # Clamp extreme values so a runaway trade does not dominate training
+    eff_net_pct = float(np.clip(net_pct, -1000.0, 1000.0))
 
     # inactivity penalty
     tot_inact_pen= 0.0
