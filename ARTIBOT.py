@@ -233,6 +233,7 @@ global_attention_weights_history = []
 global_phemex_data = []
 global_days_in_profit = 0.0
 live_bars_queue = queue.Queue()
+model_lock = threading.Lock()
 
 ###############################################################################
 # NamedTuple for per-bar trade parameters
@@ -368,7 +369,7 @@ class TradingModel(nn.Module):
 
     def forward(self, x):
         x = self.pos_encoder(x)
-        x = x.transpose(0,1)
+        x = x.transpose(0,1).contiguous()
         x = self.transformer_encoder(x)
         x = x.mean(dim=0)
         x = self.fc_proj(x)
@@ -793,82 +794,83 @@ class EnsembleModel:
         )
 
     def train_one_epoch(self, dl_train, dl_val, data_full, stop_event=None):
-        global global_equity_curve, global_backtest_profit
-        global global_inactivity_penalty, global_composite_reward
-        global global_days_without_trading, global_trade_details
-        global global_days_in_profit
-        global global_sharpe, global_max_drawdown, global_net_pct, global_num_trades
-        global global_yearly_stats_table
+        with model_lock:
+            global global_equity_curve, global_backtest_profit
+            global global_inactivity_penalty, global_composite_reward
+            global global_days_without_trading, global_trade_details
+            global global_days_in_profit
+            global global_sharpe, global_max_drawdown, global_net_pct, global_num_trades
+            global global_yearly_stats_table
 
-        global global_best_equity_curve, global_best_sharpe, global_best_drawdown
-        global global_best_net_pct, global_best_num_trades, global_best_inactivity_penalty
-        global global_best_composite_reward, global_best_days_in_profit
-        global global_best_lr, global_best_wd
+            global global_best_equity_curve, global_best_sharpe, global_best_drawdown
+            global global_best_net_pct, global_best_num_trades, global_best_inactivity_penalty
+            global global_best_composite_reward, global_best_days_in_profit
+            global global_best_lr, global_best_wd
 
-        current_result= robust_backtest(self, data_full)
+            current_result= robust_backtest(self, data_full)
 
-        global_equity_curve = current_result["equity_curve"]
-        global_backtest_profit.append(current_result["effective_net_pct"])
-        global_inactivity_penalty = current_result["inactivity_penalty"]
-        global_composite_reward = current_result["composite_reward"]
-        global_days_without_trading = current_result["days_without_trading"]
-        global_trade_details = current_result["trade_details"]
-        global_days_in_profit = current_result["days_in_profit"]
-        global_sharpe = current_result["sharpe"]
-        global_max_drawdown = current_result["max_drawdown"]
-        global_net_pct = current_result["net_pct"]
-        global_num_trades = current_result["trades"]
+            global_equity_curve = current_result["equity_curve"]
+            global_backtest_profit.append(current_result["effective_net_pct"])
+            global_inactivity_penalty = current_result["inactivity_penalty"]
+            global_composite_reward = current_result["composite_reward"]
+            global_days_without_trading = current_result["days_without_trading"]
+            global_trade_details = current_result["trade_details"]
+            global_days_in_profit = current_result["days_in_profit"]
+            global_sharpe = current_result["sharpe"]
+            global_max_drawdown = current_result["max_drawdown"]
+            global_net_pct = current_result["net_pct"]
+            global_num_trades = current_result["trades"]
 
-        dfy, table_str= compute_yearly_stats(
-            current_result["equity_curve"],
-            current_result["trade_details"],
-            initial_balance=100.0
-        )
-        global_yearly_stats_table= table_str
+            dfy, table_str= compute_yearly_stats(
+                current_result["equity_curve"],
+                current_result["trade_details"],
+                initial_balance=100.0
+            )
+            global_yearly_stats_table= table_str
 
-        # (4) We'll define an extended state for the meta-agent, but that happens in meta_control_loop.
-        # For the main training, we keep your code.
+            # (4) We'll define an extended state for the meta-agent, but that happens in meta_control_loop.
+            # For the main training, we keep your code.
 
-        # The composite reward is used as training target
-        scaled_target= torch.tanh(torch.tensor(current_result["composite_reward"]/100.0,
-                                               dtype=torch.float32, device=self.device))
-        total_loss=0.0
-        nb=0
-        for m in self.models:
-            m.train()
-        for batch_x, batch_y in dl_train:
-            bx= batch_x.to(self.device)
-            by= batch_y.to(self.device)
-            batch_loss=0.0
-            for model,opt_ in zip(self.models,self.optimizers):
-                opt_.zero_grad()
-                with autocast():
-                    logits, _, pred_reward = model(bx)
-                    ce_loss= self.criterion(logits, by)
-                    reward_loss= self.mse_loss_fn(pred_reward, scaled_target.expand_as(pred_reward))
-                    loss= ce_loss + self.reward_loss_weight* reward_loss
-                self.scaler.scale(loss).backward()
-                self.scaler.unscale_(opt_)
-                torch.nn.utils.clip_grad_norm_(
-                model.parameters(),
-                max_norm=0.5,  # Changed from 0.5 to max_norm=0.5
-                norm_type=2.0  # Add norm type
-                )
-                self.scaler.step(opt_)
-                self.scaler.update()
-                batch_loss+= loss.item()
-            total_loss+= batch_loss/ len(self.models)
-            nb+=1
-        train_loss= total_loss/ nb
+            # The composite reward is used as training target
+            scaled_target= torch.tanh(torch.tensor(current_result["composite_reward"]/100.0,
+                                                   dtype=torch.float32, device=self.device))
+            total_loss=0.0
+            nb=0
+            for m in self.models:
+                m.train()
+            for batch_x, batch_y in dl_train:
+                bx= batch_x.to(self.device).clone()
+                by= batch_y.to(self.device)
+                batch_loss=0.0
+                for model,opt_ in zip(self.models,self.optimizers):
+                    opt_.zero_grad()
+                    with autocast():
+                        logits, _, pred_reward = model(bx)
+                        ce_loss= self.criterion(logits, by)
+                        reward_loss= self.mse_loss_fn(pred_reward, scaled_target.expand_as(pred_reward))
+                        loss= ce_loss + self.reward_loss_weight* reward_loss
+                    self.scaler.scale(loss).backward()
+                    self.scaler.unscale_(opt_)
+                    torch.nn.utils.clip_grad_norm_(
+                    model.parameters(),
+                    max_norm=0.5,  # Changed from 0.5 to max_norm=0.5
+                    norm_type=2.0  # Add norm type
+                    )
+                    self.scaler.step(opt_)
+                    self.scaler.update()
+                    batch_loss+= loss.item()
+                total_loss+= batch_loss/ len(self.models)
+                nb+=1
+            train_loss= total_loss/ nb
 
-        val_loss= self.evaluate_val_loss(dl_val) if dl_val else None
-        if val_loss is not None:
-            for sch in self.schedulers:
-                sch.step(val_loss)
+            val_loss= self.evaluate_val_loss(dl_val) if dl_val else None
+            if val_loss is not None:
+                for sch in self.schedulers:
+                    sch.step(val_loss)
 
-        # (2) Adjust Reward Penalties => less harsh for zero trades/ negative net
-        trades_now= len(current_result["trade_details"])
-        cur_reward= current_result["composite_reward"]
+            # (2) Adjust Reward Penalties => less harsh for zero trades/ negative net
+            trades_now= len(current_result["trade_details"])
+            cur_reward= current_result["composite_reward"]
 
         if trades_now == 0:
             # Reduced from 99999 => 500
@@ -1511,7 +1513,7 @@ class TransformerMetaAgent(nn.Module):
         self.value_head= nn.Linear(d_model,1)
 
     def forward(self, x):
-        x_emb= self.embed(x).unsqueeze(1).transpose(0,1)
+        x_emb= self.embed(x).unsqueeze(1).transpose(0,1).contiguous()
         x_pe= self.pos_enc(x_emb)
         x_enc= self.transformer_enc(x_pe)
         rep= x_enc.squeeze(0)
@@ -1605,25 +1607,26 @@ class MetaTransformerRL:
         new_wd= old_wd*(1+ wd_adj)
         new_wd= max(0, min(new_wd, 1e-2))
 
-        for opt_ in self.ensemble.optimizers:
-            for grp in opt_.param_groups:
-                grp['lr']= new_lr
-                grp['weight_decay']= new_wd
+        with model_lock:
+            for opt_ in self.ensemble.optimizers:
+                for grp in opt_.param_groups:
+                    grp['lr']= new_lr
+                    grp['weight_decay']= new_wd
 
-        # 2) indicator hyperparams
-        old_hp= self.ensemble.indicator_hparams
-        new_rsi= old_hp.rsi_period+ rsi_adj
-        new_sma= old_hp.sma_period+ sma_adj
-        new_mf = old_hp.macd_fast+ mf_adj
-        new_ms = old_hp.macd_slow+ ms_adj
-        new_sig= old_hp.macd_signal+ sig_adj
-        # 5) also let meta-agent change threshold
-        new_threshold= GLOBAL_THRESHOLD + thr_adj
+            # 2) indicator hyperparams
+            old_hp= self.ensemble.indicator_hparams
+            new_rsi= old_hp.rsi_period+ rsi_adj
+            new_sma= old_hp.sma_period+ sma_adj
+            new_mf = old_hp.macd_fast+ mf_adj
+            new_ms = old_hp.macd_slow+ ms_adj
+            new_sig= old_hp.macd_signal+ sig_adj
+            # 5) also let meta-agent change threshold
+            new_threshold= GLOBAL_THRESHOLD + thr_adj
 
-        self.ensemble.indicator_hparams= IndicatorHyperparams(
-            rsi_period=new_rsi, sma_period=new_sma,
-            macd_fast=new_mf, macd_slow=new_ms, macd_signal=new_sig
-        )
+            self.ensemble.indicator_hparams= IndicatorHyperparams(
+                rsi_period=new_rsi, sma_period=new_sma,
+                macd_fast=new_mf, macd_slow=new_ms, macd_signal=new_sig
+            )
         # If you want the dataset to re-init => we would do self.ensemble.dynamic_threshold = new_threshold
         # But for demonstration, we won't forcibly re-load the dataset now.
 
@@ -1681,13 +1684,14 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
         state= new_state
         if agent.last_improvement>20:
             # forced random reinit
-            for m in ensemble.models:
-                for layer in m.modules():
-                    if isinstance(layer, nn.Linear):
-                        nn.init.xavier_uniform_(layer.weight)
-                        if layer.bias is not None:
-                            nn.init.zeros_(layer.bias)
-            agent.last_improvement=0
+            with model_lock:
+                for m in ensemble.models:
+                    for layer in m.modules():
+                        if isinstance(layer, nn.Linear):
+                            nn.init.xavier_uniform_(layer.weight)
+                            if layer.bias is not None:
+                                nn.init.zeros_(layer.bias)
+                agent.last_improvement=0
             msg= f"\n[Stagnation] Forced random reinit of primary model!\n"
             global_ai_adjustments_log+= msg
 
