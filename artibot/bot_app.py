@@ -15,8 +15,8 @@ CONFIG = {
     "symbol": "BTC/USDT",
     "ADAPT_TO_LIVE": False,
     "LIVE_POLL_INTERVAL": 60.0,
-    "API": {"API_KEY_LIVE": "", "API_SECRET_LIVE": "", "DEFAULT_TYPE": "spot"},
-    "CHATGPT": {"API_KEY": ""},
+    "API": {"API_KEY_LIVE": "cbe78363-8e5f-497a-875f-e2e813146748", "API_SECRET_LIVE": "YFyZmB7SSTRM4-0z9W9NSN1SgCiDYVvm-0NGkwGuzk5hYTdjNzkwYi1mYjczLTQyNTEtOWVhZi0yZDNjNTRkN2JlZDI", "DEFAULT_TYPE": "spot"},
+    "CHATGPT": {"API_KEY": "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"},
 }
 
 

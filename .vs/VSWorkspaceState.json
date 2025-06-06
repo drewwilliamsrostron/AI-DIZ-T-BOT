@@ -1,7 +1,8 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\artibot"
   ],
-  "SelectedNode": "\\ARTIBOT.py",
+  "SelectedNode": "\\artibot\\bot_app.py",
   "PreviewInSolutionExplorer": false
 }
