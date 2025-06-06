@@ -154,7 +154,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import Dataset, DataLoader, random_split
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
 import openai
 from typing import NamedTuple
 from sklearn.preprocessing import StandardScaler
@@ -770,7 +770,9 @@ class EnsembleModel:
         self.optimizers = [optim.Adam(m.parameters(), lr=lr, weight_decay=weight_decay) for m in self.models]
         self.criterion = nn.CrossEntropyLoss(weight=torch.tensor([2.0,2.0,0.8]).to(device))
         self.mse_loss_fn = nn.MSELoss()
-        self.scaler = GradScaler(enabled=(device.type=='cuda'))
+        amp_on = device.type == 'cuda'
+        self.scaler = GradScaler(enabled=amp_on,
+                                 device=(device.type if amp_on else 'cpu'))
         self.best_val_loss = float('inf')
         self.best_composite_reward = float('-inf')
         self.best_state_dicts = None
@@ -837,12 +839,13 @@ class EnsembleModel:
         for m in self.models:
             m.train()
         for batch_x, batch_y in dl_train:
-            bx= batch_x.to(self.device).clone()
+            bx= batch_x.to(self.device).contiguous().clone()
             by= batch_y.to(self.device)
             batch_loss=0.0
             for model,opt_ in zip(self.models,self.optimizers):
                 opt_.zero_grad()
-                with autocast():
+                with autocast(device_type=self.device.type,
+                               enabled=(self.device.type=="cuda")):
                     logits, _, pred_reward = model(bx)
                     ce_loss= self.criterion(logits, by)
                     reward_loss= self.mse_loss_fn(pred_reward, scaled_target.expand_as(pred_reward))
