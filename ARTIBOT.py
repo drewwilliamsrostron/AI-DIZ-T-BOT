@@ -1751,12 +1751,9 @@ def main():
     csv_path= config["CSV_PATH"]
     data= load_csv_hourly(csv_path)
 
-    use_prev_weights = False
+    use_prev_weights = bool(config.get("USE_PREV_WEIGHTS", True))
     if os.path.isfile("best_model_weights.pth"):
-        ans = input("Use previous best_model_weights.pth? [y/N]: ").strip().lower()
-        if ans.startswith("y"):
-            use_prev_weights = True
-        else:
+        if not use_prev_weights:
             ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             backup = f"best_model_weights_backup_{ts}.pth"
             try:
@@ -1764,6 +1761,10 @@ def main():
                 print(f"Existing weights backed up to {backup}")
             except OSError:
                 print("Failed to backup existing weights")
+        else:
+            use_prev_weights = True
+    else:
+        use_prev_weights = False
 
     device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

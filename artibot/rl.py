@@ -4,6 +4,7 @@ from .globals import *
 from .model import PositionalEncoding
 from .dataset import IndicatorHyperparams
 import itertools
+import traceback
 
 ###############################################################################
 # NEW: A bigger action space that includes adjusting RSI, SMA, MACD + threshold
@@ -187,9 +188,10 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
     state= np.array([prev_r, best_r, st_sharpe, abs(st_dd), st_trades, st_days], dtype=np.float32)
 
     while True:
-        if global_ai_epoch_count<1:
-            status_sleep("Meta agent waiting for training", 1.0)
-            continue
+        try:
+            if global_ai_epoch_count<1:
+                status_sleep("Meta agent waiting for training", 1.0)
+                continue
 
         curr_r= global_composite_reward if global_composite_reward else 0.0
         b_r= global_best_composite_reward if global_best_composite_reward else 0.0
@@ -216,8 +218,8 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
         global_ai_adjustments_log+= "\n"+ summary
         global_ai_adjustments= summary
 
-        state= new_state
-        if agent.last_improvement>20:
+        state = new_state
+        if agent.last_improvement > 20:
             # forced random reinit
             for m in ensemble.models:
                 for layer in m.modules():
@@ -225,11 +227,16 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                         nn.init.xavier_uniform_(layer.weight)
                         if layer.bias is not None:
                             nn.init.zeros_(layer.bias)
-            agent.last_improvement=0
-            msg= f"\n[Stagnation] Forced random reinit of primary model!\n"
-            global_ai_adjustments_log+= msg
+            agent.last_improvement = 0
+            msg = "\n[Stagnation] Forced random reinit of primary model!\n"
+            global_ai_adjustments_log += msg
 
         status_sleep("Meta agent idle", 0.5)
+    except Exception as e:
+        global global_status_message
+        global_status_message = f"Meta error: {e}"
+        traceback.print_exc()
+        status_sleep("Meta agent failed", 5.0)
 
 ###############################################################################
 # Main
