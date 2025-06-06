@@ -5,6 +5,8 @@ from .metrics import compute_yearly_stats
 from .model import TradingModel
 from .dataset import IndicatorHyperparams
 from .backtest import robust_backtest
+import inspect
+from contextlib import nullcontext
 class EnsembleModel:
     def __init__(self, device, n_models=2, lr=3e-4, weight_decay=1e-4):
         self.device = device
@@ -94,8 +96,12 @@ class EnsembleModel:
             batch_loss=0.0
             for model,opt_ in zip(self.models,self.optimizers):
                 opt_.zero_grad()
-                with autocast(device_type=self.device.type,
-                               enabled=(self.device.type=="cuda")):
+                if "device_type" in inspect.signature(autocast).parameters:
+                    ctx = autocast(device_type=self.device.type,
+                                   enabled=(self.device.type == "cuda"))
+                else:
+                    ctx = autocast(enabled=(self.device.type == "cuda")) if self.device.type == "cuda" else nullcontext()
+                with ctx:
                     logits, _, pred_reward = model(bx)
                     ce_loss = self.criterion(logits, by)
                     pred_reward = torch.nan_to_num(pred_reward)
