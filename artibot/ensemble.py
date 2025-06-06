@@ -109,6 +109,7 @@ class EnsembleModel:
                         pred_reward, scaled_target.expand_as(pred_reward)
                     )
                     loss = ce_loss + self.reward_loss_weight * reward_loss
+                    loss = torch.nan_to_num(loss)
                 self.scaler.scale(loss).backward()
                 self.scaler.unscale_(opt_)
                 torch.nn.utils.clip_grad_norm_(
@@ -127,7 +128,7 @@ class EnsembleModel:
                 else:
                     self.scaler.update()
                 batch_loss+= loss.item()
-            total_loss+= batch_loss/ len(self.models)
+            total_loss+= float(batch_loss/ len(self.models)) if not np.isnan(batch_loss) else 0.0
             nb+=1
         train_loss= total_loss/ nb
 
