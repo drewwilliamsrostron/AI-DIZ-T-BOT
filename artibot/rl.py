@@ -1,6 +1,9 @@
 """Meta reinforcement learning agent controlling training hyperparameters."""
 
 from .globals import *
+from .model import PositionalEncoding
+from .dataset import IndicatorHyperparams
+import itertools
 
 ###############################################################################
 # NEW: A bigger action space that includes adjusting RSI, SMA, MACD + threshold
