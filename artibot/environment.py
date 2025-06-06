@@ -140,7 +140,7 @@ except ModuleNotFoundError:
             return macd.values, signal.values, hist.values
 
 import sys
-sys.modules["talib"] = _TaShim()               # ✅ calls like talib.RSI(...) keep working
+#sys.modules["talib"] = _TaShim()               # ✅ calls like talib.RSI(...) keep working
 
 
 def ensure_dependencies():
