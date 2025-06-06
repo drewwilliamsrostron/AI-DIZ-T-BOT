@@ -76,37 +76,33 @@ class EnsembleModel:
         # For the main training, we keep your code.
 
         # The composite reward is used as training target
-        scaled_target= torch.tanh(torch.tensor(current_result["composite_reward"]/100.0,
-                                               dtype=torch.float32, device=self.device))
+        scaled_target = torch.tanh(
+            torch.tensor(
+                current_result["composite_reward"] / 100.0,
+                dtype=torch.float32,
+                device=self.device,
+            )
+        )
+        scaled_target = torch.nan_to_num(scaled_target)
         total_loss=0.0
         nb=0
         for m in self.models:
             m.train()
         for batch_x, batch_y in dl_train:
-            bx = batch_x.to(self.device, non_blocking=True).contiguous().clone()
-            by = batch_y.to(self.device, non_blocking=True)
-            batch_loss=0.0
-            for model,opt_ in zip(self.models,self.optimizers):
-                opt_.zero_grad()
-                with torch.autograd.set_detect_anomaly(True):
-                    with autocast(device_type=self.device.type,
-                                   enabled=(self.device.type=="cuda")):
-                        logits, _, pred_reward = model(bx)
-                        ce_loss= self.criterion(logits, by)
-                        reward_loss= self.mse_loss_fn(pred_reward, scaled_target.expand_as(pred_reward))
-                        loss= ce_loss + self.reward_loss_weight* reward_loss
-                    self.scaler.scale(loss).backward()
-            bx= batch_x.to(self.device).contiguous().clone()
-            by= batch_y.to(self.device)
+            bx = batch_x.to(self.device).contiguous().clone()
+            by = batch_y.to(self.device)
             batch_loss=0.0
             for model,opt_ in zip(self.models,self.optimizers):
                 opt_.zero_grad()
                 with autocast(device_type=self.device.type,
                                enabled=(self.device.type=="cuda")):
                     logits, _, pred_reward = model(bx)
-                    ce_loss= self.criterion(logits, by)
-                    reward_loss= self.mse_loss_fn(pred_reward, scaled_target.expand_as(pred_reward))
-                    loss= ce_loss + self.reward_loss_weight* reward_loss
+                    ce_loss = self.criterion(logits, by)
+                    pred_reward = torch.nan_to_num(pred_reward)
+                    reward_loss = self.mse_loss_fn(
+                        pred_reward, scaled_target.expand_as(pred_reward)
+                    )
+                    loss = ce_loss + self.reward_loss_weight * reward_loss
                 self.scaler.scale(loss).backward()
                 self.scaler.unscale_(opt_)
                 torch.nn.utils.clip_grad_norm_(
