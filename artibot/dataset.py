@@ -83,6 +83,7 @@ class HourlyDataset(Dataset):
 
         scaler = StandardScaler()
         scaled_feats = scaler.fit_transform(feats)
+        scaled_feats = np.clip(scaled_feats, -10.0, 10.0)
         scaled_feats = np.nan_to_num(scaled_feats)
 
         from numpy.lib.stride_tricks import sliding_window_view
@@ -98,6 +99,7 @@ class HourlyDataset(Dataset):
         mask = np.isfinite(windows).all(axis=(1, 2)) & np.isfinite(rets)
         windows = windows[mask]
         labels = labels[mask]
+        windows = np.nan_to_num(windows)
 
         return windows.astype(np.float32), labels.astype(np.int64)
 
