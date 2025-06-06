@@ -1,6 +1,7 @@
 """Background CSV training thread and exchange connector."""
 
 from .globals import *
+from .dataset import HourlyDataset
 
 ###############################################################################
 def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=True):
