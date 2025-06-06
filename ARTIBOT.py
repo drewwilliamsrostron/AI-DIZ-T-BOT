@@ -1290,7 +1290,7 @@ class TradingGUI:
 ###############################################################################
 # Threads
 ###############################################################################
-def csv_training_thread(ensemble, data, stop_event, config):
+def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=True):
     from torch.utils.data import random_split, DataLoader
     import traceback
     global global_training_loss, global_validation_loss
@@ -1301,7 +1301,8 @@ def csv_training_thread(ensemble, data, stop_event, config):
         if len(ds_full)<10:
             logging.warning("Not enough data in CSV => exiting.")
             return
-        ensemble.load_best_weights("best_model_weights.pth", data_full=data)
+        if use_prev_weights:
+            ensemble.load_best_weights("best_model_weights.pth", data_full=data)
         n_tot = len(ds_full)
         n_tr  = int(n_tot*0.9)
         n_val = n_tot-n_tr
@@ -1725,13 +1726,27 @@ def main():
     csv_path= config["CSV_PATH"]
     data= load_csv_hourly(csv_path)
 
+    use_prev_weights = False
+    if os.path.isfile("best_model_weights.pth"):
+        ans = input("Use previous best_model_weights.pth? [y/N]: ").strip().lower()
+        if ans.startswith("y"):
+            use_prev_weights = True
+        else:
+            ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup = f"best_model_weights_backup_{ts}.pth"
+            try:
+                os.rename("best_model_weights.pth", backup)
+                print(f"Existing weights backed up to {backup}")
+            except OSError:
+                print("Failed to backup existing weights")
+
     device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     ensemble= EnsembleModel(device=device, n_models=2, lr=3e-4, weight_decay=1e-4)
     connector= PhemexConnector(config)
     stop_event= threading.Event()
 
-    train_th= threading.Thread(target=csv_training_thread,args=(ensemble,data,stop_event,config), daemon=True)
+    train_th= threading.Thread(target=csv_training_thread,args=(ensemble,data,stop_event,config,use_prev_weights), daemon=True)
     train_th.start()
 
     poll_interval = config.get("LIVE_POLL_INTERVAL", 60.0)
