@@ -1,5 +1,6 @@
 from .globals import *
 import json
+import time
 
 ###############################################################################
 # Tkinter GUI
@@ -125,7 +126,7 @@ class TradingGUI:
         self.update_interval = 2000
         # wait at least five minutes between log entries
         self.log_interval = 5 * 60
-        self.last_log_time = 0
+        self.last_log_time = time.monotonic()
         self.root.after(self.update_interval, self.update_dashboard)
 
     def log_graph_data(self):
@@ -251,8 +252,8 @@ class TradingGUI:
         if global_composite_reward is not None:
             self.current_composite_label.config(text=f"Comp: {global_composite_reward:.2f}")
         else:
-            self.current_composite_label.config(text="Current Composite: N/A")
-        if global_days_in_profit is not None:
+        if time.monotonic() - self.last_log_time >= self.log_interval:
+            self.last_log_time = time.monotonic()
             self.current_days_profit_label.config(text=f"Days in Profit: {global_days_in_profit:.2f}")
         else:
             self.current_days_profit_label.config(text="Current Days in Profit: N/A")
