@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.vs/
+run.log
+gui_graph_outputs.log
+best_model_weights_backup_*.pth
