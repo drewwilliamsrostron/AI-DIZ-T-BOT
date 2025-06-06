@@ -15,8 +15,8 @@ class EnsembleModel:
         self.criterion = nn.CrossEntropyLoss(weight=torch.tensor([2.0,2.0,0.8]).to(device))
         self.mse_loss_fn = nn.MSELoss()
         amp_on = device.type == 'cuda'
-        self.scaler = GradScaler(enabled=amp_on,
-                                 device=(device.type if amp_on else 'cpu'))
+        # GradScaler's `device` arg is not supported on older PyTorch versions
+        self.scaler = GradScaler(enabled=amp_on)
         self.best_val_loss = float('inf')
         self.best_composite_reward = float('-inf')
         self.best_state_dicts = None
