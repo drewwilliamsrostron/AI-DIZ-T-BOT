@@ -1,5 +1,4 @@
 from .globals import *
-import json
 
 ###############################################################################
 # Tkinter GUI
@@ -123,30 +122,7 @@ class TradingGUI:
         self.ai_log_text.pack(fill=tk.BOTH, expand=True)
 
         self.update_interval = 2000
-        # wait at least five minutes between log entries
-        self.log_interval = 5 * 60
-        self.last_log_time = time.time()
         self.root.after(self.update_interval, self.update_dashboard)
-
-    def log_graph_data(self):
-        """Output current graph data to console and log file."""
-        data = {
-            "training_loss": global_training_loss,
-            "validation_loss": global_validation_loss,
-            "equity_curve": global_equity_curve,
-            "best_equity_curve": global_best_equity_curve,
-            "phemex_close": [
-                (bar[0], bar[4])
-                for bar in global_phemex_data
-                if len(bar) >= 5 and bar[0] > 0
-            ],
-            "backtest_profit": global_backtest_profit,
-            "attention_weights": global_attention_weights_history,
-        }
-        timestamp = datetime.datetime.now().isoformat()
-        line = f"{timestamp} " + json.dumps(data)
-        with open("gui_graph_outputs.log", "a", encoding="utf-8") as f:
-            f.write(line + "\n")
 
     def update_dashboard(self):
         global global_equity_curve, global_best_equity_curve
@@ -276,9 +252,5 @@ class TradingGUI:
         self.ai_output_text.insert(tk.END, global_ai_adjustments)
         self.ai_log_text.delete("1.0", tk.END)
         self.ai_log_text.insert(tk.END, global_ai_adjustments_log)
-
-        if time.time() - self.last_log_time >= self.log_interval:
-            self.log_graph_data()
-            self.last_log_time = time.time()
 
         self.root.after(self.update_interval, self.update_dashboard)
