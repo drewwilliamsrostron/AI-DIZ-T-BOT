@@ -6,6 +6,8 @@ AI Trading Bot
 1. Edit `artibot/bot_app.py` and place your API credentials inside the
    `CONFIG` dictionary at the top of the file. The `API` section holds your
    exchange keys while `CHATGPT` contains your OpenAI key.
+   The `USE_PREV_WEIGHTS` flag controls whether an existing
+   `best_model_weights.pth` file is automatically loaded.
 2. Start the bot with:
 
 ```bash
