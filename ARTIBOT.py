@@ -1371,8 +1371,12 @@ def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=Tru
                         ntr_= int(nt_*0.9)
                         nv_= nt_- ntr_
                         ds_tr_, ds_val_= random_split(ds_updated,[ntr_,nv_])
-                        dl_tr_= DataLoader(ds_tr_, batch_size=128, shuffle=True)
-                        dl_val_= DataLoader(ds_val_, batch_size=128, shuffle=False)
+                        pin = ensemble.device.type == 'cuda'
+                        workers = 2 if pin else 0
+                        dl_tr_ = DataLoader(ds_tr_, batch_size=128, shuffle=True,
+                                           num_workers=workers, pin_memory=pin)
+                        dl_val_ = DataLoader(ds_val_, batch_size=128, shuffle=False,
+                                            num_workers=workers, pin_memory=pin)
                         ensemble.train_one_epoch(dl_tr_, dl_val_, data, stop_event)
 
             if ensemble.train_steps%5==0 and ensemble.best_state_dicts:
