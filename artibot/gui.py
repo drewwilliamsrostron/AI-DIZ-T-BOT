@@ -279,12 +279,8 @@ class TradingGUI:
         self.ai_log_text.delete("1.0", tk.END)
         self.ai_log_text.insert(tk.END, global_ai_adjustments_log)
 
-
         if time.time() - self.last_log_time >= self.log_interval:
             self.log_graph_data()
             self.last_log_time = time.time()
-
-        self.log_graph_data()
-
 
         self.root.after(self.update_interval, self.update_dashboard)
