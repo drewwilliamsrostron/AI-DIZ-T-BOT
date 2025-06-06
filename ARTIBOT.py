@@ -1558,6 +1558,7 @@ class MetaTransformerRL:
             selected_action = list(self.action_space[a_idx])
             selected_action = [x + np.random.normal(0, noise_scale) for x in selected_action]
             a_idx = self._find_nearest_action(selected_action)
+            lp = dist.log_prob(torch.tensor([a_idx]))
         else:
             a_idx= dist.sample().item()
             lp= dist.log_prob(torch.tensor([a_idx]))
