@@ -2,6 +2,7 @@
 
 # ruff: noqa: F403, F405
 import artibot.globals as G
+import logging
 import re
 import sys
 
@@ -119,8 +120,8 @@ def csv_training_thread(
 
             if adapt_live:
                 changed = False
-                while not live_bars_queue.empty():
-                    new_b = live_bars_queue.get()
+                while not G.live_bars_queue.empty():
+                    new_b = G.live_bars_queue.get()
                     for bar in new_b:
                         ts, o_, h_, l_, c_, v_ = bar
 
@@ -188,12 +189,12 @@ def phemex_live_thread(connector, stop_event, poll_interval: float) -> None:
             bars = connector.fetch_latest_bars(limit=100)
             if bars:
                 G.global_phemex_data = bars
-                live_bars_queue.put(bars)
+                G.live_bars_queue.put(bars)
         except Exception as e:
             traceback.print_exc()
             G.set_status(f"Fetch error: {e}")
             stop_event.set()
-        status_sleep("Waiting before next fetch", poll_interval)
+        G.status_sleep("Waiting before next fetch", poll_interval)
 
 
 ###############################################################################
