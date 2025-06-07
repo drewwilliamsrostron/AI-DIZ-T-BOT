@@ -2,6 +2,8 @@
 
 # ruff: noqa: F403, F405
 import artibot.globals as g
+import re
+import sys
 
 from .dataset import HourlyDataset
 from .globals import *
