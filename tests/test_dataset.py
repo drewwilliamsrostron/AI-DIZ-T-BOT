@@ -1,9 +1,11 @@
+import os
 import random
 import sys
 import types
-import numpy as np
-import os
 from importlib.machinery import ModuleSpec
+
+# ruff: noqa: E402
+import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(__file__))
 if ROOT not in sys.path:
@@ -37,6 +39,7 @@ talib.MACD = lambda arr, fastperiod=12, slowperiod=26, signalperiod=9: (
 talib.__spec__ = ModuleSpec("talib", loader=None)
 sys.modules.setdefault("talib", talib)
 
+
 # Minimal StandardScaler stub
 class SimpleScaler:
     def fit_transform(self, arr):
@@ -44,6 +47,7 @@ class SimpleScaler:
         mean = arr.mean(axis=0)
         std = arr.std(axis=0) + 1e-8
         return (arr - mean) / std
+
 
 preproc = types.ModuleType("sklearn.preprocessing")
 preproc.StandardScaler = SimpleScaler
@@ -73,9 +77,9 @@ def test_load_csv_hourly_parse(tmp_path):
     )
     result = dataset.load_csv_hourly(str(csv_file))
     assert result == [
-        [1000, 1.0, 1.1, 0.9, 1.05, 2.0],
-        [2000, 2.0, 2.1, 1.9, 2.05, 1.0],
-        [3000, 3.0, 3.1, 2.9, 3.05, 3.0],
+        [1000, 100000.0, 110000.0, 90000.0, 105000.0, 2.0],
+        [2000, 200000.0, 210000.0, 190000.0, 205000.0, 1.0],
+        [3000, 300000.0, 310000.0, 290000.0, 305000.0, 3.0],
     ]
 
 

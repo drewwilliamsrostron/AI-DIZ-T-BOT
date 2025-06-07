@@ -1,9 +1,10 @@
 """Background CSV training thread and exchange connector."""
 
 # ruff: noqa: F403, F405
-from .globals import *
 import artibot.globals as g
+
 from .dataset import HourlyDataset
+from .globals import *
 
 
 ###############################################################################
@@ -19,8 +20,11 @@ def csv_training_thread(
 
     ``max_epochs`` stops the loop after N iterations when set.
     """
-    from torch.utils.data import random_split, DataLoader
     import traceback
+
+    import numpy as np
+    import torch
+    from torch.utils.data import DataLoader, random_split
 
     global global_training_loss, global_validation_loss
 
@@ -100,7 +104,11 @@ def csv_training_thread(
                         ]
                     )
                 ext = np.array(ext, dtype=np.float32)
-                seq_t = torch.tensor(ext).unsqueeze(0).to(ensemble.device)
+                seq_t = (
+                    torch.tensor(ext, dtype=torch.float32)
+                    .unsqueeze(0)
+                    .to(ensemble.device)
+                )
                 idx, conf, _ = ensemble.predict(seq_t)
                 label_map = {0: "BUY", 1: "SELL", 2: "HOLD"}
                 global global_current_prediction, global_ai_confidence
@@ -120,11 +128,11 @@ def csv_training_thread(
                         if ts > 1_000_000_000_000:
                             ts //= 1000
 
-                        o_ /= 1e5
-                        h_ /= 1e5
-                        l_ /= 1e5
-                        c_ /= 1e5
-                        v_ /= 1e4
+                        o_ = float(o_)
+                        h_ = float(h_)
+                        l_ = float(l_)
+                        c_ = float(c_)
+                        v_ = float(v_)
                         if ts > data[-1][0]:
                             data.append([ts, o_, h_, l_, c_, v_])
                             changed = True
@@ -170,7 +178,7 @@ def csv_training_thread(
         stop_event.set()
 
 
-def phemex_live_thread(connector, stop_event, poll_interval=900.0):
+def phemex_live_thread(connector, stop_event, poll_interval: float) -> None:
     """Continuously fetch recent bars from Phemex at a configurable interval."""
     import traceback
 

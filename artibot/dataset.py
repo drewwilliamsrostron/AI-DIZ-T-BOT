@@ -1,16 +1,17 @@
 """Dataset utilities for the trading bot."""
 
 # ruff: noqa: F403, F405
-from typing import NamedTuple
-
 import os
 import random
+from typing import NamedTuple
+
 import numpy as np
 import pandas as pd
-import torch
-from torch.utils.data import Dataset
-from sklearn.preprocessing import StandardScaler
 import talib
+import torch
+from sklearn.preprocessing import StandardScaler
+from torch.utils.data import Dataset
+
 from .globals import *
 
 
@@ -72,10 +73,10 @@ def load_csv_hourly(csv_path: str) -> list[list[float]]:
     num = pd.to_numeric
     df["unix"] = num(df["unix"], errors="coerce").fillna(0).astype("int64")
     df.loc[df["unix"] > 1e12, "unix"] //= 1000
-    df["open"] = num(df["open"], errors="coerce") / 100000.0
-    df["high"] = num(df["high"], errors="coerce") / 100000.0
-    df["low"] = num(df["low"], errors="coerce") / 100000.0
-    df["close"] = num(df["close"], errors="coerce") / 100000.0
+    df["open"] = num(df["open"], errors="coerce")
+    df["high"] = num(df["high"], errors="coerce")
+    df["low"] = num(df["low"], errors="coerce")
+    df["close"] = num(df["close"], errors="coerce")
 
     if "volume_btc" in df.columns:
         df["volume_btc"] = num(df["volume_btc"], errors="coerce").fillna(0.0)

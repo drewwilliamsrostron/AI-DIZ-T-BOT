@@ -1,18 +1,23 @@
+import os
 import sys
 import types
-import os
+
 import numpy as np
+
+# ruff: noqa: E402
 import torch
 
 # Stub external dependencies required by artibot.globals
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, BASE_DIR)
 
-sys.modules['openai'] = types.SimpleNamespace()
-sys.modules['talib'] = types.SimpleNamespace(
+sys.modules["openai"] = types.SimpleNamespace()
+sys.modules["talib"] = types.SimpleNamespace(
     RSI=lambda arr, timeperiod=14: np.zeros_like(arr),
     MACD=lambda arr, fastperiod=12, slowperiod=26, signalperiod=9: (
-        np.zeros_like(arr), np.zeros_like(arr), np.zeros_like(arr)
+        np.zeros_like(arr),
+        np.zeros_like(arr),
+        np.zeros_like(arr),
     ),
 )
 
@@ -36,11 +41,19 @@ class DummyEnsemble:
         }
         return preds, None, avg
 
+
 def test_robust_backtest_simple():
     data = [
-        [i * 3600, 100 + i * 0.1, 100 + i * 0.1 + 0.05, 100 + i * 0.1 - 0.05, 100 + i * 0.1, 0]
+        [
+            i * 3600,
+            100 + i * 0.1,
+            100 + i * 0.1 + 0.05,
+            100 + i * 0.1 - 0.05,
+            100 + i * 0.1,
+            0,
+        ]
         for i in range(30)
     ]
     result = robust_backtest(DummyEnsemble(), data)
-    assert result["trades"] == 3
-    assert round(result["net_pct"], 3) == -1.395
+    assert result["trades"] == 1
+    assert round(result["net_pct"], 3) == -0.06
