@@ -7,7 +7,7 @@ Complex AI Trading + Continuous Training + Robust Backtest Each Epoch + Live Phe
 ###############################################################################
 # NumPy 2.x compatibility shim – restores removed constants for old libraries
 ###############################################################################
-import sys, math
+import sys
 
 try:
     import numpy as _np
@@ -29,7 +29,9 @@ for _name, _value in {
 ###############################################################################
 # Smart installer – works on Python 3.9 → 3.13, CPU or CUDA
 ###############################################################################
-import sys, subprocess, platform, itertools
+import sys
+import subprocess
+import platform
 
 def _install_pytorch_for_env() -> None:
     """
@@ -84,7 +86,6 @@ def install_dependencies() -> None:
         "pandas":       "pandas",
         "numpy":        "numpy",
         "matplotlib":   "matplotlib",
-        "dotenv":       "python-dotenv",
         # 'scikit-learn' installs as 'sklearn'
         "sklearn": "scikit-learn",
         "TA-Lib":       "TA-Lib"   # imported as `talib`
@@ -103,7 +104,8 @@ try:
 except ModuleNotFoundError:
     # no wheel → install pandas-ta once and build a tiny shim
     subprocess.check_call([sys.executable, "-m", "pip", "install", "pandas-ta"])
-    import pandas as pd, pandas_ta as pta
+    import pandas as pd
+    import pandas_ta as pta
 
     class _TaShim:                                 # exposes *only* the funcs you use
         @staticmethod

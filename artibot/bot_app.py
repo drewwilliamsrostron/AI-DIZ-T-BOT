@@ -2,14 +2,24 @@
 
 This module starts the training loop, live market polling, the
 meta–reinforcement learning agent and the Tkinter GUI. API credentials
-are loaded from environment variables so no secrets live in the codebase.
+are loaded from ``master_config.json`` so no secrets live in the codebase.
 """
 
 import os
-from dotenv import load_dotenv
+import json
 
-# Load environment variables from a .env file if present
-load_dotenv()
+
+def load_master_config(path: str = "master_config.json") -> dict:
+    """Return configuration loaded from ``path`` located at the repo root."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    root = os.path.abspath(os.path.join(here, ".."))
+    cfg_path = os.path.join(root, path)
+    try:
+        with open(cfg_path, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
 
 from .globals import *
 from .dataset import load_csv_hourly, HourlyDataset
@@ -24,23 +34,9 @@ from .rl import MetaTransformerRL, meta_control_loop
 from .gui import TradingGUI
 
 # ---------------------------------------------------------------------------
-# Configuration – credentials pulled from the environment
+# Configuration – loaded from ``master_config.json`` at repo root
 # ---------------------------------------------------------------------------
-CONFIG = {
-    "CSV_PATH": "Gemini_BTCUSD_1h.csv",  # historical data for initial training
-    "symbol": "BTC/USDT",
-    "ADAPT_TO_LIVE": False,
-    "LIVE_POLL_INTERVAL": 60.0,
-    "USE_PREV_WEIGHTS": True,
-    "API": {
-        "API_KEY_LIVE": os.environ.get("PHEMEX_API_KEY_LIVE", ""),
-        "API_SECRET_LIVE": os.environ.get("PHEMEX_API_SECRET_LIVE", ""),
-        "API_KEY_TEST": os.environ.get("PHEMEX_API_KEY_TEST", ""),
-        "API_SECRET_TEST": os.environ.get("PHEMEX_API_SECRET_TEST", ""),
-        "DEFAULT_TYPE": "spot",
-    },
-    "CHATGPT": {"API_KEY": os.environ.get("OPENAI_API_KEY", "")},
-}
+CONFIG = load_master_config()
 
 
 def run_bot():
