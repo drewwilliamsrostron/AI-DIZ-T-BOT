@@ -88,7 +88,9 @@ def install_dependencies() -> None:
         "matplotlib":   "matplotlib",
         # 'scikit-learn' installs as 'sklearn'
         "sklearn": "scikit-learn",
-        "TA-Lib":       "TA-Lib"   # imported as `talib`
+        "TA-Lib":       "TA-Lib",  # imported as `talib`
+        # pytest is required to run the bundled tests
+        "pytest":       "pytest",
     }
     for import_name, pip_name in pkgs.items():
         try:
