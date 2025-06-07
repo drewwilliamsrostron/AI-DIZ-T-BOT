@@ -27,6 +27,15 @@ def load_rl_module():
         pass
 
     stub.status_sleep = status_sleep
+
+    def set_status(msg: str) -> None:
+        stub.global_status_message = msg
+
+    def get_status() -> str:
+        return stub.global_status_message
+
+    stub.set_status = set_status
+    stub.get_status = get_status
     stub.GLOBAL_THRESHOLD = 0.0
     stub.global_ai_adjustments = ""
     stub.global_ai_adjustments_log = ""

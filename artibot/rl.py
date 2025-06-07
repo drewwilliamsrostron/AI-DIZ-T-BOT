@@ -148,7 +148,9 @@ class MetaTransformerRL:
     def apply_action(self, action_idx):
         # decode
         (lr_adj, wd_adj, rsi_adj, sma_adj, mf_adj, ms_adj, sig_adj, thr_adj) = (
-            self.action_space[action_idx]
+
+            self.model.action_space[action_idx]
+
         )
         # 1) LR/WD
         old_lr = self.ensemble.optimizers[0].param_groups[0]["lr"]
@@ -236,8 +238,9 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                 dtype=np.float32,
             )
 
-            global global_status_message
-            global_status_message = "Meta agent updating"
+
+            set_status("Meta agent updating")
+
             a_idx, logp, val_s = agent.pick_action(state)
             (new_lr, new_wd, nrsi, nsma, nmacdf, nmacds, nmacdsig, nthr) = (
                 agent.apply_action(a_idx)
@@ -273,7 +276,7 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
             status_sleep("Meta agent idle", 0.5)
 
         except Exception as e:
-            global_status_message = f"Meta error: {e}"
+            set_status(f"Meta error: {e}")
             traceback.print_exc()
             status_sleep("Meta agent failed", 5.0)
 
