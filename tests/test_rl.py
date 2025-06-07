@@ -143,3 +143,10 @@ def test_apply_action_custom_space():
     assert pg["lr"] == pytest.approx(0.011)
     assert pg["weight_decay"] == pytest.approx(0.0012)
     assert ensemble.indicator_hparams == rl.IndicatorHyperparams(15, 12, 15, 30, 14)
+
+
+def test_no_warnings(recwarn):
+    import warnings  # noqa: F401
+    import run_artibot  # noqa: F401
+
+    assert not recwarn.list

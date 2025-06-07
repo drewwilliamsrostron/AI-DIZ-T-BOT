@@ -71,7 +71,7 @@ def robust_backtest(ensemble, data_full):
     ).astype(np.float32)
     # Sanitize indicator features so NaNs do not propagate into the model
 
-    extd = np.clip(extd, -10.0, 10.0)
+    extd = np.clip(extd, -6.0, 6.0)
 
     extd = np.nan_to_num(extd)
     timestamps = raw_data[:, 0]
@@ -123,7 +123,8 @@ def robust_backtest(ensemble, data_full):
 
     sl_m = avg_params["sl_multiplier"].item()
     tp_m = avg_params["tp_multiplier"].item()
-    rf = avg_params["risk_fraction"].item()
+    rf_raw = avg_params["risk_fraction"].item()
+    rf = 0.2 * rf_raw + 0.01
 
     for i, row in df.iterrows():
         cur_t = row["timestamp"]

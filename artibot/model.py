@@ -43,7 +43,11 @@ class TradingModel(nn.Module):
         self.hidden_size = hidden_size
         self.pos_encoder = PositionalEncoding(d_model=input_size)
         enc_layer = nn.TransformerEncoderLayer(
-            d_model=input_size, nhead=4, dropout=dropout, dim_feedforward=256
+            d_model=input_size,
+            nhead=4,
+            dim_feedforward=256,
+            dropout=dropout,
+            batch_first=True,
         )
         self.transformer_encoder = nn.TransformerEncoder(enc_layer, num_layers=4)
         self.fc_proj = nn.Linear(input_size, hidden_size)

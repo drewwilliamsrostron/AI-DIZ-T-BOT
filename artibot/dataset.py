@@ -102,12 +102,14 @@ class HourlyDataset(Dataset):
         threshold=G.GLOBAL_THRESHOLD,
         sma_period=10,
         train_mode=True,
+        rebalance=True,
     ):
         self.data = data
         self.seq_len = seq_len
         self.threshold = threshold
         self.sma_period = sma_period
         self.train_mode = train_mode
+        self.rebalance = rebalance
         self.samples, self.labels = self.preprocess()
 
     def preprocess(self):
@@ -169,12 +171,13 @@ class HourlyDataset(Dataset):
 
     def __getitem__(self, idx):
         sample = self.samples[idx].copy()
-        # (8) Data Augmentation: bigger probability + bigger noise
-        # from 0.2 => 0.5 probability, and 0.01 => 0.02 stdev
-        if self.train_mode and random.random() < 0.5:
-            sample += np.random.normal(0, 0.02, sample.shape)
+        if self.train_mode and random.random() < 0.2:
+            sample += np.random.normal(0, 0.01, sample.shape)
         # Explicit dtype avoids "Could not infer dtype" errors on some
         # platforms when NumPy 2.x is installed.
         sample_t = torch.as_tensor(sample, dtype=torch.float32)
-        label_t = torch.tensor(self.labels[idx], dtype=torch.long)
+        label = self.labels[idx]
+        if self.rebalance and label == 2 and random.random() < 0.5:
+            label = random.choice([0, 1])
+        label_t = torch.tensor(label, dtype=torch.long)
         return sample_t, label_t
