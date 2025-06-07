@@ -1,4 +1,9 @@
-# AI-t-bot
+# Artibot
+
+[![CI](https://img.shields.io/badge/CI-none-lightgrey)](#)
+[![Tests](https://img.shields.io/badge/tests-manual-orange)](#)
+[![PyPI](https://img.shields.io/badge/PyPI-n/a-lightgrey)](#)
+[![Python 3.9–3.13](https://img.shields.io/badge/python-3.9--3.13-blue)](#)
 
 A Python trading bot with an optional reinforcement learning component. The bot can train on historical data, backtest strategies and trade live using the Phemex exchange API. A minimal Tkinter GUI provides status information while the bot is running.
 
@@ -6,13 +11,19 @@ A Python trading bot with an optional reinforcement learning component. The bot 
 
 1. Open `master_config.json` and replace the placeholder values with your Phemex
    and OpenAI credentials. The file is ignored by Git so your keys remain local.
-2. Start the bot with:
+2. *(Recommended)* create and activate a virtual environment:
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+```
+
+3. Start the bot with:
 
 ```bash
 python run_artibot.py
 ```
 
-3. On the very first run the program installs its Python dependencies automatically.  Importing the :mod:`artibot` package triggers the installer in `environment.py`, so any entry point will self-setup.  The GUI may sit on *Initializing…* for a few minutes while packages download—just let it run to completion.
+4. On the very first run the program installs its Python dependencies automatically via `environment.ensure_dependencies()`. The GUI may sit on *Initializing…* for a few minutes while packages download—just let it finish.
 
 
 ## Project structure
@@ -37,8 +48,18 @@ artibot/                      - current modular implementation
     globals.py                - shared variables
 
 Reinforcement Learning Test/  - experimental RL prototype
-Last_working_bot_but_one_py/  - previous working single-file bot
+last_working_bot_but_only_using_one.py - previous working single-file bot
 Old bot versions/             - assorted historical scripts
 ```
 
 The GUI includes a status indicator at the bottom showing what the bot is currently doing (training, fetching data, etc.). When a background thread is waiting or sleeping, the status line displays a countdown so you can see the bot is still active.
+
+## Running the test-suite
+
+The repo includes lightweight tests that stub heavy dependencies so they run quickly. After installing requirements, execute:
+
+```bash
+pytest -q
+```
+
+For in-depth development conventions see [AGENTS.md](AGENTS.md).
