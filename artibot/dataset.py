@@ -1,6 +1,8 @@
 """Dataset utilities for the trading bot."""
 
+# ruff: noqa: F403, F405
 from .globals import *
+
 
 ###############################################################################
 # NamedTuple for per-bar trade parameters
@@ -10,6 +12,7 @@ class TradeParams(NamedTuple):
     sl_multiplier: torch.Tensor
     tp_multiplier: torch.Tensor
     attention: torch.Tensor
+
 
 ###############################################################################
 # NamedTuple for global indicator hyperparams
@@ -21,34 +24,60 @@ class IndicatorHyperparams(NamedTuple):
     macd_slow: int
     macd_signal: int
 
+
 ###############################################################################
 # CSV Loader and Dataset
 ###############################################################################
-def load_csv_hourly(csv_path):
+def load_csv_hourly(csv_path: str) -> list[list[float]]:
+    """Return parsed hourly OHLCV data from ``csv_path``.
+
+    The previous implementation iterated row by row with :func:`DataFrame.iterrows`,
+    which is noticeably slow for large files.  This version leverages vectorised
+    ``pandas`` operations so the entire CSV is processed in bulk.
+    """
+
     if not os.path.isfile(csv_path):
         logging.warning(f"CSV file '{csv_path}' not found.")
         return []
+
     try:
-        df = pd.read_csv(csv_path, sep=r'[,\t]+', engine='python', skiprows=1, header=0)
-    except Exception as e:
+        df = pd.read_csv(
+            csv_path,
+            sep=r"[,\t]+",
+            engine="python",
+            skiprows=1,
+            header=0,
+        )
+    except Exception as e:  # pragma: no cover - IO failures
         logging.warning(f"Error reading CSV: {e}")
         return []
-    df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
-    data = []
-    for i, row in df.iterrows():
-        try:
-            ts = int(row['unix'])
-            if ts > 1e12:
-                ts = ts // 1000
-            o = float(row['open']) / 100000.0
-            h = float(row['high']) / 100000.0
-            l = float(row['low']) / 100000.0
-            c = float(row['close']) / 100000.0
-            v = float(row['volume_btc']) if 'volume_btc' in df.columns else 0.0
-            data.append([ts, o, h, l, c, v])
-        except:
-            pass
-    return sorted(data, key=lambda x: x[0])
+
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+
+    required = {"unix", "open", "high", "low", "close"}
+    if not required.issubset(df.columns):
+        logging.warning("CSV missing required columns: %s", required - set(df.columns))
+        return []
+
+    num = pd.to_numeric
+    df["unix"] = num(df["unix"], errors="coerce").fillna(0).astype("int64")
+    df.loc[df["unix"] > 1e12, "unix"] //= 1000
+    df["open"] = num(df["open"], errors="coerce") / 100000.0
+    df["high"] = num(df["high"], errors="coerce") / 100000.0
+    df["low"] = num(df["low"], errors="coerce") / 100000.0
+    df["close"] = num(df["close"], errors="coerce") / 100000.0
+
+    if "volume_btc" in df.columns:
+        df["volume_btc"] = num(df["volume_btc"], errors="coerce").fillna(0.0)
+    else:
+        df["volume_btc"] = 0.0
+
+    cols = ["unix", "open", "high", "low", "close", "volume_btc"]
+    arr = df[cols].to_numpy(dtype=float)
+    arr = arr[np.isfinite(arr).all(axis=1)]
+
+    return arr[np.argsort(arr[:, 0])].tolist()
+
 
 ###############################################################################
 # HourlyDataset
@@ -64,16 +93,20 @@ class HourlyDataset(Dataset):
     def preprocess(self):
         data_np = np.array(self.data, dtype=np.float32)
         closes = data_np[:, 4].astype(np.float64)
-        sma = np.convolve(closes, np.ones(self.sma_period) / self.sma_period, mode='same')
+        sma = np.convolve(
+            closes, np.ones(self.sma_period) / self.sma_period, mode="same"
+        )
         rsi = talib.RSI(closes, timeperiod=14)
         macd, _, _ = talib.MACD(closes)
 
-        feats = np.column_stack([
-            data_np[:, 1:6],
-            sma.astype(np.float32),
-            rsi.astype(np.float32),
-            macd.astype(np.float32),
-        ])
+        feats = np.column_stack(
+            [
+                data_np[:, 1:6],
+                sma.astype(np.float32),
+                rsi.astype(np.float32),
+                macd.astype(np.float32),
+            ]
+        )
 
         # ``ta-lib`` leaves the first few rows as NaN which would otherwise
         # propagate through scaling and ultimately make the training loss
@@ -86,25 +119,28 @@ class HourlyDataset(Dataset):
 
         scaled_feats = np.clip(scaled_feats, -10.0, 10.0)
 
-
         scaled_feats = np.nan_to_num(scaled_feats)
 
         from numpy.lib.stride_tricks import sliding_window_view
-        windows = sliding_window_view(scaled_feats, (self.seq_len, scaled_feats.shape[1]))[:, 0]
+
+        windows = sliding_window_view(
+            scaled_feats, (self.seq_len, scaled_feats.shape[1])
+        )[:, 0]
         windows = windows[:-1]
 
         raw_closes = closes.astype(np.float32)
-        last_close_raw = raw_closes[self.seq_len-1:-1]
-        next_close_raw = raw_closes[self.seq_len:]
+        last_close_raw = raw_closes[self.seq_len - 1 : -1]
+        next_close_raw = raw_closes[self.seq_len :]
         rets = (next_close_raw - last_close_raw) / (last_close_raw + 1e-8)
-        labels = np.where(rets > self.threshold, 0, np.where(rets < -self.threshold, 1, 2))
+        labels = np.where(
+            rets > self.threshold, 0, np.where(rets < -self.threshold, 1, 2)
+        )
 
         mask = np.isfinite(windows).all(axis=(1, 2)) & np.isfinite(rets)
         windows = windows[mask]
         labels = labels[mask]
 
         windows = np.nan_to_num(windows)
-
 
         return windows.astype(np.float32), labels.astype(np.int64)
 
