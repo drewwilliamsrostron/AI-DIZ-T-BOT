@@ -207,6 +207,7 @@ class MetaTransformerRL:
 # meta_control_loop
 ###############################################################################
 def meta_control_loop(ensemble, dataset, agent, interval=5.0):
+    """Periodically tweak training parameters using the meta agent."""
     global global_ai_adjustments, global_ai_adjustments_log
     global global_composite_reward, global_best_composite_reward
     global global_sharpe, global_max_drawdown, global_num_trades, global_days_in_profit

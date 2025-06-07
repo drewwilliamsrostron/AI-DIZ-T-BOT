@@ -14,6 +14,7 @@ from .metrics import inactivity_exponential_penalty, compute_days_in_profit
 # robust_backtest
 ###############################################################################
 def robust_backtest(ensemble, data_full):
+    """Run a simplified backtest and return key metrics."""
     if len(data_full) < 24:
         return {
             "net_pct": 0.0,

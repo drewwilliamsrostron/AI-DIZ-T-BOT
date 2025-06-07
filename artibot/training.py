@@ -201,6 +201,8 @@ def phemex_live_thread(connector, stop_event, poll_interval: float) -> None:
 # Connector
 ###############################################################################
 class PhemexConnector:
+    """Thin wrapper around ccxt for polling Phemex."""
+
     def __init__(self, config):
         self.symbol = config.get("symbol", "BTC/USDT")
         api_conf = config.get("API", {})
@@ -238,6 +240,7 @@ class PhemexConnector:
 
 
 def generate_candidates(symbol):
+    """Return possible market symbol permutations."""
     parts = re.split(r"[/:]", symbol)
     parts = [x for x in parts if x]
     cands = set()
@@ -261,6 +264,7 @@ def generate_candidates(symbol):
 # Checkpoint
 ###############################################################################
 def save_checkpoint():
+    """Write training progress and hyperparams to ``checkpoint.json``."""
     import json
 
     checkpoint = {
