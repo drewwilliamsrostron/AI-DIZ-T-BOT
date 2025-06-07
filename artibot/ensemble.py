@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.cuda.amp import GradScaler, autocast
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim.lr_scheduler import ReduceLROnPlateau, CosineAnnealingLR
 
 from .backtest import robust_backtest
 from .dataset import IndicatorHyperparams
@@ -49,6 +49,8 @@ class EnsembleModel:
         self.best_state_dicts = None
         self.train_steps = 0
         self.reward_loss_weight = 0.2
+        self.patience = 0
+        self.delayed_reward_epochs = 25
 
         # (3) We'll do dynamic patience mechanism, so this is an initial
         self.patience_counter = 0
@@ -62,6 +64,9 @@ class EnsembleModel:
                 min_lr=2e-5,
             )
             for opt in self.optimizers
+        ]
+        self.cosine = [
+            CosineAnnealingLR(o, T_max=50, eta_min=2e-6) for o in self.optimizers
         ]
 
         # store global indicator hyperparams that meta-agent can change
@@ -144,10 +149,14 @@ class EnsembleModel:
 
                         raise ValueError("pred_reward has NaN or Inf values")
 
-                    reward_loss = self.mse_loss_fn(
-                        pred_reward, scaled_target.expand_as(pred_reward)
-                    )
-                    loss = ce_loss + self.reward_loss_weight * reward_loss
+                    use_reward = self.train_steps > self.delayed_reward_epochs
+                    if use_reward:
+                        r_loss = self.mse_loss_fn(
+                            pred_reward, scaled_target.expand_as(pred_reward)
+                        )
+                    else:
+                        r_loss = torch.tensor(0.0, device=self.device)
+                    loss = ce_loss + self.reward_loss_weight * r_loss
                     if not torch.isfinite(loss).all():
 
                         logging.error(
@@ -192,6 +201,18 @@ class EnsembleModel:
         if val_loss is not None:
             for sch in self.schedulers:
                 sch.step(val_loss)
+            if val_loss < self.best_val_loss - 1e-6:
+                self.best_val_loss = val_loss
+                self.patience = 0
+            else:
+                self.patience += 1
+            if self.patience >= 12:
+                for opt in self.optimizers:
+                    for pg in opt.param_groups:
+                        pg["lr"] = max(pg["lr"] * 0.1, 2e-6)
+                self.patience = 0
+        for sch in self.cosine:
+            sch.step()
 
         # (2) Adjust Reward Penalties => less harsh for zero trades/ negative net
         trades_now = len(current_result["trade_details"])
