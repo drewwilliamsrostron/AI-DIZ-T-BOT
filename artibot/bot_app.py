@@ -5,6 +5,8 @@ meta–reinforcement learning agent and the Tkinter GUI. API credentials
 are loaded from ``master_config.json`` so no secrets live in the codebase.
 """
 
+# ruff: noqa: F403, F405, E402
+
 import os
 import json
 
@@ -42,7 +44,7 @@ CONFIG = load_master_config()
 def run_bot(max_epochs: int | None = None):
     global global_training_loss, global_validation_loss, global_backtest_profit, global_equity_curve
     global global_ai_adjustments_log, global_current_prediction, global_ai_confidence
-    global global_ai_epoch_count, global_attention_weights_history, global_ai_adjustments
+    global global_ai_epoch_count, global_reward_history, global_ai_adjustments
     global global_status_message
 
     torch.backends.cudnn.deterministic = True
@@ -56,7 +58,7 @@ def run_bot(max_epochs: int | None = None):
     global_current_prediction = None
     global_ai_confidence = None
     global_ai_epoch_count = 0
-    global_attention_weights_history = []
+    global_reward_history = []
     global_ai_adjustments = ""
 
     config = CONFIG
@@ -118,7 +120,7 @@ def run_bot(max_epochs: int | None = None):
     meta_th.start()
 
     root = tk.Tk()
-    gui = TradingGUI(root, ensemble)
+    TradingGUI(root, ensemble)
     try:
         root.mainloop()
     except KeyboardInterrupt:

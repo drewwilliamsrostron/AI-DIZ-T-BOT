@@ -39,7 +39,7 @@ class TradingGUI:
         self.canvas_backtest.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
         self.frame_details = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_details, text="Attention Weights")
+        self.notebook.add(self.frame_details, text="Reward History")
         self.fig_details, self.ax_details = plt.subplots(figsize=(5, 3))
         self.canvas_details = FigureCanvasTkAgg(
             self.fig_details, master=self.frame_details
@@ -317,12 +317,10 @@ class TradingGUI:
         self.canvas_backtest.draw()
 
         self.ax_details.clear()
-        self.ax_details.set_title("Avg Attention Weights (placeholder)")
-        if global_attention_weights_history:
-            x_ = list(range(1, len(global_attention_weights_history) + 1))
-            self.ax_details.plot(
-                x_, global_attention_weights_history, marker="o", color="purple"
-            )
+        self.ax_details.set_title("Composite Reward")
+        if global_reward_history:
+            x_ = list(range(1, len(global_reward_history) + 1))
+            self.ax_details.plot(x_, global_reward_history, marker="o", color="purple")
         self.canvas_details.draw()
 
         self.trade_text.delete("1.0", tk.END)

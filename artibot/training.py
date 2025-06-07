@@ -1,5 +1,7 @@
 """Background CSV training thread and exchange connector."""
 
+# ruff: noqa: F403, F405, E402
+
 from .globals import *
 from .dataset import HourlyDataset
 
@@ -23,6 +25,7 @@ def csv_training_thread(
     global global_training_loss, global_validation_loss
     global global_ai_epoch_count
     global global_status_message
+    global global_reward_history
 
     try:
         ds_full = HourlyDataset(data, seq_len=24, threshold=GLOBAL_THRESHOLD)
@@ -43,7 +46,6 @@ def csv_training_thread(
         )
         dl_val = DataLoader(
             ds_val, batch_size=128, shuffle=False, num_workers=workers, pin_memory=pin
-
         )
 
         adapt_live = bool(config.get("ADAPT_TO_LIVE", False))
@@ -63,6 +65,9 @@ def csv_training_thread(
             print(global_status_message, flush=True)
             tl, vl = ensemble.train_one_epoch(dl_train, dl_val, data, stop_event)
             global_training_loss.append(tl)
+            global_reward_history.append(
+                global_composite_reward if global_composite_reward is not None else 0.0
+            )
             if vl is not None:
                 global_validation_loss.append(vl)
             else:
@@ -107,7 +112,6 @@ def csv_training_thread(
                 global_current_prediction = label_map.get(idx, "N/A")
                 global_ai_confidence = conf
                 global_ai_epoch_count = ensemble.train_steps
-                global_attention_weights_history.append(0)
 
             if adapt_live:
                 changed = False
@@ -267,7 +271,7 @@ def save_checkpoint():
         "gpt_memory_wartorttle": gpt_memory_wartorttle,
         "gpt_memory_bigmanblastoise": gpt_memory_bigmanblastoise,
         "gpt_memory_moneymaker": gpt_memory_moneymaker,
-        "global_attention_weights_history": global_attention_weights_history,
+        "global_reward_history": global_reward_history,
     }
     with open("checkpoint.json", "w") as f:
         json.dump(checkpoint, f, indent=2)
