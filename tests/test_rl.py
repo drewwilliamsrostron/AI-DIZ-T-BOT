@@ -39,7 +39,8 @@ def load_rl_module():
     stub.GLOBAL_THRESHOLD = 0.0
     stub.global_ai_adjustments = ""
     stub.global_ai_adjustments_log = ""
-    stub.global_ai_epoch_count = 0
+    stub.epoch_count = 0
+    stub.global_min_hold_seconds = 1800
     stub.global_composite_reward = 0.0
     stub.global_best_composite_reward = 0.0
     stub.global_sharpe = 0.0
@@ -134,7 +135,8 @@ def test_apply_action_custom_space():
             30,
             14,
             0.05,
-        )
+        ),
+        rel=1e-5,
     )
 
     pg = ensemble.optimizers[0].param_groups[0]

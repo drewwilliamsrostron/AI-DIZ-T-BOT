@@ -3,6 +3,7 @@
 # ruff: noqa: F403, F405
 
 from .globals import *
+import artibot.globals as g
 from .model import PositionalEncoding
 from .dataset import IndicatorHyperparams
 import itertools
@@ -148,9 +149,7 @@ class MetaTransformerRL:
     def apply_action(self, action_idx):
         # decode
         (lr_adj, wd_adj, rsi_adj, sma_adj, mf_adj, ms_adj, sig_adj, thr_adj) = (
-
             self.model.action_space[action_idx]
-
         )
         # 1) LR/WD
         old_lr = self.ensemble.optimizers[0].param_groups[0]["lr"]
@@ -203,7 +202,6 @@ class MetaTransformerRL:
 ###############################################################################
 def meta_control_loop(ensemble, dataset, agent, interval=5.0):
     global global_ai_adjustments, global_ai_adjustments_log
-    global global_ai_epoch_count
     global global_composite_reward, global_best_composite_reward
     global global_sharpe, global_max_drawdown, global_num_trades, global_days_in_profit
 
@@ -223,7 +221,7 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
 
     while True:
         try:
-            if global_ai_epoch_count < 1:
+            if g.epoch_count < 1:
                 status_sleep("Meta agent waiting for training", 1.0)
                 continue
 
@@ -237,7 +235,6 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                 [curr_r, b_r, st_sharpe, abs(st_dd), st_trades, st_days],
                 dtype=np.float32,
             )
-
 
             set_status("Meta agent updating")
 

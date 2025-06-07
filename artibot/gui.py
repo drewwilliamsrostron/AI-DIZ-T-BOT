@@ -2,6 +2,7 @@
 
 # ruff: noqa: F403, F405
 from .globals import *
+import artibot.globals as g
 import numpy as np
 
 
@@ -339,7 +340,7 @@ class TradingGUI:
 
         pred_str = global_current_prediction if global_current_prediction else "N/A"
         conf = global_ai_confidence if global_ai_confidence else 0.0
-        steps = global_ai_epoch_count
+        steps = g.epoch_count
         self.pred_label.config(text=f"AI Prediction: {pred_str}")
         self.conf_label.config(text=f"Confidence: {conf:.2f}")
         self.epoch_label.config(text=f"Training Steps: {steps}")

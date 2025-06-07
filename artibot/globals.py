@@ -1,30 +1,17 @@
 # Imports
 ###############################################################################
-import os, random, json, time, datetime, threading, queue, re
-import numpy as np
-import pandas as pd
-import tkinter as tk
-from tkinter import ttk
+import time
+import threading
+import queue
 import matplotlib
 
 matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import ccxt
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-from torch.utils.data import Dataset, DataLoader, random_split
 
 try:
-    from torch.amp import autocast, GradScaler
+    pass
 except Exception:  # fallback for torch<2.2
-    from torch.cuda.amp import autocast, GradScaler
+    pass
 import openai
-from typing import NamedTuple
-from sklearn.preprocessing import StandardScaler
-import talib  # For RSI and MACD
 
 # Reduce default logging to warnings only
 import logging
@@ -41,7 +28,8 @@ global_SL_multiplier = 5
 global_TP_multiplier = 5
 global_ATR_period = 50
 risk_fraction = 0.03
-GLOBAL_THRESHOLD = 0.0001
+GLOBAL_THRESHOLD = 5e-5
+global_min_hold_seconds = 1800
 
 global_best_params = {
     "SL_multiplier": global_SL_multiplier,
@@ -92,7 +80,7 @@ gpt_memory_moneymaker = []
 global_ai_adjustments_log = "No adjustments yet"
 global_ai_adjustments = ""
 global_ai_confidence = None
-global_ai_epoch_count = 0
+epoch_count = 0
 global_current_prediction = None
 global_training_loss = []
 global_validation_loss = []
@@ -121,6 +109,13 @@ def get_status() -> str:
     """Return the current ``global_status_message`` in a thread-safe manner."""
     with state_lock:
         return global_status_message
+
+
+def inc_epoch() -> None:
+    """Increment the global epoch counter safely."""
+    global epoch_count
+    with state_lock:
+        epoch_count += 1
 
 
 ###############################################################################
