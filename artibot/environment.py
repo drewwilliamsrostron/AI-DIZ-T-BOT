@@ -7,28 +7,31 @@ Complex AI Trading + Continuous Training + Robust Backtest Each Epoch + Live Phe
 ###############################################################################
 # NumPy 2.x compatibility shim – restores removed constants for old libraries
 ###############################################################################
-import sys, math
+import sys
 
 try:
     import numpy as _np
 except ModuleNotFoundError:
     # Fresh environment – install a broadly compatible NumPy
-    import subprocess, sys as _sys
+    import subprocess
+    import sys as _sys
+
     subprocess.check_call([_sys.executable, "-m", "pip", "install", "numpy<2"])
     import numpy as _np
 else:
-    if int(_np.__version__.split('.')[0]) >= 2:
+    if int(_np.__version__.split(".")[0]) >= 2:
         import subprocess
+
         subprocess.check_call([sys.executable, "-m", "pip", "install", "numpy<2"])
         print("Installed NumPy<2; please restart the program.")
         sys.exit(0)
 
 # Re-export the aliases deleted in NumPy 2
 for _name, _value in {
-        "NaN":  _np.nan,
-        "Inf":  _np.inf,
-        "PINF": _np.inf,
-        "NINF": -_np.inf,
+    "NaN": _np.nan,
+    "Inf": _np.inf,
+    "PINF": _np.inf,
+    "NINF": -_np.inf,
 }.items():
     setattr(_np, _name, _value)
     sys.modules["numpy"].__dict__[_name] = _value
@@ -36,7 +39,10 @@ for _name, _value in {
 ###############################################################################
 # Smart installer – works on Python 3.9 → 3.13, CPU or CUDA
 ###############################################################################
-import sys, subprocess, platform, itertools
+import sys
+import subprocess
+import platform
+
 
 def _install_pytorch_for_env() -> None:
     """
@@ -50,32 +56,37 @@ def _install_pytorch_for_env() -> None:
 
     # crude CUDA check: we’ll try GPU wheels first only when a NVIDIA adapter
     # is visible to Windows.  Fall back to CPU if the install fails later.
-    cuda_ok = (
-        platform.system() == "Windows" and
-        "NVIDIA" in subprocess.getoutput(
-            "wmic path win32_VideoController get name"
-        )
+    cuda_ok = platform.system() == "Windows" and "NVIDIA" in subprocess.getoutput(
+        "wmic path win32_VideoController get name"
     )
 
     if (major, minor) >= (3, 13):
         # 🟡 Nightly wheels already publish cp313 tags
-        index = "https://download.pytorch.org/whl/nightly/cu118" if cuda_ok \
-                else "https://download.pytorch.org/whl/nightly/cpu"
+        index = (
+            "https://download.pytorch.org/whl/nightly/cu118"
+            if cuda_ok
+            else "https://download.pytorch.org/whl/nightly/cpu"
+        )
         pkg_line = ["torch", "torchvision", "torchaudio", "--pre", "-f", index]
     else:
         # 🟢 Stable LTS wheels (2.2.x)
-        suffix   = "+cu118" if cuda_ok else "+cpu"
-        index    = "https://download.pytorch.org/whl/cu118" if cuda_ok \
-                   else "https://download.pytorch.org/whl/cpu"
+        suffix = "+cu118" if cuda_ok else "+cpu"
+        index = (
+            "https://download.pytorch.org/whl/cu118"
+            if cuda_ok
+            else "https://download.pytorch.org/whl/cpu"
+        )
         pkg_line = [
             f"torch==2.2.1{suffix}",
             f"torchvision==0.17.1{suffix}",
             f"torchaudio==2.2.1{suffix}",
-            "--extra-index-url", index
+            "--extra-index-url",
+            index,
         ]
 
     print("• Installing PyTorch trio for this environment …")
     subprocess.check_call([sys.executable, "-m", "pip", "install", *pkg_line])
+
 
 def install_dependencies() -> None:
     """Install PyTorch (if missing) plus the rest of the requirements."""
@@ -86,14 +97,15 @@ def install_dependencies() -> None:
 
     # ---------------- other pure-Python dependencies ----------------
     pkgs = {
-        "openai":       "openai",
-        "ccxt":         "ccxt",
-        "pandas":       "pandas",
-        "numpy":        "numpy",
-        "matplotlib":   "matplotlib",
+        "openai": "openai",
+        "ccxt": "ccxt",
+        "pandas": "pandas",
+        "numpy": "numpy",
+        "matplotlib": "matplotlib",
         # 'scikit-learn' installs as 'sklearn'
         "sklearn": "scikit-learn",
-        "TA-Lib":       "TA-Lib"   # imported as `talib`
+        "TA-Lib": "TA-Lib",  # imported as `talib`
+        "dotenv": "python-dotenv",
     }
     for import_name, pip_name in pkgs.items():
         try:
@@ -101,27 +113,30 @@ def install_dependencies() -> None:
         except ImportError:
             subprocess.check_call([sys.executable, "-m", "pip", "install", pip_name])
 
+
 ###############################################################################
 #  ❒  TA-Lib fallback for Python 3.13 (no binary wheels yet)
 ###############################################################################
 try:
-    import talib                                    # ← works on 3.9-3.12 if wheels exist
+    import talib  # ← works on 3.9-3.12 if wheels exist  # noqa: F401
 except ModuleNotFoundError:
     # no wheel → install pandas-ta once and build a tiny shim
     subprocess.check_call([sys.executable, "-m", "pip", "install", "pandas-ta"])
-    import pandas as pd, pandas_ta as pta
+    import pandas as pd
+    import pandas_ta as pta
 
-    class _TaShim:                                 # exposes *only* the funcs you use
+    class _TaShim:  # exposes *only* the funcs you use
         @staticmethod
         def RSI(arr, timeperiod=14):
             return pta.rsi(pd.Series(arr), length=timeperiod).values
-        
+
         @staticmethod
         def MACD(arr, fastperiod=12, slowperiod=26, signalperiod=9):
             series = pd.Series(arr)
             try:
-                res = pta.macd(series, fast=fastperiod, slow=slowperiod,
-                                signal=signalperiod)
+                res = pta.macd(
+                    series, fast=fastperiod, slow=slowperiod, signal=signalperiod
+                )
                 if res is not None:
                     return (
                         res[f"MACD_{fastperiod}_{slowperiod}_{signalperiod}"].values,
@@ -139,8 +154,8 @@ except ModuleNotFoundError:
             hist = macd - signal
             return macd.values, signal.values, hist.values
 
-import sys
-#sys.modules["talib"] = _TaShim()               # ✅ calls like talib.RSI(...) keep working
+
+# sys.modules["talib"] = _TaShim()               # ✅ calls like talib.RSI(...) keep working
 
 
 def ensure_dependencies():

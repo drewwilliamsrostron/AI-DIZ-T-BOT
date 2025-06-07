@@ -4,7 +4,7 @@ A Python trading bot with an optional reinforcement learning component. The bot 
 
 ## Usage
 
-1. Edit `artibot/bot_app.py` and place your API credentials inside the `CONFIG` dictionary at the top of the file. The `API` section holds exchange keys while `CHATGPT` contains your OpenAI key. The `CSV_PATH` entry is resolved relative to the project directory so the data file is found even when you launch the bot from elsewhere.
+1. Copy `.env.example` to `.env` and fill in your API credentials. Values in `.env` override those in `master_config.json`. The `API` section holds exchange keys while `CHATGPT` contains your OpenAI key. The `CSV_PATH` entry is resolved relative to the project directory so the data file is found even when you launch the bot from elsewhere.
 2. Start the bot with:
 
 ```bash
