@@ -6,7 +6,7 @@ import pandas as pd
 import talib
 import torch
 
-from .globals import *
+import artibot.globals as G
 from .metrics import inactivity_exponential_penalty, compute_days_in_profit
 
 
@@ -24,7 +24,7 @@ def robust_backtest(ensemble, data_full):
         }
 
     LEVERAGE = 10
-    min_hold_seconds = global_min_hold_seconds
+    min_hold_seconds = G.global_min_hold_seconds
     commission_rate = 0.0001
     slippage = 0.0002
     FUNDING_RATE = 0.0001
@@ -105,7 +105,7 @@ def robust_backtest(ensemble, data_full):
             np.abs(df["low"] - df["previous_close"]),
         ),
     )
-    df["ATR"] = df["tr"].rolling(global_ATR_period, min_periods=1).mean()
+    df["ATR"] = df["tr"].rolling(G.global_ATR_period, min_periods=1).mean()
 
     init_bal = 100.0
     bal = init_bal

@@ -30,11 +30,9 @@ def load_master_config(path: str = "master_config.json") -> dict:
         return {}
 
 
-import artibot.globals as g
-
 from .dataset import HourlyDataset, load_csv_hourly
 from .ensemble import EnsembleModel
-from .globals import *
+import artibot.globals as G
 from .gui import TradingGUI
 from .rl import MetaTransformerRL, meta_control_loop
 from .training import (
@@ -51,29 +49,25 @@ CONFIG = load_master_config()
 
 
 def run_bot(max_epochs: int | None = None) -> None:
-    global global_training_loss, global_validation_loss, global_backtest_profit
-    global global_equity_curve, global_ai_adjustments_log
-    global global_current_prediction, global_ai_confidence
-    global global_attention_weights_history, global_ai_adjustments
-    global global_status_message
+    """Launch all threads and the Tkinter GUI."""
 
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    global_training_loss = []
-    global_validation_loss = []
-    global_backtest_profit = []
-    global_equity_curve = []
-    global_ai_adjustments_log = "No adjustments yet"
-    global_current_prediction = None
-    global_ai_confidence = None
-    g.epoch_count = 0
-    global_attention_weights_history = []
-    global_ai_adjustments = ""
+    G.global_training_loss = []
+    G.global_validation_loss = []
+    G.global_backtest_profit = []
+    G.global_equity_curve = []
+    G.global_ai_adjustments_log = "No adjustments yet"
+    G.global_current_prediction = None
+    G.global_ai_confidence = None
+    G.epoch_count = 0
+    G.global_attention_weights_history = []
+    G.global_ai_adjustments = ""
 
     config = CONFIG
-    g.global_min_hold_seconds = config.get(
-        "MIN_HOLD_SECONDS", g.global_min_hold_seconds
+    G.global_min_hold_seconds = config.get(
+        "MIN_HOLD_SECONDS", G.global_min_hold_seconds
     )
     openai.api_key = config["CHATGPT"]["API_KEY"]
     csv_path = config["CSV_PATH"]
@@ -86,7 +80,7 @@ def run_bot(max_epochs: int | None = None) -> None:
 
     if len(data) < 10:
         print("Error: no usable CSV data found")
-        global_status_message = "CSV load failed"
+        G.global_status_message = "CSV load failed"
         return
 
     use_prev_weights = bool(config.get("USE_PREV_WEIGHTS", True))
@@ -154,9 +148,9 @@ def run_bot(max_epochs: int | None = None) -> None:
     with open("training_history.json", "w") as f:
         json.dump(
             {
-                "global_training_loss": global_training_loss,
-                "global_validation_loss": global_validation_loss,
-                "global_backtest_profit": global_backtest_profit,
+                "global_training_loss": G.global_training_loss,
+                "global_validation_loss": G.global_validation_loss,
+                "global_backtest_profit": G.global_backtest_profit,
             },
             f,
         )

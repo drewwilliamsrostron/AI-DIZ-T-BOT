@@ -2,8 +2,7 @@
 
 # ruff: noqa: F403, F405
 
-from .globals import *
-import artibot.globals as g
+import artibot.globals as G
 from .model import PositionalEncoding
 from .dataset import IndicatorHyperparams
 
@@ -179,7 +178,7 @@ class MetaTransformerRL:
         new_ms = old_hp.macd_slow + ms_adj
         new_sig = old_hp.macd_signal + sig_adj
         # 5) also let meta-agent change threshold
-        new_threshold = GLOBAL_THRESHOLD + thr_adj
+        new_threshold = G.GLOBAL_THRESHOLD + thr_adj
 
         self.ensemble.indicator_hparams = IndicatorHyperparams(
             rsi_period=new_rsi,
@@ -208,19 +207,16 @@ class MetaTransformerRL:
 ###############################################################################
 def meta_control_loop(ensemble, dataset, agent, interval=5.0):
     """Periodically tweak training parameters using the meta agent."""
-    global global_ai_adjustments, global_ai_adjustments_log
-    global global_composite_reward, global_best_composite_reward
-    global global_sharpe, global_max_drawdown, global_num_trades, global_days_in_profit
 
-    status_sleep("Starting meta agent", 2.0)
+    G.status_sleep("Starting meta agent", 2.0)
 
     # old initial state was just 2 dims. Now we add (sharpe, dd, trades, days_in_profit)
-    prev_r = global_composite_reward if global_composite_reward else 0.0
-    best_r = global_best_composite_reward if global_best_composite_reward else 0.0
-    st_sharpe = global_sharpe
-    st_dd = global_max_drawdown
-    st_trades = global_num_trades
-    st_days = global_days_in_profit if global_days_in_profit else 0.0
+    prev_r = G.global_composite_reward if G.global_composite_reward else 0.0
+    best_r = G.global_best_composite_reward if G.global_best_composite_reward else 0.0
+    st_sharpe = G.global_sharpe
+    st_dd = G.global_max_drawdown
+    st_trades = G.global_num_trades
+    st_days = G.global_days_in_profit if G.global_days_in_profit else 0.0
 
     state = np.array(
         [prev_r, best_r, st_sharpe, abs(st_dd), st_trades, st_days], dtype=np.float32
@@ -228,31 +224,35 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
 
     while True:
         try:
-            if g.epoch_count < 1:
-                status_sleep("Meta agent waiting for training", 1.0)
+            if G.epoch_count < 1:
+                G.status_sleep("Meta agent waiting for training", 1.0)
                 continue
 
-            curr_r = global_composite_reward if global_composite_reward else 0.0
-            b_r = global_best_composite_reward if global_best_composite_reward else 0.0
-            st_sharpe = global_sharpe
-            st_dd = global_max_drawdown
-            st_trades = global_num_trades
-            st_days = global_days_in_profit if global_days_in_profit else 0.0
+            curr_r = G.global_composite_reward if G.global_composite_reward else 0.0
+            b_r = (
+                G.global_best_composite_reward
+                if G.global_best_composite_reward
+                else 0.0
+            )
+            st_sharpe = G.global_sharpe
+            st_dd = G.global_max_drawdown
+            st_trades = G.global_num_trades
+            st_days = G.global_days_in_profit if G.global_days_in_profit else 0.0
             new_state = np.array(
                 [curr_r, b_r, st_sharpe, abs(st_dd), st_trades, st_days],
                 dtype=np.float32,
             )
 
-            set_status("Meta agent updating")
+            G.set_status("Meta agent updating")
 
             a_idx, logp, val_s = agent.pick_action(state)
             (new_lr, new_wd, nrsi, nsma, nmacdf, nmacds, nmacdsig, nthr) = (
                 agent.apply_action(a_idx)
             )
 
-            status_sleep("Meta agent sleeping", interval)
+            G.status_sleep("Meta agent sleeping", interval)
 
-            curr2 = global_composite_reward if global_composite_reward else 0.0
+            curr2 = G.global_composite_reward if G.global_composite_reward else 0.0
             rew_delta = curr2 - curr_r
             agent.update(state, a_idx, rew_delta, new_state, logp, val_s)
 
@@ -261,8 +261,8 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                 f" newLR={new_lr:.2e}, newWD={new_wd:.2e}, rsi={nrsi}, sma={nsma}, "
                 f"macdF={nmacdf}, macdS={nmacds}, macdSig={nmacdsig}, threshold={nthr:.5f}"
             )
-            global_ai_adjustments_log += "\n" + summary
-            global_ai_adjustments = summary
+            G.global_ai_adjustments_log += "\n" + summary
+            G.global_ai_adjustments = summary
 
             state = new_state
             if agent.last_improvement > 20:
@@ -275,14 +275,14 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                                 nn.init.zeros_(layer.bias)
                 agent.last_improvement = 0
                 msg = "\n[Stagnation] Forced random reinit of primary model!\n"
-                global_ai_adjustments_log += msg
+                G.global_ai_adjustments_log += msg
 
-            status_sleep("Meta agent idle", 0.5)
+            G.status_sleep("Meta agent idle", 0.5)
 
         except Exception as e:
-            set_status(f"Meta error: {e}")
+            G.set_status(f"Meta error: {e}")
             traceback.print_exc()
-            status_sleep("Meta agent failed", 5.0)
+            G.status_sleep("Meta agent failed", 5.0)
 
 
 ###############################################################################

@@ -1,8 +1,7 @@
 """Tkinter dashboard for training progress and live prices."""
 
 # ruff: noqa: F403, F405
-from .globals import *
-import artibot.globals as g
+import artibot.globals as G
 import numpy as np
 import datetime
 import json
@@ -98,15 +97,19 @@ class TradingGUI:
         )
         self.lr_label.grid(row=5, column=0, sticky=tk.W, padx=5, pady=5)
         self.atr_label = ttk.Label(
-            self.info_frame, text=f"ATR: {global_ATR_period}", font=("Helvetica", 12)
+            self.info_frame, text=f"ATR: {G.global_ATR_period}", font=("Helvetica", 12)
         )
         self.atr_label.grid(row=6, column=0, sticky=tk.W, padx=5, pady=5)
         self.sl_label = ttk.Label(
-            self.info_frame, text=f"SL: {global_SL_multiplier}", font=("Helvetica", 12)
+            self.info_frame,
+            text=f"SL: {G.global_SL_multiplier}",
+            font=("Helvetica", 12),
         )
         self.sl_label.grid(row=7, column=0, sticky=tk.W, padx=5, pady=5)
         self.tp_label = ttk.Label(
-            self.info_frame, text=f"TP: {global_TP_multiplier}", font=("Helvetica", 12)
+            self.info_frame,
+            text=f"TP: {G.global_TP_multiplier}",
+            font=("Helvetica", 12),
         )
         self.tp_label.grid(row=8, column=0, sticky=tk.W, padx=5, pady=5)
 
@@ -250,15 +253,15 @@ class TradingGUI:
         self.root.after(self.update_interval, self.update_dashboard)
 
     def update_dashboard(self):
-        global global_equity_curve, global_best_equity_curve
+        """Refresh all dashboard widgets from shared state."""
         self.ax_loss.clear()
         self.ax_loss.set_title("Training vs. Validation Loss")
-        x1 = range(1, len(global_training_loss) + 1)
+        x1 = range(1, len(G.global_training_loss) + 1)
         self.ax_loss.plot(
-            x1, global_training_loss, color="blue", marker="o", label="Train"
+            x1, G.global_training_loss, color="blue", marker="o", label="Train"
         )
         val_filtered = [
-            (i + 1, v) for i, v in enumerate(global_validation_loss) if v is not None
+            (i + 1, v) for i, v in enumerate(G.global_validation_loss) if v is not None
         ]
         if val_filtered:
             xv, yv = zip(*val_filtered)
@@ -270,7 +273,7 @@ class TradingGUI:
         try:
             valid_eq = [
                 (t, b)
-                for (t, b) in global_equity_curve
+                for (t, b) in G.global_equity_curve
                 if isinstance(t, (int, float, np.integer, np.floating))
             ]
             if valid_eq:
@@ -279,10 +282,10 @@ class TradingGUI:
                 self.ax_equity_train.plot(
                     ts_dt, bs_, color="red", marker=".", label="Current"
                 )
-            if global_best_equity_curve:
+            if G.global_best_equity_curve:
                 best_eq = [
                     (t, b)
-                    for (t, b) in global_best_equity_curve
+                    for (t, b) in G.global_best_equity_curve
                     if isinstance(t, (int, float, np.integer, np.floating))
                 ]
                 if best_eq:
@@ -302,7 +305,7 @@ class TradingGUI:
         self.ax_live.set_title("Phemex Live Price (1h)")
         try:
             times, closes = [], []
-            for bar in global_phemex_data:
+            for bar in G.global_phemex_data:
                 if len(bar) >= 5 and bar[0] > 0:
                     t_ = bar[0]
                     c_ = bar[4]
@@ -316,105 +319,107 @@ class TradingGUI:
 
         self.ax_net_profit.clear()
         self.ax_net_profit.set_title("Net Profit (%)")
-        if global_backtest_profit:
-            x2 = range(1, len(global_backtest_profit) + 1)
+        if G.global_backtest_profit:
+            x2 = range(1, len(G.global_backtest_profit) + 1)
             self.ax_net_profit.plot(
-                x2, global_backtest_profit, marker="o", color="green"
+                x2, G.global_backtest_profit, marker="o", color="green"
             )
         self.canvas_backtest.draw()
 
         self.ax_details.clear()
         self.ax_details.set_title("Avg Attention Weights (placeholder)")
-        if global_attention_weights_history:
-            x_ = list(range(1, len(global_attention_weights_history) + 1))
+        if G.global_attention_weights_history:
+            x_ = list(range(1, len(G.global_attention_weights_history) + 1))
             self.ax_details.plot(
-                x_, global_attention_weights_history, marker="o", color="purple"
+                x_, G.global_attention_weights_history, marker="o", color="purple"
             )
         self.canvas_details.draw()
 
         self.trade_text.delete("1.0", tk.END)
-        if global_trade_details:
-            self.trade_text.insert(tk.END, json.dumps(global_trade_details, indent=2))
+        if G.global_trade_details:
+            self.trade_text.insert(tk.END, json.dumps(G.global_trade_details, indent=2))
         else:
             self.trade_text.insert(tk.END, "No Trade Details")
 
         self.yearly_perf_text.delete("1.0", tk.END)
-        if global_yearly_stats_table:
-            self.yearly_perf_text.insert(tk.END, global_yearly_stats_table)
+        if G.global_yearly_stats_table:
+            self.yearly_perf_text.insert(tk.END, G.global_yearly_stats_table)
         else:
             self.yearly_perf_text.insert(tk.END, "No yearly data")
 
-        pred_str = global_current_prediction if global_current_prediction else "N/A"
-        conf = global_ai_confidence if global_ai_confidence else 0.0
-        steps = g.epoch_count
+        pred_str = G.global_current_prediction if G.global_current_prediction else "N/A"
+        conf = G.global_ai_confidence if G.global_ai_confidence else 0.0
+        steps = G.epoch_count
         self.pred_label.config(text=f"AI Prediction: {pred_str}")
         self.conf_label.config(text=f"Confidence: {conf:.2f}")
         self.epoch_label.config(text=f"Training Steps: {steps}")
 
         current_lr = self.ensemble.optimizers[0].param_groups[0]["lr"]
         self.lr_label.config(text=f"LR: {current_lr:.2e}")
-        self.atr_label.config(text=f"ATR: {global_ATR_period}")
-        self.sl_label.config(text=f"SL: {global_SL_multiplier}")
-        self.tp_label.config(text=f"TP: {global_TP_multiplier}")
+        self.atr_label.config(text=f"ATR: {G.global_ATR_period}")
+        self.sl_label.config(text=f"SL: {G.global_SL_multiplier}")
+        self.tp_label.config(text=f"TP: {G.global_TP_multiplier}")
         self.best_lr_label.config(
-            text=f"Best LR: {global_best_lr if global_best_lr else 'N/A'}"
+            text=f"Best LR: {G.global_best_lr if G.global_best_lr else 'N/A'}"
         )
         self.best_wd_label.config(
-            text=f"Weight Decay: {global_best_wd if global_best_wd else 'N/A'}"
+            text=f"Weight Decay: {G.global_best_wd if G.global_best_wd else 'N/A'}"
         )
 
-        self.current_sharpe_label.config(text=f"Sharpe: {global_sharpe:.2f}")
-        self.current_drawdown_label.config(text=f"Max DD: {global_max_drawdown:.3f}")
-        self.current_netprofit_label.config(text=f"Net Pct: {global_net_pct:.2f}")
-        self.current_trades_label.config(text=f"Trades: {global_num_trades}")
-        if global_inactivity_penalty is not None:
+        self.current_sharpe_label.config(text=f"Sharpe: {G.global_sharpe:.2f}")
+        self.current_drawdown_label.config(text=f"Max DD: {G.global_max_drawdown:.3f}")
+        self.current_netprofit_label.config(text=f"Net Pct: {G.global_net_pct:.2f}")
+        self.current_trades_label.config(text=f"Trades: {G.global_num_trades}")
+        if G.global_inactivity_penalty is not None:
             self.current_inactivity_label.config(
-                text=f"Inact: {global_inactivity_penalty:.2f}"
+                text=f"Inact: {G.global_inactivity_penalty:.2f}"
             )
         else:
             self.current_inactivity_label.config(text="Inactivity Penalty: N/A")
-        if global_composite_reward is not None:
+        if G.global_composite_reward is not None:
             self.current_composite_label.config(
-                text=f"Comp: {global_composite_reward:.2f}"
+                text=f"Comp: {G.global_composite_reward:.2f}"
             )
         else:
             self.current_composite_label.config(text="Current Composite: N/A")
-        if global_days_in_profit is not None:
+        if G.global_days_in_profit is not None:
             self.current_days_profit_label.config(
-                text=f"Days in Profit: {global_days_in_profit:.2f}"
+                text=f"Days in Profit: {G.global_days_in_profit:.2f}"
             )
         else:
             self.current_days_profit_label.config(text="Current Days in Profit: N/A")
 
-        self.best_sharpe_label.config(text=f"Best Sharpe: {global_best_sharpe:.2f}")
-        self.best_drawdown_label.config(text=f"Best Max DD: {global_best_drawdown:.3f}")
-        self.best_netprofit_label.config(
-            text=f"Best Net Pct: {global_best_net_pct:.2f}"
+        self.best_sharpe_label.config(text=f"Best Sharpe: {G.global_best_sharpe:.2f}")
+        self.best_drawdown_label.config(
+            text=f"Best Max DD: {G.global_best_drawdown:.3f}"
         )
-        self.best_trades_label.config(text=f"Best Trades: {global_best_num_trades}")
-        if global_best_inactivity_penalty is not None:
+        self.best_netprofit_label.config(
+            text=f"Best Net Pct: {G.global_best_net_pct:.2f}"
+        )
+        self.best_trades_label.config(text=f"Best Trades: {G.global_best_num_trades}")
+        if G.global_best_inactivity_penalty is not None:
             self.best_inactivity_label.config(
-                text=f"Best Inact: {global_best_inactivity_penalty:.2f}"
+                text=f"Best Inact: {G.global_best_inactivity_penalty:.2f}"
             )
         else:
             self.best_inactivity_label.config(text="Best Inactivity Penalty: N/A")
-        if global_best_composite_reward is not None:
+        if G.global_best_composite_reward is not None:
             self.best_composite_label.config(
-                text=f"Best Comp: {global_best_composite_reward:.2f}"
+                text=f"Best Comp: {G.global_best_composite_reward:.2f}"
             )
         else:
             self.best_composite_label.config(text="Best Composite: N/A")
-        if global_best_days_in_profit is not None:
+        if G.global_best_days_in_profit is not None:
             self.best_days_profit_label.config(
-                text=f"Best Days in Profit: {global_best_days_in_profit:.2f}"
+                text=f"Best Days in Profit: {G.global_best_days_in_profit:.2f}"
             )
         else:
             self.best_days_profit_label.config(text="Best Days in Profit: N/A")
 
         self.ai_output_text.delete("1.0", tk.END)
-        self.ai_output_text.insert(tk.END, global_ai_adjustments)
+        self.ai_output_text.insert(tk.END, G.global_ai_adjustments)
         self.ai_log_text.delete("1.0", tk.END)
-        self.ai_log_text.insert(tk.END, global_ai_adjustments_log)
+        self.ai_log_text.insert(tk.END, G.global_ai_adjustments_log)
 
         # update status line
         self.status_var.set(get_status())
