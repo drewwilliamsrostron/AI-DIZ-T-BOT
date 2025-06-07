@@ -18,7 +18,10 @@ class EnsembleModel:
         self.mse_loss_fn = nn.MSELoss()
         amp_on = device.type == 'cuda'
         # GradScaler's `device` arg is not supported on older PyTorch versions
-        self.scaler = GradScaler(enabled=amp_on)
+        if 'device' in inspect.signature(GradScaler).parameters:
+            self.scaler = GradScaler(enabled=amp_on, device=self.device.type)
+        else:
+            self.scaler = GradScaler(enabled=amp_on)
         self.best_val_loss = float('inf')
         self.best_composite_reward = float('-inf')
         self.best_state_dicts = None

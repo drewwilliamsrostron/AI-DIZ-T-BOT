@@ -108,7 +108,7 @@ class TradingGUI:
         self.best_days_profit_label.grid(row=15,column=1,sticky=tk.W,padx=5,pady=5)
 
         # single-line status indicator
-        self.status_var = tk.StringVar(value=global_status_message)
+        self.status_var = tk.StringVar()
         self.status_label = ttk.Label(self.info_frame, textvariable=self.status_var,
                                       font=("Helvetica",10,"italic"))
         self.status_label.grid(row=16,column=0,sticky=tk.W,padx=5,pady=5,columnspan=2)
