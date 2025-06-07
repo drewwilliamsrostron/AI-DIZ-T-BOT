@@ -237,19 +237,22 @@ class EnsembleModel:
 
     def evaluate_val_loss(self, dl_val):
         for m in self.models:
-            m.train()
-        losses=[]
+            m.eval()
+        losses = []
         with torch.no_grad():
             for bx, by in dl_val:
-                bx= bx.to(self.device)
-                by= by.to(self.device)
-                model_losses=[]
+                bx = bx.to(self.device)
+                by = by.to(self.device)
+                model_losses = []
                 for mm in self.models:
-                    lg,_,_ = mm(bx)
-                    l_= self.criterion(lg, by)
+                    lg, _, _ = mm(bx)
+                    l_ = self.criterion(lg, by)
                     model_losses.append(l_.item())
                 losses.append(np.mean(model_losses))
-        return float(np.mean(losses))
+        val_loss = float(np.mean(losses))
+        for m in self.models:
+            m.train()
+        return val_loss
 
     def predict(self, x):
         with torch.no_grad():
