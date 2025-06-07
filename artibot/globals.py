@@ -1,32 +1,27 @@
+"""Shared global state and configuration constants."""
+
+from __future__ import annotations
+
 # Imports
 ###############################################################################
-import os, random, json, time, datetime, threading, queue, re
-import numpy as np
-import pandas as pd
-import tkinter as tk
-from tkinter import ttk
+import time
+import queue
 import matplotlib
+
 matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import ccxt
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-from torch.utils.data import Dataset, DataLoader, random_split
+
 try:
-    from torch.amp import autocast, GradScaler
+    pass
 except Exception:  # fallback for torch<2.2
-    from torch.cuda.amp import autocast, GradScaler
+    pass
 import openai
-from typing import NamedTuple
-from sklearn.preprocessing import StandardScaler
-import talib  # For RSI and MACD
 
 # Reduce default logging to warnings only
 import logging
-logging.basicConfig(level=logging.WARNING, format='%(asctime)s [%(levelname)s] %(message)s')
+
+logging.basicConfig(
+    level=logging.WARNING, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 client = openai  # alias
 
 ###############################################################################
@@ -43,7 +38,7 @@ global_best_params = {
     "TP_multiplier": global_TP_multiplier,
     "ATR_period": global_ATR_period,
     "risk_fraction": risk_fraction,
-    "learning_rate": 1e-4
+    "learning_rate": 1e-4,
 }
 
 # Global performance metrics:
@@ -101,6 +96,7 @@ live_bars_queue = queue.Queue()
 # Simple status indicator updated by threads
 global_status_message = "Initializing..."
 
+
 ###############################################################################
 # Helper used by worker threads to show countdowns while sleeping
 ###############################################################################
@@ -114,4 +110,3 @@ def status_sleep(message: str, seconds: float):
         global global_status_message
         global_status_message = f"{message} ({remaining}s)"
         time.sleep(1)
-

@@ -1,5 +1,7 @@
 """Dataset utilities for the trading bot."""
 
+from __future__ import annotations
+
 # ruff: noqa: F403, F405
 from typing import NamedTuple
 
@@ -90,14 +92,20 @@ def load_csv_hourly(csv_path: str) -> list[list[float]]:
 # HourlyDataset
 ###############################################################################
 class HourlyDataset(Dataset):
-    def __init__(self, data, seq_len=24, threshold=GLOBAL_THRESHOLD, sma_period=10):
+    def __init__(
+        self,
+        data: list[list[float]],
+        seq_len: int = 24,
+        threshold: float = GLOBAL_THRESHOLD,
+        sma_period: int = 10,
+    ) -> None:
         self.data = data
         self.seq_len = seq_len
         self.threshold = threshold
         self.sma_period = sma_period
         self.samples, self.labels = self.preprocess()
 
-    def preprocess(self):
+    def preprocess(self) -> tuple[np.ndarray, np.ndarray]:
         data_np = np.array(self.data, dtype=np.float32)
         closes = data_np[:, 4].astype(np.float64)
         sma = np.convolve(
@@ -151,10 +159,10 @@ class HourlyDataset(Dataset):
 
         return windows.astype(np.float32), labels.astype(np.int64)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.samples)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         sample = self.samples[idx].copy()
         # (8) Data Augmentation: bigger probability + bigger noise
         # from 0.2 => 0.5 probability, and 0.01 => 0.02 stdev

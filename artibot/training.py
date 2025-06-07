@@ -1,5 +1,9 @@
 """Background CSV training thread and exchange connector."""
 
+from __future__ import annotations
+
+# ruff: noqa: F403, F405
+
 from .globals import *
 from .dataset import HourlyDataset
 
@@ -43,7 +47,6 @@ def csv_training_thread(
         )
         dl_val = DataLoader(
             ds_val, batch_size=128, shuffle=False, num_workers=workers, pin_memory=pin
-
         )
 
         adapt_live = bool(config.get("ADAPT_TO_LIVE", False))
