@@ -4,13 +4,8 @@ A Python trading bot with an optional reinforcement learning component. The bot 
 
 ## Usage
 
-1. Copy `.env.example` to `.env` and add your credentials. The bot will load it automatically. Required variables are:
-
-   - `OPENAI_API_KEY` – OpenAI access key
-   - `PHEMEX_API_KEY_LIVE` and `PHEMEX_API_SECRET_LIVE`
-   - `PHEMEX_API_KEY_TEST` and `PHEMEX_API_SECRET_TEST`
-
-   The provided `master_config.json` file uses the same placeholder names so you can override other settings without storing secrets in git.
+1. Open `master_config.json` and replace the placeholder values with your Phemex
+   and OpenAI credentials. The file is ignored by Git so your keys remain local.
 2. Start the bot with:
 
 ```bash

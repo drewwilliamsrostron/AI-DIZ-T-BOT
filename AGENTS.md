@@ -72,7 +72,7 @@ Old bot versions/              - assorted history (read-only)
 * Run **Ruff** with `--fix` to auto-remove unused imports, etc. ([docs.astral.sh][10])
 * Keep business logic in `artibot/` modules; GUI files only draw & schedule events.
 * Use **type hints** and a short **module docstring** in every new file.
-* No hard-coded secrets; load from env vars or `master_config.json`.
+* No hard-coded secrets; store credentials only in `master_config.json`.
 * Prefer `queue.Queue` for cross-thread data; avoid new global vars. ([docs.python.org][4])
 
 ### Python Best Practices (Artibot-specific)
@@ -140,16 +140,11 @@ pip install -r requirements.txt                     # first run auto-installs vi
 python run_artibot.py                               # may take minutes on first install
 ```
 
-### Required Environment Variables
+### Configuration
 
-The bot expects the following variables to be set before launching. Copy `.env.example` to `.env` and fill in your keys:
-
-- `OPENAI_API_KEY`
-- `PHEMEX_API_KEY_LIVE` and `PHEMEX_API_SECRET_LIVE`
-- `PHEMEX_API_KEY_TEST` and `PHEMEX_API_SECRET_TEST`
-
-`master_config.json` contains placeholders for these values so secrets never
-live in the repository.
+Add your Phemex and OpenAI credentials to `master_config.json` before running
+the bot. The file is excluded from version control so your secrets remain
+local.
 
 ---
 
