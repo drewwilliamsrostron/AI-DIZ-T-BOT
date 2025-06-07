@@ -17,10 +17,8 @@ A Python trading bot with an optional reinforcement learning component. The bot 
 python run_artibot.py
 ```
 
-When importing `run_bot()` directly you may pass `max_epochs=<N>` to limit
-training epochs for quick tests or demos.
+3. On the very first run the program installs its Python dependencies automatically.  Importing the :mod:`artibot` package triggers the installer in `environment.py`, so any entry point will self-setup.  The GUI may sit on *Initializing…* for a few minutes while packages download—just let it run to completion.
 
-3. On the very first run the program installs its Python dependencies via `environment.py`. This may take several minutes while the GUI remains on *Initializing…* and the console prints thread messages. Simply wait for installation to finish; the bot will continue automatically.
 
 ## Project structure
 
