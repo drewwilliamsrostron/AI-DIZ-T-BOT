@@ -1,5 +1,7 @@
 """Meta reinforcement learning agent controlling training hyperparameters."""
 
+from __future__ import annotations
+
 # ruff: noqa: F403, F405
 
 from .globals import *
@@ -148,7 +150,9 @@ class MetaTransformerRL:
     def apply_action(self, action_idx):
         # decode
         (lr_adj, wd_adj, rsi_adj, sma_adj, mf_adj, ms_adj, sig_adj, thr_adj) = (
-            self.action_space[action_idx]
+
+            self.model.action_space[action_idx]
+
         )
         # 1) LR/WD
         old_lr = self.ensemble.optimizers[0].param_groups[0]["lr"]

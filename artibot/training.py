@@ -1,5 +1,9 @@
 """Background CSV training thread and exchange connector."""
 
+from __future__ import annotations
+
+# ruff: noqa: F403, F405
+
 from .globals import *
 from .dataset import HourlyDataset
 

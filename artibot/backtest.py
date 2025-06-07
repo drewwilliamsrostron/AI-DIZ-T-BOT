@@ -1,17 +1,25 @@
 """Backtesting utilities for evaluating strategies."""
 
+from __future__ import annotations
+
 # ruff: noqa: F403, F405
 import numpy as np
 import pandas as pd
 
 from .globals import *
 from .metrics import inactivity_exponential_penalty, compute_days_in_profit
+from .ensemble import EnsembleModel
 
 
 ###############################################################################
 # robust_backtest
 ###############################################################################
-def robust_backtest(ensemble, data_full):
+from typing import Any
+
+
+def robust_backtest(
+    ensemble: EnsembleModel, data_full: list[list[float]]
+) -> dict[str, Any]:
     if len(data_full) < 24:
         return {
             "net_pct": 0.0,

@@ -1,5 +1,7 @@
 """Tkinter dashboard for training progress and live prices."""
 
+from __future__ import annotations
+
 # ruff: noqa: F403, F405
 from .globals import *
 import numpy as np

@@ -5,6 +5,8 @@ meta–reinforcement learning agent and the Tkinter GUI. API credentials
 are loaded from ``master_config.json`` so no secrets live in the codebase.
 """
 
+from __future__ import annotations
+
 import os
 import json
 import logging
