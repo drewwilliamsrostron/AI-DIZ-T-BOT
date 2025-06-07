@@ -1,6 +1,9 @@
 """Backtesting utilities for evaluating strategies."""
 
 # ruff: noqa: F403, F405
+import numpy as np
+import pandas as pd
+
 from .globals import *
 from .metrics import inactivity_exponential_penalty, compute_days_in_profit
 
