@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import json
+import logging
 
 
 def load_master_config(path: str = "master_config.json") -> dict:
@@ -127,8 +128,16 @@ def run_bot(max_epochs: int | None = None):
         pass
 
     stop_event.set()
-    train_th.join()
-    phemex_th.join()
+    threads = [("train", train_th), ("phemex", phemex_th), ("meta", meta_th)]
+    for name, th in threads:
+        if th.is_alive():
+            th.join(timeout=5.0)
+            if th.is_alive():
+                logging.warning("%s thread failed to terminate", name)
+            else:
+                logging.info("%s thread stopped", name)
+        else:
+            logging.info("%s thread already stopped", name)
 
     with open("training_history.json", "w") as f:
         json.dump(
