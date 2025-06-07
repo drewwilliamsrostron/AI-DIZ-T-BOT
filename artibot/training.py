@@ -1,12 +1,12 @@
 """Background CSV training thread and exchange connector."""
 
 # ruff: noqa: F403, F405
-import artibot.globals as g
+import artibot.globals as G
+import logging
 import re
 import sys
 
 from .dataset import HourlyDataset
-from .globals import *
 
 
 ###############################################################################
@@ -28,11 +28,11 @@ def csv_training_thread(
     import torch
     from torch.utils.data import DataLoader, random_split
 
-    global global_training_loss, global_validation_loss
+    # training history lists live on the globals module
 
     try:
         ds_full = HourlyDataset(
-            data, seq_len=24, threshold=GLOBAL_THRESHOLD, train_mode=True
+            data, seq_len=24, threshold=G.GLOBAL_THRESHOLD, train_mode=True
         )
         if len(ds_full) < 10:
             logging.warning("Not enough data in CSV => exiting.")
@@ -65,16 +65,16 @@ def csv_training_thread(
                 break
             ensemble.train_steps += 1
             epochs += 1
-            set_status(f"Training step {ensemble.train_steps}")
-            print(get_status(), flush=True)
+            G.set_status(f"Training step {ensemble.train_steps}")
+            print(G.get_status(), flush=True)
             tl, vl = ensemble.train_one_epoch(dl_train, dl_val, data, stop_event)
-            global_training_loss.append(tl)
+            G.global_training_loss.append(tl)
             if vl is not None:
-                global_validation_loss.append(vl)
+                G.global_validation_loss.append(vl)
             else:
-                global_validation_loss.append(None)
-            if global_backtest_profit:
-                last_pf = global_backtest_profit[-1]
+                G.global_validation_loss.append(None)
+            if G.global_backtest_profit:
+                last_pf = G.global_backtest_profit[-1]
             else:
                 last_pf = 0.0
             val_str = f"{vl:.4f}" if vl is not None else "N/A"
@@ -113,16 +113,15 @@ def csv_training_thread(
                 )
                 idx, conf, _ = ensemble.predict(seq_t)
                 label_map = {0: "BUY", 1: "SELL", 2: "HOLD"}
-                global global_current_prediction, global_ai_confidence
-                global_current_prediction = label_map.get(idx, "N/A")
-                global_ai_confidence = conf
-                g.inc_epoch()
-                global_attention_weights_history.append(0)
+                G.global_current_prediction = label_map.get(idx, "N/A")
+                G.global_ai_confidence = conf
+                G.inc_epoch()
+                G.global_attention_weights_history.append(0)
 
             if adapt_live:
                 changed = False
-                while not live_bars_queue.empty():
-                    new_b = live_bars_queue.get()
+                while not G.live_bars_queue.empty():
+                    new_b = G.live_bars_queue.get()
                     for bar in new_b:
                         ts, o_, h_, l_, c_, v_ = bar
 
@@ -139,11 +138,11 @@ def csv_training_thread(
                             data.append([ts, o_, h_, l_, c_, v_])
                             changed = True
                 if changed:
-                    set_status("Adapting to live data")
+                    G.set_status("Adapting to live data")
                     ds_updated = HourlyDataset(
                         data,
                         seq_len=24,
-                        threshold=GLOBAL_THRESHOLD,
+                        threshold=G.GLOBAL_THRESHOLD,
                         train_mode=True,
                     )
                     if len(ds_updated) > 10:
@@ -175,7 +174,7 @@ def csv_training_thread(
     except Exception as e:
         traceback.print_exc()
 
-        set_status(f"Training error: {e}")
+        G.set_status(f"Training error: {e}")
 
         stop_event.set()
 
@@ -184,19 +183,18 @@ def phemex_live_thread(connector, stop_event, poll_interval: float) -> None:
     """Continuously fetch recent bars from Phemex at a configurable interval."""
     import traceback
 
-    global global_phemex_data
     while not stop_event.is_set():
         try:
-            set_status("Fetching live data")
+            G.set_status("Fetching live data")
             bars = connector.fetch_latest_bars(limit=100)
             if bars:
-                global_phemex_data = bars
-                live_bars_queue.put(bars)
+                G.global_phemex_data = bars
+                G.live_bars_queue.put(bars)
         except Exception as e:
             traceback.print_exc()
-            set_status(f"Fetch error: {e}")
+            G.set_status(f"Fetch error: {e}")
             stop_event.set()
-        status_sleep("Waiting before next fetch", poll_interval)
+        G.status_sleep("Waiting before next fetch", poll_interval)
 
 
 ###############################################################################
@@ -270,23 +268,23 @@ def save_checkpoint():
     import json
 
     checkpoint = {
-        "global_training_loss": global_training_loss,
-        "global_validation_loss": global_validation_loss,
-        "global_backtest_profit": global_backtest_profit,
-        "global_equity_curve": global_equity_curve,
-        "global_ai_adjustments_log": global_ai_adjustments_log,
+        "global_training_loss": G.global_training_loss,
+        "global_validation_loss": G.global_validation_loss,
+        "global_backtest_profit": G.global_backtest_profit,
+        "global_equity_curve": G.global_equity_curve,
+        "global_ai_adjustments_log": G.global_ai_adjustments_log,
         "global_hyperparameters": {
-            "GLOBAL_THRESHOLD": GLOBAL_THRESHOLD,
-            "global_SL_multiplier": global_SL_multiplier,
-            "global_TP_multiplier": global_TP_multiplier,
-            "global_ATR_period": global_ATR_period,
+            "GLOBAL_THRESHOLD": G.GLOBAL_THRESHOLD,
+            "global_SL_multiplier": G.global_SL_multiplier,
+            "global_TP_multiplier": G.global_TP_multiplier,
+            "global_ATR_period": G.global_ATR_period,
         },
-        "global_ai_epoch_count": g.epoch_count,
-        "gpt_memory_squirtle": gpt_memory_squirtle,
-        "gpt_memory_wartorttle": gpt_memory_wartorttle,
-        "gpt_memory_bigmanblastoise": gpt_memory_bigmanblastoise,
-        "gpt_memory_moneymaker": gpt_memory_moneymaker,
-        "global_attention_weights_history": global_attention_weights_history,
+        "global_ai_epoch_count": G.epoch_count,
+        "gpt_memory_squirtle": G.gpt_memory_squirtle,
+        "gpt_memory_wartorttle": G.gpt_memory_wartorttle,
+        "gpt_memory_bigmanblastoise": G.gpt_memory_bigmanblastoise,
+        "gpt_memory_moneymaker": G.gpt_memory_moneymaker,
+        "global_attention_weights_history": G.global_attention_weights_history,
     }
     with open("checkpoint.json", "w") as f:
         json.dump(checkpoint, f, indent=2)

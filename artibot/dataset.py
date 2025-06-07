@@ -12,7 +12,8 @@ import torch
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import Dataset
 
-from .globals import *
+import artibot.globals as G
+import logging
 
 
 ###############################################################################
@@ -98,7 +99,7 @@ class HourlyDataset(Dataset):
         self,
         data,
         seq_len=24,
-        threshold=GLOBAL_THRESHOLD,
+        threshold=G.GLOBAL_THRESHOLD,
         sma_period=10,
         train_mode=True,
     ):
