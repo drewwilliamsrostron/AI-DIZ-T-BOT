@@ -3,6 +3,6 @@
     "",
     "\\artibot"
   ],
-  "SelectedNode": "\\run_artibot.py",
+  "SelectedNode": "\\artibot\\training.py",
   "PreviewInSolutionExplorer": false
 }
