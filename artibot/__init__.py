@@ -1,4 +1,13 @@
-"""Simplified public API for the :mod:`artibot` package."""
+"""Simplified public API for the :mod:`artibot` package.
+
+Importing :mod:`artibot` now ensures that required third-party packages are
+available.  This mirrors the behavior of the legacy single-file script where
+the installer ran once on first launch.
+"""
+
+from .environment import ensure_dependencies
+
+ensure_dependencies()  # run the installer once at import time
 
 from .environment import *  # noqa: F401,F403 - re-export environment helpers
 
