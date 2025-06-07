@@ -1,5 +1,6 @@
 """Backtesting utilities for evaluating strategies."""
 
+# ruff: noqa: F403, F405
 from .globals import *
 from .metrics import inactivity_exponential_penalty, compute_days_in_profit
 
@@ -54,10 +55,14 @@ def robust_backtest(ensemble, data_full):
         closes, fastperiod=fast_macd, slowperiod=slow_macd, signalperiod=sig_macd
     )
 
-    extd = []
-    for i, row in enumerate(raw_data):
-        extd.append(list(row[1:6]) + [float(sma[i]), float(rsi[i]), float(macd_[i])])
-    extd = np.array(extd, dtype=np.float32)
+    extd = np.column_stack(
+        [
+            raw_data[:, 1:6],
+            sma.astype(np.float32),
+            rsi.astype(np.float32),
+            macd_.astype(np.float32),
+        ]
+    ).astype(np.float32)
     # Sanitize indicator features so NaNs do not propagate into the model
 
     extd = np.clip(extd, -10.0, 10.0)
@@ -321,7 +326,6 @@ def robust_backtest(ensemble, data_full):
 
     net_score = net_pct / 100.0
     shr_score = sharpe
-    dd_pen = abs(mdd)
     trade_count = len(trades)
     trade_term = trade_count * delta
     # final composite
