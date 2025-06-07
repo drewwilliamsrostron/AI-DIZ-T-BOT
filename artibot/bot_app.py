@@ -23,6 +23,7 @@ def load_master_config(path: str = "master_config.json") -> dict:
 
 
 from .globals import *
+import artibot.globals as g
 from .dataset import load_csv_hourly, HourlyDataset
 from .ensemble import EnsembleModel
 from .training import (
@@ -43,7 +44,7 @@ CONFIG = load_master_config()
 def run_bot(max_epochs: int | None = None):
     global global_training_loss, global_validation_loss, global_backtest_profit, global_equity_curve
     global global_ai_adjustments_log, global_current_prediction, global_ai_confidence
-    global global_ai_epoch_count, global_attention_weights_history, global_ai_adjustments
+    global global_attention_weights_history, global_ai_adjustments
     global global_status_message
 
     torch.backends.cudnn.deterministic = True
@@ -56,11 +57,14 @@ def run_bot(max_epochs: int | None = None):
     global_ai_adjustments_log = "No adjustments yet"
     global_current_prediction = None
     global_ai_confidence = None
-    global_ai_epoch_count = 0
+    g.epoch_count = 0
     global_attention_weights_history = []
     global_ai_adjustments = ""
 
     config = CONFIG
+    g.global_min_hold_seconds = config.get(
+        "MIN_HOLD_SECONDS", g.global_min_hold_seconds
+    )
     openai.api_key = config["CHATGPT"]["API_KEY"]
     csv_path = config["CSV_PATH"]
     if not os.path.isabs(csv_path):
@@ -111,7 +115,7 @@ def run_bot(max_epochs: int | None = None):
     )
     phemex_th.start()
 
-    ds = HourlyDataset(data, seq_len=24, threshold=GLOBAL_THRESHOLD)
+    ds = HourlyDataset(data, seq_len=24, threshold=GLOBAL_THRESHOLD, train_mode=False)
     meta_agent = MetaTransformerRL(ensemble=ensemble, lr=1e-3)
     meta_th = threading.Thread(
         target=lambda: meta_control_loop(ensemble, ds, meta_agent), daemon=True

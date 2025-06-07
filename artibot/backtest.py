@@ -21,7 +21,7 @@ def robust_backtest(ensemble, data_full):
         }
 
     LEVERAGE = 10
-    min_hold_seconds = 2 * 3600
+    min_hold_seconds = global_min_hold_seconds
     commission_rate = 0.0001
     slippage = 0.0002
     FUNDING_RATE = 0.0001
@@ -87,10 +87,10 @@ def robust_backtest(ensemble, data_full):
     df = pd.DataFrame(
         {
             "timestamp": timestamps,
-            "open": extd[:, 0] * 100000,
-            "high": extd[:, 1] * 100000,
-            "low": extd[:, 2] * 100000,
-            "close": extd[:, 3] * 100000,
+            "open": extd[:, 0],
+            "high": extd[:, 1],
+            "low": extd[:, 2],
+            "close": extd[:, 3],
             "prediction": preds,
         }
     )

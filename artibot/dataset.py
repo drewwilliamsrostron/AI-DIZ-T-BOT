@@ -90,11 +90,19 @@ def load_csv_hourly(csv_path: str) -> list[list[float]]:
 # HourlyDataset
 ###############################################################################
 class HourlyDataset(Dataset):
-    def __init__(self, data, seq_len=24, threshold=GLOBAL_THRESHOLD, sma_period=10):
+    def __init__(
+        self,
+        data,
+        seq_len=24,
+        threshold=GLOBAL_THRESHOLD,
+        sma_period=10,
+        train_mode=True,
+    ):
         self.data = data
         self.seq_len = seq_len
         self.threshold = threshold
         self.sma_period = sma_period
+        self.train_mode = train_mode
         self.samples, self.labels = self.preprocess()
 
     def preprocess(self):
@@ -158,7 +166,7 @@ class HourlyDataset(Dataset):
         sample = self.samples[idx].copy()
         # (8) Data Augmentation: bigger probability + bigger noise
         # from 0.2 => 0.5 probability, and 0.01 => 0.02 stdev
-        if random.random() < 0.5:
+        if self.train_mode and random.random() < 0.5:
             sample += np.random.normal(0, 0.02, sample.shape)
         # Explicit dtype avoids "Could not infer dtype" errors on some
         # platforms when NumPy 2.x is installed.

@@ -2,6 +2,7 @@
 
 # ruff: noqa: F403, F405
 from .globals import *
+import artibot.globals as g
 from .dataset import HourlyDataset
 
 
@@ -22,10 +23,11 @@ def csv_training_thread(
     import traceback
 
     global global_training_loss, global_validation_loss
-    global global_ai_epoch_count
 
     try:
-        ds_full = HourlyDataset(data, seq_len=24, threshold=GLOBAL_THRESHOLD)
+        ds_full = HourlyDataset(
+            data, seq_len=24, threshold=GLOBAL_THRESHOLD, train_mode=True
+        )
         if len(ds_full) < 10:
             logging.warning("Not enough data in CSV => exiting.")
             return
@@ -104,7 +106,7 @@ def csv_training_thread(
                 global global_current_prediction, global_ai_confidence
                 global_current_prediction = label_map.get(idx, "N/A")
                 global_ai_confidence = conf
-                global_ai_epoch_count = ensemble.train_steps
+                g.inc_epoch()
                 global_attention_weights_history.append(0)
 
             if adapt_live:
@@ -129,7 +131,10 @@ def csv_training_thread(
                 if changed:
                     set_status("Adapting to live data")
                     ds_updated = HourlyDataset(
-                        data, seq_len=24, threshold=GLOBAL_THRESHOLD
+                        data,
+                        seq_len=24,
+                        threshold=GLOBAL_THRESHOLD,
+                        train_mode=True,
                     )
                     if len(ds_updated) > 10:
                         nt_ = len(ds_updated)
@@ -165,10 +170,9 @@ def csv_training_thread(
         stop_event.set()
 
 
-def phemex_live_thread(connector, stop_event, poll_interval=1.0):
+def phemex_live_thread(connector, stop_event, poll_interval=900.0):
     """Continuously fetch recent bars from Phemex at a configurable interval."""
     import traceback
-
 
     global global_phemex_data
     while not stop_event.is_set():
@@ -183,7 +187,6 @@ def phemex_live_thread(connector, stop_event, poll_interval=1.0):
             set_status(f"Fetch error: {e}")
             stop_event.set()
         status_sleep("Waiting before next fetch", poll_interval)
-
 
 
 ###############################################################################
@@ -264,7 +267,7 @@ def save_checkpoint():
             "global_TP_multiplier": global_TP_multiplier,
             "global_ATR_period": global_ATR_period,
         },
-        "global_ai_epoch_count": global_ai_epoch_count,
+        "global_ai_epoch_count": g.epoch_count,
         "gpt_memory_squirtle": gpt_memory_squirtle,
         "gpt_memory_wartorttle": gpt_memory_wartorttle,
         "gpt_memory_bigmanblastoise": gpt_memory_bigmanblastoise,
