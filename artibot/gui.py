@@ -422,6 +422,6 @@ class TradingGUI:
         self.ai_log_text.insert(tk.END, G.global_ai_adjustments_log)
 
         # update status line
-        self.status_var.set(get_status())
+        self.status_var.set(G.get_status())
 
         self.root.after(self.update_interval, self.update_dashboard)
