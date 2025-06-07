@@ -1,12 +1,22 @@
 """Model ensemble used during training and prediction."""
 
+# ruff: noqa: F403, F405
+
+import inspect
+from contextlib import nullcontext
+
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.cuda.amp import GradScaler, autocast
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+
+from .backtest import robust_backtest
+from .dataset import IndicatorHyperparams
 from .globals import *
 from .metrics import compute_yearly_stats
 from .model import TradingModel
-from .dataset import IndicatorHyperparams
-from .backtest import robust_backtest
-import inspect
-from contextlib import nullcontext
 
 
 class EnsembleModel:
@@ -63,7 +73,8 @@ class EnsembleModel:
         global global_yearly_stats_table
 
         global global_best_equity_curve, global_best_sharpe, global_best_drawdown
-        global global_best_net_pct, global_best_num_trades, global_best_inactivity_penalty
+        global global_best_net_pct, global_best_num_trades
+        global global_best_inactivity_penalty
         global global_best_composite_reward, global_best_days_in_profit
         global global_best_lr, global_best_wd
 
@@ -88,7 +99,8 @@ class EnsembleModel:
         )
         global_yearly_stats_table = table_str
 
-        # (4) We'll define an extended state for the meta-agent, but that happens in meta_control_loop.
+        # (4) We'll define an extended state for the meta-agent,
+        # but that happens in meta_control_loop.
         # For the main training, we keep your code.
 
         # The composite reward is used as training target
@@ -236,9 +248,7 @@ class EnsembleModel:
                 #                     nn.init.zeros_(layer.bias)
                 # self.patience_counter=0
                 if random.random() < 0.7:
-                    new_lr = np.random.choice(
-                        [1e-5, 1e-4, 1e-3]
-                    )  # More radical LR changes
+                    _ = np.random.choice([1e-5, 1e-4, 1e-3])  # More radical LR changes
                 else:
                     # Full reinit with different initialization
                     for m in self.models:
@@ -298,11 +308,11 @@ class EnsembleModel:
             outs = []
             for m in self.models:
                 lg, _, _ = m(x.to(self.device))
-                p_ = torch.softmax(lg, dim=1).cpu().numpy()
+                p_ = torch.softmax(lg, dim=1).cpu()
                 outs.append(p_)
-            avgp = np.mean(outs, axis=0)
-            idx = int(np.argmax(avgp[0]))
-            conf = float(avgp[0][idx])
+            avgp = torch.mean(torch.stack(outs), dim=0)
+            idx = int(avgp[0].argmax().item())
+            conf = float(avgp[0, idx].item())
             return idx, conf, None
 
     def vectorized_predict(self, windows_tensor, batch_size=256):
@@ -355,8 +365,9 @@ class EnsembleModel:
                     m.load_state_dict(sd, strict=False)
                 if data_full and len(data_full) > 24:
                     loaded_result = robust_backtest(self, data_full)
-                    global global_best_equity_curve, global_best_sharpe, global_best_drawdown
-                    global global_best_net_pct, global_best_num_trades, global_best_inactivity_penalty
+                    global global_best_equity_curve, global_best_sharpe
+                    global global_best_drawdown, global_best_net_pct
+                    global global_best_num_trades, global_best_inactivity_penalty
                     global global_best_composite_reward, global_best_days_in_profit
                     global global_best_lr, global_best_wd
                     global_best_equity_curve = loaded_result["equity_curve"]
@@ -371,5 +382,5 @@ class EnsembleModel:
                     global_best_wd = (
                         self.optimizers[0].param_groups[0].get("weight_decay", 0)
                     )
-            except:
+            except Exception:
                 pass

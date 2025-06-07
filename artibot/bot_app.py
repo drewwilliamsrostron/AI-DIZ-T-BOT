@@ -5,9 +5,17 @@ meta–reinforcement learning agent and the Tkinter GUI. API credentials
 are loaded from ``master_config.json`` so no secrets live in the codebase.
 """
 
-import os
+# ruff: noqa: F403, F405, E402
+
+import datetime
 import json
 import logging
+import os
+import threading
+import tkinter as tk
+
+import openai
+import torch
 
 
 def load_master_config(path: str = "master_config.json") -> dict:
@@ -22,18 +30,19 @@ def load_master_config(path: str = "master_config.json") -> dict:
         return {}
 
 
-from .globals import *
 import artibot.globals as g
-from .dataset import load_csv_hourly, HourlyDataset
+
+from .dataset import HourlyDataset, load_csv_hourly
 from .ensemble import EnsembleModel
+from .globals import *
+from .gui import TradingGUI
+from .rl import MetaTransformerRL, meta_control_loop
 from .training import (
+    PhemexConnector,
     csv_training_thread,
     phemex_live_thread,
-    PhemexConnector,
     save_checkpoint,
 )
-from .rl import MetaTransformerRL, meta_control_loop
-from .gui import TradingGUI
 
 # ---------------------------------------------------------------------------
 # Configuration – loaded from ``master_config.json`` at repo root
@@ -41,9 +50,10 @@ from .gui import TradingGUI
 CONFIG = load_master_config()
 
 
-def run_bot(max_epochs: int | None = None):
-    global global_training_loss, global_validation_loss, global_backtest_profit, global_equity_curve
-    global global_ai_adjustments_log, global_current_prediction, global_ai_confidence
+def run_bot(max_epochs: int | None = None) -> None:
+    global global_training_loss, global_validation_loss, global_backtest_profit
+    global global_equity_curve, global_ai_adjustments_log
+    global global_current_prediction, global_ai_confidence
     global global_attention_weights_history, global_ai_adjustments
     global global_status_message
 
@@ -107,7 +117,7 @@ def run_bot(max_epochs: int | None = None):
     )
     train_th.start()
 
-    poll_interval = config.get("LIVE_POLL_INTERVAL", 60.0)
+    poll_interval = config["LIVE_POLL_INTERVAL"]
     phemex_th = threading.Thread(
         target=phemex_live_thread,
         args=(connector, stop_event, poll_interval),
@@ -123,7 +133,7 @@ def run_bot(max_epochs: int | None = None):
     meta_th.start()
 
     root = tk.Tk()
-    gui = TradingGUI(root, ensemble)
+    TradingGUI(root, ensemble)
     try:
         root.mainloop()
     except KeyboardInterrupt:
