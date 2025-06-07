@@ -1,5 +1,6 @@
 """Background CSV training thread and exchange connector."""
 
+# ruff: noqa: F403, F405
 from .globals import *
 from .dataset import HourlyDataset
 
@@ -22,7 +23,6 @@ def csv_training_thread(
 
     global global_training_loss, global_validation_loss
     global global_ai_epoch_count
-    global global_status_message
 
     try:
         ds_full = HourlyDataset(data, seq_len=24, threshold=GLOBAL_THRESHOLD)
@@ -43,7 +43,6 @@ def csv_training_thread(
         )
         dl_val = DataLoader(
             ds_val, batch_size=128, shuffle=False, num_workers=workers, pin_memory=pin
-
         )
 
         adapt_live = bool(config.get("ADAPT_TO_LIVE", False))
@@ -58,9 +57,8 @@ def csv_training_thread(
                 break
             ensemble.train_steps += 1
             epochs += 1
-            global global_status_message
-            global_status_message = f"Training step {ensemble.train_steps}"
-            print(global_status_message, flush=True)
+            set_status(f"Training step {ensemble.train_steps}")
+            print(get_status(), flush=True)
             tl, vl = ensemble.train_one_epoch(dl_train, dl_val, data, stop_event)
             global_training_loss.append(tl)
             if vl is not None:
@@ -129,7 +127,7 @@ def csv_training_thread(
                             data.append([ts, o_, h_, l_, c_, v_])
                             changed = True
                 if changed:
-                    global_status_message = "Adapting to live data"
+                    set_status("Adapting to live data")
                     ds_updated = HourlyDataset(
                         data, seq_len=24, threshold=GLOBAL_THRESHOLD
                     )
@@ -161,7 +159,7 @@ def csv_training_thread(
 
     except Exception as e:
         traceback.print_exc()
-        global_status_message = f"Training error: {e}"
+        set_status(f"Training error: {e}")
         stop_event.set()
 
 
@@ -169,17 +167,17 @@ def phemex_live_thread(connector, stop_event, poll_interval=1.0):
     """Continuously fetch recent bars from Phemex at a configurable interval."""
     import traceback
 
-    global global_phemex_data, global_status_message
+    global global_phemex_data
     while not stop_event.is_set():
         try:
-            global_status_message = "Fetching live data"
+            set_status("Fetching live data")
             bars = connector.fetch_latest_bars(limit=100)
             if bars:
                 global_phemex_data = bars
                 live_bars_queue.put(bars)
         except Exception as e:
             traceback.print_exc()
-            global_status_message = f"Fetch error: {e}"
+            set_status(f"Fetch error: {e}")
             stop_event.set()
         status_sleep("Waiting before next fetch", poll_interval)
 
