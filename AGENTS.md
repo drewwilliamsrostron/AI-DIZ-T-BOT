@@ -23,7 +23,7 @@ All heavy lifting lives in the `artibot/` package; the older single-file bots ar
 
 | Layer / Concern | Tool / Version                                                                                       | Why                                                                        |
 | --------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| **Language**    | Python 3.10 – 3.13                                                                                   | Tested; 3.9 still works                                                    |
+| **Language**    | Python 3.9 – 3.13                                                                                   | Tested; 3.9 still works                                                    |
 | **DL / ML**     | PyTorch ≥ 2.2                                                                                        | CPU fallback if no CUDA ([stackoverflow.com][1], [discuss.pytorch.org][2]) |
 | **Data**        | pandas 2.x                                                                                           | Fast CSV/Parquet IO ([github.com][3])                                      |
 | **Concurrency** | `threading` + `queue.Queue` (thread-safe) ([docs.python.org][4], [stackoverflow.com][5])             |                                                                            |
@@ -58,7 +58,7 @@ artibot/                       - ***edit code here only***
 │  globals.py      - shared state (to be refactored!)
 │
 Reinforcement Learning Test/   - offline RL prototype (read-only)
-Last_working_bot_but_one_py/   - last-known-good single-file bot (read-only)
+last_working_bot_but_only_using_one.py   - last-known-good single-file bot (read-only)
 Old bot versions/              - assorted history (read-only)
 ```
 
@@ -75,6 +75,8 @@ Old bot versions/              - assorted history (read-only)
 * Use **type hints** and a short **module docstring** in every new file.
 * No hard-coded secrets; store credentials only in `master_config.json`.
 * Prefer `queue.Queue` for cross-thread data; avoid new global vars. ([docs.python.org][4])
+* Dependencies install automatically via `environment.ensure_dependencies()`, so
+  `requirements.txt` is optional.
 
 ### Python Best Practices (Artibot-specific)
 
