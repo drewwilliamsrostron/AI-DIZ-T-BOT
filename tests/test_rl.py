@@ -9,6 +9,7 @@ import random
 from typing import NamedTuple
 from torch.utils.data import Dataset
 import random as _random
+import pytest
 
 
 def load_rl_module():
@@ -102,3 +103,41 @@ def test_pick_action_deterministic(monkeypatch):
     assert idx == 2
     assert value == 0.5
     assert torch.isclose(logp, torch.tensor([0.25])).item()
+
+
+def test_apply_action_custom_space():
+    rl = load_rl_module()
+
+    class DummyOpt:
+        def __init__(self) -> None:
+            self.param_groups = [{"lr": 0.01, "weight_decay": 0.001}]
+
+    class DummyEnsemble:
+        def __init__(self) -> None:
+            self.optimizers = [DummyOpt()]
+            self.indicator_hparams = rl.IndicatorHyperparams(14, 10, 12, 26, 9)
+
+    ensemble = DummyEnsemble()
+    agent = rl.MetaTransformerRL(ensemble)
+    agent.action_space = [(0.1, 0.2, 1, 2, 3, 4, 5, 0.05)]
+    agent.model.action_space = [(0.0,) * 8]
+
+    result = agent.apply_action(0)
+
+    assert result == pytest.approx(
+        (
+            0.011,
+            0.0012,
+            15,
+            12,
+            15,
+            30,
+            14,
+            0.05,
+        )
+    )
+
+    pg = ensemble.optimizers[0].param_groups[0]
+    assert pg["lr"] == pytest.approx(0.011)
+    assert pg["weight_decay"] == pytest.approx(0.0012)
+    assert ensemble.indicator_hparams == rl.IndicatorHyperparams(15, 12, 15, 30, 14)

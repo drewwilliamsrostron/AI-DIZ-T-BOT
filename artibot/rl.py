@@ -1,6 +1,7 @@
 """Meta reinforcement learning agent controlling training hyperparameters."""
 
 # ruff: noqa: F403, F405
+
 from .globals import *
 from .model import PositionalEncoding
 from .dataset import IndicatorHyperparams
@@ -147,7 +148,9 @@ class MetaTransformerRL:
     def apply_action(self, action_idx):
         # decode
         (lr_adj, wd_adj, rsi_adj, sma_adj, mf_adj, ms_adj, sig_adj, thr_adj) = (
+
             self.model.action_space[action_idx]
+
         )
         # 1) LR/WD
         old_lr = self.ensemble.optimizers[0].param_groups[0]["lr"]
@@ -235,7 +238,9 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                 dtype=np.float32,
             )
 
+
             set_status("Meta agent updating")
+
             a_idx, logp, val_s = agent.pick_action(state)
             (new_lr, new_wd, nrsi, nsma, nmacdf, nmacds, nmacdsig, nthr) = (
                 agent.apply_action(a_idx)

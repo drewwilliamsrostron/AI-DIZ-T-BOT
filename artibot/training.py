@@ -159,13 +159,16 @@ def csv_training_thread(
 
     except Exception as e:
         traceback.print_exc()
+
         set_status(f"Training error: {e}")
+
         stop_event.set()
 
 
 def phemex_live_thread(connector, stop_event, poll_interval=1.0):
     """Continuously fetch recent bars from Phemex at a configurable interval."""
     import traceback
+
 
     global global_phemex_data
     while not stop_event.is_set():
@@ -180,6 +183,7 @@ def phemex_live_thread(connector, stop_event, poll_interval=1.0):
             set_status(f"Fetch error: {e}")
             stop_event.set()
         status_sleep("Waiting before next fetch", poll_interval)
+
 
 
 ###############################################################################
