@@ -35,21 +35,15 @@ def csv_training_thread(
         n_tr = int(n_tot * 0.9)
         n_val = n_tot - n_tr
         ds_train, ds_val = random_split(ds_full, [n_tr, n_val])
-        pin = False
-        workers = 0
+
+        pin = ensemble.device.type == "cuda"
+        workers = 2 if pin else 0
         dl_train = DataLoader(
-            ds_train,
-            batch_size=128,
-            shuffle=True,
-            num_workers=workers,
-            pin_memory=pin,
+            ds_train, batch_size=128, shuffle=True, num_workers=workers, pin_memory=pin
         )
         dl_val = DataLoader(
-            ds_val,
-            batch_size=128,
-            shuffle=False,
-            num_workers=workers,
-            pin_memory=pin,
+            ds_val, batch_size=128, shuffle=False, num_workers=workers, pin_memory=pin
+
         )
 
         adapt_live = bool(config.get("ADAPT_TO_LIVE", False))
@@ -121,6 +115,11 @@ def csv_training_thread(
                     new_b = live_bars_queue.get()
                     for bar in new_b:
                         ts, o_, h_, l_, c_, v_ = bar
+
+                        ts = int(ts)
+                        if ts > 1_000_000_000_000:
+                            ts //= 1000
+
                         o_ /= 1e5
                         h_ /= 1e5
                         l_ /= 1e5
@@ -139,8 +138,8 @@ def csv_training_thread(
                         ntr_ = int(nt_ * 0.9)
                         nv_ = nt_ - ntr_
                         ds_tr_, ds_val_ = random_split(ds_updated, [ntr_, nv_])
-                        pin = False
-                        workers = 0
+                        pin = ensemble.device.type == "cuda"
+                        workers = 2 if pin else 0
                         dl_tr_ = DataLoader(
                             ds_tr_,
                             batch_size=128,
