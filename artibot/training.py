@@ -2,7 +2,9 @@
 
 # ruff: noqa: F403, F405
 import artibot.globals as G
+
 import logging
+
 import re
 import sys
 
@@ -189,7 +191,9 @@ def phemex_live_thread(connector, stop_event, poll_interval: float) -> None:
             bars = connector.fetch_latest_bars(limit=100)
             if bars:
                 G.global_phemex_data = bars
+
                 G.live_bars_queue.put(bars)
+
         except Exception as e:
             traceback.print_exc()
             G.set_status(f"Fetch error: {e}")
