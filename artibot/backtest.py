@@ -3,6 +3,8 @@
 # ruff: noqa: F403, F405
 import numpy as np
 import pandas as pd
+import talib
+import torch
 
 from .globals import *
 from .metrics import inactivity_exponential_penalty, compute_days_in_profit
