@@ -20,6 +20,8 @@ from .model import TradingModel
 
 
 class EnsembleModel:
+    """Simple container for multiple models and optimisers."""
+
     def __init__(self, device, n_models=2, lr=3e-4, weight_decay=1e-4):
         self.device = device
 

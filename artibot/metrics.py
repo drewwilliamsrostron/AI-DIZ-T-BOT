@@ -11,6 +11,7 @@ from .globals import *
 # Yearly Stats (unchanged)
 ###############################################################################
 def compute_yearly_stats(equity_curve, trades, initial_balance=100.0):
+    """Aggregate yearly return statistics from an equity curve."""
     if not equity_curve:
         return pd.DataFrame(), "No data"
     eq_df = pd.DataFrame(equity_curve, columns=["timestamp", "balance"])
@@ -75,6 +76,7 @@ def compute_yearly_stats(equity_curve, trades, initial_balance=100.0):
 # inactivity_exponential_penalty (unchanged)
 ###############################################################################
 def inactivity_exponential_penalty(gap_in_secs, max_penalty=100.0):
+    """Return penalty that grows with months of inactivity."""
     month_secs = 30 * 24 * 3600
     months = int(gap_in_secs // month_secs)
     base = 0.01
@@ -91,6 +93,7 @@ def inactivity_exponential_penalty(gap_in_secs, max_penalty=100.0):
 # compute_days_in_profit (unchanged)
 ###############################################################################
 def compute_days_in_profit(equity_curve, init_balance):
+    """Count days equity stays above the starting balance."""
     total_s = 0.0
     if len(equity_curve) < 2:
         return 0.0

@@ -1,3 +1,5 @@
+"""Shared global state for threads and hyperparameters."""
+
 # Imports
 ###############################################################################
 import time
