@@ -15,7 +15,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from .backtest import robust_backtest
 from .dataset import IndicatorHyperparams
-from .globals import *
+import artibot.globals as G
 from .metrics import compute_yearly_stats
 from .model import TradingModel
 
@@ -68,39 +68,28 @@ class EnsembleModel:
         )
 
     def train_one_epoch(self, dl_train, dl_val, data_full, stop_event=None):
-        global global_equity_curve, global_backtest_profit
-        global global_inactivity_penalty, global_composite_reward
-        global global_days_without_trading, global_trade_details
-        global global_days_in_profit
-        global global_sharpe, global_max_drawdown, global_net_pct, global_num_trades
-        global global_yearly_stats_table
-
-        global global_best_equity_curve, global_best_sharpe, global_best_drawdown
-        global global_best_net_pct, global_best_num_trades
-        global global_best_inactivity_penalty
-        global global_best_composite_reward, global_best_days_in_profit
-        global global_best_lr, global_best_wd
+        # mutate shared state on the globals module
 
         current_result = robust_backtest(self, data_full)
 
-        global_equity_curve = current_result["equity_curve"]
-        global_backtest_profit.append(current_result["effective_net_pct"])
-        global_inactivity_penalty = current_result["inactivity_penalty"]
-        global_composite_reward = current_result["composite_reward"]
-        global_days_without_trading = current_result["days_without_trading"]
-        global_trade_details = current_result["trade_details"]
-        global_days_in_profit = current_result["days_in_profit"]
-        global_sharpe = current_result["sharpe"]
-        global_max_drawdown = current_result["max_drawdown"]
-        global_net_pct = current_result["net_pct"]
-        global_num_trades = current_result["trades"]
+        G.global_equity_curve = current_result["equity_curve"]
+        G.global_backtest_profit.append(current_result["effective_net_pct"])
+        G.global_inactivity_penalty = current_result["inactivity_penalty"]
+        G.global_composite_reward = current_result["composite_reward"]
+        G.global_days_without_trading = current_result["days_without_trading"]
+        G.global_trade_details = current_result["trade_details"]
+        G.global_days_in_profit = current_result["days_in_profit"]
+        G.global_sharpe = current_result["sharpe"]
+        G.global_max_drawdown = current_result["max_drawdown"]
+        G.global_net_pct = current_result["net_pct"]
+        G.global_num_trades = current_result["trades"]
 
         dfy, table_str = compute_yearly_stats(
             current_result["equity_curve"],
             current_result["trade_details"],
             initial_balance=100.0,
         )
-        global_yearly_stats_table = table_str
+        G.global_yearly_stats_table = table_str
 
         # (4) We'll define an extended state for the meta-agent,
         # but that happens in meta_control_loop.
@@ -220,8 +209,8 @@ class EnsembleModel:
         # (3) Dynamic Patience => measure improvement
         # We'll track the last 10 net profits
         avg_improvement = (
-            np.mean(global_backtest_profit[-10:])
-            if len(global_backtest_profit) >= 10
+            np.mean(G.global_backtest_profit[-10:])
+            if len(G.global_backtest_profit) >= 10
             else 0
         )
         if cur_reward > self.best_composite_reward:
@@ -272,17 +261,17 @@ class EnsembleModel:
                     self.patience_counter = 0
 
         # track best net
-        if current_result["net_pct"] > global_best_net_pct:
-            global_best_equity_curve = current_result["equity_curve"]
-            global_best_sharpe = current_result["sharpe"]
-            global_best_drawdown = current_result["max_drawdown"]
-            global_best_net_pct = current_result["net_pct"]
-            global_best_num_trades = trades_now
-            global_best_inactivity_penalty = current_result["inactivity_penalty"]
-            global_best_composite_reward = cur_reward
-            global_best_days_in_profit = current_result["days_in_profit"]
-            global_best_lr = self.optimizers[0].param_groups[0]["lr"]
-            global_best_wd = self.optimizers[0].param_groups[0].get("weight_decay", 0)
+        if current_result["net_pct"] > G.global_best_net_pct:
+            G.global_best_equity_curve = current_result["equity_curve"]
+            G.global_best_sharpe = current_result["sharpe"]
+            G.global_best_drawdown = current_result["max_drawdown"]
+            G.global_best_net_pct = current_result["net_pct"]
+            G.global_best_num_trades = trades_now
+            G.global_best_inactivity_penalty = current_result["inactivity_penalty"]
+            G.global_best_composite_reward = cur_reward
+            G.global_best_days_in_profit = current_result["days_in_profit"]
+            G.global_best_lr = self.optimizers[0].param_groups[0]["lr"]
+            G.global_best_wd = self.optimizers[0].param_groups[0].get("weight_decay", 0)
 
         self.train_steps += 1
         return train_loss, val_loss
@@ -368,21 +357,18 @@ class EnsembleModel:
                     m.load_state_dict(sd, strict=False)
                 if data_full and len(data_full) > 24:
                     loaded_result = robust_backtest(self, data_full)
-                    global global_best_equity_curve, global_best_sharpe
-                    global global_best_drawdown, global_best_net_pct
-                    global global_best_num_trades, global_best_inactivity_penalty
-                    global global_best_composite_reward, global_best_days_in_profit
-                    global global_best_lr, global_best_wd
-                    global_best_equity_curve = loaded_result["equity_curve"]
-                    global_best_sharpe = loaded_result["sharpe"]
-                    global_best_drawdown = loaded_result["max_drawdown"]
-                    global_best_net_pct = loaded_result["net_pct"]
-                    global_best_num_trades = loaded_result["trades"]
-                    global_best_inactivity_penalty = loaded_result["inactivity_penalty"]
-                    global_best_composite_reward = loaded_result["composite_reward"]
-                    global_best_days_in_profit = loaded_result["days_in_profit"]
-                    global_best_lr = self.optimizers[0].param_groups[0]["lr"]
-                    global_best_wd = (
+                    G.global_best_equity_curve = loaded_result["equity_curve"]
+                    G.global_best_sharpe = loaded_result["sharpe"]
+                    G.global_best_drawdown = loaded_result["max_drawdown"]
+                    G.global_best_net_pct = loaded_result["net_pct"]
+                    G.global_best_num_trades = loaded_result["trades"]
+                    G.global_best_inactivity_penalty = loaded_result[
+                        "inactivity_penalty"
+                    ]
+                    G.global_best_composite_reward = loaded_result["composite_reward"]
+                    G.global_best_days_in_profit = loaded_result["days_in_profit"]
+                    G.global_best_lr = self.optimizers[0].param_groups[0]["lr"]
+                    G.global_best_wd = (
                         self.optimizers[0].param_groups[0].get("weight_decay", 0)
                     )
             except Exception:
