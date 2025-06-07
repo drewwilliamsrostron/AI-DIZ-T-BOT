@@ -119,7 +119,7 @@ def run_bot(max_epochs: int | None = None) -> None:
     )
     phemex_th.start()
 
-    ds = HourlyDataset(data, seq_len=24, threshold=GLOBAL_THRESHOLD, train_mode=False)
+    ds = HourlyDataset(data, seq_len=24, threshold=G.GLOBAL_THRESHOLD, train_mode=False)
     meta_agent = MetaTransformerRL(ensemble=ensemble, lr=1e-3)
     meta_th = threading.Thread(
         target=lambda: meta_control_loop(ensemble, ds, meta_agent), daemon=True
