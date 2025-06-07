@@ -39,25 +39,25 @@ from .gui import TradingGUI
 CONFIG = load_master_config()
 
 
-def run_bot():
+def run_bot(max_epochs: int | None = None):
     global global_training_loss, global_validation_loss, global_backtest_profit, global_equity_curve
     global global_ai_adjustments_log, global_current_prediction, global_ai_confidence
     global global_ai_epoch_count, global_attention_weights_history, global_ai_adjustments
     global global_status_message
 
-    torch.backends.cudnn.deterministic=True
-    torch.backends.cudnn.benchmark=False
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
-    global_training_loss=[]
-    global_validation_loss=[]
-    global_backtest_profit=[]
-    global_equity_curve=[]
-    global_ai_adjustments_log="No adjustments yet"
-    global_current_prediction=None
-    global_ai_confidence=None
-    global_ai_epoch_count=0
-    global_attention_weights_history=[]
-    global_ai_adjustments=""
+    global_training_loss = []
+    global_validation_loss = []
+    global_backtest_profit = []
+    global_equity_curve = []
+    global_ai_adjustments_log = "No adjustments yet"
+    global_current_prediction = None
+    global_ai_confidence = None
+    global_ai_epoch_count = 0
+    global_attention_weights_history = []
+    global_ai_adjustments = ""
 
     config = CONFIG
     openai.api_key = config["CHATGPT"]["API_KEY"]
@@ -67,7 +67,7 @@ def run_bot():
         csv_path = os.path.join(here, "..", csv_path)
     csv_path = os.path.abspath(os.path.expanduser(csv_path))
     print(f"Loading CSV data from: {csv_path}")
-    data= load_csv_hourly(csv_path)
+    data = load_csv_hourly(csv_path)
 
     if len(data) < 10:
         print("Error: no usable CSV data found")
@@ -89,13 +89,17 @@ def run_bot():
     else:
         use_prev_weights = False
 
-    device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    ensemble= EnsembleModel(device=device, n_models=2, lr=3e-4, weight_decay=1e-4)
-    connector= PhemexConnector(config)
-    stop_event= threading.Event()
+    ensemble = EnsembleModel(device=device, n_models=2, lr=3e-4, weight_decay=1e-4)
+    connector = PhemexConnector(config)
+    stop_event = threading.Event()
 
-    train_th= threading.Thread(target=csv_training_thread,args=(ensemble,data,stop_event,config,use_prev_weights), daemon=True)
+    train_th = threading.Thread(
+        target=csv_training_thread,
+        args=(ensemble, data, stop_event, config, use_prev_weights, max_epochs),
+        daemon=True,
+    )
     train_th.start()
 
     poll_interval = config.get("LIVE_POLL_INTERVAL", 60.0)
@@ -106,13 +110,15 @@ def run_bot():
     )
     phemex_th.start()
 
-    ds= HourlyDataset(data, seq_len=24, threshold=GLOBAL_THRESHOLD)
-    meta_agent= MetaTransformerRL(ensemble=ensemble, lr=1e-3)
-    meta_th= threading.Thread(target=lambda: meta_control_loop(ensemble, ds, meta_agent), daemon=True)
+    ds = HourlyDataset(data, seq_len=24, threshold=GLOBAL_THRESHOLD)
+    meta_agent = MetaTransformerRL(ensemble=ensemble, lr=1e-3)
+    meta_th = threading.Thread(
+        target=lambda: meta_control_loop(ensemble, ds, meta_agent), daemon=True
+    )
     meta_th.start()
 
-    root= tk.Tk()
-    gui= TradingGUI(root, ensemble)
+    root = tk.Tk()
+    gui = TradingGUI(root, ensemble)
     try:
         root.mainloop()
     except KeyboardInterrupt:
@@ -122,14 +128,18 @@ def run_bot():
     train_th.join()
     phemex_th.join()
 
-    with open("training_history.json","w") as f:
-        json.dump({
-            "global_training_loss":global_training_loss,
-            "global_validation_loss":global_validation_loss,
-            "global_backtest_profit":global_backtest_profit
-        }, f)
+    with open("training_history.json", "w") as f:
+        json.dump(
+            {
+                "global_training_loss": global_training_loss,
+                "global_validation_loss": global_validation_loss,
+                "global_backtest_profit": global_backtest_profit,
+            },
+            f,
+        )
     ensemble.save_best_weights("best_model_weights.pth")
     save_checkpoint()
+
 
 if __name__ == "__main__":
     run_bot()

@@ -19,6 +19,7 @@ python run_artibot.py
 
 3. On the very first run the program installs its Python dependencies automatically.  Importing the :mod:`artibot` package triggers the installer in `environment.py`, so any entry point will self-setup.  The GUI may sit on *Initializing…* for a few minutes while packages download—just let it run to completion.
 
+
 ## Project structure
 
 ```

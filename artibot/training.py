@@ -4,7 +4,11 @@ from .globals import *
 from .dataset import HourlyDataset
 
 ###############################################################################
-def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=True):
+def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=True, max_epochs: int | None = None):
+    """Train on CSV data in a background thread.
+
+    ``max_epochs`` stops the loop after N iterations when set.
+    """
     from torch.utils.data import random_split, DataLoader
     import traceback
     global global_training_loss, global_validation_loss
@@ -35,8 +39,12 @@ def csv_training_thread(ensemble, data, stop_event, config, use_prev_weights=Tru
 
         import talib
 
+        epochs = 0
         while not stop_event.is_set():
+            if max_epochs is not None and epochs >= max_epochs:
+                break
             ensemble.train_steps+=1
+            epochs += 1
             global global_status_message
             global_status_message = f"Training step {ensemble.train_steps}"
             print(global_status_message, flush=True)

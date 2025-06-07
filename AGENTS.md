@@ -13,6 +13,7 @@ Artibot is a multithreaded Python 3 trading bot that
 * trains a small Transformer (PyTorch ≥ 2.2) to predict **BUY / SELL / HOLD**,
 * back-tests after each epoch, and
 * can stream live prices to a Tkinter dashboard while sending real orders.
+* the training loop accepts `max_epochs` to stop after N rounds – handy for tests.
 
 All heavy lifting lives in the `artibot/` package; the older single-file bots are kept only for reference.
 
