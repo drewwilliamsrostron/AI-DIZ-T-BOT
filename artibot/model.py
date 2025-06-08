@@ -12,6 +12,8 @@ from .dataset import TradeParams
 import artibot.globals as G
 from .utils import attention_entropy
 
+logger = logging.getLogger(__name__)
+
 
 ###############################################################################
 # PositionalEncoding
@@ -71,14 +73,12 @@ class TradingModel(nn.Module):
         scores = self.attn(x)
         scores = scores / math.sqrt(self.hidden_size)
         scores = scores - scores.max(dim=-1, keepdim=True).values
-        p = torch.softmax(scores, dim=-1)
+        p = scores.softmax(dim=-1)
         p = self.attn_dropout(p)
-        attn_mean = p.mean().item()
-        ent = attention_entropy(p)
         max_prob = p.max(dim=-1).values.mean().item()
-        logging.getLogger(__name__).debug(
-            {"event": "ATTN_STATS", "entropy": ent, "max_prob": max_prob}
-        )
+        ent = attention_entropy(p)
+        logger.debug({"event": "ATTN_STATS", "entropy": ent, "max_prob": max_prob})
+        attn_mean = p.mean().item()
         w = torch.nan_to_num(p.unsqueeze(1))
         try:
             G.global_attention_weights_history.append(attn_mean)
