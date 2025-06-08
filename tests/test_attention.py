@@ -1,5 +1,5 @@
 import torch
-from artibot.model import attention_entropy
+from artibot.utils import attention_entropy
 
 
 def test_attention_entropy_range():

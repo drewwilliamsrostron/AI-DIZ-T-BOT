@@ -10,6 +10,7 @@ import re
 import sys
 
 from .dataset import HourlyDataset
+from .ensemble import reject_if_risky
 
 
 ###############################################################################
@@ -115,6 +116,21 @@ def csv_training_thread(
                     "lr": lr_now,
                 },
             )
+
+            if reject_if_risky(G.global_sharpe, G.global_max_drawdown, attn_entropy):
+                logging.info(
+                    json.dumps(
+                        {
+                            "event": "REJECTED",
+                            "epoch": ensemble.train_steps,
+                            "sharpe": G.global_sharpe,
+                            "max_dd": G.global_max_drawdown,
+                            "entropy": attn_entropy,
+                        }
+                    )
+                )
+                G.inc_epoch()
+                continue
 
             if last_reward > best_reward:
                 best_reward = last_reward
