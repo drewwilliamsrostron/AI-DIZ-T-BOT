@@ -4,6 +4,7 @@
 import artibot.globals as G
 
 import logging
+import json
 
 import re
 import sys
@@ -62,13 +63,15 @@ def csv_training_thread(
         import talib
 
         epochs = 0
+        best_reward = float("-inf")
+        no_gain = 0
         while not stop_event.is_set():
             if max_epochs is not None and epochs >= max_epochs:
                 break
             ensemble.train_steps += 1
             epochs += 1
             G.set_status(f"Training step {ensemble.train_steps}")
-            print(G.get_status(), flush=True)
+            logging.info(json.dumps({"event": "status", "msg": G.get_status()}))
             tl, vl = ensemble.train_one_epoch(dl_train, dl_val, data, stop_event)
             G.global_training_loss.append(tl)
             if vl is not None:
@@ -76,15 +79,38 @@ def csv_training_thread(
             else:
                 G.global_validation_loss.append(None)
             if G.global_backtest_profit:
-                last_pf = G.global_backtest_profit[-1]
-            else:
-                last_pf = 0.0
-            val_str = f"{vl:.4f}" if vl is not None else "N/A"
-            print(
-                f"Epoch {ensemble.train_steps}: loss={tl:.4f} val={val_str} "
-                f"net_pct={last_pf:.2f}",
-                flush=True,
+                _ = G.global_backtest_profit[-1]
+            last_reward = (
+                G.global_composite_reward if G.global_composite_reward else 0.0
             )
+            lr_now = ensemble.cosine[0].get_last_lr()[0]
+            attn_mean = (
+                float(np.mean(G.global_attention_weights_history[-100:]))
+                if G.global_attention_weights_history
+                else 0.0
+            )
+            log_obj = {
+                "epoch": ensemble.train_steps,
+                "loss": tl,
+                "val": None if vl is None else vl,
+                "reward": last_reward,
+                "sharpe": G.global_sharpe,
+                "max_dd": G.global_max_drawdown,
+                "attn": attn_mean,
+                "lr": lr_now,
+            }
+            logging.info(json.dumps(log_obj))
+
+            if last_reward > best_reward:
+                best_reward = last_reward
+                no_gain = 0
+            else:
+                no_gain += 1
+            if no_gain >= 10:
+                logging.info(
+                    json.dumps({"event": "early_stop", "epoch": ensemble.train_steps})
+                )
+                break
 
             # quick "latest prediction"
             if len(data) >= 24:
