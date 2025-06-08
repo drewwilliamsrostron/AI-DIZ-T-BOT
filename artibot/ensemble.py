@@ -25,6 +25,11 @@ from .metrics import compute_yearly_stats
 from .model import TradingModel
 
 
+def reject_if_risky(sharpe: float, max_dd: float, entropy: float) -> bool:
+    """Return True if metrics violate the risk thresholds."""
+    return max_dd < -0.30 or sharpe < 1.0 or entropy < 1.0
+
+
 def choose_best(rewards: list[float]) -> float:
     """Return the highest reward from ``rewards``.
 
@@ -252,11 +257,28 @@ class EnsembleModel:
             if len(G.global_backtest_profit) >= 10
             else 0
         )
+        attn_entropy = (
+            float(np.mean(G.global_attention_entropy_history[-100:]))
+            if G.global_attention_entropy_history
+            else 0.0
+        )
         if cur_reward > self.best_composite_reward:
-            self.best_composite_reward = cur_reward
-            self.patience_counter = 0
-            self.best_state_dicts = [m.state_dict() for m in self.models]
-            self.save_best_weights("best_model_weights.pth")
+            if reject_if_risky(G.global_sharpe, G.global_max_drawdown, attn_entropy):
+                logging.info(
+                    "REJECTED by risk filter",
+                    extra={
+                        "epoch": self.train_steps,
+                        "sharpe": G.global_sharpe,
+                        "max_dd": G.global_max_drawdown,
+                        "attn_entropy": attn_entropy,
+                        "lr": self.optimizers[0].param_groups[0]["lr"],
+                    },
+                )
+            else:
+                self.best_composite_reward = cur_reward
+                self.patience_counter = 0
+                self.best_state_dicts = [m.state_dict() for m in self.models]
+                self.save_best_weights("best_model_weights.pth")
         else:
             self.patience_counter += 1
             # If net improvements are small => bigger patience

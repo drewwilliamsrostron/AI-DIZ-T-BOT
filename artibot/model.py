@@ -6,9 +6,15 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from .dataset import TradeParams
 import artibot.globals as G
 
-from .dataset import TradeParams
+
+def attention_entropy(logits: torch.Tensor) -> float:
+    """Return mean entropy of softmaxed attention ``logits``."""
+    attn_soft = torch.softmax(logits, dim=-1)
+    ent = (-attn_soft * torch.log(attn_soft + 1e-9)).sum(-1).mean().item()
+    return float(ent)
 
 
 ###############################################################################
@@ -65,10 +71,14 @@ class TradingModel(nn.Module):
         x = x.mean(dim=0)
         x = self.fc_proj(x)
         x = self.layernorm(x)
-        raw_attn = self.attn(x).unsqueeze(1)
-        w = torch.nan_to_num(torch.softmax(raw_attn, dim=1))
+        attn_logits = self.attn(x)
+        attn_soft = torch.softmax(attn_logits, dim=-1)
+        attn_mean = attn_soft.mean().item()
+        ent = attention_entropy(attn_logits)
+        w = torch.nan_to_num(attn_soft.unsqueeze(1))
         try:
-            G.global_attention_weights_history.append(w.mean().item())
+            G.global_attention_weights_history.append(attn_mean)
+            G.global_attention_entropy_history.append(ent)
         except Exception:
             pass
         context = self.dropout(x)

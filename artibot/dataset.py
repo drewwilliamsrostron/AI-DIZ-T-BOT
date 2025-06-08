@@ -131,8 +131,18 @@ class HourlyDataset(Dataset):
         sma = np.convolve(
             closes, np.ones(self.sma_period) / self.sma_period, mode="same"
         )
-        rsi = talib.RSI(closes, timeperiod=14)
-        macd, _, _ = talib.MACD(closes)
+        try:
+            rsi = talib.RSI(closes, timeperiod=14)
+        except Exception:
+            rsi = None
+        if rsi is None:
+            rsi = np.zeros_like(closes, dtype=np.float64)
+        try:
+            macd, _, _ = talib.MACD(closes)
+        except Exception:
+            macd = None
+        if macd is None:
+            macd = np.zeros_like(closes, dtype=np.float64)
 
         feats = np.column_stack(
             [
