@@ -37,3 +37,14 @@ def setup_logging() -> None:
     root.handlers.clear()
     root.addHandler(handler)
     root.setLevel(logging.INFO)
+
+
+def attention_entropy(weights: torch.Tensor) -> float:
+    """Return mean entropy of attention probabilities or logits."""
+    if weights.min() < 0 or weights.max() > 1:
+        probs = torch.softmax(weights, dim=-1)
+    else:
+        probs = weights
+    probs = torch.nan_to_num(probs)
+    ent = (-probs * torch.log(probs + 1e-9)).sum(-1).mean().item()
+    return float(ent)

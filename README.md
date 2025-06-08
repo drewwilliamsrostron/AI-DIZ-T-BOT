@@ -91,3 +91,4 @@ skips rejected rows. Visualise one batch of weights with:
 ```bash
 python scripts/plot_attention.py weights.npy
 ```
+Entropy should stay between 1 and 2.5; zero means collapse.
