@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="21" time="3.404" timestamp="2025-06-09T00:03:46.453521" hostname="Office3_2025"><testcase classname="tests.test_attention_entropy" name="test_attention_entropy_random" file="tests\test_attention_entropy.py" line="8" time="0.004"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_attention_entropy" name="test_attention_entropy_zero" file="tests\test_attention_entropy.py" line="4" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_attention" name="test_attention_entropy_range" file="tests\test_attention.py" line="4" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_backtest" name="test_robust_backtest_simple" file="tests\test_backtest.py" line="44" time="0.015"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_dataset" name="test_hourlydataset_basic" file="tests\test_dataset.py" line="85" time="0.003"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_dataset" name="test_load_csv_hourly_missing" file="tests\test_dataset.py" line="63" time="0.014"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  root:dataset.py:51 CSV file 'C:\Users\John\AppData\Local\Temp\pytest-of-John\pytest-1\test_load_csv_hourly_missing0\nope.csv' not found.
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_dataset" name="test_load_csv_hourly_parse" file="tests\test_dataset.py" line="68" time="0.009"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_entropy_logits_vs_probs" name="test_entropy_logits_vs_probs" file="tests\test_entropy_logits_vs_probs.py" line="4" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_entropy_range" name="test_entropy_range_logits" file="tests\test_entropy_range.py" line="4" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_filters" name="test_reject_if_risky" file="tests\test_filters.py" line="3" time="0.000"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_metrics" name="test_compute_days_in_profit" file="tests\test_metrics.py" line="46" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_metrics" name="test_compute_yearly_stats_basic" file="tests\test_metrics.py" line="60" time="0.011"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_metrics" name="test_inactivity_exponential_penalty" file="tests\test_metrics.py" line="36" time="0.000"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_risk_gate_integration" name="test_gate_triggered" file="tests\test_risk_gate_integration.py" line="3" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_rl" name="test_apply_action_custom_space" file="tests\test_rl.py" line="108" time="0.925"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_rl" name="test_find_nearest_action" file="tests\test_rl.py" line="69" time="0.009"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_rl" name="test_no_warnings" file="tests\test_rl.py" line="147" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_rl" name="test_pick_action_deterministic" file="tests\test_rl.py" line="77" time="0.009"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_scaling" name="test_adaptive_scaler" file="tests\test_scaling.py" line="29" time="0.009"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_selection" name="test_choose_best" file="tests\test_selection.py" line="3" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_smoke" name="test_end_to_end_smoke" file="tests\test_smoke.py" line="13" time="2.295"><system-out>--------------------------------- Captured Log ---------------------------------
+INFO     artibot.model:model.py:80 {'event': 'ATTN_STATS', 'entropy': 0.0, 'max_prob': 0.9895833134651184}
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>
