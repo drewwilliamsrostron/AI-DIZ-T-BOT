@@ -1,0 +1,30 @@
+Requirement already satisfied: pandas-ta in c:\users\john\appdata\local\programs\python\python313\lib\site-packages (0.3.14b0)
+Requirement already satisfied: pandas in c:\users\john\appdata\local\programs\python\python313\lib\site-packages (from pandas-ta) (2.3.0)
+Requirement already satisfied: numpy>=1.26.0 in c:\users\john\appdata\local\programs\python\python313\lib\site-packages (from pandas->pandas-ta) (2.2.6)
+Requirement already satisfied: python-dateutil>=2.8.2 in c:\users\john\appdata\local\programs\python\python313\lib\site-packages (from pandas->pandas-ta) (2.9.0.post0)
+Requirement already satisfied: pytz>=2020.1 in c:\users\john\appdata\local\programs\python\python313\lib\site-packages (from pandas->pandas-ta) (2025.2)
+Requirement already satisfied: tzdata>=2022.7 in c:\users\john\appdata\local\programs\python\python313\lib\site-packages (from pandas->pandas-ta) (2025.2)
+Requirement already satisfied: six>=1.5 in c:\users\john\appdata\local\programs\python\python313\lib\site-packages (from python-dateutil>=2.8.2->pandas->pandas-ta) (1.17.0)
+
+[notice] A new release of pip is available: 25.0.1 -> 25.1.1
+[notice] To update, run: python.exe -m pip install --upgrade pip
+Traceback (most recent call last):
+  File "C:\Users\John\Documents\GitHub\AI-DIZ-T-BOT\artibot\environment.py", line 115, in <module>
+    import talib as _talib  # noqa: F401  \u2190 works on 3.9-3.12 if wheels exist
+    ^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'talib'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\John\Documents\GitHub\AI-DIZ-T-BOT\scripts\smoke.py", line 9, in <module>
+    from artibot.environment import ensure_dependencies
+  File "C:\Users\John\Documents\GitHub\AI-DIZ-T-BOT\artibot\__init__.py", line 9, in <module>
+    from .environment import ensure_dependencies
+  File "C:\Users\John\Documents\GitHub\AI-DIZ-T-BOT\artibot\environment.py", line 120, in <module>
+    import pandas_ta as pta
+  File "C:\Users\John\AppData\Local\Programs\Python\Python313\Lib\site-packages\pandas_ta\__init__.py", line 7, in <module>
+    from pkg_resources import get_distribution, DistributionNotFound
+ModuleNotFoundError: No module named 'pkg_resources'
