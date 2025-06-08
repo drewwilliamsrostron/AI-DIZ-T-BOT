@@ -34,9 +34,10 @@ def setup_logging() -> None:
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JsonFormatter())
     root = logging.getLogger()
-    root.handlers.clear()
+    for h in list(root.handlers):
+        if isinstance(h, logging.StreamHandler):
+            root.removeHandler(h)
     root.addHandler(handler)
-    root.setLevel(logging.INFO)
 
 
 def attention_entropy(tensor: torch.Tensor) -> float:

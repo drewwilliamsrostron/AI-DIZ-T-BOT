@@ -62,7 +62,7 @@ class TradingModel(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.fc = nn.Linear(hidden_size, num_classes + 4)
 
-    def forward(self, x):
+    def forward(self, x, batch_idx: int | None = None):
         x = self.pos_encoder(x)
         x = x.transpose(0, 1).contiguous()
         x = self.transformer_encoder(x)
@@ -76,7 +76,8 @@ class TradingModel(nn.Module):
         p = self.dropout(p)
         max_prob = p.max(dim=-1).values.mean().item()
         ent = utils.attention_entropy(p)
-        logger.info({"event": "ATTN_STATS", "entropy": ent, "max_prob": max_prob})
+        if batch_idx == 0:
+            logger.info({"event": "ATTN_STATS", "entropy": ent, "max_prob": max_prob})
         attn_mean = p.mean().item()
         w = torch.nan_to_num(p.unsqueeze(1))
         try:
