@@ -89,6 +89,11 @@ def csv_training_thread(
                 if G.global_attention_weights_history
                 else 0.0
             )
+            attn_entropy = (
+                float(np.mean(G.global_attention_entropy_history[-100:]))
+                if G.global_attention_entropy_history
+                else 0.0
+            )
             log_obj = {
                 "epoch": ensemble.train_steps,
                 "loss": tl,
@@ -97,9 +102,19 @@ def csv_training_thread(
                 "sharpe": G.global_sharpe,
                 "max_dd": G.global_max_drawdown,
                 "attn": attn_mean,
+                "attn_entropy": attn_entropy,
                 "lr": lr_now,
             }
-            logging.info(json.dumps(log_obj))
+            logging.info(
+                json.dumps(log_obj),
+                extra={
+                    "epoch": ensemble.train_steps,
+                    "sharpe": G.global_sharpe,
+                    "max_dd": G.global_max_drawdown,
+                    "attn_entropy": attn_entropy,
+                    "lr": lr_now,
+                },
+            )
 
             if last_reward > best_reward:
                 best_reward = last_reward
@@ -108,7 +123,7 @@ def csv_training_thread(
                 no_gain += 1
             if no_gain >= 10:
                 logging.info(
-                    json.dumps({"event": "early_stop", "epoch": ensemble.train_steps})
+                    json.dumps({"event": "EARLY_STOP", "epoch": ensemble.train_steps})
                 )
                 break
 
@@ -145,6 +160,7 @@ def csv_training_thread(
                 G.global_ai_confidence = conf
                 G.inc_epoch()
                 G.global_attention_weights_history.append(0)
+                G.global_attention_entropy_history.append(0)
 
             if adapt_live:
                 changed = False

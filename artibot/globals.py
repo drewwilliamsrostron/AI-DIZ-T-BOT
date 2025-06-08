@@ -89,6 +89,7 @@ global_validation_loss = []
 global_backtest_profit = []
 global_equity_curve = []
 global_attention_weights_history = []
+global_attention_entropy_history = []
 global_phemex_data = []
 global_days_in_profit = 0.0
 live_bars_queue = queue.Queue()

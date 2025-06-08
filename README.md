@@ -80,3 +80,14 @@ The helper modules in `artibot.utils` auto-select a CUDA device when
 available and configure JSON logging.  `scripts/sweep.py` performs a small
 grid search over learning rates and TP/SL multipliers, writing the reward for
 each combination to `sweeps/results.csv`.
+
+## Risk filters & attention diagnostics
+
+Every epoch logs the Transformer attention mean and entropy. Candidates are
+discarded when the Sharpe ratio drops below 1.0, drawdown exceeds -30 % or the
+attention entropy falls under 1.0. The sweep script outputs these metrics and
+skips rejected rows. Visualise one batch of weights with:
+
+```bash
+python scripts/plot_attention.py weights.npy
+```
