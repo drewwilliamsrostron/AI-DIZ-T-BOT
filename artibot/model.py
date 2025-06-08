@@ -3,7 +3,6 @@
 # ruff: noqa: F403, F405
 
 import logging
-import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -58,35 +57,40 @@ class TradingModel(nn.Module):
         self.transformer_encoder = nn.TransformerEncoder(enc_layer, num_layers=4)
         self.fc_proj = nn.Linear(input_size, hidden_size)
         self.layernorm = nn.LayerNorm(hidden_size)
-        self.attn = nn.Linear(hidden_size, 1)
         self.dropout = nn.Dropout(dropout)
         self.fc = nn.Linear(hidden_size, num_classes + 4)
 
     def forward(self, x, batch_idx: int | None = None):
         x = self.pos_encoder(x)
+        # inspect attention from the first encoder layer
+        attn_output, attn_weights = self.transformer_encoder.layers[0].self_attn(
+            x,
+            x,
+            x,
+            need_weights=True,
+            average_attn_weights=False,
+        )
+        p = attn_weights.mean(dim=(0, 1))
+        entropy = utils.attention_entropy(p)
+        max_prob = p.max().item()
+        if batch_idx == 0:
+            logger.info(
+                {"event": "ATTN_STATS", "entropy": entropy, "max_prob": max_prob}
+            )
+        attn_mean = p.mean().item()
+        try:
+            G.global_attention_weights_history.append(attn_mean)
+            G.global_attention_entropy_history.append(entropy)
+        except Exception:
+            pass
         x = x.transpose(0, 1).contiguous()
         x = self.transformer_encoder(x)
         x = x.mean(dim=0)
         x = self.fc_proj(x)
         x = self.layernorm(x)
-        scores = self.attn(x)
-        scores = scores / math.sqrt(self.hidden_size)
-        scores = scores - scores.max(dim=-1, keepdim=True).values
-        p = scores.softmax(dim=-1)
-        p = self.dropout(p)
-        max_prob = p.max(dim=-1).values.mean().item()
-        ent = utils.attention_entropy(p)
-        if batch_idx == 0:
-            logger.info({"event": "ATTN_STATS", "entropy": ent, "max_prob": max_prob})
-        attn_mean = p.mean().item()
-        w = torch.nan_to_num(p.unsqueeze(1))
-        try:
-            G.global_attention_weights_history.append(attn_mean)
-            G.global_attention_entropy_history.append(ent)
-        except Exception:
-            pass
         context = self.dropout(x)
         out_all = self.fc(context)
+        w = torch.nan_to_num(p.unsqueeze(0))
 
         # Risk fraction, SL/TP are scaled
         logits = out_all[:, :3]
