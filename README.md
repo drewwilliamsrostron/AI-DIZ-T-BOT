@@ -7,6 +7,16 @@
 
 A Python trading bot with an optional reinforcement learning component. The bot can train on historical data, backtest strategies and trade live using the Phemex exchange API. A minimal Tkinter GUI provides status information while the bot is running.
 
+## Quick start
+
+Legacy CSV feeds store prices scaled by `1e5` or `1e3`. The loader now detects these multipliers so everything is expressed in dollars. After indicator creation all features are normalised with a rolling z-score and clipped to ±50. Verify your setup with the bundled smoke test:
+
+```bash
+python scripts/smoke.py
+```
+
+It runs a short 50‑epoch training session and prints the final composite reward and average candle range.
+
 ## Usage
 
 1. Open `master_config.json` and replace the placeholder values with your Phemex
@@ -63,3 +73,10 @@ pytest -q
 ```
 
 For in-depth development conventions see [AGENTS.md](AGENTS.md).
+
+## Advanced usage
+
+The helper modules in `artibot.utils` auto-select a CUDA device when
+available and configure JSON logging.  `scripts/sweep.py` performs a small
+grid search over learning rates and TP/SL multipliers, writing the reward for
+each combination to `sweeps/results.csv`.

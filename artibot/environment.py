@@ -34,6 +34,7 @@ for _name, _value in {
 import sys
 import subprocess
 import platform
+import logging
 
 
 def _install_pytorch_for_env() -> None:
@@ -76,7 +77,7 @@ def _install_pytorch_for_env() -> None:
             index,
         ]
 
-    print("• Installing PyTorch trio for this environment …")
+    logging.info("Installing PyTorch trio for this environment …")
     subprocess.check_call([sys.executable, "-m", "pip", "install", *pkg_line])
 
 

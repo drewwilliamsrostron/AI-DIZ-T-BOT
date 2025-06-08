@@ -75,11 +75,11 @@ def run_bot(max_epochs: int | None = None) -> None:
         here = os.path.dirname(os.path.abspath(__file__))
         csv_path = os.path.join(here, "..", csv_path)
     csv_path = os.path.abspath(os.path.expanduser(csv_path))
-    print(f"Loading CSV data from: {csv_path}")
+    logging.info("%s", json.dumps({"event": "load_csv", "path": csv_path}))
     data = load_csv_hourly(csv_path)
 
     if len(data) < 10:
-        print("Error: no usable CSV data found")
+        logging.error("No usable CSV data found")
         G.global_status_message = "CSV load failed"
         return
 
@@ -90,15 +90,17 @@ def run_bot(max_epochs: int | None = None) -> None:
             backup = f"best_model_weights_backup_{ts}.pth"
             try:
                 os.rename("best_model_weights.pth", backup)
-                print(f"Existing weights backed up to {backup}")
+                logging.info("%s", json.dumps({"event": "backup", "file": backup}))
             except OSError:
-                print("Failed to backup existing weights")
+                logging.warning("Failed to backup existing weights")
         else:
             use_prev_weights = True
     else:
         use_prev_weights = False
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    from .utils import get_device
+
+    device = get_device()
 
     ensemble = EnsembleModel(device=device, n_models=2, lr=3e-4, weight_decay=1e-4)
     connector = PhemexConnector(config)

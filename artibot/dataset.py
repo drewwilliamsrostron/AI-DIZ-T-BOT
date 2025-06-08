@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 import talib
 import torch
-from sklearn.preprocessing import StandardScaler
 from torch.utils.data import Dataset
 
 import artibot.globals as G
@@ -79,6 +78,20 @@ def load_csv_hourly(csv_path: str) -> list[list[float]]:
     df["low"] = num(df["low"], errors="coerce")
     df["close"] = num(df["close"], errors="coerce")
 
+    # ----------------------------------------------------------------------------
+    # Adaptive scaling: legacy datasets may store prices multiplied by 1e5 or 1e3
+    # ----------------------------------------------------------------------------
+    if not df.empty:
+        ref_price = float(df["open"].iloc[0])
+        scale = 1.0
+        if ref_price > 1e8:
+            scale = 1e5
+        elif ref_price > 1e5:
+            scale = 1e3
+        if scale != 1.0:
+            for col in ["open", "high", "low", "close"]:
+                df[col] /= scale
+
     if "volume_btc" in df.columns:
         df["volume_btc"] = num(df["volume_btc"], errors="coerce").fillna(0.0)
     else:
@@ -136,10 +149,12 @@ class HourlyDataset(Dataset):
         # again afterwards to be safe.
         feats = np.nan_to_num(feats)
 
-        scaler = StandardScaler()
-        scaled_feats = scaler.fit_transform(feats)
+        df_feats = pd.DataFrame(feats)
+        roll_mean = df_feats.rolling(window=50, min_periods=1).mean()
+        roll_std = df_feats.rolling(window=50, min_periods=1).std().replace(0, 1e-8)
+        scaled_feats = ((df_feats - roll_mean) / roll_std).to_numpy()
 
-        scaled_feats = np.clip(scaled_feats, -10.0, 10.0)
+        scaled_feats = np.clip(scaled_feats, -50.0, 50.0)
 
         scaled_feats = np.nan_to_num(scaled_feats)
 

@@ -69,9 +69,13 @@ def robust_backtest(ensemble, data_full):
             macd_.astype(np.float32),
         ]
     ).astype(np.float32)
-    # Sanitize indicator features so NaNs do not propagate into the model
 
-    extd = np.clip(extd, -6.0, 6.0)
+    df_extd = pd.DataFrame(extd)
+    roll_mean = df_extd.rolling(window=50, min_periods=1).mean()
+    roll_std = df_extd.rolling(window=50, min_periods=1).std().replace(0, 1e-8)
+    extd = ((df_extd - roll_mean) / roll_std).to_numpy()
+
+    extd = np.clip(extd, -50.0, 50.0)
 
     extd = np.nan_to_num(extd)
     timestamps = raw_data[:, 0]
@@ -80,7 +84,7 @@ def robust_backtest(ensemble, data_full):
 
     windows = sliding_window_view(extd, (24, 8)).squeeze()
 
-    windows = np.clip(windows, -10.0, 10.0)
+    windows = np.clip(windows, -50.0, 50.0)
 
     windows = np.nan_to_num(windows)
     windows_t = torch.tensor(windows, dtype=torch.float32, device=device)

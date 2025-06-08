@@ -8,4 +8,7 @@ if ROOT not in sys.path:
 # ruff: noqa: E402
 import artibot.environment
 
-artibot.environment.ensure_dependencies()
+def noop() -> None:
+    pass
+
+artibot.environment.ensure_dependencies = noop

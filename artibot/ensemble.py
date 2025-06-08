@@ -13,13 +13,26 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.cuda.amp import GradScaler, autocast
-from torch.optim.lr_scheduler import ReduceLROnPlateau, CosineAnnealingLR
+from torch.optim.lr_scheduler import (
+    ReduceLROnPlateau,
+    CosineAnnealingWarmRestarts,
+)
 
 from .backtest import robust_backtest
 from .dataset import IndicatorHyperparams
 import artibot.globals as G
 from .metrics import compute_yearly_stats
 from .model import TradingModel
+
+
+def choose_best(rewards: list[float]) -> float:
+    """Return the highest reward from ``rewards``.
+
+    Raises ``ValueError`` when the list is empty.
+    """
+    if not rewards:
+        raise ValueError("rewards cannot be empty")
+    return max(rewards)
 
 
 class EnsembleModel:
@@ -65,9 +78,11 @@ class EnsembleModel:
             )
             for opt in self.optimizers
         ]
-        self.cosine = [
-            CosineAnnealingLR(o, T_max=50, eta_min=2e-6) for o in self.optimizers
-        ]
+        self.cosine = [CosineAnnealingWarmRestarts(o, T_0=50) for o in self.optimizers]
+
+        self.warmup_steps = 1000
+        self.step_count = 0
+        self.base_lrs = [opt.param_groups[0]["lr"] for opt in self.optimizers]
 
         # store global indicator hyperparams that meta-agent can change
         self.indicator_hparams = IndicatorHyperparams(
@@ -118,7 +133,7 @@ class EnsembleModel:
             bx = batch_x.to(self.device).contiguous().clone()
             by = batch_y.to(self.device)
             batch_loss = 0.0
-            for model, opt_ in zip(self.models, self.optimizers):
+            for idx_m, (model, opt_) in enumerate(zip(self.models, self.optimizers)):
                 opt_.zero_grad()
                 if "device_type" in inspect.signature(autocast).parameters:
                     ctx = autocast(
@@ -135,7 +150,6 @@ class EnsembleModel:
                     logits, _, pred_reward = model(bx)
                     ce_loss = self.criterion(logits, by)
                     if not torch.isfinite(pred_reward).all():
-
                         logging.error(
                             "Non‑finite pred_reward detected at step %s",
                             self.train_steps,
@@ -158,14 +172,13 @@ class EnsembleModel:
                         r_loss = torch.tensor(0.0, device=self.device)
                     loss = ce_loss + self.reward_loss_weight * r_loss
                     if not torch.isfinite(loss).all():
-
                         logging.error(
                             "Non‑finite loss detected at step %s", self.train_steps
                         )
                         logging.error(
                             "ce_loss=%s reward_loss=%s",
                             ce_loss.item(),
-                            reward_loss.item(),
+                            r_loss.item(),
                         )
                         continue
 
@@ -173,11 +186,7 @@ class EnsembleModel:
 
                 self.scaler.scale(loss).backward()
                 self.scaler.unscale_(opt_)
-                torch.nn.utils.clip_grad_norm_(
-                    model.parameters(),
-                    max_norm=0.5,  # Changed from 0.5 to max_norm=0.5
-                    norm_type=2.0,  # Add norm type
-                )
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 try:
                     self.scaler.step(opt_)
                 except AssertionError:
@@ -188,6 +197,15 @@ class EnsembleModel:
                     self.scaler = GradScaler(enabled=False)
                 else:
                     self.scaler.update()
+                self.step_count += 1
+                if self.step_count <= self.warmup_steps:
+                    new_lr = self.base_lrs[idx_m] * (
+                        self.step_count / self.warmup_steps
+                    )
+                    for pg in opt_.param_groups:
+                        pg["lr"] = new_lr
+                else:
+                    self.cosine[idx_m].step()
                 batch_loss += loss.item()
             total_loss += (
                 float(batch_loss / len(self.models))
@@ -211,8 +229,6 @@ class EnsembleModel:
                     for pg in opt.param_groups:
                         pg["lr"] = max(pg["lr"] * 0.1, 2e-6)
                 self.patience = 0
-        for sch in self.cosine:
-            sch.step()
 
         # (2) Adjust Reward Penalties => less harsh for zero trades/ negative net
         trades_now = len(current_result["trade_details"])

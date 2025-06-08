@@ -6,6 +6,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+import artibot.globals as G
+
 from .dataset import TradeParams
 
 
@@ -64,7 +66,11 @@ class TradingModel(nn.Module):
         x = self.fc_proj(x)
         x = self.layernorm(x)
         raw_attn = self.attn(x).unsqueeze(1)
-        w = torch.softmax(raw_attn, dim=1)
+        w = torch.nan_to_num(torch.softmax(raw_attn, dim=1))
+        try:
+            G.global_attention_weights_history.append(w.mean().item())
+        except Exception:
+            pass
         context = self.dropout(x)
         out_all = self.fc(context)
 
