@@ -117,15 +117,17 @@ def csv_training_thread(
                 },
             )
 
-            if reject_if_risky(G.global_sharpe, G.global_max_drawdown, attn_entropy):
+            sharpe = G.global_sharpe
+            max_dd = G.global_max_drawdown
+            entropy = attn_entropy
+            if reject_if_risky(sharpe, max_dd, entropy):
                 logging.info(
                     json.dumps(
                         {
                             "event": "REJECTED",
-                            "epoch": ensemble.train_steps,
-                            "sharpe": G.global_sharpe,
-                            "max_dd": G.global_max_drawdown,
-                            "entropy": attn_entropy,
+                            "sharpe": sharpe,
+                            "max_dd": max_dd,
+                            "entropy": entropy,
                         }
                     )
                 )
