@@ -166,8 +166,6 @@ class EnsembleModel:
                         )
                         continue
 
-                        raise ValueError("pred_reward has NaN or Inf values")
-
                     use_reward = self.train_steps > self.delayed_reward_epochs
                     if use_reward:
                         r_loss = self.mse_loss_fn(
@@ -186,8 +184,6 @@ class EnsembleModel:
                             r_loss.item(),
                         )
                         continue
-
-                        raise ValueError("loss became NaN or Inf")
 
                 self.scaler.scale(loss).backward()
                 self.scaler.unscale_(opt_)
