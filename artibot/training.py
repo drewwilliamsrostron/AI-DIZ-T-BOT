@@ -72,7 +72,7 @@ def csv_training_thread(
             ensemble.train_steps += 1
             epochs += 1
             G.set_status(f"Training step {ensemble.train_steps}")
-            logging.info(json.dumps({"event": "status", "msg": G.get_status()}))
+            logging.debug(json.dumps({"event": "status", "msg": G.get_status()}))
             tl, vl = ensemble.train_one_epoch(dl_train, dl_val, data, stop_event)
             G.global_training_loss.append(tl)
             if vl is not None:

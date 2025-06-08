@@ -4,6 +4,7 @@
 import threading
 import json
 import logging
+import argparse
 import numpy as np
 
 from artibot.environment import ensure_dependencies
@@ -15,6 +16,10 @@ from artibot.utils import get_device, setup_logging
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--summary", action="store_true")
+    args = parser.parse_args()
+
     setup_logging()
     ensure_dependencies()
     data = load_csv_hourly("Gemini_BTCUSD_1h.csv")[-720:]
@@ -36,6 +41,13 @@ def main() -> None:
     logging.info(
         json.dumps({"reward": result["composite_reward"], "range": mean_range})
     )
+
+    if args.summary:
+        with open("bot.log") as f, open("smoke_summary.log", "w") as out:
+            for line in f:
+                if "ATTN_STATS" in line or "REJECTED" in line:
+                    out.write(line)
+        print("Wrote smoke_summary.log")
 
 
 if __name__ == "__main__":

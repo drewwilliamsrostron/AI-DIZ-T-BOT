@@ -134,7 +134,7 @@ class EnsembleModel:
         nb = 0
         for m in self.models:
             m.train()
-        for batch_x, batch_y in dl_train:
+        for batch_idx, (batch_x, batch_y) in enumerate(dl_train):
             bx = batch_x.to(self.device).contiguous().clone()
             by = batch_y.to(self.device)
             batch_loss = 0.0
@@ -152,7 +152,7 @@ class EnsembleModel:
                         else nullcontext()
                     )
                 with ctx:
-                    logits, _, pred_reward = model(bx)
+                    logits, _, pred_reward = model(bx, batch_idx=batch_idx)
                     ce_loss = self.criterion(logits, by)
                     if not torch.isfinite(pred_reward).all():
                         logging.error(
