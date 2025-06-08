@@ -27,7 +27,7 @@ from .model import TradingModel
 
 def reject_if_risky(sharpe: float, max_dd: float, entropy: float) -> bool:
     """Return True if metrics violate the risk thresholds."""
-    return max_dd < -0.30 or sharpe < 1.0 or entropy < 1.0
+    return max_dd < -0.30 or sharpe < 1.0 or entropy < 0.2
 
 
 def choose_best(rewards: list[float]) -> float:
