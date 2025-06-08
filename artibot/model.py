@@ -10,7 +10,7 @@ import torch.nn as nn
 
 from .dataset import TradeParams
 import artibot.globals as G
-from .utils import attention_entropy
+from . import utils
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,6 @@ class TradingModel(nn.Module):
         self.fc_proj = nn.Linear(input_size, hidden_size)
         self.layernorm = nn.LayerNorm(hidden_size)
         self.attn = nn.Linear(hidden_size, 1)
-        self.attn_dropout = nn.Dropout(p=0.1)
         self.dropout = nn.Dropout(dropout)
         self.fc = nn.Linear(hidden_size, num_classes + 4)
 
@@ -74,10 +73,10 @@ class TradingModel(nn.Module):
         scores = scores / math.sqrt(self.hidden_size)
         scores = scores - scores.max(dim=-1, keepdim=True).values
         p = scores.softmax(dim=-1)
-        p = self.attn_dropout(p)
+        p = self.dropout(p)
         max_prob = p.max(dim=-1).values.mean().item()
-        ent = attention_entropy(p)
-        logger.debug({"event": "ATTN_STATS", "entropy": ent, "max_prob": max_prob})
+        ent = utils.attention_entropy(p)
+        logger.info({"event": "ATTN_STATS", "entropy": ent, "max_prob": max_prob})
         attn_mean = p.mean().item()
         w = torch.nan_to_num(p.unsqueeze(1))
         try:
