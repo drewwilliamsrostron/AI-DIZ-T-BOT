@@ -1,2 +1,4 @@
 {'event': 'ATTN_STATS', 'entropy': 0.0, 'max_prob': 1.0026041269302368}
 {'event': 'ATTN_STATS', 'entropy': 0.0, 'max_prob': 0.9895833134651184}
+{'event': 'ATTN_STATS', 'entropy': 3.170593023300171, 'max_prob': 0.05832112580537796}
+{'event': 'ATTN_STATS', 'entropy': 3.174298048019409, 'max_prob': 0.05946541205048561}
