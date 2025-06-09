@@ -178,7 +178,6 @@ class EnsembleModel:
                     else nullcontext()
                 )
 
-
             losses = []
             with ctx, torch.autograd.set_detect_anomaly(True):
                 for model in self.models:
@@ -244,9 +243,7 @@ class EnsembleModel:
                 else:
                     self.cosine[idx_m].step()
 
-
             batch_loss = sum(loss_i.item() for loss_i in losses)
-
 
             self.step_count += 1
             total_loss += (
@@ -362,6 +359,45 @@ class EnsembleModel:
                                 dropout=np.random.uniform(0.3, 0.6),
                             ).to(self.device)
                             for _ in range(len(self.models))
+                        ]
+                        lr = self.optimizers[0].param_groups[0]["lr"]
+                        wd = (
+                            self.optimizers[0]
+                            .param_groups[0]
+                            .get(
+                                "weight_decay",
+                                0.0,
+                            )
+                        )
+                        self.optimizers = [
+                            optim.Adam(m.parameters(), lr=lr, weight_decay=wd)
+                            for m in self.models
+                        ]
+                        self.schedulers = [
+                            ReduceLROnPlateau(
+                                opt,
+                                mode="min",
+                                patience=6,
+                                factor=0.8,
+                                min_lr=2e-5,
+                            )
+                            for opt in self.optimizers
+                        ]
+                        self.cosine = [
+                            CosineAnnealingWarmRestarts(o, T_0=50)
+                            for o in self.optimizers
+                        ]
+                        if "device" in inspect.signature(GradScaler).parameters:
+                            self.scaler = GradScaler(
+                                enabled=(self.device.type == "cuda"),
+                                device=self.device.type,
+                            )
+                        else:
+                            self.scaler = GradScaler(
+                                enabled=(self.device.type == "cuda")
+                            )
+                        self.base_lrs = [
+                            opt.param_groups[0]["lr"] for opt in self.optimizers
                         ]
                     self.patience_counter = 0
 
