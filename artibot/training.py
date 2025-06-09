@@ -22,6 +22,7 @@ def csv_training_thread(
     config,
     use_prev_weights=True,
     max_epochs: int | None = None,
+    weights_path: str = "best_model_weights.pth",
     *,
     debug_anomaly: bool = False,
 ):
@@ -54,7 +55,7 @@ def csv_training_thread(
             G.set_status("Training", "CSV data insufficient")
             return
         if use_prev_weights:
-            ensemble.load_best_weights("best_model_weights.pth", data_full=train_data)
+            ensemble.load_best_weights(weights_path, data_full=train_data)
         n_tot = len(ds_full)
         n_tr = int(n_tot * 0.9)
         n_val = n_tot - n_tr
@@ -275,7 +276,7 @@ def csv_training_thread(
                         )
 
             if ensemble.train_steps % 5 == 0 and ensemble.best_state_dicts:
-                ensemble.save_best_weights("best_model_weights.pth")
+                ensemble.save_best_weights(weights_path)
 
     except Exception as e:
         traceback.print_exc()
