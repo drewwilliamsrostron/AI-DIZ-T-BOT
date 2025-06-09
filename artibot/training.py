@@ -80,6 +80,9 @@ def csv_training_thread(
             ensemble.train_steps += 1
             epochs += 1
             G.set_status(f"Training step {ensemble.train_steps}")
+            logging.info(
+                json.dumps({"event": "START_EPOCH", "epoch": ensemble.train_steps})
+            )
             logging.debug(json.dumps({"event": "status", "msg": G.get_status()}))
             tl, vl = ensemble.train_one_epoch(dl_train, dl_val, train_data, stop_event)
             if holdout_data:

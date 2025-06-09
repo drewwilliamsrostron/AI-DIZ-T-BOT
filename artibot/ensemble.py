@@ -447,7 +447,6 @@ class EnsembleModel:
             )
             G.global_best_yearly_stats_table = best_table
 
-        self.train_steps += 1
         mean_ent = float(torch.tensor(self.entropies).mean()) if self.entropies else 0.0
         mean_mp = float(torch.tensor(self.max_probs).mean()) if self.max_probs else 0.0
         logging.info(
