@@ -6,33 +6,31 @@ import types
 
 
 def test_set_status_and_full():
-    G.set_status("Working")
+    G.set_status("Working", "")
     G.epoch_count = 3
-    assert G.get_status_full() == "Working | epoch 3"
+    assert G.get_status_full() == ("Working", "epoch 3")
 
 
 def test_weight_dialog_default(monkeypatch):
-    monkeypatch.setitem(
-        sys.modules,
-        "tkinter.messagebox",
-        types.SimpleNamespace(askyesno=lambda *a, **k: True),
+    tk_stub = types.SimpleNamespace(
+        messagebox=types.SimpleNamespace(askyesno=lambda *a, **k: True),
+        filedialog=types.SimpleNamespace(),
     )
-    monkeypatch.setitem(sys.modules, "tkinter.filedialog", types.SimpleNamespace())
+    monkeypatch.setitem(sys.modules, "tkinter", tk_stub)
+    monkeypatch.setitem(sys.modules, "tkinter.messagebox", tk_stub.messagebox)
+    monkeypatch.setitem(sys.modules, "tkinter.filedialog", tk_stub.filedialog)
     path = select_weight_file()
     assert path == "best_model_weights.pth"
 
 
 def test_weight_dialog_custom(monkeypatch):
-    monkeypatch.setitem(
-        sys.modules,
-        "tkinter.messagebox",
-        types.SimpleNamespace(askyesno=lambda *a, **k: False),
+    tk_stub = types.SimpleNamespace(
+        messagebox=types.SimpleNamespace(askyesno=lambda *a, **k: False),
+        filedialog=types.SimpleNamespace(askopenfilename=lambda *a, **k: "foo.pth"),
     )
-    monkeypatch.setitem(
-        sys.modules,
-        "tkinter.filedialog",
-        types.SimpleNamespace(askopenfilename=lambda *a, **k: "foo.pth"),
-    )
+    monkeypatch.setitem(sys.modules, "tkinter", tk_stub)
+    monkeypatch.setitem(sys.modules, "tkinter.messagebox", tk_stub.messagebox)
+    monkeypatch.setitem(sys.modules, "tkinter.filedialog", tk_stub.filedialog)
     path = select_weight_file()
     assert path == "foo.pth"
 

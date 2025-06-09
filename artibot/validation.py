@@ -94,8 +94,13 @@ def validate_and_gate(csv_path: str, config: dict) -> dict:
     return summary
 
 
-def schedule_monthly_validation(csv_path: str, config: dict, *, interval: float = MONTH_SECONDS) -> threading.Timer:
+def schedule_monthly_validation(
+    csv_path: str, config: dict, *, interval: float = MONTH_SECONDS
+) -> threading.Timer:
     """Start recurring validation every ``interval`` seconds."""
+
+    # TODO: replace ``threading.Timer`` with ``APScheduler`` for more robust
+    # scheduling and persistence of jobs.
 
     def _run() -> None:
         validate_and_gate(csv_path, config)

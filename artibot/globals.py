@@ -137,8 +137,6 @@ state_lock = threading.Lock()
 model_lock = threading.Lock()
 
 
-
-
 def set_status(msg: str, secondary: str | None = None) -> None:
     """Thread-safe update of status messages."""
     with state_lock:
@@ -148,7 +146,6 @@ def set_status(msg: str, secondary: str | None = None) -> None:
             global_secondary_status = secondary
 
 
-
 def get_status() -> str:
     """Return the primary status message in a thread-safe manner."""
     with state_lock:
@@ -156,16 +153,14 @@ def get_status() -> str:
 
 
 def get_status_full() -> tuple[str, str]:
-    """Return ``(primary, secondary)`` status messages."""
+    """Return ``(primary, secondary)`` with epoch number fallback."""
     with state_lock:
-        return global_primary_status, global_secondary_status
-
-
-def get_status_full() -> str:
-    """Return the status message along with the current epoch count."""
-    with state_lock:
-        return f"{global_status_message} | epoch {epoch_count}"
-
+        secondary = (
+            global_secondary_status
+            if global_secondary_status
+            else f"epoch {epoch_count}"
+        )
+        return global_primary_status, secondary
 
 
 def inc_epoch() -> None:
@@ -192,10 +187,9 @@ def is_nuclear_key_enabled() -> bool:
 # Helper used by worker threads to show countdowns while sleeping
 ###############################################################################
 
+
 def status_sleep(primary: str, secondary: str, seconds: float) -> None:
     """Sleep in 1s increments and update status fields."""
-
-
 
     end = time.monotonic() + seconds
     while True:

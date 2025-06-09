@@ -37,12 +37,12 @@ def format_trade_details(trades, limit=50):
     return out_df.to_string(index=False, float_format=lambda x: f"{x:.2f}")
 
 
-
 def should_enable_live_trading() -> bool:
     """Return ``True`` when validation metrics meet risk criteria."""
     sharpe = G.global_holdout_sharpe
     dd = G.global_holdout_max_drawdown
     return sharpe >= 1.0 and dd >= -0.30
+
 
 def select_weight_file(use_prev: bool = True) -> str | None:
     """Return the weight file path based on user selection."""
@@ -56,7 +56,6 @@ def select_weight_file(use_prev: bool = True) -> str | None:
         )
         or None
     )
-
 
 
 class TradingGUI:
@@ -293,7 +292,9 @@ class TradingGUI:
             font=("Helvetica", 12),
             foreground="darkgreen",
         )
-        self.best_profit_factor_label.grid(row=17, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_profit_factor_label.grid(
+            row=17, column=1, sticky=tk.W, padx=5, pady=5
+        )
         self.best_avg_win_label = ttk.Label(
             self.info_frame,
             text="Best Avg Win: N/A",
@@ -328,6 +329,8 @@ class TradingGUI:
         )
         self.nuclear_btn.grid(row=21, column=0, padx=5, pady=5, columnspan=2)
 
+        # TODO: consolidate ``nuclear_btn`` and ``nuclear_button`` into a single
+        # control to avoid confusing duplicates.
 
         # trading control buttons
         self.controls_frame = ttk.Frame(self.info_frame)
@@ -358,7 +361,6 @@ class TradingGUI:
         self.validation_label.grid(
             row=19, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
         )
-
 
         self.frame_ai = ttk.Frame(root)
         self.frame_ai.pack(side=tk.RIGHT, fill=tk.Y, padx=5, pady=5)
@@ -586,9 +588,7 @@ class TradingGUI:
         if G.global_validation_summary:
             sharpe = G.global_validation_summary.get("mean_sharpe", 0.0)
             enabled = G.nuclear_key_enabled
-            self.validation_label.config(
-                text=f"Val Sharpe: {sharpe:.2f} NK: {enabled}"
-            )
+            self.validation_label.config(text=f"Val Sharpe: {sharpe:.2f} NK: {enabled}")
 
         # evaluate nuclear key and auto-pause rules
         if nuclear_key_condition(
