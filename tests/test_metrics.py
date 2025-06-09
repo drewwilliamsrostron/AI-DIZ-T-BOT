@@ -4,6 +4,7 @@ import sys
 import types
 import pandas as pd
 import numpy as np
+import pytest
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 METRICS_PATH = os.path.join(ROOT, "artibot", "metrics.py")
@@ -84,3 +85,14 @@ def test_compute_yearly_stats_basic():
     assert df.loc[2024, "Trades"] == 1
     assert isinstance(table, str)
     assert "2023" in table and "2024" in table
+
+
+def test_compute_trade_metrics_basic():
+    trades = [
+        {"return": 0.1, "duration": 10},
+        {"return": -0.05, "duration": 20},
+    ]
+    res = metrics.compute_trade_metrics(trades)
+    assert res["win_rate"] == 0.5
+    assert res["profit_factor"] == pytest.approx(2.0)
+    assert res["avg_duration"] == 15

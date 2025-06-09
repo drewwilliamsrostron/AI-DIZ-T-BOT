@@ -188,6 +188,16 @@ class TradingGUI:
         self.current_days_profit_label.grid(
             row=15, column=0, sticky=tk.W, padx=5, pady=5
         )
+        self.current_winrate_label = ttk.Label(
+            self.info_frame, text="Win Rate: N/A", font=("Helvetica", 12)
+        )
+        self.current_winrate_label.grid(row=16, column=0, sticky=tk.W, padx=5, pady=5)
+        self.current_profit_factor_label = ttk.Label(
+            self.info_frame, text="Profit Factor: N/A", font=("Helvetica", 12)
+        )
+        self.current_profit_factor_label.grid(
+            row=17, column=0, sticky=tk.W, padx=5, pady=5
+        )
 
         self.best_sharpe_label = ttk.Label(
             self.info_frame,
@@ -238,6 +248,22 @@ class TradingGUI:
             foreground="darkgreen",
         )
         self.best_days_profit_label.grid(row=15, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_winrate_label = ttk.Label(
+            self.info_frame,
+            text="Best Win Rate: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_winrate_label.grid(row=16, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_profit_factor_label = ttk.Label(
+            self.info_frame,
+            text="Best Profit Factor: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_profit_factor_label.grid(
+            row=17, column=1, sticky=tk.W, padx=5, pady=5
+        )
 
         # single-line status indicator
         self.status_var = tk.StringVar()
@@ -247,7 +273,7 @@ class TradingGUI:
             font=("Helvetica", 10, "italic"),
         )
         self.status_label.grid(
-            row=16, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
+            row=18, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
         )
 
         self.frame_ai = ttk.Frame(root)
@@ -410,6 +436,10 @@ class TradingGUI:
             )
         else:
             self.current_days_profit_label.config(text="Current Days in Profit: N/A")
+        self.current_winrate_label.config(text=f"Win Rate: {G.global_win_rate:.2f}")
+        self.current_profit_factor_label.config(
+            text=f"Profit Factor: {G.global_profit_factor:.2f}"
+        )
 
         self.best_sharpe_label.config(text=f"Best Sharpe: {G.global_best_sharpe:.2f}")
         self.best_drawdown_label.config(
@@ -437,6 +467,12 @@ class TradingGUI:
             )
         else:
             self.best_days_profit_label.config(text="Best Days in Profit: N/A")
+        self.best_winrate_label.config(
+            text=f"Best Win Rate: {G.global_best_win_rate:.2f}"
+        )
+        self.best_profit_factor_label.config(
+            text=f"Best Profit Factor: {G.global_best_profit_factor:.2f}"
+        )
 
         self.ai_output_text.delete("1.0", tk.END)
         self.ai_output_text.insert(tk.END, G.global_ai_adjustments)
