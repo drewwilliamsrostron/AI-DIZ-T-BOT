@@ -59,17 +59,20 @@ class TransformerMetaAgent(nn.Module):
         self.embed = nn.Linear(self.state_dim, d_model)
         self.pos_enc = PositionalEncoding(d_model)
         enc_layer = nn.TransformerEncoderLayer(
-            d_model=d_model, nhead=1, dim_feedforward=64
+            d_model=d_model,
+            nhead=1,
+            dim_feedforward=64,
+            batch_first=True,
         )
         self.transformer_enc = nn.TransformerEncoder(enc_layer, num_layers=2)
         self.policy_head = nn.Linear(d_model, self.n_actions)
         self.value_head = nn.Linear(d_model, 1)
 
     def forward(self, x):
-        x_emb = self.embed(x).unsqueeze(1).transpose(0, 1).contiguous()
+        x_emb = self.embed(x).unsqueeze(1)
         x_pe = self.pos_enc(x_emb)
         x_enc = self.transformer_enc(x_pe)
-        rep = x_enc.squeeze(0)
+        rep = x_enc.squeeze(1)
         pol = self.policy_head(rep)
         val = self.value_head(rep).squeeze(1)
         return pol, val

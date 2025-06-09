@@ -84,9 +84,8 @@ class TradingModel(nn.Module):
             G.global_attention_entropy_history.append(entropy)
         except Exception:
             pass
-        x = x.transpose(0, 1).contiguous()
         x = self.transformer_encoder(x)
-        x = x.mean(dim=0)
+        x = x.mean(dim=1)
         x = self.fc_proj(x)
         x = self.layernorm(x)
         context = self.dropout(x)

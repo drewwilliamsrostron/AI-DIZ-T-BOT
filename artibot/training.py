@@ -6,11 +6,13 @@ import artibot.globals as G
 import logging
 import json
 
+import os
 import re
 import sys
 
 from .dataset import HourlyDataset
 from .ensemble import reject_if_risky
+from .backtest import robust_backtest
 
 
 ###############################################################################
@@ -35,21 +37,26 @@ def csv_training_thread(
     # training history lists live on the globals module
 
     try:
+        holdout_len = max(1, int(len(data) * 0.1))
+        train_data = data[:-holdout_len] if len(data) > holdout_len else data
+        holdout_data = data[-holdout_len:] if len(data) > holdout_len else []
+
         ds_full = HourlyDataset(
-            data, seq_len=24, threshold=G.GLOBAL_THRESHOLD, train_mode=True
+            train_data, seq_len=24, threshold=G.GLOBAL_THRESHOLD, train_mode=True
         )
         if len(ds_full) < 10:
             logging.warning("Not enough data in CSV => exiting.")
             return
         if use_prev_weights:
-            ensemble.load_best_weights("best_model_weights.pth", data_full=data)
+            ensemble.load_best_weights("best_model_weights.pth", data_full=train_data)
         n_tot = len(ds_full)
         n_tr = int(n_tot * 0.9)
         n_val = n_tot - n_tr
         ds_train, ds_val = random_split(ds_full, [n_tr, n_val])
 
         pin = ensemble.device.type == "cuda"
-        workers = 2 if pin else 0
+        default_workers = max(1, os.cpu_count() or 1)
+        workers = int(config.get("NUM_WORKERS", default_workers))
         dl_train = DataLoader(
             ds_train, batch_size=128, shuffle=True, num_workers=workers, pin_memory=pin
         )
@@ -73,7 +80,14 @@ def csv_training_thread(
             epochs += 1
             G.set_status(f"Training step {ensemble.train_steps}")
             logging.debug(json.dumps({"event": "status", "msg": G.get_status()}))
-            tl, vl = ensemble.train_one_epoch(dl_train, dl_val, data, stop_event)
+            tl, vl = ensemble.train_one_epoch(dl_train, dl_val, train_data, stop_event)
+            if holdout_data:
+                holdout_res = robust_backtest(ensemble, holdout_data)
+                G.global_holdout_sharpe = holdout_res["sharpe"]
+                G.global_holdout_max_drawdown = holdout_res["max_drawdown"]
+            else:
+                G.global_holdout_sharpe = 0.0
+                G.global_holdout_max_drawdown = 0.0
             G.global_training_loss.append(tl)
             if vl is not None:
                 G.global_validation_loss.append(vl)
@@ -102,6 +116,8 @@ def csv_training_thread(
                 "reward": last_reward,
                 "sharpe": G.global_sharpe,
                 "max_dd": G.global_max_drawdown,
+                "holdout_sharpe": G.global_holdout_sharpe,
+                "holdout_dd": G.global_holdout_max_drawdown,
                 "attn": attn_mean,
                 "attn_entropy": attn_entropy,
                 "lr": lr_now,
@@ -112,6 +128,8 @@ def csv_training_thread(
                     "epoch": ensemble.train_steps,
                     "sharpe": G.global_sharpe,
                     "max_dd": G.global_max_drawdown,
+                    "holdout_sharpe": G.global_holdout_sharpe,
+                    "holdout_dd": G.global_holdout_max_drawdown,
                     "attn_entropy": attn_entropy,
                     "lr": lr_now,
                 },
@@ -146,8 +164,8 @@ def csv_training_thread(
                 break
 
             # quick "latest prediction"
-            if len(data) >= 24:
-                tail = np.array(data[-24:], dtype=np.float64)
+            if len(train_data) >= 24:
+                tail = np.array(train_data[-24:], dtype=np.float64)
                 closes = tail[:, 4]
                 sma = np.convolve(closes, np.ones(10) / 10, mode="same")
                 rsi = talib.RSI(closes, timeperiod=14)
@@ -196,13 +214,13 @@ def csv_training_thread(
                         l_ = float(l_)
                         c_ = float(c_)
                         v_ = float(v_)
-                        if ts > data[-1][0]:
-                            data.append([ts, o_, h_, l_, c_, v_])
+                        if ts > train_data[-1][0]:
+                            train_data.append([ts, o_, h_, l_, c_, v_])
                             changed = True
                 if changed:
                     G.set_status("Adapting to live data")
                     ds_updated = HourlyDataset(
-                        data,
+                        train_data,
                         seq_len=24,
                         threshold=G.GLOBAL_THRESHOLD,
                         train_mode=True,
@@ -213,7 +231,8 @@ def csv_training_thread(
                         nv_ = nt_ - ntr_
                         ds_tr_, ds_val_ = random_split(ds_updated, [ntr_, nv_])
                         pin = ensemble.device.type == "cuda"
-                        workers = 2 if pin else 0
+                        default_workers = max(1, os.cpu_count() or 1)
+                        workers = int(config.get("NUM_WORKERS", default_workers))
                         dl_tr_ = DataLoader(
                             ds_tr_,
                             batch_size=128,
@@ -228,7 +247,9 @@ def csv_training_thread(
                             num_workers=workers,
                             pin_memory=pin,
                         )
-                        ensemble.train_one_epoch(dl_tr_, dl_val_, data, stop_event)
+                        ensemble.train_one_epoch(
+                            dl_tr_, dl_val_, train_data, stop_event
+                        )
 
             if ensemble.train_steps % 5 == 0 and ensemble.best_state_dicts:
                 ensemble.save_best_weights("best_model_weights.pth")

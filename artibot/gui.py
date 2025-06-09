@@ -4,16 +4,37 @@
 import artibot.globals as G
 import numpy as np
 import datetime
-import json
 import tkinter as tk
 from tkinter import ttk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import pandas as pd
 
 
 ###############################################################################
 # Tkinter GUI
 ###############################################################################
+
+
+def format_trade_details(trades, limit=50):
+    """Return a compact table string for the most recent trades."""
+    if not trades:
+        return "No Trade Details"
+    df = pd.DataFrame(trades)
+    if df.empty:
+        return "No Trade Details"
+    if df["entry_time"].max() > 1_000_000_000_000:
+        df["entry_time"] //= 1000
+    if df["exit_time"].max() > 1_000_000_000_000:
+        df["exit_time"] //= 1000
+    df["Entry"] = pd.to_datetime(df["entry_time"], unit="s").dt.strftime("%Y-%m-%d")
+    df["Exit"] = pd.to_datetime(df["exit_time"], unit="s").dt.strftime("%Y-%m-%d")
+    df["ReturnPct"] = df["return"] * 100
+    cols = ["Entry", "Exit", "side", "entry_price", "exit_price", "ReturnPct"]
+    out_df = df.loc[:, cols].tail(limit)
+    return out_df.to_string(index=False, float_format=lambda x: f"{x:.2f}")
+
+
 class TradingGUI:
     def __init__(self, root, ensemble):
         self.root = root
@@ -58,7 +79,7 @@ class TradingGUI:
         self.trade_text.pack(fill=tk.BOTH, expand=True)
 
         self.frame_yearly_perf = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_yearly_perf, text="Yearly Perf")
+        self.notebook.add(self.frame_yearly_perf, text="Best Strategy Yearly Perf")
         self.yearly_perf_text = tk.Text(self.frame_yearly_perf, width=50, height=20)
         self.yearly_perf_text.pack(fill=tk.BOTH, expand=True)
 
@@ -337,13 +358,14 @@ class TradingGUI:
 
         self.trade_text.delete("1.0", tk.END)
         if G.global_trade_details:
-            self.trade_text.insert(tk.END, json.dumps(G.global_trade_details, indent=2))
+            summary = format_trade_details(G.global_trade_details)
+            self.trade_text.insert(tk.END, summary)
         else:
             self.trade_text.insert(tk.END, "No Trade Details")
 
         self.yearly_perf_text.delete("1.0", tk.END)
-        if G.global_yearly_stats_table:
-            self.yearly_perf_text.insert(tk.END, G.global_yearly_stats_table)
+        if G.global_best_yearly_stats_table:
+            self.yearly_perf_text.insert(tk.END, G.global_best_yearly_stats_table)
         else:
             self.yearly_perf_text.insert(tk.END, "No yearly data")
 

@@ -94,10 +94,10 @@ def robust_backtest(ensemble, data_full):
     df = pd.DataFrame(
         {
             "timestamp": timestamps,
-            "open": extd[:, 0],
-            "high": extd[:, 1],
-            "low": extd[:, 2],
-            "close": extd[:, 3],
+            "open": raw_data[:, 1],
+            "high": raw_data[:, 2],
+            "low": raw_data[:, 3],
+            "close": raw_data[:, 4],
             "prediction": preds,
         }
     )
