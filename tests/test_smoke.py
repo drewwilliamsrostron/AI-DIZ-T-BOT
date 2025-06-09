@@ -26,6 +26,7 @@ def test_end_to_end_smoke():
         {"ADAPT_TO_LIVE": False},
         use_prev_weights=False,
         max_epochs=1,
+        debug_anomaly=__debug__,
     )
     result = robust_backtest(ensemble, data)
     assert result["trades"] > 0
