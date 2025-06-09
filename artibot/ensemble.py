@@ -183,9 +183,13 @@ class EnsembleModel:
         G.global_max_drawdown = current_result["max_drawdown"]
         G.global_net_pct = current_result["net_pct"]
         G.global_num_trades = current_result["trades"]
-        G.global_win_rate = current_result.get("win_rate", 0.0)
-        G.global_profit_factor = current_result.get("profit_factor", 0.0)
-        G.global_avg_trade_duration = current_result.get("avg_trade_duration", 0.0)
+
+        G.global_win_rate = current_result["win_rate"]
+        G.global_profit_factor = current_result["profit_factor"]
+        G.global_avg_trade_duration = current_result["avg_trade_duration"]
+        G.global_avg_win = current_result.get("avg_win", 0.0)
+        G.global_avg_loss = current_result.get("avg_loss", 0.0)
+
 
         dfy, table_str = compute_yearly_stats(
             current_result["equity_curve"],
@@ -448,6 +452,8 @@ class EnsembleModel:
             G.global_best_win_rate = current_result["win_rate"]
             G.global_best_profit_factor = current_result["profit_factor"]
             G.global_best_avg_trade_duration = current_result["avg_trade_duration"]
+            G.global_best_avg_win = current_result.get("avg_win", 0.0)
+            G.global_best_avg_loss = current_result.get("avg_loss", 0.0)
             G.global_best_inactivity_penalty = current_result["inactivity_penalty"]
             G.global_best_composite_reward = cur_reward
             G.global_best_days_in_profit = current_result["days_in_profit"]
@@ -579,6 +585,8 @@ class EnsembleModel:
                     G.global_best_avg_trade_duration = loaded_result[
                         "avg_trade_duration"
                     ]
+                    G.global_best_avg_win = loaded_result.get("avg_win", 0.0)
+                    G.global_best_avg_loss = loaded_result.get("avg_loss", 0.0)
                     G.global_best_inactivity_penalty = loaded_result[
                         "inactivity_penalty"
                     ]

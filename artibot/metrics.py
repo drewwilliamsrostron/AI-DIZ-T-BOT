@@ -117,12 +117,25 @@ def compute_days_in_profit(equity_curve, init_balance):
 
 
 def compute_trade_metrics(trades):
-    """Return win rate, profit factor and average duration for given trades."""
+    """Return win rate, profit factor and average duration for given trades.
+
+    The function also returns the average win and loss percentages so the GUI
+    can display recent trade quality.
+    """
+
     if not trades:
-        return {"win_rate": 0.0, "profit_factor": 0.0, "avg_duration": 0.0}
+        return {
+            "win_rate": 0.0,
+            "profit_factor": 0.0,
+            "avg_duration": 0.0,
+            "avg_win": 0.0,
+            "avg_loss": 0.0,
+        }
+
     returns = [t.get("return", 0.0) for t in trades]
     wins = [r for r in returns if r > 0]
     losses = [-r for r in returns if r < 0]
+
     win_rate = len(wins) / len(returns)
     profit = float(np.sum(wins))
     loss = float(np.sum(losses))
@@ -132,9 +145,21 @@ def compute_trade_metrics(trades):
         profit_factor = float("inf")
     else:
         profit_factor = 0.0
+
     avg_duration = float(np.mean([t.get("duration", 0.0) for t in trades]))
+    avg_win = float(np.mean(wins)) if wins else 0.0
+    avg_loss = float(np.mean(losses)) if losses else 0.0
+
     return {
         "win_rate": win_rate,
         "profit_factor": profit_factor,
         "avg_duration": avg_duration,
+        "avg_win": avg_win,
+        "avg_loss": avg_loss,
     }
+
+
+def nuclear_key_condition(sharpe: float, max_dd: float, profit_factor: float) -> bool:
+    """Return ``True`` when metrics allow live trading."""
+
+    return sharpe >= 1.5 and max_dd >= -0.20 and profit_factor >= 1.5

@@ -27,9 +27,10 @@ def test_entropy_warning(monkeypatch, caplog):
             "win_rate": 0.0,
             "profit_factor": 0.0,
 
-            "avg_trade_duration": 0,
+            "avg_trade_duration": 0.0,
+            "avg_win": 0.0,
+            "avg_loss": 0.0,
 
-        }
 
     def dummy_stats(ec, trades, initial_balance=100.0):
         return None, ""

@@ -9,6 +9,8 @@ from tkinter import ttk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
+from .metrics import nuclear_key_condition
+from .live_risk import update_auto_pause
 
 
 ###############################################################################
@@ -220,6 +222,14 @@ class TradingGUI:
         self.current_profit_factor_label.grid(
             row=17, column=0, sticky=tk.W, padx=5, pady=5
         )
+        self.current_avg_win_label = ttk.Label(
+            self.info_frame, text="Avg Win: N/A", font=("Helvetica", 12)
+        )
+        self.current_avg_win_label.grid(row=18, column=0, sticky=tk.W, padx=5, pady=5)
+        self.current_avg_loss_label = ttk.Label(
+            self.info_frame, text="Avg Loss: N/A", font=("Helvetica", 12)
+        )
+        self.current_avg_loss_label.grid(row=19, column=0, sticky=tk.W, padx=5, pady=5)
 
         self.best_sharpe_label = ttk.Label(
             self.info_frame,
@@ -283,9 +293,21 @@ class TradingGUI:
             font=("Helvetica", 12),
             foreground="darkgreen",
         )
-        self.best_profit_factor_label.grid(
-            row=17, column=1, sticky=tk.W, padx=5, pady=5
+        self.best_profit_factor_label.grid(row=17, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_avg_win_label = ttk.Label(
+            self.info_frame,
+            text="Best Avg Win: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
         )
+        self.best_avg_win_label.grid(row=18, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_avg_loss_label = ttk.Label(
+            self.info_frame,
+            text="Best Avg Loss: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_avg_loss_label.grid(row=19, column=1, sticky=tk.W, padx=5, pady=5)
 
         # status indicator combines primary + secondary messages
         self.status_var = tk.StringVar()
@@ -296,8 +318,15 @@ class TradingGUI:
             justify=tk.LEFT,
         )
         self.status_label.grid(
-            row=18, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
+            row=20, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
         )
+        self.nuclear_btn = tk.Button(
+            self.info_frame,
+            text="Nuclear Key",
+            state=tk.DISABLED,
+            bg="grey",
+        )
+        self.nuclear_btn.grid(row=21, column=0, padx=5, pady=5, columnspan=2)
 
 
         # trading control buttons
@@ -495,6 +524,8 @@ class TradingGUI:
         self.current_profit_factor_label.config(
             text=f"Profit Factor: {G.global_profit_factor:.2f}"
         )
+        self.current_avg_win_label.config(text=f"Avg Win: {G.global_avg_win:.3f}")
+        self.current_avg_loss_label.config(text=f"Avg Loss: {G.global_avg_loss:.3f}")
 
         self.best_sharpe_label.config(text=f"Best Sharpe: {G.global_best_sharpe:.2f}")
         self.best_drawdown_label.config(
@@ -528,6 +559,12 @@ class TradingGUI:
         self.best_profit_factor_label.config(
             text=f"Best Profit Factor: {G.global_best_profit_factor:.2f}"
         )
+        self.best_avg_win_label.config(
+            text=f"Best Avg Win: {G.global_best_avg_win:.3f}"
+        )
+        self.best_avg_loss_label.config(
+            text=f"Best Avg Loss: {G.global_best_avg_loss:.3f}"
+        )
 
         self.ai_output_text.delete("1.0", tk.END)
         self.ai_output_text.insert(tk.END, G.global_ai_adjustments)
@@ -552,6 +589,16 @@ class TradingGUI:
             self.validation_label.config(
                 text=f"Val Sharpe: {sharpe:.2f} NK: {enabled}"
             )
+
+        # evaluate nuclear key and auto-pause rules
+        if nuclear_key_condition(
+            G.global_sharpe, G.global_max_drawdown, G.global_profit_factor
+        ):
+            self.nuclear_btn.config(state=tk.NORMAL, bg="green")
+        else:
+            self.nuclear_btn.config(state=tk.DISABLED, bg="grey")
+
+        update_auto_pause(G.global_sharpe, G.global_max_drawdown)
 
         self.root.after(self.update_interval, self.update_dashboard)
 

@@ -367,6 +367,8 @@ def robust_backtest(ensemble, data_full, indicators=None):
     win_rate = metrics["win_rate"]
     profit_factor = metrics["profit_factor"]
     avg_duration = metrics["avg_duration"]
+    avg_win = metrics["avg_win"]
+    avg_loss = metrics["avg_loss"]
 
     net_score = net_pct / 100.0
     shr_score = sharpe
@@ -397,4 +399,6 @@ def robust_backtest(ensemble, data_full, indicators=None):
         "win_rate": win_rate,
         "profit_factor": profit_factor,
         "avg_trade_duration": avg_duration,
+        "avg_win": avg_win,
+        "avg_loss": avg_loss,
     }
