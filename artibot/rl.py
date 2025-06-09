@@ -211,7 +211,9 @@ class MetaTransformerRL:
 def meta_control_loop(ensemble, dataset, agent, interval=5.0):
     """Periodically tweak training parameters using the meta agent."""
 
-    G.status_sleep("Meta", "Starting agent", 2.0)
+
+    G.status_sleep("Starting meta agent", "", 2.0)
+
 
     # old initial state was just 2 dims. Now we add (sharpe, dd, trades, days_in_profit)
     prev_r = G.global_composite_reward if G.global_composite_reward else 0.0
@@ -228,7 +230,9 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
     while True:
         try:
             if G.epoch_count < 1:
-                G.status_sleep("Meta", "Waiting for training", 1.0)
+
+                G.status_sleep("Meta agent waiting for training", "", 1.0)
+
                 continue
 
             curr_r = G.global_composite_reward if G.global_composite_reward else 0.0
@@ -246,7 +250,9 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                 dtype=np.float32,
             )
 
-            G.set_status("Meta", "agent updating")
+
+            G.set_status("Meta agent updating", "")
+
 
             a_idx, logp, val_s = agent.pick_action(state)
             with G.model_lock, torch.no_grad():
@@ -261,7 +267,9 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                     nthr,
                 ) = agent.apply_action(a_idx)
 
-            G.status_sleep("Meta", "Sleeping", interval)
+
+            G.status_sleep("Meta agent sleeping", "", interval)
+
 
             curr2 = G.global_composite_reward if G.global_composite_reward else 0.0
             rew_delta = curr2 - curr_r
@@ -289,12 +297,14 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                 msg = "\n[Stagnation] Forced random reinit of primary model!\n"
                 G.global_ai_adjustments_log += msg
 
-            G.status_sleep("Meta", "Idle", 0.5)
+
+            G.status_sleep("Meta agent idle", "", 0.5)
 
         except Exception as e:
-            G.set_status("Meta", f"error: {e}")
+            G.set_status(f"Meta error: {e}", "")
             traceback.print_exc()
-            G.status_sleep("Meta", "Failed", 5.0)
+            G.status_sleep("Meta agent failed", "", 5.0)
+
 
 
 ###############################################################################

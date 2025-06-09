@@ -23,19 +23,24 @@ def load_rl_module():
     stub.Dataset = Dataset
     stub.random = _random
 
-    def status_sleep(comp: str, msg: str, t: float) -> None:
+
+    def status_sleep(primary: str, secondary: str, t: float) -> None:
+
         pass
 
     stub.status_sleep = status_sleep
 
-    def set_status(comp: str, msg: str | None = None) -> None:
-        stub.global_status_message = f"[{comp}] {msg}" if msg is not None else comp
 
-    def get_status() -> str:
-        return stub.global_status_message
+    def set_status(primary: str, secondary: str) -> None:
+        stub.global_status_primary = primary
+        stub.global_status_secondary = secondary
+
+
+    def get_status_full() -> tuple[str, str]:
+        return stub.global_status_primary, stub.global_status_secondary
 
     stub.set_status = set_status
-    stub.get_status = get_status
+    stub.get_status_full = get_status_full
     stub.GLOBAL_THRESHOLD = 0.0
     stub.global_ai_adjustments = ""
     stub.global_ai_adjustments_log = ""
@@ -47,7 +52,8 @@ def load_rl_module():
     stub.global_max_drawdown = 0.0
     stub.global_num_trades = 0
     stub.global_days_in_profit = 0
-    stub.global_status_message = ""
+    stub.global_status_primary = ""
+    stub.global_status_secondary = ""
     sys.modules["artibot.globals"] = stub
 
     base = Path(__file__).resolve().parent.parent / "artibot"

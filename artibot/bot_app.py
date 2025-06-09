@@ -111,7 +111,7 @@ def run_bot(max_epochs: int | None = None) -> None:
 
     if len(data) < 10:
         logging.error("No usable CSV data found")
-        G.global_status_message = "CSV load failed"
+        G.set_status("CSV load failed", "")
         return
 
     weights_dir = os.path.abspath(os.path.expanduser(config.get("WEIGHTS_DIR", ".")))

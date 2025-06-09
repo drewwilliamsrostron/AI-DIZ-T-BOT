@@ -1,7 +1,9 @@
 """Shared global state for threads and hyperparameters.
 
 ``model_lock`` serialises access to the ensemble models during training and
-meta-agent updates.
+meta-agent updates. Worker threads communicate short messages via
+``global_status_primary`` and ``global_status_secondary`` updated using
+``set_status`` or ``status_sleep``.
 """
 
 # Imports
@@ -121,16 +123,19 @@ trading_paused = False
 nuclear_key_enabled = False
 
 # Simple status indicator updated by threads
+
 global_primary_status = "Initializing..."
 global_secondary_status = ""
 
 # Flag toggled by GUI when user enables live trading
 live_trading_enabled = False
 
+
 # Protect shared state across threads
 state_lock = threading.Lock()
 # New: lock used when mutating model parameters
 model_lock = threading.Lock()
+
 
 
 
@@ -162,6 +167,7 @@ def get_status_full() -> str:
         return f"{global_status_message} | epoch {epoch_count}"
 
 
+
 def inc_epoch() -> None:
     """Increment the global epoch counter safely."""
     global epoch_count
@@ -185,14 +191,20 @@ def is_nuclear_key_enabled() -> bool:
 ###############################################################################
 # Helper used by worker threads to show countdowns while sleeping
 ###############################################################################
-def status_sleep(component: str, message: str, seconds: float):
-    """Sleep in 1s increments and update ``global_status_message``."""
+
+def status_sleep(primary: str, secondary: str, seconds: float) -> None:
+    """Sleep in 1s increments and update status fields."""
+
+
+
     end = time.monotonic() + seconds
     while True:
         remaining = int(end - time.monotonic())
         if remaining <= 0:
             break
-        set_status(component, f"{message} ({remaining}s)")
+
+        set_status(primary, f"{secondary} ({remaining}s)".strip())
+
         time.sleep(1)
 
 
