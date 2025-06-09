@@ -179,10 +179,9 @@ class EnsembleModel:
                 )
 
             losses = []
-            with ctx:
-                with torch.autograd.set_detect_anomaly(True):
-                    for model in self.models:
-                        logits, _, pred_reward = model(bx)
+            with ctx, torch.autograd.set_detect_anomaly(True):
+                for model in self.models:
+                    logits, _, pred_reward = model(bx.clone())
                     self.entropies.append(getattr(model, "last_entropy", 0.0))
                     self.max_probs.append(getattr(model, "last_max_prob", 0.0))
                     ce_loss = self.criterion(logits, by)
@@ -218,8 +217,12 @@ class EnsembleModel:
                         continue
                     losses.append(loss)
 
+            if not losses:
+                continue
+
             total_batch_loss = torch.stack(losses).sum()
             self.scaler.scale(total_batch_loss).backward()
+
             for idx_m, (model, opt_) in enumerate(zip(self.models, self.optimizers)):
                 self.scaler.unscale_(opt_)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -238,12 +241,12 @@ class EnsembleModel:
                         pg["lr"] = new_lr
                 else:
                     self.cosine[idx_m].step()
-            self.step_count += 1
+
             batch_loss = sum(loss_i.item() for loss_i in losses)
+
+            self.step_count += 1
             total_loss += (
-                float(batch_loss / len(self.models))
-                if not np.isnan(batch_loss)
-                else 0.0
+                (batch_loss / len(self.models)) if not np.isnan(batch_loss) else 0.0
             )
             nb += 1
         train_loss = total_loss / nb
