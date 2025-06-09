@@ -27,7 +27,9 @@ from .model import TradingModel
 
 def reject_if_risky(sharpe: float, max_dd: float, entropy: float) -> bool:
     """Return True if metrics violate the risk thresholds."""
-    return max_dd < -0.30 or sharpe < 1.0 or entropy < 1.0
+    if entropy < 1.0:
+        return True  # reject collapsed runs
+    return max_dd < -0.30 or sharpe < 1.0
 
 
 def choose_best(rewards: list[float]) -> float:
@@ -152,7 +154,7 @@ class EnsembleModel:
                         else nullcontext()
                     )
                 with ctx:
-                    logits, _, pred_reward = model(bx, batch_idx=batch_idx)
+                    logits, _, pred_reward = model(bx)
                     ce_loss = self.criterion(logits, by)
                     if not torch.isfinite(pred_reward).all():
                         logging.error(
