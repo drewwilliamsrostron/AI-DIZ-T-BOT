@@ -95,7 +95,7 @@ class TradingModel(nn.Module):
         # Risk fraction, SL/TP are scaled
         logits = out_all[:, :3]
         logits = torch.nan_to_num(logits)
-        logits = logits.clamp(-10.0, 10.0)
+        logits = logits.clamp(min=-10.0, max=10.0)
         risk_frac = 0.001 + 0.499 * torch.sigmoid(out_all[:, 3])
         sl_mult = 0.5 + 9.5 * torch.sigmoid(out_all[:, 4])
         tp_mult = 0.5 + 9.5 * torch.sigmoid(out_all[:, 5])

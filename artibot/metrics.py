@@ -82,9 +82,6 @@ def inactivity_exponential_penalty(gap_in_secs, max_penalty=100.0):
     penalty = 0.0
     for i in range(months):
         penalty += base * (2**i)
-        if penalty > max_penalty:
-            penalty = max_penalty
-            break
     return penalty
 
 

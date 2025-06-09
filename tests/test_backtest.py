@@ -3,6 +3,7 @@ import sys
 import types
 
 import numpy as np
+import pytest
 
 # ruff: noqa: E402
 import torch
@@ -56,6 +57,14 @@ def test_robust_backtest_simple():
     ]
     result = robust_backtest(DummyEnsemble(), data)
     assert result["trades"] == 1
-
     assert round(result["net_pct"], 2) == 1.62
-    assert -100.0 <= result["composite_reward"] <= 100.0
+    assert result["composite_reward"] == pytest.approx(4.30977, rel=1e-3)
+
+
+def test_robust_backtest_unbounded_reward():
+    data = [
+        [i * 30 * 24 * 3600, 100 + i, 100 + i + 0.5, 100 + i - 0.5, 100 + i, 0]
+        for i in range(50)
+    ]
+    result = robust_backtest(DummyEnsemble(), data)
+    assert result["composite_reward"] > 100
