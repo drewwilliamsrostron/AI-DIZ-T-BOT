@@ -1,4 +1,8 @@
-"""Shared global state for threads and hyperparameters."""
+"""Shared global state for threads and hyperparameters.
+
+``model_lock`` serialises access to the ensemble models during training and
+meta-agent updates.
+"""
 
 # Imports
 ###############################################################################
@@ -102,6 +106,8 @@ global_status_message = "Initializing..."
 
 # Protect shared state across threads
 state_lock = threading.Lock()
+# New: lock used when mutating model parameters
+model_lock = threading.Lock()
 
 
 def set_status(msg: str) -> None:

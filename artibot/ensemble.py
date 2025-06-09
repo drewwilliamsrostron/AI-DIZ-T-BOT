@@ -187,246 +187,232 @@ class EnsembleModel:
         nb = 0
         for m in self.models:
             m.train()
-        for batch_idx, (batch_x, batch_y) in enumerate(dl_train):
-            bx = batch_x.to(self.device).contiguous().clone()
-            by = batch_y.to(self.device)
-            for opt in self.optimizers:
-                opt.zero_grad()
-
-            if "device_type" in inspect.signature(autocast).parameters:
-                ctx = autocast(
-                    device_type=self.device.type,
-                    enabled=(self.device.type == "cuda"),
-                )
-            else:
-                ctx = (
-                    autocast(enabled=(self.device.type == "cuda"))
-                    if self.device.type == "cuda"
-                    else nullcontext()
-                )
-
-            losses = []
-            with ctx, torch.autograd.set_detect_anomaly(True):
-                for model in self.models:
-                    logits, _, pred_reward = model(bx.clone())
-                    self.entropies.append(getattr(model, "last_entropy", 0.0))
-                    self.max_probs.append(getattr(model, "last_max_prob", 0.0))
-                    ce_loss = self.criterion(logits, by)
-                    if not torch.isfinite(pred_reward).all():
-                        logging.error(
-                            "Non‑finite pred_reward detected at step %s",
-                            self.train_steps,
-                        )
-                        logging.error(
-                            "pred_reward stats: min=%s max=%s",
-                            pred_reward.min().item(),
-                            pred_reward.max().item(),
-                        )
-                        continue
-
-                    use_reward = self.train_steps > self.delayed_reward_epochs
-                    if use_reward:
-                        r_loss = self.mse_loss_fn(
-                            pred_reward, scaled_target.expand_as(pred_reward)
-                        )
-                    else:
-                        r_loss = torch.tensor(0.0, device=self.device)
-                    loss = ce_loss + self.reward_loss_weight * r_loss
-                    if not torch.isfinite(loss).all():
-                        logging.error(
-                            "Non‑finite loss detected at step %s", self.train_steps
-                        )
-                        logging.error(
-                            "ce_loss=%s reward_loss=%s",
-                            ce_loss.item(),
-                            r_loss.item(),
-                        )
-                        continue
-                    losses.append(loss)
-
-            if not losses:
-                continue
-
-            total_batch_loss = torch.stack(losses).sum()
-            self.scaler.scale(total_batch_loss).backward()
-
-            for idx_m, (model, opt_) in enumerate(zip(self.models, self.optimizers)):
-
-                self.scaler.unscale_(opt_)
-                torch.nn.utils.clip_grad_norm_(self.models[idx_m].parameters(), 1.0)
-                try:
-                    self.scaler.step(opt_)
-                except AssertionError:
-                    opt_.step()
-                    self.scaler = GradScaler(enabled=False)
-                else:
-                    self.scaler.update()
-                if self.step_count <= self.warmup_steps:
-                    new_lr = self.base_lrs[idx_m] * (
-                        (self.step_count + 1) / self.warmup_steps
-                    )
-                    for pg in opt_.param_groups:
-                        pg["lr"] = new_lr
-                else:
-                    self.cosine[idx_m].step()
-
-            batch_loss = sum(loss_i.item() for loss_i in losses)
-
-            self.step_count += 1
-            total_loss += (
-                (batch_loss / len(self.models)) if not np.isnan(batch_loss) else 0.0
-            )
-            nb += 1
-        train_loss = total_loss / nb
-
-        val_loss = self.evaluate_val_loss(dl_val) if dl_val else None
-        if val_loss is not None:
-            for sch in self.schedulers:
-                sch.step(val_loss)
-            if val_loss < self.best_val_loss - 1e-6:
-                self.best_val_loss = val_loss
-                self.patience = 0
-            else:
-                self.patience += 1
-            if self.patience >= 12:
+        # Serialise updates with meta-control thread
+        with G.model_lock:
+            for batch_idx, (batch_x, batch_y) in enumerate(dl_train):
+                bx = batch_x.to(self.device).contiguous().clone()
+                by = batch_y.to(self.device)
                 for opt in self.optimizers:
-                    for pg in opt.param_groups:
-                        pg["lr"] = max(pg["lr"] * 0.1, 2e-6)
-                self.patience = 0
+                    opt.zero_grad()
 
-        # (2) Adjust Reward Penalties => less harsh for zero trades/ negative net
-        trades_now = len(current_result["trade_details"])
-        cur_reward = current_result["composite_reward"]
-
-        if trades_now == 0:
-            # Reduced from 99999 => 500
-            cur_reward -= 500
-        elif trades_now < 5:
-            # small graduated penalty
-            cur_reward -= 100 * (5 - trades_now)
-
-        # negative net => smaller penalty
-        if current_result["net_pct"] < 0:
-            cur_reward -= 500  # from 2000
-
-        # (3) Dynamic Patience => measure improvement
-        # We'll track the last 10 net profits
-        avg_improvement = (
-            np.mean(G.global_backtest_profit[-10:])
-            if len(G.global_backtest_profit) >= 10
-            else 0
-        )
-        attn_entropy = (
-            float(np.mean(G.global_attention_entropy_history[-100:]))
-            if G.global_attention_entropy_history
-            else 0.0
-        )
-        if attn_entropy < 0.5:
-            logging.warning("Attention entropy low: %.2f", attn_entropy)
-            G.set_status("Warning: attention entropy < 0.5")
-        if cur_reward > self.best_composite_reward:
-            if reject_if_risky(G.global_sharpe, G.global_max_drawdown, attn_entropy):
-                self.rejection_count_this_epoch += 1
-                logging.info(
-                    "REJECTED by risk filter",
-                    extra={
-                        "epoch": self.train_steps,
-                        "sharpe": G.global_sharpe,
-                        "max_dd": G.global_max_drawdown,
-                        "attn_entropy": attn_entropy,
-                        "lr": self.optimizers[0].param_groups[0]["lr"],
-                    },
-                )
-            else:
-                self.best_composite_reward = cur_reward
-                self.patience_counter = 0
-                self.best_state_dicts = [m.state_dict() for m in self.models]
-                self.save_best_weights("best_model_weights.pth")
-        else:
-            self.patience_counter += 1
-            # If net improvements are small => bigger patience
-            # If average improvement >=1 => shorter patience
-            patience_threshold = 30 if avg_improvement < 1.0 else 15
-            if self.patience_counter >= patience_threshold:
-                # random approach: 70% chance => half LR, else random reinit
-                # if random.random()< 0.7:
-                #     new_lr= max(self.optimizers[0].param_groups[0]['lr']*0.5, 1e-6)
-                #     for opt_ in self.optimizers:
-                #         for grp in opt_.param_groups:
-                #             grp['lr']= new_lr
-                # else:
-                #     # random reinit
-                #     for m in self.models:
-                #         for layer in m.modules():
-                #             if isinstance(layer, (nn.Linear, nn.Conv2d, nn.Conv1d)):
-                #                 nn.init.xavier_uniform_(layer.weight)
-                #                 if layer.bias is not None:
-                #                     nn.init.zeros_(layer.bias)
-                # self.patience_counter=0
-                if random.random() < 0.7:
-                    _ = np.random.choice([1e-5, 1e-4, 1e-3])  # More radical LR changes
+                if "device_type" in inspect.signature(autocast).parameters:
+                    ctx = autocast(
+                        device_type=self.device.type,
+                        enabled=(self.device.type == "cuda"),
+                    )
                 else:
-                    # Full reinit with different initialization
-                    for m in self.models:
-                        for layer in m.modules():
-                            if isinstance(layer, nn.Linear):
-                                with torch.no_grad():
-                                    new_w = torch.empty_like(layer.weight)
-                                    nn.init.kaiming_normal_(new_w)
-                                    layer.weight.copy_(new_w)
-                                    if layer.bias is not None:
-                                        layer.bias.copy_(
-                                            torch.full_like(layer.bias, 0.1)
-                                        )
-                    # Add random architecture modifications
-                    if random.random() < 0.3:
-                        self.models = [
-                            TradingModel(
-                                hidden_size=np.random.choice([128, 256]),
-                                dropout=np.random.uniform(0.3, 0.6),
-                            ).to(self.device)
-                            for _ in range(len(self.models))
-                        ]
-                        lr = self.optimizers[0].param_groups[0]["lr"]
-                        wd = (
-                            self.optimizers[0]
-                            .param_groups[0]
-                            .get(
-                                "weight_decay",
-                                0.0,
+                    ctx = (
+                        autocast(enabled=(self.device.type == "cuda"))
+                        if self.device.type == "cuda"
+                        else nullcontext()
+                    )
+
+                losses = []
+                with ctx, torch.autograd.set_detect_anomaly(True):
+                    for model in self.models:
+                        logits, _, pred_reward = model(bx.clone())
+                        self.entropies.append(getattr(model, "last_entropy", 0.0))
+                        self.max_probs.append(getattr(model, "last_max_prob", 0.0))
+                        ce_loss = self.criterion(logits, by)
+                        if not torch.isfinite(pred_reward).all():
+                            logging.error(
+                                "Non‑finite pred_reward detected at step %s",
+                                self.train_steps,
                             )
-                        )
-                        self.optimizers = [
-                            optim.Adam(m.parameters(), lr=lr, weight_decay=wd)
-                            for m in self.models
-                        ]
-                        self.schedulers = [
-                            ReduceLROnPlateau(
-                                opt,
-                                mode="min",
-                                patience=6,
-                                factor=0.8,
-                                min_lr=2e-5,
+                            logging.error(
+                                "pred_reward stats: min=%s max=%s",
+                                pred_reward.min().item(),
+                                pred_reward.max().item(),
                             )
-                            for opt in self.optimizers
-                        ]
-                        self.cosine = [
-                            CosineAnnealingWarmRestarts(o, T_0=50)
-                            for o in self.optimizers
-                        ]
-                        if "device" in inspect.signature(GradScaler).parameters:
-                            self.scaler = GradScaler(
-                                enabled=(self.device.type == "cuda"),
-                                device=self.device.type,
+                            continue
+
+                        use_reward = self.train_steps > self.delayed_reward_epochs
+                        if use_reward:
+                            r_loss = self.mse_loss_fn(
+                                pred_reward, scaled_target.expand_as(pred_reward)
                             )
                         else:
-                            self.scaler = GradScaler(
-                                enabled=(self.device.type == "cuda")
+                            r_loss = torch.tensor(0.0, device=self.device)
+                        loss = ce_loss + self.reward_loss_weight * r_loss
+                        if not torch.isfinite(loss).all():
+                            logging.error(
+                                "Non‑finite loss detected at step %s", self.train_steps
                             )
-                        self.base_lrs = [
-                            opt.param_groups[0]["lr"] for opt in self.optimizers
-                        ]
+                            logging.error(
+                                "ce_loss=%s reward_loss=%s",
+                                ce_loss.item(),
+                                r_loss.item(),
+                            )
+                            continue
+                        losses.append(loss)
+
+                if not losses:
+                    continue
+
+                total_batch_loss = torch.stack(losses).sum()
+                self.scaler.scale(total_batch_loss).backward()
+
+                for idx_m, (model, opt_) in enumerate(
+                    zip(self.models, self.optimizers)
+                ):
+
+                    self.scaler.unscale_(opt_)
+                    torch.nn.utils.clip_grad_norm_(self.models[idx_m].parameters(), 1.0)
+                    try:
+                        self.scaler.step(opt_)
+                    except AssertionError:
+                        opt_.step()
+                        self.scaler = GradScaler(enabled=False)
+                    else:
+                        self.scaler.update()
+                    if self.step_count <= self.warmup_steps:
+                        new_lr = self.base_lrs[idx_m] * (
+                            (self.step_count + 1) / self.warmup_steps
+                        )
+                        for pg in opt_.param_groups:
+                            pg["lr"] = new_lr
+                    else:
+                        self.cosine[idx_m].step()
+
+                batch_loss = sum(loss_i.item() for loss_i in losses)
+
+                self.step_count += 1
+                total_loss += (
+                    (batch_loss / len(self.models)) if not np.isnan(batch_loss) else 0.0
+                )
+                nb += 1
+            train_loss = total_loss / nb
+
+            val_loss = self.evaluate_val_loss(dl_val) if dl_val else None
+            if val_loss is not None:
+                for sch in self.schedulers:
+                    sch.step(val_loss)
+                if val_loss < self.best_val_loss - 1e-6:
+                    self.best_val_loss = val_loss
+                    self.patience = 0
+                else:
+                    self.patience += 1
+                if self.patience >= 12:
+                    for opt in self.optimizers:
+                        for pg in opt.param_groups:
+                            pg["lr"] = max(pg["lr"] * 0.1, 2e-6)
+                    self.patience = 0
+
+            # (2) Adjust Reward Penalties => less harsh for zero trades/ negative net
+            trades_now = len(current_result["trade_details"])
+            cur_reward = current_result["composite_reward"]
+
+            if trades_now == 0:
+                # Reduced from 99999 => 500
+                cur_reward -= 500
+            elif trades_now < 5:
+                # small graduated penalty
+                cur_reward -= 100 * (5 - trades_now)
+
+            # negative net => smaller penalty
+            if current_result["net_pct"] < 0:
+                cur_reward -= 500  # from 2000
+
+            # (3) Dynamic Patience => measure improvement
+            # We'll track the last 10 net profits
+            avg_improvement = (
+                np.mean(G.global_backtest_profit[-10:])
+                if len(G.global_backtest_profit) >= 10
+                else 0
+            )
+            attn_entropy = (
+                float(np.mean(G.global_attention_entropy_history[-100:]))
+                if G.global_attention_entropy_history
+                else 0.0
+            )
+            if attn_entropy < 0.5:
+                logging.warning("Attention entropy low: %.2f", attn_entropy)
+                G.set_status("Warning: attention entropy < 0.5")
+            if cur_reward > self.best_composite_reward:
+                if reject_if_risky(
+                    G.global_sharpe, G.global_max_drawdown, attn_entropy
+                ):
+                    self.rejection_count_this_epoch += 1
+                    logging.info(
+                        "REJECTED by risk filter",
+                        extra={
+                            "epoch": self.train_steps,
+                            "sharpe": G.global_sharpe,
+                            "max_dd": G.global_max_drawdown,
+                            "attn_entropy": attn_entropy,
+                            "lr": self.optimizers[0].param_groups[0]["lr"],
+                        },
+                    )
+                else:
+                    self.best_composite_reward = cur_reward
                     self.patience_counter = 0
+                    self.best_state_dicts = [m.state_dict() for m in self.models]
+                    self.save_best_weights("best_model_weights.pth")
+            else:
+                self.patience_counter += 1
+                # If net improvements are small => bigger patience
+                # If average improvement >=1 => shorter patience
+                patience_threshold = 30 if avg_improvement < 1.0 else 15
+                if self.patience_counter >= patience_threshold:
+                    if random.random() < 0.7:
+                        _ = np.random.choice([1e-5, 1e-4, 1e-3])
+                    else:
+                        for m in self.models:
+                            for layer in m.modules():
+                                if isinstance(layer, nn.Linear):
+                                    with torch.no_grad():
+                                        new_w = torch.empty_like(layer.weight)
+                                        nn.init.kaiming_normal_(new_w)
+                                        layer.weight.copy_(new_w)
+                                        if layer.bias is not None:
+                                            layer.bias.copy_(
+                                                torch.full_like(layer.bias, 0.1)
+                                            )
+                        if random.random() < 0.3:
+                            self.models = [
+                                TradingModel(
+                                    hidden_size=np.random.choice([128, 256]),
+                                    dropout=np.random.uniform(0.3, 0.6),
+                                ).to(self.device)
+                                for _ in range(len(self.models))
+                            ]
+                            lr = self.optimizers[0].param_groups[0]["lr"]
+                            wd = (
+                                self.optimizers[0]
+                                .param_groups[0]
+                                .get("weight_decay", 0.0)
+                            )
+                            self.optimizers = [
+                                optim.Adam(m.parameters(), lr=lr, weight_decay=wd)
+                                for m in self.models
+                            ]
+                            self.schedulers = [
+                                ReduceLROnPlateau(
+                                    opt,
+                                    mode="min",
+                                    patience=6,
+                                    factor=0.8,
+                                    min_lr=2e-5,
+                                )
+                                for opt in self.optimizers
+                            ]
+                            self.cosine = [
+                                CosineAnnealingWarmRestarts(o, T_0=50)
+                                for o in self.optimizers
+                            ]
+                            if "device" in inspect.signature(GradScaler).parameters:
+                                self.scaler = GradScaler(
+                                    enabled=(self.device.type == "cuda"),
+                                    device=self.device.type,
+                                )
+                            else:
+                                self.scaler = GradScaler(
+                                    enabled=(self.device.type == "cuda")
+                                )
+                            self.base_lrs = [
+                                opt.param_groups[0]["lr"] for opt in self.optimizers
+                            ]
+                        self.patience_counter = 0
 
         # track best net
         if current_result["net_pct"] > G.global_best_net_pct:
@@ -447,21 +433,25 @@ class EnsembleModel:
             )
             G.global_best_yearly_stats_table = best_table
 
-        mean_ent = float(torch.tensor(self.entropies).mean()) if self.entropies else 0.0
-        mean_mp = float(torch.tensor(self.max_probs).mean()) if self.max_probs else 0.0
-        logging.info(
-            {
-                "event": "EPOCH_SUMMARY",
-                "epoch": self.train_steps,
-                "mean_entropy": mean_ent,
-                "mean_max_prob": mean_mp,
-                "rejections": self.rejection_count_this_epoch,
-            }
-        )
-        self.entropies.clear()
-        self.max_probs.clear()
-        self.rejection_count_this_epoch = 0
-        return train_loss, val_loss
+            mean_ent = (
+                float(torch.tensor(self.entropies).mean()) if self.entropies else 0.0
+            )
+            mean_mp = (
+                float(torch.tensor(self.max_probs).mean()) if self.max_probs else 0.0
+            )
+            logging.info(
+                {
+                    "event": "EPOCH_SUMMARY",
+                    "epoch": self.train_steps,
+                    "mean_entropy": mean_ent,
+                    "mean_max_prob": mean_mp,
+                    "rejections": self.rejection_count_this_epoch,
+                }
+            )
+            self.entropies.clear()
+            self.max_probs.clear()
+            self.rejection_count_this_epoch = 0
+            return train_loss, val_loss
 
     def evaluate_val_loss(self, dl_val: DataLoader) -> float:
         """Return the average loss on ``dl_val`` across the ensemble."""

@@ -249,9 +249,17 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
             G.set_status("Meta agent updating")
 
             a_idx, logp, val_s = agent.pick_action(state)
-            (new_lr, new_wd, nrsi, nsma, nmacdf, nmacds, nmacdsig, nthr) = (
-                agent.apply_action(a_idx)
-            )
+            with G.model_lock, torch.no_grad():
+                (
+                    new_lr,
+                    new_wd,
+                    nrsi,
+                    nsma,
+                    nmacdf,
+                    nmacds,
+                    nmacdsig,
+                    nthr,
+                ) = agent.apply_action(a_idx)
 
             G.status_sleep("Meta agent sleeping", interval)
 
@@ -270,12 +278,13 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
             state = new_state
             if agent.last_improvement > 20:
                 # forced random reinit
-                for m in ensemble.models:
-                    for layer in m.modules():
-                        if isinstance(layer, nn.Linear):
-                            nn.init.xavier_uniform_(layer.weight)
-                            if layer.bias is not None:
-                                nn.init.zeros_(layer.bias)
+                with G.model_lock, torch.no_grad():
+                    for m in ensemble.models:
+                        for layer in m.modules():
+                            if isinstance(layer, nn.Linear):
+                                nn.init.xavier_uniform_(layer.weight)
+                                if layer.bias is not None:
+                                    nn.init.zeros_(layer.bias)
                 agent.last_improvement = 0
                 msg = "\n[Stagnation] Forced random reinit of primary model!\n"
                 G.global_ai_adjustments_log += msg
