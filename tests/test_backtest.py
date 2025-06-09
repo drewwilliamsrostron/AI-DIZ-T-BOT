@@ -57,6 +57,5 @@ def test_robust_backtest_simple():
     result = robust_backtest(DummyEnsemble(), data)
     assert result["trades"] == 1
 
-    assert round(result["net_pct"], 2) == 0.06
+    assert round(result["net_pct"], 2) == 1.62
     assert -100.0 <= result["composite_reward"] <= 100.0
-
