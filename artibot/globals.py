@@ -105,7 +105,12 @@ global_attention_weights_history = []
 global_attention_entropy_history = []
 global_phemex_data = []
 global_days_in_profit = 0.0
+global_validation_summary = {}
+nuclear_key_enabled = True
 live_bars_queue = queue.Queue()
+
+# gating flag
+nuclear_key_enabled = False
 
 # Simple status indicator updated by threads
 global_primary_status = "Initializing..."
@@ -120,6 +125,7 @@ state_lock = threading.Lock()
 model_lock = threading.Lock()
 
 
+
 def set_status(msg: str, secondary: str | None = None) -> None:
     """Thread-safe update of status messages."""
     with state_lock:
@@ -127,6 +133,7 @@ def set_status(msg: str, secondary: str | None = None) -> None:
         global_primary_status = msg
         if secondary is not None:
             global_secondary_status = secondary
+
 
 
 def get_status() -> str:
@@ -141,6 +148,12 @@ def get_status_full() -> tuple[str, str]:
         return global_primary_status, global_secondary_status
 
 
+def get_status_full() -> str:
+    """Return the status message along with the current epoch count."""
+    with state_lock:
+        return f"{global_status_message} | epoch {epoch_count}"
+
+
 def inc_epoch() -> None:
     """Increment the global epoch counter safely."""
     global epoch_count
@@ -148,17 +161,30 @@ def inc_epoch() -> None:
         epoch_count += 1
 
 
+def set_nuclear_key(enabled: bool) -> None:
+    """Enable or disable the nuclear key trading gate."""
+    global nuclear_key_enabled
+    with state_lock:
+        nuclear_key_enabled = enabled
+
+
+def is_nuclear_key_enabled() -> bool:
+    """Return ``True`` when the nuclear key gate is active."""
+    with state_lock:
+        return nuclear_key_enabled
+
+
 ###############################################################################
 # Helper used by worker threads to show countdowns while sleeping
 ###############################################################################
-def status_sleep(message: str, seconds: float):
+def status_sleep(component: str, message: str, seconds: float):
     """Sleep in 1s increments and update ``global_status_message``."""
     end = time.monotonic() + seconds
     while True:
         remaining = int(end - time.monotonic())
         if remaining <= 0:
             break
-        set_status(f"{message} ({remaining}s)")
+        set_status(component, f"{message} ({remaining}s)")
         time.sleep(1)
 
 

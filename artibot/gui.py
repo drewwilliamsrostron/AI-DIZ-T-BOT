@@ -35,11 +35,26 @@ def format_trade_details(trades, limit=50):
     return out_df.to_string(index=False, float_format=lambda x: f"{x:.2f}")
 
 
+
 def should_enable_live_trading() -> bool:
     """Return ``True`` when validation metrics meet risk criteria."""
     sharpe = G.global_holdout_sharpe
     dd = G.global_holdout_max_drawdown
     return sharpe >= 1.0 and dd >= -0.30
+
+def select_weight_file(use_prev: bool = True) -> str | None:
+    """Return the weight file path based on user selection."""
+    from tkinter import messagebox, filedialog
+
+    if use_prev and messagebox.askyesno("Load Weights", "Use best_model_weights.pth?"):
+        return "best_model_weights.pth"
+    return (
+        filedialog.askopenfilename(
+            title="Select weight file", filetypes=[("PyTorch", "*.pth")]
+        )
+        or None
+    )
+
 
 
 class TradingGUI:
@@ -284,6 +299,7 @@ class TradingGUI:
             row=18, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
         )
 
+
         # trading control buttons
         self.controls_frame = ttk.Frame(self.info_frame)
         self.controls_frame.grid(row=19, column=0, columnspan=2, pady=5)
@@ -306,6 +322,14 @@ class TradingGUI:
             command=self.edit_trade,
         )
         self.edit_button.pack(side=tk.LEFT, padx=5)
+
+        self.validation_label = ttk.Label(
+            self.info_frame, text="Validation: N/A", font=("Helvetica", 12)
+        )
+        self.validation_label.grid(
+            row=19, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
+        )
+
 
         self.frame_ai = ttk.Frame(root)
         self.frame_ai.pack(side=tk.RIGHT, fill=tk.Y, padx=5, pady=5)
@@ -521,6 +545,13 @@ class TradingGUI:
             self.nuclear_button.config(state=tk.DISABLED)
         if G.live_trading_enabled:
             self.nuclear_button.config(text="Live Trading ON")
+
+        if G.global_validation_summary:
+            sharpe = G.global_validation_summary.get("mean_sharpe", 0.0)
+            enabled = G.nuclear_key_enabled
+            self.validation_label.config(
+                text=f"Val Sharpe: {sharpe:.2f} NK: {enabled}"
+            )
 
         self.root.after(self.update_interval, self.update_dashboard)
 
