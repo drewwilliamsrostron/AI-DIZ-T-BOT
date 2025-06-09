@@ -46,6 +46,7 @@ class TradingModel(nn.Module):
     def __init__(self, input_size=8, hidden_size=128, num_classes=3, dropout=0.4):
         super().__init__()
         self.hidden_size = hidden_size
+        self.input_dim = input_size
         self.pos_encoder = PositionalEncoding(d_model=input_size)
         enc_layer = nn.TransformerEncoderLayer(
             d_model=input_size,
@@ -60,23 +61,21 @@ class TradingModel(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.fc = nn.Linear(hidden_size, num_classes + 4)
 
-    def forward(self, x, batch_idx: int | None = None):
+    def forward(self, x):
         x = self.pos_encoder(x)
         # inspect attention from the first encoder layer
+        q = k = v = x
         attn_output, attn_weights = self.transformer_encoder.layers[0].self_attn(
-            x,
-            x,
-            x,
+            q,
+            k,
+            v,
             need_weights=True,
             average_attn_weights=False,
         )
         p = attn_weights.mean(dim=(0, 1))
         entropy = utils.attention_entropy(p)
         max_prob = p.max().item()
-        if batch_idx == 0:
-            logger.info(
-                {"event": "ATTN_STATS", "entropy": entropy, "max_prob": max_prob}
-            )
+        logger.info({"event": "ATTN_STATS", "entropy": entropy, "max_prob": max_prob})
         attn_mean = p.mean().item()
         try:
             G.global_attention_weights_history.append(attn_mean)
@@ -106,6 +105,12 @@ class TradingModel(nn.Module):
         )
         pred_reward = 0.1 * torch.nan_to_num(pred_reward)
         return logits, TradeParams(risk_frac, sl_mult, tp_mult, w), pred_reward
+
+
+class TradingTransformer(TradingModel):
+    """Backward-compatible alias for :class:`TradingModel`."""
+
+    pass
 
 
 ###############################################################################
