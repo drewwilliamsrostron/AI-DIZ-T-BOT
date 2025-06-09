@@ -51,6 +51,8 @@ global_composite_reward = None
 global_days_without_trading = None
 global_trade_details = []
 global_days_in_profit = None
+global_holdout_sharpe = 0.0
+global_holdout_max_drawdown = 0.0
 
 # Global best performance stats:
 global_best_equity_curve = []
@@ -67,6 +69,7 @@ global_best_lr = None
 global_best_wd = None
 
 global_yearly_stats_table = ""
+global_best_yearly_stats_table = ""
 
 ###############################################################################
 # GPT Memories (unchanged)

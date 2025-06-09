@@ -25,11 +25,30 @@ from .metrics import compute_yearly_stats
 from .model import TradingModel
 
 
-def reject_if_risky(sharpe: float, max_dd: float, entropy: float) -> bool:
-    """Return True if metrics violate the risk thresholds."""
-    if entropy < 1.0:
+def reject_if_risky(
+    sharpe: float,
+    max_dd: float,
+    entropy: float,
+    *,
+    thresholds: dict | None = None,
+) -> bool:
+    """Return ``True`` when metrics breach the configured risk limits."""
+
+    if thresholds is None:
+        try:  # lazy import avoids circular dependency
+            from .bot_app import CONFIG
+
+            thresholds = CONFIG.get("RISK_FILTER", CONFIG)
+        except Exception:
+            thresholds = {}
+
+    min_entropy = float(thresholds.get("MIN_ENTROPY", 1.0))
+    min_sharpe = float(thresholds.get("MIN_SHARPE", 1.0))
+    max_drawdown = float(thresholds.get("MAX_DRAWDOWN", -0.30))
+
+    if entropy < min_entropy:
         return True  # reject collapsed runs
-    return max_dd < -0.30 or sharpe < 1.0
+    return max_dd < max_drawdown or sharpe < min_sharpe
 
 
 def choose_best(rewards: list[float]) -> float:
@@ -267,6 +286,9 @@ class EnsembleModel:
             if G.global_attention_entropy_history
             else 0.0
         )
+        if attn_entropy < 0.5:
+            logging.warning("Attention entropy low: %.2f", attn_entropy)
+            G.set_status("Warning: attention entropy < 0.5")
         if cur_reward > self.best_composite_reward:
             if reject_if_risky(G.global_sharpe, G.global_max_drawdown, attn_entropy):
                 self.rejection_count_this_epoch += 1
@@ -339,6 +361,12 @@ class EnsembleModel:
             G.global_best_days_in_profit = current_result["days_in_profit"]
             G.global_best_lr = self.optimizers[0].param_groups[0]["lr"]
             G.global_best_wd = self.optimizers[0].param_groups[0].get("weight_decay", 0)
+            _, best_table = compute_yearly_stats(
+                current_result["equity_curve"],
+                current_result["trade_details"],
+                initial_balance=100.0,
+            )
+            G.global_best_yearly_stats_table = best_table
 
         self.train_steps += 1
         mean_ent = float(torch.tensor(self.entropies).mean()) if self.entropies else 0.0
@@ -452,5 +480,11 @@ class EnsembleModel:
                     G.global_best_wd = (
                         self.optimizers[0].param_groups[0].get("weight_decay", 0)
                     )
+                    _, best_table = compute_yearly_stats(
+                        loaded_result["equity_curve"],
+                        loaded_result["trade_details"],
+                        initial_balance=100.0,
+                    )
+                    G.global_best_yearly_stats_table = best_table
             except Exception:
                 pass

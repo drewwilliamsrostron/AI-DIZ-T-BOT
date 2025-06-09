@@ -9,6 +9,7 @@ Complex AI Trading + Continuous Training + Robust Backtest Each Epoch + Live Phe
 # NumPy 2.x compatibility shim – restores removed constants for old libraries
 ###############################################################################
 import sys
+import os
 
 try:
     import numpy as _np
@@ -35,6 +36,9 @@ import sys
 import subprocess
 import platform
 import logging
+import os
+
+os.environ.setdefault("NUMEXPR_MAX_THREADS", str(max(1, os.cpu_count() or 1)))
 
 
 def _install_pytorch_for_env() -> None:
@@ -155,4 +159,6 @@ except ModuleNotFoundError:
 
 def ensure_dependencies():
     """Install required packages if they are missing."""
+    if os.environ.get("ARTIBOT_SKIP_INSTALL") == "1":
+        return
     install_dependencies()
