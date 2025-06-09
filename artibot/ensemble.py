@@ -178,6 +178,7 @@ class EnsembleModel:
                     else nullcontext()
                 )
 
+
             losses = []
             with ctx, torch.autograd.set_detect_anomaly(True):
                 for model in self.models:
@@ -224,8 +225,9 @@ class EnsembleModel:
             self.scaler.scale(total_batch_loss).backward()
 
             for idx_m, (model, opt_) in enumerate(zip(self.models, self.optimizers)):
+
                 self.scaler.unscale_(opt_)
-                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                torch.nn.utils.clip_grad_norm_(self.models[idx_m].parameters(), 1.0)
                 try:
                     self.scaler.step(opt_)
                 except AssertionError:
@@ -242,7 +244,9 @@ class EnsembleModel:
                 else:
                     self.cosine[idx_m].step()
 
+
             batch_loss = sum(loss_i.item() for loss_i in losses)
+
 
             self.step_count += 1
             total_loss += (
