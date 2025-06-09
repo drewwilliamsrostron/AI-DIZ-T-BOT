@@ -163,21 +163,24 @@ class EnsembleModel:
         for batch_idx, (batch_x, batch_y) in enumerate(dl_train):
             bx = batch_x.to(self.device).contiguous().clone()
             by = batch_y.to(self.device)
-            batch_loss = 0.0
-            for idx_m, (model, opt_) in enumerate(zip(self.models, self.optimizers)):
-                opt_.zero_grad()
-                if "device_type" in inspect.signature(autocast).parameters:
-                    ctx = autocast(
-                        device_type=self.device.type,
-                        enabled=(self.device.type == "cuda"),
-                    )
-                else:
-                    ctx = (
-                        autocast(enabled=(self.device.type == "cuda"))
-                        if self.device.type == "cuda"
-                        else nullcontext()
-                    )
-                with ctx:
+            for opt in self.optimizers:
+                opt.zero_grad()
+
+            if "device_type" in inspect.signature(autocast).parameters:
+                ctx = autocast(
+                    device_type=self.device.type,
+                    enabled=(self.device.type == "cuda"),
+                )
+            else:
+                ctx = (
+                    autocast(enabled=(self.device.type == "cuda"))
+                    if self.device.type == "cuda"
+                    else nullcontext()
+                )
+
+            losses = []
+            with ctx:
+                for model in self.models:
                     logits, _, pred_reward = model(bx)
                     self.entropies.append(getattr(model, "last_entropy", 0.0))
                     self.max_probs.append(getattr(model, "last_max_prob", 0.0))
@@ -212,30 +215,30 @@ class EnsembleModel:
                             r_loss.item(),
                         )
                         continue
+                    losses.append(loss)
 
-                self.scaler.scale(loss).backward()
+            total_batch_loss = torch.stack(losses).sum()
+            self.scaler.scale(total_batch_loss).backward()
+            for idx_m, (model, opt_) in enumerate(zip(self.models, self.optimizers)):
                 self.scaler.unscale_(opt_)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 try:
                     self.scaler.step(opt_)
                 except AssertionError:
-                    # Older PyTorch versions sometimes fail to record
-                    # the inf check state when using GradScaler.
-                    # Fall back to a regular optimiser step.
                     opt_.step()
                     self.scaler = GradScaler(enabled=False)
                 else:
                     self.scaler.update()
-                self.step_count += 1
                 if self.step_count <= self.warmup_steps:
                     new_lr = self.base_lrs[idx_m] * (
-                        self.step_count / self.warmup_steps
+                        (self.step_count + 1) / self.warmup_steps
                     )
                     for pg in opt_.param_groups:
                         pg["lr"] = new_lr
                 else:
                     self.cosine[idx_m].step()
-                batch_loss += loss.item()
+            self.step_count += 1
+            batch_loss = sum(loss_i.item() for loss_i in losses)
             total_loss += (
                 float(batch_loss / len(self.models))
                 if not np.isnan(batch_loss)
@@ -335,9 +338,14 @@ class EnsembleModel:
                     for m in self.models:
                         for layer in m.modules():
                             if isinstance(layer, nn.Linear):
-                                nn.init.kaiming_normal_(layer.weight)
-                                if layer.bias is not None:
-                                    nn.init.constant_(layer.bias, 0.1)
+                                with torch.no_grad():
+                                    new_w = torch.empty_like(layer.weight)
+                                    nn.init.kaiming_normal_(new_w)
+                                    layer.weight.copy_(new_w)
+                                    if layer.bias is not None:
+                                        layer.bias.copy_(
+                                            torch.full_like(layer.bias, 0.1)
+                                        )
                     # Add random architecture modifications
                     if random.random() < 0.3:
                         self.models = [
