@@ -4,7 +4,6 @@
 import artibot.globals as G
 
 import logging
-import json
 
 import re
 import sys
@@ -81,9 +80,10 @@ def csv_training_thread(
             epochs += 1
             G.set_status(f"Training step {ensemble.train_steps}")
             logging.info(
-                json.dumps({"event": "START_EPOCH", "epoch": ensemble.train_steps})
+                "START_EPOCH",
+                extra={"epoch": ensemble.train_steps},
             )
-            logging.debug(json.dumps({"event": "status", "msg": G.get_status()}))
+            logging.debug("status %s", G.get_status())
             tl, vl = ensemble.train_one_epoch(dl_train, dl_val, train_data, stop_event)
             if holdout_data:
                 holdout_res = robust_backtest(ensemble, holdout_data)
@@ -127,16 +127,8 @@ def csv_training_thread(
                 "lr": lr_now,
             }
             logging.info(
-                json.dumps(log_obj),
-                extra={
-                    "epoch": ensemble.train_steps,
-                    "sharpe": G.global_sharpe,
-                    "max_dd": G.global_max_drawdown,
-                    "holdout_sharpe": G.global_holdout_sharpe,
-                    "holdout_dd": G.global_holdout_max_drawdown,
-                    "attn_entropy": attn_entropy,
-                    "lr": lr_now,
-                },
+                "EPOCH_METRICS",
+                extra=log_obj,
             )
 
             sharpe = G.global_sharpe
@@ -144,14 +136,13 @@ def csv_training_thread(
             entropy = attn_entropy
             if reject_if_risky(sharpe, max_dd, entropy):
                 logging.info(
-                    json.dumps(
-                        {
-                            "event": "REJECTED",
-                            "sharpe": sharpe,
-                            "max_dd": max_dd,
-                            "entropy": entropy,
-                        }
-                    )
+                    "REJECTED",
+                    extra={
+                        "epoch": ensemble.train_steps,
+                        "sharpe": sharpe,
+                        "max_dd": max_dd,
+                        "attn_entropy": entropy,
+                    },
                 )
                 G.inc_epoch()
                 continue
@@ -163,7 +154,8 @@ def csv_training_thread(
                 no_gain += 1
             if no_gain >= 10:
                 logging.info(
-                    json.dumps({"event": "EARLY_STOP", "epoch": ensemble.train_steps})
+                    "EARLY_STOP",
+                    extra={"epoch": ensemble.train_steps},
                 )
                 break
 
