@@ -30,5 +30,7 @@ def test_end_to_end_smoke():
     result = robust_backtest(ensemble, data)
     assert result["trades"] > 0
     assert g.epoch_count == 1
+    assert isinstance(g.global_holdout_sharpe, float)
+    assert isinstance(g.global_holdout_max_drawdown, float)
     curve = result["equity_curve"]
     assert curve and curve[0][1] != curve[-1][1]

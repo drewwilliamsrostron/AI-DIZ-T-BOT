@@ -36,6 +36,7 @@ import sys
 import subprocess
 import platform
 import logging
+import os
 
 os.environ.setdefault("NUMEXPR_MAX_THREADS", str(max(1, os.cpu_count() or 1)))
 
@@ -158,4 +159,6 @@ except ModuleNotFoundError:
 
 def ensure_dependencies():
     """Install required packages if they are missing."""
+    if os.environ.get("ARTIBOT_SKIP_INSTALL") == "1":
+        return
     install_dependencies()
