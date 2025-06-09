@@ -9,6 +9,7 @@ meta-agent updates.
 import time
 import threading
 import queue
+import collections
 import matplotlib
 
 matplotlib.use("TkAgg")
@@ -53,6 +54,8 @@ global_num_trades = 0
 global_win_rate = 0.0
 global_profit_factor = 0.0
 global_avg_trade_duration = 0.0
+global_avg_win = 0.0
+global_avg_loss = 0.0
 global_inactivity_penalty = None
 global_composite_reward = None
 global_days_without_trading = None
@@ -70,6 +73,8 @@ global_best_num_trades = 0
 global_best_win_rate = 0.0
 global_best_profit_factor = 0.0
 global_best_avg_trade_duration = 0.0
+global_best_avg_win = 0.0
+global_best_avg_loss = 0.0
 global_best_inactivity_penalty = None
 global_best_composite_reward = None
 global_best_days_in_profit = None
@@ -106,6 +111,9 @@ global_attention_entropy_history = []
 global_phemex_data = []
 global_days_in_profit = 0.0
 live_bars_queue = queue.Queue()
+live_sharpe_history = collections.deque(maxlen=1000)
+live_drawdown_history = collections.deque(maxlen=1000)
+trading_paused = False
 
 # Simple status indicator updated by threads
 global_status_message = "Initializing..."
