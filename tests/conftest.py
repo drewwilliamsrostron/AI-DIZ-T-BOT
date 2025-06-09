@@ -7,6 +7,8 @@ if ROOT not in sys.path:
 
 # ruff: noqa: E402
 os.environ["ARTIBOT_SKIP_INSTALL"] = "1"
+os.environ.setdefault("NUCLEAR_KEY", "0")
+os.environ.setdefault("USE_WEIGHT_DIALOG", "0")
 import artibot.environment
 
 

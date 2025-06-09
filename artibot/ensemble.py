@@ -54,6 +54,14 @@ def reject_if_risky(
     return max_dd < max_drawdown or sharpe < min_sharpe
 
 
+def nuclear_key_gate(sharpe: float, max_dd: float, entropy: float) -> bool:
+    """Return ``True`` when trading is allowed based on the nuclear key state."""
+
+    if not G.is_nuclear_key_enabled():
+        return True
+    return not reject_if_risky(sharpe, max_dd, entropy)
+
+
 def choose_best(rewards: list[float]) -> float:
     """Return the highest reward from ``rewards``.
 
