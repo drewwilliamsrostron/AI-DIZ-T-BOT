@@ -167,9 +167,9 @@ class EnsembleModel:
         G.global_max_drawdown = current_result["max_drawdown"]
         G.global_net_pct = current_result["net_pct"]
         G.global_num_trades = current_result["trades"]
-        G.global_win_rate = current_result["win_rate"]
-        G.global_profit_factor = current_result["profit_factor"]
-        G.global_avg_trade_duration = current_result["avg_trade_duration"]
+        G.global_win_rate = current_result.get("win_rate", 0.0)
+        G.global_profit_factor = current_result.get("profit_factor", 0.0)
+        G.global_avg_trade_duration = current_result.get("avg_trade_duration", 0.0)
 
         dfy, table_str = compute_yearly_stats(
             current_result["equity_curve"],
@@ -334,7 +334,7 @@ class EnsembleModel:
             )
             if attn_entropy < 0.5:
                 logging.warning("Attention entropy low: %.2f", attn_entropy)
-                G.set_status("Warning: attention entropy < 0.5")
+                G.set_status("Warning: attention entropy < 0.5", "")
             if cur_reward > self.best_composite_reward:
                 if reject_if_risky(
                     G.global_sharpe, G.global_max_drawdown, attn_entropy
