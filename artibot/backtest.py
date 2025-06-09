@@ -10,11 +10,47 @@ import artibot.globals as G
 from .metrics import inactivity_exponential_penalty, compute_days_in_profit
 
 
+def compute_indicators(data_full, hp):
+    """Return SMA, RSI and MACD arrays for ``data_full``."""
+
+    raw = np.array(data_full, dtype=np.float64)
+    closes = raw[:, 4]
+
+    rsi_period = max(2, min(hp.rsi_period, 50))
+    sma_period = max(2, min(hp.sma_period, 100))
+    fast_macd = max(2, min(hp.macd_fast, hp.macd_slow - 1))
+    slow_macd = max(fast_macd + 1, min(hp.macd_slow, 200))
+    sig_macd = max(1, min(hp.macd_signal, 50))
+
+    sma = np.convolve(closes, np.ones(sma_period) / sma_period, mode="same")
+    rsi = talib.RSI(closes, timeperiod=rsi_period)
+    macd_, _sig, _hist = talib.MACD(
+        closes, fastperiod=fast_macd, slowperiod=slow_macd, signalperiod=sig_macd
+    )
+
+    return {
+        "sma": sma.astype(np.float32),
+        "rsi": rsi.astype(np.float32),
+        "macd": macd_.astype(np.float32),
+    }
+
+
 ###############################################################################
 # robust_backtest
 ###############################################################################
-def robust_backtest(ensemble, data_full):
-    """Run a simplified backtest and return key metrics."""
+def robust_backtest(ensemble, data_full, indicators=None):
+    """Run a simplified backtest and return key metrics.
+
+    Parameters
+    ----------
+    ensemble:
+        Ensemble providing ``vectorized_predict`` and indicator settings.
+    data_full:
+        Full OHLCV history used for backtesting.
+    indicators:
+        Optional dictionary with precomputed ``sma``, ``rsi`` and ``macd``
+        arrays. When ``None`` (default), they are derived on the fly.
+    """
     if len(data_full) < 24:
         return {
             "net_pct": 0.0,
@@ -37,13 +73,6 @@ def robust_backtest(ensemble, data_full):
     # threshold = ensemble.dynamic_threshold if ensemble.dynamic_threshold is not None else GLOBAL_THRESHOLD
     # or pass it in the function signature.
 
-    # Clamps for RSI, SMA, MACD
-    rsi_period = max(2, min(hp.rsi_period, 50))
-    sma_period = max(2, min(hp.sma_period, 100))
-    fast_macd = max(2, min(hp.macd_fast, hp.macd_slow - 1))
-    slow_macd = max(fast_macd + 1, min(hp.macd_slow, 200))
-    sig_macd = max(1, min(hp.macd_signal, 50))
-
     # (9) Composite Reward: alpha=3.0, beta=0.5, gamma=0.8, delta=0.1
     alpha = 3.0
     beta = 0.5
@@ -53,13 +82,15 @@ def robust_backtest(ensemble, data_full):
     raw_data = np.array(data_full, dtype=np.float64)
     if raw_data[:, 0].max() > 1_000_000_000_000:
         raw_data[:, 0] //= 1000
-    closes = raw_data[:, 4]
 
-    sma = np.convolve(closes, np.ones(sma_period) / sma_period, mode="same")
-    rsi = talib.RSI(closes, timeperiod=rsi_period)
-    macd_, macdsig_, macdhist_ = talib.MACD(
-        closes, fastperiod=fast_macd, slowperiod=slow_macd, signalperiod=sig_macd
-    )
+    if indicators is None:
+        indic = compute_indicators(data_full, hp)
+    else:
+        indic = indicators
+
+    sma = indic["sma"]
+    rsi = indic["rsi"]
+    macd_ = indic["macd"]
 
     extd = np.column_stack(
         [

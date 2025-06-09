@@ -11,7 +11,7 @@ import sys
 
 from .dataset import HourlyDataset
 from .ensemble import reject_if_risky
-from .backtest import robust_backtest
+from .backtest import robust_backtest, compute_indicators
 
 
 ###############################################################################
@@ -55,6 +55,13 @@ def csv_training_thread(
         n_val = n_tot - n_tr
         ds_train, ds_val = random_split(ds_full, [n_tr, n_val])
 
+        train_indicators = compute_indicators(train_data, ensemble.indicator_hparams)
+        holdout_indicators = (
+            compute_indicators(holdout_data, ensemble.indicator_hparams)
+            if holdout_data
+            else None
+        )
+
         pin = ensemble.device.type == "cuda"
         default_workers = 8
         workers = int(config.get("NUM_WORKERS", default_workers))
@@ -84,9 +91,13 @@ def csv_training_thread(
                 json.dumps({"event": "START_EPOCH", "epoch": ensemble.train_steps})
             )
             logging.debug(json.dumps({"event": "status", "msg": G.get_status()}))
-            tl, vl = ensemble.train_one_epoch(dl_train, dl_val, train_data, stop_event)
+            tl, vl = ensemble.train_one_epoch(
+                dl_train, dl_val, train_data, stop_event, features=train_indicators
+            )
             if holdout_data:
-                holdout_res = robust_backtest(ensemble, holdout_data)
+                holdout_res = robust_backtest(
+                    ensemble, holdout_data, indicators=holdout_indicators
+                )
                 G.global_holdout_sharpe = holdout_res["sharpe"]
                 G.global_holdout_max_drawdown = holdout_res["max_drawdown"]
             else:
@@ -251,8 +262,15 @@ def csv_training_thread(
                             num_workers=workers,
                             pin_memory=pin,
                         )
+                        train_indicators = compute_indicators(
+                            train_data, ensemble.indicator_hparams
+                        )
                         ensemble.train_one_epoch(
-                            dl_tr_, dl_val_, train_data, stop_event
+                            dl_tr_,
+                            dl_val_,
+                            train_data,
+                            stop_event,
+                            features=train_indicators,
                         )
 
             if ensemble.train_steps % 5 == 0 and ensemble.best_state_dicts:

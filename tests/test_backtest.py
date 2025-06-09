@@ -23,6 +23,7 @@ sys.modules["talib"] = types.SimpleNamespace(
 )
 
 from artibot.backtest import robust_backtest
+from artibot.backtest import compute_indicators
 from artibot.dataset import IndicatorHyperparams
 
 
@@ -68,3 +69,22 @@ def test_robust_backtest_unbounded_reward():
     ]
     result = robust_backtest(DummyEnsemble(), data)
     assert result["composite_reward"] > 100
+
+
+def test_backtest_with_precomputed_features():
+    data = [
+        [
+            i * 3600,
+            100 + i * 0.1,
+            100 + i * 0.1 + 0.05,
+            100 + i * 0.1 - 0.05,
+            100 + i * 0.1,
+            0,
+        ]
+        for i in range(30)
+    ]
+    ens = DummyEnsemble()
+    indicators = compute_indicators(data, ens.indicator_hparams)
+    result_pre = robust_backtest(ens, data, indicators=indicators)
+    result_std = robust_backtest(ens, data)
+    assert result_pre == result_std
