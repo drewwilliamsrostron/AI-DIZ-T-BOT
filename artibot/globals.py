@@ -107,6 +107,9 @@ global_phemex_data = []
 global_days_in_profit = 0.0
 live_bars_queue = queue.Queue()
 
+# gating flag
+nuclear_key_enabled = False
+
 # Simple status indicator updated by threads
 global_status_message = "Initializing..."
 
@@ -129,11 +132,30 @@ def get_status() -> str:
         return global_status_message
 
 
+def get_status_full() -> str:
+    """Return the status message along with the current epoch count."""
+    with state_lock:
+        return f"{global_status_message} | epoch {epoch_count}"
+
+
 def inc_epoch() -> None:
     """Increment the global epoch counter safely."""
     global epoch_count
     with state_lock:
         epoch_count += 1
+
+
+def set_nuclear_key(enabled: bool) -> None:
+    """Enable or disable the nuclear key trading gate."""
+    global nuclear_key_enabled
+    with state_lock:
+        nuclear_key_enabled = enabled
+
+
+def is_nuclear_key_enabled() -> bool:
+    """Return ``True`` when the nuclear key gate is active."""
+    with state_lock:
+        return nuclear_key_enabled
 
 
 ###############################################################################

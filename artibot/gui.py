@@ -35,6 +35,20 @@ def format_trade_details(trades, limit=50):
     return out_df.to_string(index=False, float_format=lambda x: f"{x:.2f}")
 
 
+def select_weight_file(use_prev: bool = True) -> str | None:
+    """Return the weight file path based on user selection."""
+    from tkinter import messagebox, filedialog
+
+    if use_prev and messagebox.askyesno("Load Weights", "Use best_model_weights.pth?"):
+        return "best_model_weights.pth"
+    return (
+        filedialog.askopenfilename(
+            title="Select weight file", filetypes=[("PyTorch", "*.pth")]
+        )
+        or None
+    )
+
+
 class TradingGUI:
     def __init__(self, root, ensemble):
         self.root = root
