@@ -64,15 +64,13 @@ class TradingModel(nn.Module):
     def forward(self, x):
         x = self.pos_encoder(x)
         # inspect attention from the first encoder layer
-        q = k = v = x
-        # The first layer's attention weights are only used for logging.
-        # Wrap the call in ``no_grad`` so the extra forward pass does not
-        # interfere with autograd and cause version mismatches during backward.
+        # Clone x so fastpath inference in no_grad does NOT mutate the real x
         with torch.no_grad():
+            x_clone = x.clone()  # differentiable clone; gradients still flow to x
             attn_output, attn_weights = self.transformer_encoder.layers[0].self_attn(
-                q,
-                k,
-                v,
+                x_clone,
+                x_clone,
+                x_clone,
                 need_weights=True,
                 average_attn_weights=False,
             )
