@@ -178,7 +178,6 @@ class EnsembleModel:
                     else nullcontext()
                 )
 
-
             losses = []
             with ctx, torch.autograd.set_detect_anomaly(True):
                 for model in self.models:
@@ -244,9 +243,7 @@ class EnsembleModel:
                 else:
                     self.cosine[idx_m].step()
 
-
             batch_loss = sum(loss_i.item() for loss_i in losses)
-
 
             self.step_count += 1
             total_loss += (
@@ -384,7 +381,6 @@ class EnsembleModel:
             )
             G.global_best_yearly_stats_table = best_table
 
-        self.train_steps += 1
         mean_ent = float(torch.tensor(self.entropies).mean()) if self.entropies else 0.0
         mean_mp = float(torch.tensor(self.max_probs).mean()) if self.max_probs else 0.0
         logging.info(
