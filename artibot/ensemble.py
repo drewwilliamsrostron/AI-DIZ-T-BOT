@@ -339,6 +339,12 @@ class EnsembleModel:
             G.global_best_days_in_profit = current_result["days_in_profit"]
             G.global_best_lr = self.optimizers[0].param_groups[0]["lr"]
             G.global_best_wd = self.optimizers[0].param_groups[0].get("weight_decay", 0)
+            _, best_table = compute_yearly_stats(
+                current_result["equity_curve"],
+                current_result["trade_details"],
+                initial_balance=100.0,
+            )
+            G.global_best_yearly_stats_table = best_table
 
         self.train_steps += 1
         mean_ent = float(torch.tensor(self.entropies).mean()) if self.entropies else 0.0
@@ -452,5 +458,11 @@ class EnsembleModel:
                     G.global_best_wd = (
                         self.optimizers[0].param_groups[0].get("weight_decay", 0)
                     )
+                    _, best_table = compute_yearly_stats(
+                        loaded_result["equity_curve"],
+                        loaded_result["trade_details"],
+                        initial_balance=100.0,
+                    )
+                    G.global_best_yearly_stats_table = best_table
             except Exception:
                 pass
