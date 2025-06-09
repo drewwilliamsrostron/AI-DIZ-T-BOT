@@ -64,13 +64,13 @@ class TradingModel(nn.Module):
     def forward(self, x):
         x = self.pos_encoder(x)
         # inspect attention from the first encoder layer
-        # Clone x so fastpath inference in no_grad does NOT mutate the real x
+        # Use a detached tensor so fastpath inference in ``no_grad`` does not mutate ``x``
         with torch.no_grad():
-            x_clone = x.clone()  # differentiable clone; gradients still flow to x
+            x_detached = x.detach()
             attn_output, attn_weights = self.transformer_encoder.layers[0].self_attn(
-                x_clone,
-                x_clone,
-                x_clone,
+                x_detached,
+                x_detached,
+                x_detached,
                 need_weights=True,
                 average_attn_weights=False,
             )
