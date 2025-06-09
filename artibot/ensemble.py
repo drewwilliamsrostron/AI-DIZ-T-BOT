@@ -178,49 +178,46 @@ class EnsembleModel:
                     else nullcontext()
                 )
 
-            losses = []
-            with ctx:
-                with torch.autograd.set_detect_anomaly(True):
-                    for model in self.models:
-                        logits, _, pred_reward = model(bx)
-                    self.entropies.append(getattr(model, "last_entropy", 0.0))
-                    self.max_probs.append(getattr(model, "last_max_prob", 0.0))
-                    ce_loss = self.criterion(logits, by)
-                    if not torch.isfinite(pred_reward).all():
-                        logging.error(
-                            "Non‑finite pred_reward detected at step %s",
-                            self.train_steps,
-                        )
-                        logging.error(
-                            "pred_reward stats: min=%s max=%s",
-                            pred_reward.min().item(),
-                            pred_reward.max().item(),
-                        )
-                        continue
-
-                    use_reward = self.train_steps > self.delayed_reward_epochs
-                    if use_reward:
-                        r_loss = self.mse_loss_fn(
-                            pred_reward, scaled_target.expand_as(pred_reward)
-                        )
-                    else:
-                        r_loss = torch.tensor(0.0, device=self.device)
-                    loss = ce_loss + self.reward_loss_weight * r_loss
-                    if not torch.isfinite(loss).all():
-                        logging.error(
-                            "Non‑finite loss detected at step %s", self.train_steps
-                        )
-                        logging.error(
-                            "ce_loss=%s reward_loss=%s",
-                            ce_loss.item(),
-                            r_loss.item(),
-                        )
-                        continue
-                    losses.append(loss)
-
-            total_batch_loss = torch.stack(losses).sum()
-            self.scaler.scale(total_batch_loss).backward()
+            batch_loss = 0.0
             for idx_m, (model, opt_) in enumerate(zip(self.models, self.optimizers)):
+                opt_.zero_grad()
+                with ctx:
+                    with torch.autograd.set_detect_anomaly(True):
+                        logits, _, pred_reward = model(bx.clone())
+                        self.entropies.append(getattr(model, "last_entropy", 0.0))
+                        self.max_probs.append(getattr(model, "last_max_prob", 0.0))
+                        ce_loss = self.criterion(logits, by)
+                        if not torch.isfinite(pred_reward).all():
+                            logging.error(
+                                "Non‑finite pred_reward detected at step %s",
+                                self.train_steps,
+                            )
+                            logging.error(
+                                "pred_reward stats: min=%s max=%s",
+                                pred_reward.min().item(),
+                                pred_reward.max().item(),
+                            )
+                            continue
+
+                        use_reward = self.train_steps > self.delayed_reward_epochs
+                        if use_reward:
+                            r_loss = self.mse_loss_fn(
+                                pred_reward, scaled_target.expand_as(pred_reward)
+                            )
+                        else:
+                            r_loss = torch.tensor(0.0, device=self.device)
+                        loss = ce_loss + self.reward_loss_weight * r_loss
+                        if not torch.isfinite(loss).all():
+                            logging.error(
+                                "Non‑finite loss detected at step %s", self.train_steps
+                            )
+                            logging.error(
+                                "ce_loss=%s reward_loss=%s",
+                                ce_loss.item(),
+                                r_loss.item(),
+                            )
+                            continue
+                self.scaler.scale(loss).backward()
                 self.scaler.unscale_(opt_)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 try:
@@ -238,12 +235,11 @@ class EnsembleModel:
                         pg["lr"] = new_lr
                 else:
                     self.cosine[idx_m].step()
+                batch_loss += loss.item()
+
             self.step_count += 1
-            batch_loss = sum(loss_i.item() for loss_i in losses)
             total_loss += (
-                float(batch_loss / len(self.models))
-                if not np.isnan(batch_loss)
-                else 0.0
+                (batch_loss / len(self.models)) if not np.isnan(batch_loss) else 0.0
             )
             nb += 1
         train_loss = total_loss / nb
