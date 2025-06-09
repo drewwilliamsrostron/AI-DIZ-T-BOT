@@ -129,6 +129,8 @@ class EnsembleModel:
         dl_val: Optional[DataLoader],
         data_full: Iterable,
         stop_event: Optional[Event] = None,
+        *,
+        features: Optional[dict] = None,
     ) -> Tuple[float, Optional[float]]:
         """Train models for one epoch and return losses.
 
@@ -142,6 +144,8 @@ class EnsembleModel:
             Full dataset for backtesting before training.
         stop_event:
             Optional threading event signalling early stop.
+        features:
+            Optional precomputed indicator arrays for ``data_full``.
 
         Returns
         -------
@@ -150,7 +154,7 @@ class EnsembleModel:
         """
         # mutate shared state on the globals module
 
-        current_result = robust_backtest(self, data_full)
+        current_result = robust_backtest(self, data_full, indicators=features)
 
         G.global_equity_curve = current_result["equity_curve"]
         G.global_backtest_profit.append(current_result["effective_net_pct"])

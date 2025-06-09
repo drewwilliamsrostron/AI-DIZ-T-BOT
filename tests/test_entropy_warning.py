@@ -11,7 +11,7 @@ from artibot.utils import get_device
 def test_entropy_warning(monkeypatch, caplog):
     device = get_device()
 
-    def dummy_backtest(ensemble, data_full):
+    def dummy_backtest(ensemble, data_full, indicators=None):
         return {
             "equity_curve": [],
             "effective_net_pct": 0.0,
