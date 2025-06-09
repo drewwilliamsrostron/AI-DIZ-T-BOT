@@ -105,6 +105,8 @@ global_attention_weights_history = []
 global_attention_entropy_history = []
 global_phemex_data = []
 global_days_in_profit = 0.0
+global_validation_summary = {}
+nuclear_key_enabled = True
 live_bars_queue = queue.Queue()
 
 # Simple status indicator updated by threads

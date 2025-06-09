@@ -103,6 +103,9 @@ def run_bot(max_epochs: int | None = None) -> None:
     device = get_device()
 
     ensemble = EnsembleModel(device=device, n_models=2, lr=3e-4, weight_decay=1e-4)
+    from .validation import schedule_monthly_validation
+
+    schedule_monthly_validation(csv_path, config)
     connector = PhemexConnector(config)
     stop_event = threading.Event()
 
