@@ -4,6 +4,8 @@
 
 import inspect
 from contextlib import nullcontext
+from typing import Iterable, Optional, Tuple
+from threading import Event
 import logging
 import random
 
@@ -17,6 +19,7 @@ from torch.optim.lr_scheduler import (
     ReduceLROnPlateau,
     CosineAnnealingWarmRestarts,
 )
+from torch.utils.data import DataLoader
 
 from .backtest import robust_backtest
 from .dataset import IndicatorHyperparams
@@ -120,7 +123,31 @@ class EnsembleModel:
             rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
         )
 
-    def train_one_epoch(self, dl_train, dl_val, data_full, stop_event=None):
+    def train_one_epoch(
+        self,
+        dl_train: DataLoader,
+        dl_val: Optional[DataLoader],
+        data_full: Iterable,
+        stop_event: Optional[Event] = None,
+    ) -> Tuple[float, Optional[float]]:
+        """Train models for one epoch and return losses.
+
+        Parameters
+        ----------
+        dl_train:
+            DataLoader providing training batches.
+        dl_val:
+            Optional validation DataLoader used to compute ``val_loss``.
+        data_full:
+            Full dataset for backtesting before training.
+        stop_event:
+            Optional threading event signalling early stop.
+
+        Returns
+        -------
+        tuple[float, Optional[float]]
+            ``train_loss`` and ``val_loss`` (``None`` when no ``dl_val``).
+        """
         # mutate shared state on the globals module
 
         current_result = robust_backtest(self, data_full)
@@ -177,7 +204,6 @@ class EnsembleModel:
                     if self.device.type == "cuda"
                     else nullcontext()
                 )
-
 
             losses = []
             with ctx, torch.autograd.set_detect_anomaly(True):
@@ -244,9 +270,7 @@ class EnsembleModel:
                 else:
                     self.cosine[idx_m].step()
 
-
             batch_loss = sum(loss_i.item() for loss_i in losses)
-
 
             self.step_count += 1
             total_loss += (
@@ -363,6 +387,45 @@ class EnsembleModel:
                             ).to(self.device)
                             for _ in range(len(self.models))
                         ]
+                        lr = self.optimizers[0].param_groups[0]["lr"]
+                        wd = (
+                            self.optimizers[0]
+                            .param_groups[0]
+                            .get(
+                                "weight_decay",
+                                0.0,
+                            )
+                        )
+                        self.optimizers = [
+                            optim.Adam(m.parameters(), lr=lr, weight_decay=wd)
+                            for m in self.models
+                        ]
+                        self.schedulers = [
+                            ReduceLROnPlateau(
+                                opt,
+                                mode="min",
+                                patience=6,
+                                factor=0.8,
+                                min_lr=2e-5,
+                            )
+                            for opt in self.optimizers
+                        ]
+                        self.cosine = [
+                            CosineAnnealingWarmRestarts(o, T_0=50)
+                            for o in self.optimizers
+                        ]
+                        if "device" in inspect.signature(GradScaler).parameters:
+                            self.scaler = GradScaler(
+                                enabled=(self.device.type == "cuda"),
+                                device=self.device.type,
+                            )
+                        else:
+                            self.scaler = GradScaler(
+                                enabled=(self.device.type == "cuda")
+                            )
+                        self.base_lrs = [
+                            opt.param_groups[0]["lr"] for opt in self.optimizers
+                        ]
                     self.patience_counter = 0
 
         # track best net
@@ -384,7 +447,6 @@ class EnsembleModel:
             )
             G.global_best_yearly_stats_table = best_table
 
-        self.train_steps += 1
         mean_ent = float(torch.tensor(self.entropies).mean()) if self.entropies else 0.0
         mean_mp = float(torch.tensor(self.max_probs).mean()) if self.max_probs else 0.0
         logging.info(
@@ -401,7 +463,9 @@ class EnsembleModel:
         self.rejection_count_this_epoch = 0
         return train_loss, val_loss
 
-    def evaluate_val_loss(self, dl_val):
+    def evaluate_val_loss(self, dl_val: DataLoader) -> float:
+        """Return the average loss on ``dl_val`` across the ensemble."""
+
         for m in self.models:
             m.eval()
         losses = []
@@ -420,7 +484,9 @@ class EnsembleModel:
             m.train()
         return val_loss
 
-    def predict(self, x):
+    def predict(self, x: torch.Tensor) -> Tuple[int, float, None]:
+        """Predict a single sample and return ``(index, confidence, None)``."""
+
         with torch.no_grad():
             outs = []
             for m in self.models:
@@ -432,7 +498,11 @@ class EnsembleModel:
             conf = float(avgp[0, idx].item())
             return idx, conf, None
 
-    def vectorized_predict(self, windows_tensor, batch_size=256):
+    def vectorized_predict(
+        self, windows_tensor: torch.Tensor, batch_size: int = 256
+    ) -> Tuple[torch.Tensor, torch.Tensor, dict]:
+        """Return predictions for ``windows_tensor`` in mini-batches."""
+
         with torch.no_grad():
             all_probs = []
             n_ = windows_tensor.shape[0]

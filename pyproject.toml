@@ -3,3 +3,6 @@ extend-exclude = [
     "old_ARTIBOT.py",
     "Last_working_bot_but_one_py",
 ]
+
+[tool.black]
+extend-exclude = "old_ARTIBOT.py|Last_working_bot_but_one_py"
