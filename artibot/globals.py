@@ -1,7 +1,9 @@
 """Shared global state for threads and hyperparameters.
 
 ``model_lock`` serialises access to the ensemble models during training and
-meta-agent updates.
+meta-agent updates. Worker threads communicate short messages via
+``global_status_primary`` and ``global_status_secondary`` updated using
+``set_status`` or ``status_sleep``.
 """
 
 # Imports
