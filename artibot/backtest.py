@@ -7,6 +7,8 @@ import talib
 import torch
 
 import artibot.globals as G
+from .execution import submit_order
+from . import risk
 from .metrics import (
     inactivity_exponential_penalty,
     compute_days_in_profit,
@@ -66,7 +68,6 @@ def robust_backtest(ensemble, data_full, indicators=None):
     LEVERAGE = 10
     min_hold_seconds = G.global_min_hold_seconds
     commission_rate = 0.0001
-    slippage = 0.0002
     FUNDING_RATE = 0.0001
     device = ensemble.device
 
@@ -82,6 +83,9 @@ def robust_backtest(ensemble, data_full, indicators=None):
     beta = 0.5
     gamma = 0.8
     delta = 0.1
+
+    def _price_with_noise(side: str, price: float) -> float:
+        return submit_order(lambda **kw: kw["price"], side, 0.0, price)
 
     raw_data = np.array(data_full, dtype=np.float64)
     if raw_data[:, 0].max() > 1_000_000_000_000:
@@ -196,13 +200,13 @@ def robust_backtest(ensemble, data_full, indicators=None):
             if exit_condition:
                 last_exit_t = cur_t
                 if pos["side"] == "long":
-                    exit_price *= 1 - slippage
+                    exit_price = _price_with_noise("sell", exit_price)
                     proceeds = pos["size"] * exit_price
                     comm_exit = proceeds * commission_rate
                     profit = proceeds - (pos["size"] * pos["entry_price"]) - comm_exit
                     bal += profit
                 else:
-                    exit_price *= 1 + slippage
+                    exit_price = _price_with_noise("buy", exit_price)
                     comm_exit = abs(pos["size"]) * exit_price * commission_rate
                     profit = (
                         abs(pos["size"]) * (pos["entry_price"] - exit_price) - comm_exit
@@ -240,15 +244,12 @@ def robust_backtest(ensemble, data_full, indicators=None):
             else:
                 atr_val = atr_i if not np.isnan(atr_i) else 1.0
                 atr_val = max(1.0, atr_val)
-                fill_p = cur_p * (1 + slippage if pred == 0 else 1 - slippage)
+                fill_p = _price_with_noise("buy" if pred == 0 else "sell", cur_p)
                 st_dist = sl_m * atr_val
                 tp_val = (
                     fill_p + tp_m * atr_val if pred == 0 else fill_p - tp_m * atr_val
                 )
-                risk_cap = bal * rf
-                pos_size_risk = risk_cap / (st_dist + 1e-8)
-                max_sz = (bal * LEVERAGE) / fill_p
-                pos_sz = min(pos_size_risk, max_sz)
+                pos_sz = risk.position_size(bal, rf, st_dist, fill_p, LEVERAGE)
                 if pos_sz > 0:
                     comm_entry = pos_sz * fill_p * commission_rate
                     bal -= comm_entry
@@ -285,12 +286,12 @@ def robust_backtest(ensemble, data_full, indicators=None):
     if pos["size"] != 0:
         final_price = closes[-1]
         if pos["side"] == "long":
-            exit_price = final_price * (1 - slippage)
+            exit_price = _price_with_noise("sell", final_price)
             comm_exit = pos["size"] * exit_price * commission_rate
             pf = pos["size"] * (exit_price - pos["entry_price"]) - comm_exit
             bal += pf
         else:
-            exit_price = final_price * (1 + slippage)
+            exit_price = _price_with_noise("buy", final_price)
             comm_exit = abs(pos["size"]) * exit_price * commission_rate
             pf = abs(pos["size"]) * (pos["entry_price"] - exit_price) - comm_exit
             hrs = (timestamps[-1] - pos["entry_time"]) / 3600.0
