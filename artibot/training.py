@@ -344,6 +344,32 @@ class PhemexConnector:
             logging.error(f"Error fetching bars: {e}")
             return []
 
+    def create_order(
+        self,
+        side: str,
+        amount: float,
+        price: float,
+        order_type: str = "limit",
+    ):
+        """Submit an order with :mod:`ccxt` applying slippage."""
+        from .execution import submit_order
+
+        def _place(**kwargs):
+            try:
+                return self.exchange.create_order(
+                    self.symbol,
+                    order_type,
+                    side,
+                    kwargs["amount"],
+                    kwargs["price"],
+                    {"type": "swap"},
+                )
+            except Exception as exc:
+                logging.error("Order error: %s", exc)
+                return None
+
+        return submit_order(_place, side, amount, price)
+
 
 def generate_candidates(symbol):
     """Return possible market symbol permutations."""
