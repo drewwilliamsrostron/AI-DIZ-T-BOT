@@ -182,41 +182,41 @@ class EnsembleModel:
             with ctx:
                 with torch.autograd.set_detect_anomaly(True):
                     for model in self.models:
-                        logits, _, pred_reward = model(bx)
-                    self.entropies.append(getattr(model, "last_entropy", 0.0))
-                    self.max_probs.append(getattr(model, "last_max_prob", 0.0))
-                    ce_loss = self.criterion(logits, by)
-                    if not torch.isfinite(pred_reward).all():
-                        logging.error(
-                            "Non‑finite pred_reward detected at step %s",
-                            self.train_steps,
-                        )
-                        logging.error(
-                            "pred_reward stats: min=%s max=%s",
-                            pred_reward.min().item(),
-                            pred_reward.max().item(),
-                        )
-                        continue
+                        logits, _, pred_reward = model(bx.clone())
+                        self.entropies.append(getattr(model, "last_entropy", 0.0))
+                        self.max_probs.append(getattr(model, "last_max_prob", 0.0))
+                        ce_loss = self.criterion(logits, by)
+                        if not torch.isfinite(pred_reward).all():
+                            logging.error(
+                                "Non‑finite pred_reward detected at step %s",
+                                self.train_steps,
+                            )
+                            logging.error(
+                                "pred_reward stats: min=%s max=%s",
+                                pred_reward.min().item(),
+                                pred_reward.max().item(),
+                            )
+                            continue
 
-                    use_reward = self.train_steps > self.delayed_reward_epochs
-                    if use_reward:
-                        r_loss = self.mse_loss_fn(
-                            pred_reward, scaled_target.expand_as(pred_reward)
-                        )
-                    else:
-                        r_loss = torch.tensor(0.0, device=self.device)
-                    loss = ce_loss + self.reward_loss_weight * r_loss
-                    if not torch.isfinite(loss).all():
-                        logging.error(
-                            "Non‑finite loss detected at step %s", self.train_steps
-                        )
-                        logging.error(
-                            "ce_loss=%s reward_loss=%s",
-                            ce_loss.item(),
-                            r_loss.item(),
-                        )
-                        continue
-                    losses.append(loss)
+                        use_reward = self.train_steps > self.delayed_reward_epochs
+                        if use_reward:
+                            r_loss = self.mse_loss_fn(
+                                pred_reward, scaled_target.expand_as(pred_reward)
+                            )
+                        else:
+                            r_loss = torch.tensor(0.0, device=self.device)
+                        loss = ce_loss + self.reward_loss_weight * r_loss
+                        if not torch.isfinite(loss).all():
+                            logging.error(
+                                "Non‑finite loss detected at step %s", self.train_steps
+                            )
+                            logging.error(
+                                "ce_loss=%s reward_loss=%s",
+                                ce_loss.item(),
+                                r_loss.item(),
+                            )
+                            continue
+                        losses.append(loss)
 
             total_batch_loss = torch.stack(losses).sum()
             self.scaler.scale(total_batch_loss).backward()
