@@ -78,6 +78,22 @@ pytest -q
 
 For in-depth development conventions see [AGENTS.md](AGENTS.md).
 
+## Development setup
+
+Install [pre-commit](https://pre-commit.com/) and install the hooks once:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Run the checks locally before pushing:
+
+```bash
+pre-commit run --all-files
+pytest -q
+```
+
 ## Advanced usage
 
 The helper modules in `artibot.utils` auto-select a CUDA device when

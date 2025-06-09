@@ -15,6 +15,9 @@
     "MIN_SHARPE": 1.0,
     "MAX_DRAWDOWN": -0.3,
     "MIN_ENTROPY": 1.0,
+    "SHOW_WEIGHT_SELECTOR": false,
+    "USE_PREV_WEIGHTS": true,
+    "WEIGHTS_DIR": "weights",
     "CHATGPT": {
         "API_KEY": "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"
     }

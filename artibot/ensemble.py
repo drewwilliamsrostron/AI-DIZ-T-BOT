@@ -75,8 +75,16 @@ def choose_best(rewards: list[float]) -> float:
 class EnsembleModel:
     """Simple container for multiple models and optimisers."""
 
-    def __init__(self, device, n_models=2, lr=3e-4, weight_decay=1e-4):
+    def __init__(
+        self,
+        device,
+        n_models=2,
+        lr=3e-4,
+        weight_decay=1e-4,
+        weights_path="best_model_weights.pth",
+    ):
         self.device = device
+        self.weights_path = weights_path
 
         # (6) We changed TradingModel to bigger capacity above
         self.models = [TradingModel().to(device) for _ in range(n_models)]
@@ -175,9 +183,9 @@ class EnsembleModel:
         G.global_max_drawdown = current_result["max_drawdown"]
         G.global_net_pct = current_result["net_pct"]
         G.global_num_trades = current_result["trades"]
-        G.global_win_rate = current_result["win_rate"]
-        G.global_profit_factor = current_result["profit_factor"]
-        G.global_avg_trade_duration = current_result["avg_trade_duration"]
+        G.global_win_rate = current_result.get("win_rate", 0.0)
+        G.global_profit_factor = current_result.get("profit_factor", 0.0)
+        G.global_avg_trade_duration = current_result.get("avg_trade_duration", 0.0)
 
         dfy, table_str = compute_yearly_stats(
             current_result["equity_curve"],
@@ -342,7 +350,7 @@ class EnsembleModel:
             )
             if attn_entropy < 0.5:
                 logging.warning("Attention entropy low: %.2f", attn_entropy)
-                G.set_status("Warning: attention entropy < 0.5")
+                G.set_status("Risk", "Attention entropy < 0.5")
             if cur_reward > self.best_composite_reward:
                 if reject_if_risky(
                     G.global_sharpe, G.global_max_drawdown, attn_entropy
@@ -358,11 +366,12 @@ class EnsembleModel:
                             "lr": self.optimizers[0].param_groups[0]["lr"],
                         },
                     )
+                    G.set_status("Risk", "Epoch rejected")
                 else:
                     self.best_composite_reward = cur_reward
                     self.patience_counter = 0
                     self.best_state_dicts = [m.state_dict() for m in self.models]
-                    self.save_best_weights("best_model_weights.pth")
+                    self.save_best_weights()
             else:
                 self.patience_counter += 1
                 # If net improvements are small => bigger patience
@@ -533,9 +542,11 @@ class EnsembleModel:
     def optimize_models(self, dummy_input):
         pass
 
-    def save_best_weights(self, path="best_model_weights.pth"):
+    def save_best_weights(self, path: str | None = None) -> None:
         if not self.best_state_dicts:
             return
+        if path is None:
+            path = self.weights_path
         torch.save(
             {
                 "best_composite_reward": self.best_composite_reward,
@@ -544,7 +555,9 @@ class EnsembleModel:
             path,
         )
 
-    def load_best_weights(self, path="best_model_weights.pth", data_full=None):
+    def load_best_weights(self, path: str | None = None, data_full=None) -> None:
+        if path is None:
+            path = self.weights_path
         if os.path.isfile(path):
             try:
                 ckpt = torch.load(path, map_location=self.device)

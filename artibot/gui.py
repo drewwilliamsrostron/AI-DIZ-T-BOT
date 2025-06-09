@@ -290,6 +290,13 @@ class TradingGUI:
             row=18, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
         )
 
+        self.validation_label = ttk.Label(
+            self.info_frame, text="Validation: N/A", font=("Helvetica", 12)
+        )
+        self.validation_label.grid(
+            row=19, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
+        )
+
         self.frame_ai = ttk.Frame(root)
         self.frame_ai.pack(side=tk.RIGHT, fill=tk.Y, padx=5, pady=5)
         self.ai_output_label = ttk.Label(
@@ -495,5 +502,12 @@ class TradingGUI:
 
         # update status line
         self.status_var.set(G.get_status())
+
+        if G.global_validation_summary:
+            sharpe = G.global_validation_summary.get("mean_sharpe", 0.0)
+            enabled = G.nuclear_key_enabled
+            self.validation_label.config(
+                text=f"Val Sharpe: {sharpe:.2f} NK: {enabled}"
+            )
 
         self.root.after(self.update_interval, self.update_dashboard)
