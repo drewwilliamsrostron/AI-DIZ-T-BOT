@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="24" time="3.913" timestamp="2025-06-09T20:12:19.302217" hostname="Office3_2025"><testcase classname="tests.test_attention_entropy" name="test_attention_entropy_random" file="tests\test_attention_entropy.py" line="8" time="0.004"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_attention_entropy" name="test_attention_entropy_zero" file="tests\test_attention_entropy.py" line="4" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_attention_integration" name="test_attention_integration" file="tests\test_attention_integration.py" line="5" time="0.012"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_attention" name="test_attention_entropy_range" file="tests\test_attention.py" line="4" time="0.000"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_backtest" name="test_robust_backtest_simple" file="tests\test_backtest.py" line="45" time="0.008"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_backtest" name="test_robust_backtest_unbounded_reward" file="tests\test_backtest.py" line="63" time="0.005"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_dataset" name="test_hourlydataset_basic" file="tests\test_dataset.py" line="85" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_dataset" name="test_load_csv_hourly_missing" file="tests\test_dataset.py" line="63" time="0.003"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  root:dataset.py:51 CSV file 'C:\Users\John\AppData\Local\Temp\pytest-of-John\pytest-9\test_load_csv_hourly_missing0\nope.csv' not found.
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_dataset" name="test_load_csv_hourly_parse" file="tests\test_dataset.py" line="68" time="0.006"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_entropy_logits_vs_probs" name="test_entropy_logits_vs_probs" file="tests\test_entropy_logits_vs_probs.py" line="4" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_entropy_range" name="test_entropy_range_logits" file="tests\test_entropy_range.py" line="4" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_entropy_warning" name="test_entropy_warning" file="tests\test_entropy_warning.py" line="10" time="0.993"><failure message="RuntimeError: Expected all tensors to be on the same device, but found at least two devices, cuda:0 and cpu! (when checking argument for argument mat2 in method wrapper_CUDA_mm)">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000022A5FACECF0&gt;
+caplog = &lt;_pytest.logging.LogCaptureFixture object at 0x0000022A5FACEA50&gt;
+
+    def test_entropy_warning(monkeypatch, caplog):
+        device = get_device()
+    
+        def dummy_backtest(ensemble, data_full):
+            return {
+                "equity_curve": [],
+                "effective_net_pct": 0.0,
+                "inactivity_penalty": 0.0,
+                "composite_reward": 0.0,
+                "days_without_trading": 0,
+                "trade_details": [],
+                "days_in_profit": 0.0,
+                "sharpe": 1.0,
+                "max_drawdown": -0.1,
+                "net_pct": 0.0,
+                "trades": 0,
+            }
+    
+        def dummy_stats(ec, trades, initial_balance=100.0):
+            return None, ""
+    
+        monkeypatch.setattr("artibot.ensemble.robust_backtest", dummy_backtest)
+        monkeypatch.setattr("artibot.ensemble.compute_yearly_stats", dummy_stats)
+    
+        ens = EnsembleModel(device=device, n_models=1)
+    
+        class DummyModel(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.w = torch.nn.Parameter(torch.zeros(8, 3))
+    
+            def forward(self, x):
+                self.last_entropy = 0.4
+                self.last_max_prob = 1.0
+                batch = x.size(0)
+                feat = x.mean(dim=1)
+                logits = feat @ self.w
+                return logits, SimpleNamespace(), torch.zeros(batch)
+    
+        ens.models = [DummyModel()]
+        ens.optimizers = [torch.optim.Adam(ens.models[0].parameters(), lr=1e-3)]
+    
+        ds = TensorDataset(torch.zeros(1, 24, 8), torch.zeros(1, dtype=torch.long))
+        dl = DataLoader(ds, batch_size=1)
+    
+        caplog.set_level(logging.WARNING)
+        G.global_attention_entropy_history = [0.4] * 120
+&gt;       ens.train_one_epoch(dl, dl, [])
+
+tests\test_entropy_warning.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+artibot\ensemble.py:213: in train_one_epoch
+    logits, _, pred_reward = model(bx.clone())
+..\..\..\anaconda3\Lib\site-packages\torch\nn\modules\module.py:1511: in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+..\..\..\anaconda3\Lib\site-packages\torch\nn\modules\module.py:1520: in _call_impl
+    return forward_call(*args, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = DummyModel()
+x = tensor([[[0., 0., 0., 0., 0., 0., 0., 0.],
+         [0., 0., 0., 0., 0., 0., 0., 0.],
+         [0., 0., 0., 0., 0., 0...., 0., 0., 0.],
+         [0., 0., 0., 0., 0., 0., 0., 0.],
+         [0., 0., 0., 0., 0., 0., 0., 0.]]], device='cuda:0')
+
+    def forward(self, x):
+        self.last_entropy = 0.4
+        self.last_max_prob = 1.0
+        batch = x.size(0)
+        feat = x.mean(dim=1)
+&gt;       logits = feat @ self.w
+E       RuntimeError: Expected all tensors to be on the same device, but found at least two devices, cuda:0 and cpu! (when checking argument for argument mat2 in method wrapper_CUDA_mm)
+
+tests\test_entropy_warning.py:47: RuntimeError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_filters" name="test_reject_if_risky" file="tests\test_filters.py" line="3" time="0.007"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_metrics" name="test_compute_days_in_profit" file="tests\test_metrics.py" line="46" time="0.000"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_metrics" name="test_compute_yearly_stats_basic" file="tests\test_metrics.py" line="60" time="0.007"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_metrics" name="test_inactivity_exponential_penalty" file="tests\test_metrics.py" line="36" time="0.000"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_risk_gate_integration" name="test_gate_triggered" file="tests\test_risk_gate_integration.py" line="3" time="0.000"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_rl" name="test_apply_action_custom_space" file="tests\test_rl.py" line="108" time="0.007"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_rl" name="test_find_nearest_action" file="tests\test_rl.py" line="69" time="0.006"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_rl" name="test_no_warnings" file="tests\test_rl.py" line="147" time="0.004"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_rl" name="test_pick_action_deterministic" file="tests\test_rl.py" line="77" time="0.009"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_scaling" name="test_adaptive_scaler" file="tests\test_scaling.py" line="29" time="0.005"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_selection" name="test_choose_best" file="tests\test_selection.py" line="3" time="0.000"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_smoke" name="test_end_to_end_smoke" file="tests\test_smoke.py" line="13" time="0.829"><failure message="assert 0 == 1&#10; +  where 0 = g.epoch_count">def test_end_to_end_smoke():
+        sys.modules["openai"] = types.SimpleNamespace()
+        data = load_csv_hourly("Gemini_BTCUSD_1h.csv")[:1500]
+        assert len(data) &gt; 24
+        ensemble = EnsembleModel(
+            device=torch.device("cpu"), n_models=1, lr=1e-4, weight_decay=1e-4
+        )
+        stop_event = threading.Event()
+        csv_training_thread(
+            ensemble,
+            data,
+            stop_event,
+            {"ADAPT_TO_LIVE": False},
+            use_prev_weights=False,
+            max_epochs=1,
+        )
+        result = robust_backtest(ensemble, data)
+        assert result["trades"] &gt; 0
+&gt;       assert g.epoch_count == 1
+E       assert 0 == 1
+E        +  where 0 = g.epoch_count
+
+tests\test_smoke.py:32: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+Traceback (most recent call last):
+  File "C:\Users\John\Documents\GitHub\AI-DIZ-T-BOT\artibot\training.py", line 87, in csv_training_thread
+    tl, vl = ensemble.train_one_epoch(dl_train, dl_val, train_data, stop_event)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\John\Documents\GitHub\AI-DIZ-T-BOT\artibot\ensemble.py", line 192, in train_one_epoch
+    for batch_idx, (batch_x, batch_y) in enumerate(dl_train):
+                                         ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\John\anaconda3\Lib\site-packages\torch\utils\data\dataloader.py", line 439, in __iter__
+    return self._get_iterator()
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\John\anaconda3\Lib\site-packages\torch\utils\data\dataloader.py", line 387, in _get_iterator
+    return _MultiProcessingDataLoaderIter(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\John\anaconda3\Lib\site-packages\torch\utils\data\dataloader.py", line 1040, in __init__
+    w.start()
+  File "C:\Users\John\anaconda3\Lib\multiprocessing\process.py", line 121, in start
+    self._popen = self._Popen(self)
+                  ^^^^^^^^^^^^^^^^^
+  File "C:\Users\John\anaconda3\Lib\multiprocessing\context.py", line 224, in _Popen
+    return _default_context.get_context().Process._Popen(process_obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\John\anaconda3\Lib\multiprocessing\context.py", line 337, in _Popen
+    return Popen(process_obj)
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\John\anaconda3\Lib\multiprocessing\popen_spawn_win32.py", line 95, in __init__
+    reduction.dump(process_obj, to_child)
+  File "C:\Users\John\anaconda3\Lib\multiprocessing\reduction.py", line 60, in dump
+    ForkingPickler(file, protocol).dump(obj)
+_pickle.PicklingError: Can't pickle &lt;class 'artibot.dataset.HourlyDataset'&gt;: it's not the same object as artibot.dataset.HourlyDataset
+Traceback (most recent call last):
+  File "&lt;string&gt;", line 1, in &lt;module&gt;
+  File "C:\Users\John\anaconda3\Lib\multiprocessing\spawn.py", line 113, in spawn_main
+    new_handle = reduction.duplicate(pipe_handle,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\John\anaconda3\Lib\multiprocessing\reduction.py", line 79, in duplicate
+    return _winapi.DuplicateHandle(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: [WinError 6] The handle is invalid
+
+</system-err></testcase></testsuite></testsuites>
