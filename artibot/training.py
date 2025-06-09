@@ -30,6 +30,9 @@ def csv_training_thread(
 
     ``max_epochs`` stops the loop after N iterations when set.  When
     ``debug_anomaly`` is ``True`` PyTorch's autograd anomaly detection is enabled.
+
+    TODO: add granular ``set_status`` calls for each major step and
+    integrate more gating checks.
     """
     import traceback
 
@@ -285,9 +288,7 @@ def csv_training_thread(
     except Exception as e:
         traceback.print_exc()
 
-
         G.set_status(f"Training error: {e}", "")
-
 
         stop_event.set()
 
@@ -313,7 +314,6 @@ def phemex_live_thread(connector, stop_event, poll_interval: float) -> None:
             G.set_status(f"Fetch error: {e}", "")
             stop_event.set()
         G.status_sleep("Waiting before next fetch", "", poll_interval)
-
 
 
 ###############################################################################

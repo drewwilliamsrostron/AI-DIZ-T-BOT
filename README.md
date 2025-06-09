@@ -114,3 +114,5 @@ rejected rows. Visualise one batch of weights with:
 python scripts/plot_attention.py weights.npy
 ```
 Entropy should stay between 1 and 2.5; zero means collapse.
+
+<!-- TODO: document the Nuclear Key workflow and manual overrides -->
