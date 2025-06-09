@@ -178,9 +178,11 @@ class EnsembleModel:
                     else nullcontext()
                 )
 
+
             batch_loss = 0.0
             losses: list[tuple[torch.Tensor, nn.Module]] = []
             for model, opt_ in zip(self.models, self.optimizers):
+
                 opt_.zero_grad()
                 with ctx:
                     with torch.autograd.set_detect_anomaly(True):
@@ -218,10 +220,12 @@ class EnsembleModel:
                                 r_loss.item(),
                             )
                             continue
+
                         self.scaler.scale(loss).backward()
                         losses.append((loss.detach(), opt_))
 
             for idx_m, (loss_tensor, opt_) in enumerate(losses):
+
                 self.scaler.unscale_(opt_)
                 torch.nn.utils.clip_grad_norm_(self.models[idx_m].parameters(), 1.0)
                 try:
@@ -239,7 +243,9 @@ class EnsembleModel:
                         pg["lr"] = new_lr
                 else:
                     self.cosine[idx_m].step()
+
                 batch_loss += loss_tensor.item()
+
 
             self.step_count += 1
             total_loss += (
