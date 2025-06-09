@@ -25,11 +25,30 @@ from .metrics import compute_yearly_stats
 from .model import TradingModel
 
 
-def reject_if_risky(sharpe: float, max_dd: float, entropy: float) -> bool:
-    """Return True if metrics violate the risk thresholds."""
-    if entropy < 1.0:
+def reject_if_risky(
+    sharpe: float,
+    max_dd: float,
+    entropy: float,
+    *,
+    thresholds: dict | None = None,
+) -> bool:
+    """Return ``True`` when metrics breach the configured risk limits."""
+
+    if thresholds is None:
+        try:  # lazy import avoids circular dependency
+            from .bot_app import CONFIG
+
+            thresholds = CONFIG.get("RISK_FILTER", CONFIG)
+        except Exception:
+            thresholds = {}
+
+    min_entropy = float(thresholds.get("MIN_ENTROPY", 1.0))
+    min_sharpe = float(thresholds.get("MIN_SHARPE", 1.0))
+    max_drawdown = float(thresholds.get("MAX_DRAWDOWN", -0.30))
+
+    if entropy < min_entropy:
         return True  # reject collapsed runs
-    return max_dd < -0.30 or sharpe < 1.0
+    return max_dd < max_drawdown or sharpe < min_sharpe
 
 
 def choose_best(rewards: list[float]) -> float:
