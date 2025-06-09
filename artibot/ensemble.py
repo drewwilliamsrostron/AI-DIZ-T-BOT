@@ -334,7 +334,7 @@ class EnsembleModel:
             )
             if attn_entropy < 0.5:
                 logging.warning("Attention entropy low: %.2f", attn_entropy)
-                G.set_status("Warning: attention entropy < 0.5")
+                G.set_status("Risk", "Attention entropy < 0.5")
             if cur_reward > self.best_composite_reward:
                 if reject_if_risky(
                     G.global_sharpe, G.global_max_drawdown, attn_entropy
@@ -350,6 +350,7 @@ class EnsembleModel:
                             "lr": self.optimizers[0].param_groups[0]["lr"],
                         },
                     )
+                    G.set_status("Risk", "Epoch rejected")
                 else:
                     self.best_composite_reward = cur_reward
                     self.patience_counter = 0
