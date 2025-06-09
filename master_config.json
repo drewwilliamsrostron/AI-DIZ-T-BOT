@@ -12,6 +12,9 @@
     "ADAPT_TO_LIVE": true,
     "LIVE_POLL_INTERVAL": 900,
     "MIN_HOLD_SECONDS": 1800,
+    "MIN_SHARPE": 1.0,
+    "MAX_DRAWDOWN": -0.3,
+    "MIN_ENTROPY": 1.0,
     "CHATGPT": {
         "API_KEY": "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"
     }

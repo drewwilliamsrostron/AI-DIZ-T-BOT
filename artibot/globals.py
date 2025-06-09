@@ -69,6 +69,7 @@ global_best_lr = None
 global_best_wd = None
 
 global_yearly_stats_table = ""
+global_best_yearly_stats_table = ""
 
 ###############################################################################
 # GPT Memories (unchanged)

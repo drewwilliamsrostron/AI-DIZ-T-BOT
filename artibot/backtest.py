@@ -94,10 +94,10 @@ def robust_backtest(ensemble, data_full):
     df = pd.DataFrame(
         {
             "timestamp": timestamps,
-            "open": extd[:, 0],
-            "high": extd[:, 1],
-            "low": extd[:, 2],
-            "close": extd[:, 3],
+            "open": raw_data[:, 1],
+            "high": raw_data[:, 2],
+            "low": raw_data[:, 3],
+            "close": raw_data[:, 4],
             "prediction": preds,
         }
     )
@@ -349,6 +349,7 @@ def robust_backtest(ensemble, data_full):
         + trade_term * 3  # Stronger incentive for reasonable trade frequency
         + (days_in_pf / 365) * 1000  # Strong bonus for consistent profitability
     )
+    composite_reward = float(np.clip(composite_reward, -100.0, 100.0))
     return {
         "net_pct": net_pct,
         "trades": trade_count,

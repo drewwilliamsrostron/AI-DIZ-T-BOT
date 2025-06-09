@@ -6,6 +6,7 @@ import artibot.globals as G
 import logging
 import json
 
+import os
 import re
 import sys
 
@@ -54,7 +55,8 @@ def csv_training_thread(
         ds_train, ds_val = random_split(ds_full, [n_tr, n_val])
 
         pin = ensemble.device.type == "cuda"
-        workers = 2 if pin else 0
+        default_workers = max(1, os.cpu_count() or 1)
+        workers = int(config.get("NUM_WORKERS", default_workers))
         dl_train = DataLoader(
             ds_train, batch_size=128, shuffle=True, num_workers=workers, pin_memory=pin
         )
@@ -229,7 +231,8 @@ def csv_training_thread(
                         nv_ = nt_ - ntr_
                         ds_tr_, ds_val_ = random_split(ds_updated, [ntr_, nv_])
                         pin = ensemble.device.type == "cuda"
-                        workers = 2 if pin else 0
+                        default_workers = max(1, os.cpu_count() or 1)
+                        workers = int(config.get("NUM_WORKERS", default_workers))
                         dl_tr_ = DataLoader(
                             ds_tr_,
                             batch_size=128,
