@@ -37,6 +37,28 @@ def format_trade_details(trades, limit=50):
     return out_df.to_string(index=False, float_format=lambda x: f"{x:.2f}")
 
 
+
+def should_enable_live_trading() -> bool:
+    """Return ``True`` when validation metrics meet risk criteria."""
+    sharpe = G.global_holdout_sharpe
+    dd = G.global_holdout_max_drawdown
+    return sharpe >= 1.0 and dd >= -0.30
+
+def select_weight_file(use_prev: bool = True) -> str | None:
+    """Return the weight file path based on user selection."""
+    from tkinter import messagebox, filedialog
+
+    if use_prev and messagebox.askyesno("Load Weights", "Use best_model_weights.pth?"):
+        return "best_model_weights.pth"
+    return (
+        filedialog.askopenfilename(
+            title="Select weight file", filetypes=[("PyTorch", "*.pth")]
+        )
+        or None
+    )
+
+
+
 class TradingGUI:
     def __init__(self, root, ensemble):
         self.root = root
@@ -287,12 +309,13 @@ class TradingGUI:
         )
         self.best_avg_loss_label.grid(row=19, column=1, sticky=tk.W, padx=5, pady=5)
 
-        # single-line status indicator
+        # status indicator combines primary + secondary messages
         self.status_var = tk.StringVar()
         self.status_label = ttk.Label(
             self.info_frame,
             textvariable=self.status_var,
             font=("Helvetica", 10, "italic"),
+            justify=tk.LEFT,
         )
         self.status_label.grid(
             row=20, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
@@ -304,6 +327,38 @@ class TradingGUI:
             bg="grey",
         )
         self.nuclear_btn.grid(row=21, column=0, padx=5, pady=5, columnspan=2)
+
+
+        # trading control buttons
+        self.controls_frame = ttk.Frame(self.info_frame)
+        self.controls_frame.grid(row=19, column=0, columnspan=2, pady=5)
+        self.nuclear_button = ttk.Button(
+            self.controls_frame,
+            text="Nuclear Key",
+            command=self.enable_live_trading,
+            state=tk.DISABLED,
+        )
+        self.nuclear_button.pack(side=tk.LEFT, padx=5)
+        self.close_button = ttk.Button(
+            self.controls_frame,
+            text="Close Active Trade",
+            command=self.close_trade,
+        )
+        self.close_button.pack(side=tk.LEFT, padx=5)
+        self.edit_button = ttk.Button(
+            self.controls_frame,
+            text="Edit Trade",
+            command=self.edit_trade,
+        )
+        self.edit_button.pack(side=tk.LEFT, padx=5)
+
+        self.validation_label = ttk.Label(
+            self.info_frame, text="Validation: N/A", font=("Helvetica", 12)
+        )
+        self.validation_label.grid(
+            row=19, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
+        )
+
 
         self.frame_ai = ttk.Frame(root)
         self.frame_ai.pack(side=tk.RIGHT, fill=tk.Y, padx=5, pady=5)
@@ -517,7 +572,23 @@ class TradingGUI:
         self.ai_log_text.insert(tk.END, G.global_ai_adjustments_log)
 
         # update status line
-        self.status_var.set(G.get_status())
+        primary, secondary = G.get_status_full()
+        self.status_var.set(f"{primary}\n{secondary}")
+
+        # manage trading buttons
+        if should_enable_live_trading() and not G.live_trading_enabled:
+            self.nuclear_button.config(state=tk.NORMAL)
+        else:
+            self.nuclear_button.config(state=tk.DISABLED)
+        if G.live_trading_enabled:
+            self.nuclear_button.config(text="Live Trading ON")
+
+        if G.global_validation_summary:
+            sharpe = G.global_validation_summary.get("mean_sharpe", 0.0)
+            enabled = G.nuclear_key_enabled
+            self.validation_label.config(
+                text=f"Val Sharpe: {sharpe:.2f} NK: {enabled}"
+            )
 
         # evaluate nuclear key and auto-pause rules
         if nuclear_key_condition(
@@ -530,3 +601,34 @@ class TradingGUI:
         update_auto_pause(G.global_sharpe, G.global_max_drawdown)
 
         self.root.after(self.update_interval, self.update_dashboard)
+
+    def enable_live_trading(self):
+        """Activate live trading after user confirmation."""
+        G.live_trading_enabled = True
+        G.set_status("Live trading enabled", "Use caution")
+        self.nuclear_button.config(state=tk.DISABLED)
+
+    def close_trade(self):
+        """Cancel orders and close the current position."""
+        G.cancel_open_orders()
+        G.close_position()
+        G.set_status("Trade closed", "All orders cancelled")
+
+    def edit_trade(self):
+        """Popup dialog to adjust SL/TP multipliers."""
+        win = tk.Toplevel(self.root)
+        win.title("Edit Trade")
+        ttk.Label(win, text="SL Multiplier:").grid(row=0, column=0, padx=5, pady=5)
+        sl_var = tk.DoubleVar(value=G.global_SL_multiplier)
+        ttk.Entry(win, textvariable=sl_var).grid(row=0, column=1, padx=5, pady=5)
+        ttk.Label(win, text="TP Multiplier:").grid(row=1, column=0, padx=5, pady=5)
+        tp_var = tk.DoubleVar(value=G.global_TP_multiplier)
+        ttk.Entry(win, textvariable=tp_var).grid(row=1, column=1, padx=5, pady=5)
+
+        def apply():
+            G.update_trade_params(sl_var.get(), tp_var.get())
+            win.destroy()
+
+        ttk.Button(win, text="Apply", command=apply).grid(
+            row=2, column=0, columnspan=2, pady=5
+        )
