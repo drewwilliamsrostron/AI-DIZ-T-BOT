@@ -6,6 +6,7 @@ import logging
 import sys
 import json
 
+import math
 import torch
 
 
@@ -42,11 +43,14 @@ def setup_logging() -> None:
 
 def attention_entropy(tensor: torch.Tensor) -> float:
     """Return mean entropy of attention probabilities or logits."""
-    if tensor.max() <= 1:
+    if tensor.max() <= 1 and tensor.min() >= 0:
         p = tensor
     else:
         tensor = tensor - tensor.max(dim=-1, keepdim=True).values
         p = tensor.softmax(dim=-1)
     p = torch.nan_to_num(p)
     ent = (-p * (p + 1e-9).log()).sum(-1).mean().item()
-    return ent
+    if not math.isfinite(ent):
+        ent = 0.0
+    max_ent = math.log(p.size(-1))
+    return min(ent, max_ent)

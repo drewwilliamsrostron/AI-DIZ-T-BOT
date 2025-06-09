@@ -349,6 +349,7 @@ def robust_backtest(ensemble, data_full):
         + trade_term * 3  # Stronger incentive for reasonable trade frequency
         + (days_in_pf / 365) * 1000  # Strong bonus for consistent profitability
     )
+    composite_reward = float(np.clip(composite_reward, -100.0, 100.0))
     return {
         "net_pct": net_pct,
         "trades": trade_count,
