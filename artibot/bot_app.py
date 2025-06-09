@@ -109,6 +109,7 @@ def run_bot(max_epochs: int | None = None) -> None:
     train_th = threading.Thread(
         target=csv_training_thread,
         args=(ensemble, data, stop_event, config, use_prev_weights, max_epochs),
+        kwargs={"debug_anomaly": __debug__},
         daemon=True,
     )
     train_th.start()

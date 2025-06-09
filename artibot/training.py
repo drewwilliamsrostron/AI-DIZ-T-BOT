@@ -22,10 +22,13 @@ def csv_training_thread(
     config,
     use_prev_weights=True,
     max_epochs: int | None = None,
+    *,
+    debug_anomaly: bool = False,
 ):
     """Train on CSV data in a background thread.
 
-    ``max_epochs`` stops the loop after N iterations when set.
+    ``max_epochs`` stops the loop after N iterations when set.  When
+    ``debug_anomaly`` is ``True`` PyTorch's autograd anomaly detection is enabled.
     """
     import traceback
 
@@ -33,7 +36,8 @@ def csv_training_thread(
     import torch
     from torch.utils.data import DataLoader, random_split
 
-    torch.autograd.set_detect_anomaly(True)
+    if debug_anomaly:
+        torch.autograd.set_detect_anomaly(True)
 
     # training history lists live on the globals module
 
