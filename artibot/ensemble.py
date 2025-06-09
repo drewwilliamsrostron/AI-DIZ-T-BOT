@@ -72,6 +72,11 @@ class EnsembleModel:
         self.patience = 0
         self.delayed_reward_epochs = 25
 
+        # per-epoch attention stats
+        self.entropies: list[float] = []
+        self.max_probs: list[float] = []
+        self.rejection_count_this_epoch = 0
+
         # (3) We'll do dynamic patience mechanism, so this is an initial
         self.patience_counter = 0
 
@@ -155,6 +160,8 @@ class EnsembleModel:
                     )
                 with ctx:
                     logits, _, pred_reward = model(bx)
+                    self.entropies.append(getattr(model, "last_entropy", 0.0))
+                    self.max_probs.append(getattr(model, "last_max_prob", 0.0))
                     ce_loss = self.criterion(logits, by)
                     if not torch.isfinite(pred_reward).all():
                         logging.error(
@@ -262,6 +269,7 @@ class EnsembleModel:
         )
         if cur_reward > self.best_composite_reward:
             if reject_if_risky(G.global_sharpe, G.global_max_drawdown, attn_entropy):
+                self.rejection_count_this_epoch += 1
                 logging.info(
                     "REJECTED by risk filter",
                     extra={
@@ -333,6 +341,20 @@ class EnsembleModel:
             G.global_best_wd = self.optimizers[0].param_groups[0].get("weight_decay", 0)
 
         self.train_steps += 1
+        mean_ent = float(torch.tensor(self.entropies).mean()) if self.entropies else 0.0
+        mean_mp = float(torch.tensor(self.max_probs).mean()) if self.max_probs else 0.0
+        logging.info(
+            {
+                "event": "EPOCH_SUMMARY",
+                "epoch": self.train_steps,
+                "mean_entropy": mean_ent,
+                "mean_max_prob": mean_mp,
+                "rejections": self.rejection_count_this_epoch,
+            }
+        )
+        self.entropies.clear()
+        self.max_probs.clear()
+        self.rejection_count_this_epoch = 0
         return train_loss, val_loss
 
     def evaluate_val_loss(self, dl_val):

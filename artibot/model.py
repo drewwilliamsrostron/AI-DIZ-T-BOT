@@ -75,7 +75,9 @@ class TradingModel(nn.Module):
         p = attn_weights.mean(dim=(0, 1))
         entropy = utils.attention_entropy(p)
         max_prob = p.max().item()
-        logger.info({"event": "ATTN_STATS", "entropy": entropy, "max_prob": max_prob})
+        self.last_entropy = float(entropy)
+        self.last_max_prob = float(max_prob)
+        logger.debug({"event": "ATTN_STATS", "entropy": entropy, "max_prob": max_prob})
         attn_mean = p.mean().item()
         try:
             G.global_attention_weights_history.append(attn_mean)
