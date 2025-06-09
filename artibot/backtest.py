@@ -122,25 +122,18 @@ def robust_backtest(ensemble, data_full, indicators=None):
     pred_indices, _, avg_params = ensemble.vectorized_predict(windows_t, batch_size=512)
     preds = [2] * 23 + pred_indices.tolist()
 
-    df = pd.DataFrame(
-        {
-            "timestamp": timestamps,
-            "open": raw_data[:, 1],
-            "high": raw_data[:, 2],
-            "low": raw_data[:, 3],
-            "close": raw_data[:, 4],
-            "prediction": preds,
-        }
+    timestamps = timestamps.astype(np.int64)
+    highs = raw_data[:, 2]
+    lows = raw_data[:, 3]
+    closes = raw_data[:, 4]
+    preds = np.array(preds, dtype=np.int64)
+
+    prev_close = np.concatenate(([np.nan], closes[:-1]))
+    tr = np.maximum(
+        highs - lows,
+        np.maximum(np.abs(highs - prev_close), np.abs(lows - prev_close)),
     )
-    df["previous_close"] = df["close"].shift(1)
-    df["tr"] = np.maximum(
-        df["high"] - df["low"],
-        np.maximum(
-            np.abs(df["high"] - df["previous_close"]),
-            np.abs(df["low"] - df["previous_close"]),
-        ),
-    )
-    df["ATR"] = df["tr"].rolling(G.global_ATR_period, min_periods=1).mean()
+    atr = pd.Series(tr).rolling(G.global_ATR_period, min_periods=1).mean().to_numpy()
 
     init_bal = 100.0
     bal = init_bal
@@ -161,35 +154,39 @@ def robust_backtest(ensemble, data_full, indicators=None):
     rf_raw = avg_params["risk_fraction"].item()
     rf = 0.2 * rf_raw + 0.01
 
-    for i, row in df.iterrows():
-        cur_t = row["timestamp"]
-        cur_p = row["close"]
+    for i in range(len(closes)):
+        cur_t = int(timestamps[i])
+        cur_p = closes[i]
+        high = highs[i]
+        low = lows[i]
+        pred = preds[i]
+        atr_i = atr[i]
         if pos["size"] != 0:
             exit_condition = False
             exit_price = cur_p
             exit_reason = ""
             if pos["side"] == "long":
-                if row["low"] <= pos["stop_loss"]:
+                if low <= pos["stop_loss"]:
                     exit_price = pos["stop_loss"]
                     exit_reason = "SL hit"
                     exit_condition = True
-                elif row["high"] >= pos["take_profit"]:
+                elif high >= pos["take_profit"]:
                     exit_price = pos["take_profit"]
                     exit_reason = "TP hit"
                     exit_condition = True
-                elif row["prediction"] == 1:
+                elif pred == 1:
                     exit_reason = "Signal reversal"
                     exit_condition = True
             else:
-                if row["high"] >= pos["stop_loss"]:
+                if high >= pos["stop_loss"]:
                     exit_price = pos["stop_loss"]
                     exit_reason = "SL hit"
                     exit_condition = True
-                elif row["low"] <= pos["take_profit"]:
+                elif low <= pos["take_profit"]:
                     exit_price = pos["take_profit"]
                     exit_reason = "TP hit"
                     exit_condition = True
-                elif row["prediction"] == 0:
+                elif pred == 0:
                     exit_reason = "Signal reversal"
                     exit_condition = True
             if exit_condition:
@@ -233,20 +230,16 @@ def robust_backtest(ensemble, data_full, indicators=None):
                     "take_profit": 0.0,
                     "entry_time": None,
                 }
-        if pos["size"] == 0 and row["prediction"] in (0, 1):
+        if pos["size"] == 0 and pred in (0, 1):
             if last_exit_t is not None and (cur_t - last_exit_t) < min_hold_seconds:
                 pass
             else:
-                atr = row["ATR"] if not np.isnan(row["ATR"]) else 1.0
-                atr = max(1.0, atr)
-                fill_p = cur_p * (
-                    1 + slippage if row["prediction"] == 0 else 1 - slippage
-                )
-                st_dist = sl_m * atr
+                atr_val = atr_i if not np.isnan(atr_i) else 1.0
+                atr_val = max(1.0, atr_val)
+                fill_p = cur_p * (1 + slippage if pred == 0 else 1 - slippage)
+                st_dist = sl_m * atr_val
                 tp_val = (
-                    fill_p + tp_m * atr
-                    if row["prediction"] == 0
-                    else fill_p - tp_m * atr
+                    fill_p + tp_m * atr_val if pred == 0 else fill_p - tp_m * atr_val
                 )
                 risk_cap = bal * rf
                 pos_size_risk = risk_cap / (st_dist + 1e-8)
@@ -255,7 +248,7 @@ def robust_backtest(ensemble, data_full, indicators=None):
                 if pos_sz > 0:
                     comm_entry = pos_sz * fill_p * commission_rate
                     bal -= comm_entry
-                    if row["prediction"] == 0:
+                    if pred == 0:
                         pos.update(
                             {
                                 "size": pos_sz,
@@ -286,7 +279,7 @@ def robust_backtest(ensemble, data_full, indicators=None):
         eq_curve.append((cur_t, curr_eq))
 
     if pos["size"] != 0:
-        final_price = df.iloc[-1]["close"]
+        final_price = closes[-1]
         if pos["side"] == "long":
             exit_price = final_price * (1 - slippage)
             comm_exit = pos["size"] * exit_price * commission_rate
@@ -296,14 +289,14 @@ def robust_backtest(ensemble, data_full, indicators=None):
             exit_price = final_price * (1 + slippage)
             comm_exit = abs(pos["size"]) * exit_price * commission_rate
             pf = abs(pos["size"]) * (pos["entry_price"] - exit_price) - comm_exit
-            hrs = (df.iloc[-1]["timestamp"] - pos["entry_time"]) / 3600.0
+            hrs = (timestamps[-1] - pos["entry_time"]) / 3600.0
             fund = abs(pos["size"]) * pos["entry_price"] * FUNDING_RATE * hrs
             pf -= fund
             bal += pf
         trades.append(
             {
                 "entry_time": pos["entry_time"],
-                "exit_time": df.iloc[-1]["timestamp"],
+                "exit_time": int(timestamps[-1]),
                 "side": pos["side"],
                 "entry_price": pos["entry_price"],
                 "stop_loss": pos["stop_loss"],
@@ -312,10 +305,10 @@ def robust_backtest(ensemble, data_full, indicators=None):
                 "exit_reason": "Final",
                 "return": (exit_price / pos["entry_price"] - 1)
                 * (1 if pos["side"] == "long" else -1),
-                "duration": df.iloc[-1]["timestamp"] - pos["entry_time"],
+                "duration": int(timestamps[-1]) - pos["entry_time"],
             }
         )
-        eq_curve[-1] = (df.iloc[-1]["timestamp"], bal)
+        eq_curve[-1] = (int(timestamps[-1]), bal)
 
     final_profit = bal - init_bal
     net_pct = (final_profit / init_bal) * 100.0
@@ -329,21 +322,21 @@ def robust_backtest(ensemble, data_full, indicators=None):
     if trades:
         te_sorted = sorted([t["entry_time"] for t in trades])
         gaps = []
-        start_gap = te_sorted[0] - df.iloc[0]["timestamp"]
+        start_gap = te_sorted[0] - int(timestamps[0])
         if start_gap > 0:
             gaps.append(start_gap)
         for i in range(1, len(te_sorted)):
             gp = te_sorted[i] - te_sorted[i - 1]
             if gp > 0:
                 gaps.append(gp)
-        end_gap = df.iloc[-1]["timestamp"] - te_sorted[-1]
+        end_gap = int(timestamps[-1]) - te_sorted[-1]
         if end_gap > 0:
             gaps.append(end_gap)
         for g in gaps:
             tot_inact_pen += inactivity_exponential_penalty(g)
     else:
-        if len(df) > 1:
-            total_s = df.iloc[-1]["timestamp"] - df.iloc[0]["timestamp"]
+        if len(timestamps) > 1:
+            total_s = int(timestamps[-1]) - int(timestamps[0])
             tot_inact_pen += inactivity_exponential_penalty(total_s)
 
     days_in_pf = compute_days_in_profit(eq_curve, init_bal)
