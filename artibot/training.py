@@ -90,7 +90,7 @@ def csv_training_thread(
                 break
             ensemble.train_steps += 1
             epochs += 1
-            G.set_status(f"Training step {ensemble.train_steps}")
+            G.set_status(f"Training step {ensemble.train_steps}", "")
             logging.info(
                 "START_EPOCH",
                 extra={"epoch": ensemble.train_steps},
@@ -232,7 +232,7 @@ def csv_training_thread(
                             train_data.append([ts, o_, h_, l_, c_, v_])
                             changed = True
                 if changed:
-                    G.set_status("Adapting to live data")
+                    G.set_status("Adapting to live data", "")
                     ds_updated = HourlyDataset(
                         train_data,
                         seq_len=24,
@@ -278,7 +278,7 @@ def csv_training_thread(
     except Exception as e:
         traceback.print_exc()
 
-        G.set_status(f"Training error: {e}")
+        G.set_status(f"Training error: {e}", "")
 
         stop_event.set()
 
@@ -289,7 +289,7 @@ def phemex_live_thread(connector, stop_event, poll_interval: float) -> None:
 
     while not stop_event.is_set():
         try:
-            G.set_status("Fetching live data")
+            G.set_status("Fetching live data", "")
             bars = connector.fetch_latest_bars(limit=100)
             if bars:
                 G.global_phemex_data = bars
@@ -298,9 +298,9 @@ def phemex_live_thread(connector, stop_event, poll_interval: float) -> None:
 
         except Exception as e:
             traceback.print_exc()
-            G.set_status(f"Fetch error: {e}")
+            G.set_status(f"Fetch error: {e}", "")
             stop_event.set()
-        G.status_sleep("Waiting before next fetch", poll_interval)
+        G.status_sleep("Waiting before next fetch", "", poll_interval)
 
 
 ###############################################################################

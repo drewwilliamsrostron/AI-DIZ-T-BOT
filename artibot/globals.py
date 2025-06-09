@@ -108,7 +108,8 @@ global_days_in_profit = 0.0
 live_bars_queue = queue.Queue()
 
 # Simple status indicator updated by threads
-global_status_message = "Initializing..."
+global_status_primary = "Initializing"
+global_status_secondary = ""
 
 # Protect shared state across threads
 state_lock = threading.Lock()
@@ -116,17 +117,24 @@ state_lock = threading.Lock()
 model_lock = threading.Lock()
 
 
-def set_status(msg: str) -> None:
-    """Thread-safe update of ``global_status_message``."""
+def set_status(primary: str, secondary: str) -> None:
+    """Thread-safe update of status fields."""
     with state_lock:
-        global global_status_message
-        global_status_message = msg
+        global global_status_primary, global_status_secondary
+        global_status_primary = primary
+        global_status_secondary = secondary
 
 
 def get_status() -> str:
-    """Return the current ``global_status_message`` in a thread-safe manner."""
+    """Return the combined status string in a thread-safe manner."""
     with state_lock:
-        return global_status_message
+        return f"{global_status_primary} {global_status_secondary}".strip()
+
+
+def get_status_full() -> tuple[str, str]:
+    """Return both status fields."""
+    with state_lock:
+        return global_status_primary, global_status_secondary
 
 
 def inc_epoch() -> None:
@@ -139,12 +147,12 @@ def inc_epoch() -> None:
 ###############################################################################
 # Helper used by worker threads to show countdowns while sleeping
 ###############################################################################
-def status_sleep(message: str, seconds: float):
-    """Sleep in 1s increments and update ``global_status_message``."""
+def status_sleep(primary: str, secondary: str, seconds: float) -> None:
+    """Sleep in 1s increments and update status fields."""
     end = time.monotonic() + seconds
     while True:
         remaining = int(end - time.monotonic())
         if remaining <= 0:
             break
-        set_status(f"{message} ({remaining}s)")
+        set_status(primary, f"{secondary} ({remaining}s)".strip())
         time.sleep(1)

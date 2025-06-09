@@ -80,7 +80,7 @@ def run_bot(max_epochs: int | None = None) -> None:
 
     if len(data) < 10:
         logging.error("No usable CSV data found")
-        G.global_status_message = "CSV load failed"
+        G.set_status("CSV load failed", "")
         return
 
     use_prev_weights = bool(config.get("USE_PREV_WEIGHTS", True))
