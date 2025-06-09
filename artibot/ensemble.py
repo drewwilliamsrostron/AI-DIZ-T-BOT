@@ -180,8 +180,9 @@ class EnsembleModel:
 
             losses = []
             with ctx:
-                for model in self.models:
-                    logits, _, pred_reward = model(bx)
+                with torch.autograd.set_detect_anomaly(True):
+                    for model in self.models:
+                        logits, _, pred_reward = model(bx)
                     self.entropies.append(getattr(model, "last_entropy", 0.0))
                     self.max_probs.append(getattr(model, "last_max_prob", 0.0))
                     ce_loss = self.criterion(logits, by)
