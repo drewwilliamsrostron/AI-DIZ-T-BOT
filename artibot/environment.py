@@ -35,6 +35,7 @@ import sys
 import subprocess
 import platform
 import logging
+import os
 
 
 def _install_pytorch_for_env() -> None:
@@ -155,4 +156,6 @@ except ModuleNotFoundError:
 
 def ensure_dependencies():
     """Install required packages if they are missing."""
+    if os.environ.get("ARTIBOT_SKIP_INSTALL") == "1":
+        return
     install_dependencies()
