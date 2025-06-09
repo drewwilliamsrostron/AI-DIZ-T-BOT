@@ -108,7 +108,11 @@ global_days_in_profit = 0.0
 live_bars_queue = queue.Queue()
 
 # Simple status indicator updated by threads
-global_status_message = "Initializing..."
+global_primary_status = "Initializing..."
+global_secondary_status = ""
+
+# Flag toggled by GUI when user enables live trading
+live_trading_enabled = False
 
 # Protect shared state across threads
 state_lock = threading.Lock()
@@ -116,17 +120,25 @@ state_lock = threading.Lock()
 model_lock = threading.Lock()
 
 
-def set_status(msg: str) -> None:
-    """Thread-safe update of ``global_status_message``."""
+def set_status(msg: str, secondary: str | None = None) -> None:
+    """Thread-safe update of status messages."""
     with state_lock:
-        global global_status_message
-        global_status_message = msg
+        global global_primary_status, global_secondary_status
+        global_primary_status = msg
+        if secondary is not None:
+            global_secondary_status = secondary
 
 
 def get_status() -> str:
-    """Return the current ``global_status_message`` in a thread-safe manner."""
+    """Return the primary status message in a thread-safe manner."""
     with state_lock:
-        return global_status_message
+        return global_primary_status
+
+
+def get_status_full() -> tuple[str, str]:
+    """Return ``(primary, secondary)`` status messages."""
+    with state_lock:
+        return global_primary_status, global_secondary_status
 
 
 def inc_epoch() -> None:
@@ -148,3 +160,21 @@ def status_sleep(message: str, seconds: float):
             break
         set_status(f"{message} ({remaining}s)")
         time.sleep(1)
+
+
+def cancel_open_orders() -> None:
+    """Placeholder to cancel all outstanding orders."""
+    logging.info("CANCEL_OPEN_ORDERS")
+
+
+def close_position() -> None:
+    """Placeholder to close any open position."""
+    logging.info("CLOSE_POSITION")
+
+
+def update_trade_params(sl_mult: float, tp_mult: float) -> None:
+    """Update stop-loss and take-profit multipliers."""
+    global global_SL_multiplier, global_TP_multiplier
+    with state_lock:
+        global_SL_multiplier = sl_mult
+        global_TP_multiplier = tp_mult
