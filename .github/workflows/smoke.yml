@@ -16,8 +16,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install pandas numpy
           pip install torch --extra-index-url https://download.pytorch.org/whl/cpu
+          pip install pre-commit
       - name: Lint and test
         run: |
-          ruff check .
-          black . --check
+          pre-commit run --all-files
           pytest -q

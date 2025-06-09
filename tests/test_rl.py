@@ -23,13 +23,13 @@ def load_rl_module():
     stub.Dataset = Dataset
     stub.random = _random
 
-    def status_sleep(msg: str, t: float) -> None:
+    def status_sleep(comp: str, msg: str, t: float) -> None:
         pass
 
     stub.status_sleep = status_sleep
 
-    def set_status(msg: str) -> None:
-        stub.global_status_message = msg
+    def set_status(comp: str, msg: str | None = None) -> None:
+        stub.global_status_message = f"[{comp}] {msg}" if msg is not None else comp
 
     def get_status() -> str:
         return stub.global_status_message
