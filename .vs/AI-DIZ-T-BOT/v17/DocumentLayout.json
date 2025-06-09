@@ -7,10 +7,6 @@
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:run_artibot.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\John\\Documents\\GitHub\\AI-DIZ-T-BOT\\bot.log||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:bot.log||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\John\\Documents\\GitHub\\AI-DIZ-T-BOT\\artibot\\model.py||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:artibot\\model.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
@@ -70,7 +66,7 @@
               "RelativeDocumentMoniker": "run_artibot.py",
               "ToolTip": "C:\\Users\\John\\Documents\\GitHub\\AI-DIZ-T-BOT\\run_artibot.py",
               "RelativeToolTip": "run_artibot.py",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAaAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABoAAAAAAAAAAAAAAA==",
               "Icon": "00000000-0000-0000-0000-000000000000.000000|iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAHfSURBVDhPpZCxaxNhGMZ/9zVJaUuDUlq1FBWLZBFTCXo4BFyU1qGKi4OkIHhkzF/g0KF00M2lR9YUdDDQQVAcJILoQUd1UNRmkhoRm8RL777v7nOoCZd4AcEH3uF5nvd73vd74X\u002BgtTai3LIsHeWDEEJct217a1DvwbIs7bpubFUqFW3b9naxWLwWfSOipAvHcfqqi0KhkMtms3cty1rsaomeG4FpmoMSANVqlXQ6nQMWgacMC4hOBchduEj\u002ByjKjScGh8SS1Wq3nxQZEN3j1eY/Vrfe8rTeQvsf89ARLS1cz5XIZ/uUGXxptQiVRUhJIybudXaZn52a7vbEBpmkyNb/A69YM9W8tDEJOTI2hpI\u002BSkvOZH2f13sNAB\u002B07sV9wHIdH9Unquz9RvoeUPtL3UFISKkky\u002BAT7HwTi6FpsgGma3N9\u002Bg5I\u002BKaFZyU8wOpJChwHnjiuE9wKCXyC/zsQGOI7DeELjtiUPbgky6Wd/HA3KBelC4AIpNfQGl88cQ0mfI5PugRhKkM2DUk0INYwtPI/dAGAlf4rbl06T6DyBVgeCABJzYPhwcm0V8ICNvwJKpVIf37h3IxSyKVAuBMDIYQAMw1jvaxwGrYNl3Xq5o79vat3Y3Nedj4\u002B11je7/m\u002BXOuyzFtDhUgAAAABJRU5ErkJggg==",
               "WhenOpened": "2025-06-06T17:08:27.769Z",
               "IsPinned": true,
@@ -82,20 +78,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "bot.log",
-              "DocumentMoniker": "C:\\Users\\John\\Documents\\GitHub\\AI-DIZ-T-BOT\\bot.log",
-              "RelativeDocumentMoniker": "bot.log",
-              "ToolTip": "C:\\Users\\John\\Documents\\GitHub\\AI-DIZ-T-BOT\\bot.log",
-              "RelativeToolTip": "bot.log",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2025-06-08T23:40:10.123Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 6,
               "Title": "training.py",
               "DocumentMoniker": "C:\\Users\\John\\Documents\\GitHub\\AI-DIZ-T-BOT\\artibot\\training.py",
               "RelativeDocumentMoniker": "artibot\\training.py",
@@ -107,7 +90,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 7,
               "Title": "gui.py",
               "DocumentMoniker": "C:\\Users\\John\\Documents\\GitHub\\AI-DIZ-T-BOT\\artibot\\gui.py",
               "RelativeDocumentMoniker": "artibot\\gui.py",
@@ -119,7 +102,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
               "Title": "model.py",
               "DocumentMoniker": "C:\\Users\\John\\Documents\\GitHub\\AI-DIZ-T-BOT\\artibot\\model.py",
               "RelativeDocumentMoniker": "artibot\\model.py",
@@ -131,7 +114,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 8,
               "Title": "master_config.json",
               "DocumentMoniker": "C:\\Users\\John\\Documents\\GitHub\\AI-DIZ-T-BOT\\master_config.json",
               "RelativeDocumentMoniker": "master_config.json",
@@ -143,7 +126,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 5,
               "Title": "environment.py",
               "DocumentMoniker": "C:\\Users\\John\\Documents\\GitHub\\AI-DIZ-T-BOT\\artibot\\environment.py",
               "RelativeDocumentMoniker": "artibot\\environment.py",
@@ -155,7 +138,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 4,
               "Title": "ensemble.py",
               "DocumentMoniker": "C:\\Users\\John\\Documents\\GitHub\\AI-DIZ-T-BOT\\artibot\\ensemble.py",
               "RelativeDocumentMoniker": "artibot\\ensemble.py",
@@ -167,7 +150,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 2,
               "Title": "bot_app.py",
               "DocumentMoniker": "C:\\Users\\John\\Documents\\GitHub\\AI-DIZ-T-BOT\\artibot\\bot_app.py",
               "RelativeDocumentMoniker": "artibot\\bot_app.py",
@@ -179,7 +162,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 9,
               "Title": "old_ARTIBOT.py",
               "DocumentMoniker": "C:\\Users\\John\\Documents\\GitHub\\AI-DIZ-T-BOT\\old_ARTIBOT.py",
               "RelativeDocumentMoniker": "old_ARTIBOT.py",
@@ -191,7 +174,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 10,
               "Title": "functional.py",
               "DocumentMoniker": "C:\\Users\\John\\anaconda3\\Lib\\site-packages\\torch\\nn\\functional.py",
               "RelativeDocumentMoniker": "..\\..\\..\\anaconda3\\Lib\\site-packages\\torch\\nn\\functional.py",
@@ -203,7 +186,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 3,
               "Title": "dataset.py",
               "DocumentMoniker": "C:\\Users\\John\\Documents\\GitHub\\AI-DIZ-T-BOT\\artibot\\dataset.py",
               "RelativeDocumentMoniker": "artibot\\dataset.py",
@@ -215,7 +198,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 11,
               "Title": "transformer.py",
               "DocumentMoniker": "C:\\Users\\John\\anaconda3\\Lib\\site-packages\\torch\\nn\\modules\\transformer.py",
               "RelativeDocumentMoniker": "..\\..\\..\\anaconda3\\Lib\\site-packages\\torch\\nn\\modules\\transformer.py",

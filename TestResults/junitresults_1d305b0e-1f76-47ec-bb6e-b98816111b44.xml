@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="22" time="3.152" timestamp="2025-06-09T01:09:44.630444" hostname="Office3_2025"><testcase classname="tests.test_attention_entropy" name="test_attention_entropy_random" file="tests\test_attention_entropy.py" line="8" time="0.004"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_attention_entropy" name="test_attention_entropy_zero" file="tests\test_attention_entropy.py" line="4" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_attention_integration" name="test_attention_integration" file="tests\test_attention_integration.py" line="5" time="0.012"><failure message="assert 2.147367477416992 &lt;= 2.0794415416798357&#10; +  where 2.0794415416798357 = &lt;built-in function log&gt;(8)&#10; +    where &lt;built-in function log&gt; = math.log&#10; +    and   8 = &lt;built-in method size of Tensor object at 0x0000025E3D064AA0&gt;(-1)&#10; +      where &lt;built-in method size of Tensor object at 0x0000025E3D064AA0&gt; = tensor([0.1081, 0.1419, 0.1491, 0.1317, 0.1494, 0.1374, 0.1342, 0.1185],\n       grad_fn=&lt;MeanBackward1&gt;).size">def test_attention_integration():
+        m = model.TradingTransformer()
+        x = torch.randn(2, 8, m.input_dim)
+        _ = m(x)
+        block = m.transformer_encoder.layers[0].self_attn
+        _, attn_weights = block(x, x, x, need_weights=True)
+        p = attn_weights.mean(dim=(0, 1))
+        ent = utils.attention_entropy(p)
+&gt;       assert 1.0 &lt;= ent &lt;= math.log(p.size(-1))
+E       assert 2.147367477416992 &lt;= 2.0794415416798357
+E        +  where 2.0794415416798357 = &lt;built-in function log&gt;(8)
+E        +    where &lt;built-in function log&gt; = math.log
+E        +    and   8 = &lt;built-in method size of Tensor object at 0x0000025E3D064AA0&gt;(-1)
+E        +      where &lt;built-in method size of Tensor object at 0x0000025E3D064AA0&gt; = tensor([0.1081, 0.1419, 0.1491, 0.1317, 0.1494, 0.1374, 0.1342, 0.1185],\n       grad_fn=&lt;MeanBackward1&gt;).size
+
+tests\test_attention_integration.py:14: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_attention" name="test_attention_entropy_range" file="tests\test_attention.py" line="4" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_backtest" name="test_robust_backtest_simple" file="tests\test_backtest.py" line="44" time="0.008"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_dataset" name="test_hourlydataset_basic" file="tests\test_dataset.py" line="85" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_dataset" name="test_load_csv_hourly_missing" file="tests\test_dataset.py" line="63" time="0.003"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  root:dataset.py:51 CSV file 'C:\Users\John\AppData\Local\Temp\pytest-of-John\pytest-5\test_load_csv_hourly_missing0\nope.csv' not found.
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_dataset" name="test_load_csv_hourly_parse" file="tests\test_dataset.py" line="68" time="0.005"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_entropy_logits_vs_probs" name="test_entropy_logits_vs_probs" file="tests\test_entropy_logits_vs_probs.py" line="4" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_entropy_range" name="test_entropy_range_logits" file="tests\test_entropy_range.py" line="4" time="0.001"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_filters" name="test_reject_if_risky" file="tests\test_filters.py" line="3" time="0.000"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_metrics" name="test_compute_days_in_profit" file="tests\test_metrics.py" line="46" time="0.000"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_metrics" name="test_compute_yearly_stats_basic" file="tests\test_metrics.py" line="60" time="0.006"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_metrics" name="test_inactivity_exponential_penalty" file="tests\test_metrics.py" line="36" time="0.000"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_risk_gate_integration" name="test_gate_triggered" file="tests\test_risk_gate_integration.py" line="3" time="0.000"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_rl" name="test_apply_action_custom_space" file="tests\test_rl.py" line="108" time="0.610"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_rl" name="test_find_nearest_action" file="tests\test_rl.py" line="69" time="0.007"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_rl" name="test_no_warnings" file="tests\test_rl.py" line="147" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_rl" name="test_pick_action_deterministic" file="tests\test_rl.py" line="77" time="0.006"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_scaling" name="test_adaptive_scaler" file="tests\test_scaling.py" line="29" time="0.005"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_selection" name="test_choose_best" file="tests\test_selection.py" line="3" time="0.000"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="tests.test_smoke" name="test_end_to_end_smoke" file="tests\test_smoke.py" line="13" time="2.191"><system-out>--------------------------------- Captured Log ---------------------------------
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.1670656204223633, 'max_prob': 0.05418102443218231}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.1767899990081787, 'max_prob': 0.04930064454674721}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.172593355178833, 'max_prob': 0.052206460386514664}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.189671516418457, 'max_prob': 0.05788196623325348}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.1776463985443115, 'max_prob': 0.05965159088373184}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.1719465255737305, 'max_prob': 0.06623560935258865}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.162508726119995, 'max_prob': 0.05783168971538544}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.1726133823394775, 'max_prob': 0.06033023074269295}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.159407615661621, 'max_prob': 0.05987939238548279}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.1817057132720947, 'max_prob': 0.05794622749090195}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.1671972274780273, 'max_prob': 0.060818977653980255}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.1700127124786377, 'max_prob': 0.05901134014129639}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.168943166732788, 'max_prob': 0.05771504342556}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.1673247814178467, 'max_prob': 0.0672101303935051}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.1729462146759033, 'max_prob': 0.05408153682947159}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.1667721271514893, 'max_prob': 0.06363096833229065}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.167137384414673, 'max_prob': 0.054736971855163574}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.1718266010284424, 'max_prob': 0.04869452491402626}
+INFO     artibot.model:model.py:78 {'event': 'ATTN_STATS', 'entropy': 3.1683130264282227, 'max_prob': 0.05321713164448738}
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>
