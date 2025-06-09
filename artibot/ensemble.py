@@ -286,6 +286,9 @@ class EnsembleModel:
             if G.global_attention_entropy_history
             else 0.0
         )
+        if attn_entropy < 0.5:
+            logging.warning("Attention entropy low: %.2f", attn_entropy)
+            G.set_status("Warning: attention entropy < 0.5")
         if cur_reward > self.best_composite_reward:
             if reject_if_risky(G.global_sharpe, G.global_max_drawdown, attn_entropy):
                 self.rejection_count_this_epoch += 1
