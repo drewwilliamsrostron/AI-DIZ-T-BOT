@@ -34,6 +34,8 @@ def csv_training_thread(
     import torch
     from torch.utils.data import DataLoader, random_split
 
+    torch.autograd.set_detect_anomaly(True)
+
     # training history lists live on the globals module
 
     try:
