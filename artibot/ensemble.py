@@ -178,7 +178,9 @@ class EnsembleModel:
                     else nullcontext()
                 )
 
+
             batch_loss = 0.0
+
             for idx_m, (model, opt_) in enumerate(zip(self.models, self.optimizers)):
                 opt_.zero_grad()
                 with ctx:
