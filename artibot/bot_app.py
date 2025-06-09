@@ -48,6 +48,37 @@ from .training import (
 CONFIG = load_master_config()
 
 
+def weight_selector_dialog(config: dict, tk_module=tk):
+    """Return checkbox state and selected weight path from a small dialog."""
+    weights_dir = os.path.abspath(os.path.expanduser(config.get("WEIGHTS_DIR", ".")))
+    try:
+        files = sorted(f for f in os.listdir(weights_dir) if f.endswith(".pth"))
+    except OSError:
+        files = []
+    use_default = bool(config.get("USE_PREV_WEIGHTS", True))
+    root = tk_module.Tk()
+    root.title("Weight Selection")
+    use_var = tk_module.BooleanVar(value=use_default)
+    tk_module.Checkbutton(
+        root, text="Load previous best weights", variable=use_var
+    ).pack()
+    file_var = tk_module.StringVar(value=files[0] if files else "")
+    tk_module.OptionMenu(root, file_var, *files).pack()
+
+    result: dict[str, object] = {}
+
+    def cont() -> None:
+        result["use"] = use_var.get()
+        sel = file_var.get()
+        result["path"] = os.path.join(weights_dir, sel) if sel else None
+        root.quit()
+        root.destroy()
+
+    tk_module.Button(root, text="Continue", command=cont).pack()
+    root.mainloop()
+    return bool(result.get("use", use_default)), result.get("path")
+
+
 def run_bot(max_epochs: int | None = None) -> None:
     """Launch all threads and the Tkinter GUI."""
 
@@ -83,13 +114,22 @@ def run_bot(max_epochs: int | None = None) -> None:
         G.global_status_message = "CSV load failed"
         return
 
+    weights_dir = os.path.abspath(os.path.expanduser(config.get("WEIGHTS_DIR", ".")))
+    os.makedirs(weights_dir, exist_ok=True)
+    weights_path = os.path.join(weights_dir, "best_model_weights.pth")
+
     use_prev_weights = bool(config.get("USE_PREV_WEIGHTS", True))
-    if os.path.isfile("best_model_weights.pth"):
+    if config.get("SHOW_WEIGHT_SELECTOR"):
+        use_prev_weights, sel = weight_selector_dialog(config)
+        if sel:
+            weights_path = sel
+
+    if os.path.isfile(weights_path):
         if not use_prev_weights:
             ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup = f"best_model_weights_backup_{ts}.pth"
+            backup = os.path.join(weights_dir, f"best_model_weights_backup_{ts}.pth")
             try:
-                os.rename("best_model_weights.pth", backup)
+                os.rename(weights_path, backup)
                 logging.info("%s", json.dumps({"event": "backup", "file": backup}))
             except OSError:
                 logging.warning("Failed to backup existing weights")
@@ -102,16 +142,26 @@ def run_bot(max_epochs: int | None = None) -> None:
 
     device = get_device()
 
+
     ensemble = EnsembleModel(device=device, n_models=2, lr=3e-4, weight_decay=1e-4)
     from .validation import schedule_monthly_validation
 
     schedule_monthly_validation(csv_path, config)
+
     connector = PhemexConnector(config)
     stop_event = threading.Event()
 
     train_th = threading.Thread(
         target=csv_training_thread,
-        args=(ensemble, data, stop_event, config, use_prev_weights, max_epochs),
+        args=(
+            ensemble,
+            data,
+            stop_event,
+            config,
+            use_prev_weights,
+            max_epochs,
+            weights_path,
+        ),
         kwargs={"debug_anomaly": __debug__},
         daemon=True,
     )
@@ -160,7 +210,7 @@ def run_bot(max_epochs: int | None = None) -> None:
             },
             f,
         )
-    ensemble.save_best_weights("best_model_weights.pth")
+    ensemble.save_best_weights(weights_path)
     save_checkpoint()
 
 

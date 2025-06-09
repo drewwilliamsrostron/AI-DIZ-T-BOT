@@ -118,11 +118,14 @@ state_lock = threading.Lock()
 model_lock = threading.Lock()
 
 
-def set_status(msg: str) -> None:
+def set_status(component: str, msg: str | None = None) -> None:
     """Thread-safe update of ``global_status_message``."""
     with state_lock:
         global global_status_message
-        global_status_message = msg
+        if msg is None:
+            global_status_message = component
+        else:
+            global_status_message = f"[{component}] {msg}"
 
 
 def get_status() -> str:
@@ -141,12 +144,12 @@ def inc_epoch() -> None:
 ###############################################################################
 # Helper used by worker threads to show countdowns while sleeping
 ###############################################################################
-def status_sleep(message: str, seconds: float):
+def status_sleep(component: str, message: str, seconds: float):
     """Sleep in 1s increments and update ``global_status_message``."""
     end = time.monotonic() + seconds
     while True:
         remaining = int(end - time.monotonic())
         if remaining <= 0:
             break
-        set_status(f"{message} ({remaining}s)")
+        set_status(component, f"{message} ({remaining}s)")
         time.sleep(1)
