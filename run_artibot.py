@@ -5,7 +5,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
 
-logging.basicConfig(level=logging.WARNING, format="%(message)s")
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 root = logging.getLogger()
 fh = RotatingFileHandler("bot.log", maxBytes=5_000_000, backupCount=2)
 fh.setLevel(logging.INFO)
