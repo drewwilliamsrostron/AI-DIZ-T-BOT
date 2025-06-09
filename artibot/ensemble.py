@@ -433,25 +433,21 @@ class EnsembleModel:
             )
             G.global_best_yearly_stats_table = best_table
 
-            mean_ent = (
-                float(torch.tensor(self.entropies).mean()) if self.entropies else 0.0
-            )
-            mean_mp = (
-                float(torch.tensor(self.max_probs).mean()) if self.max_probs else 0.0
-            )
-            logging.info(
-                {
-                    "event": "EPOCH_SUMMARY",
-                    "epoch": self.train_steps,
-                    "mean_entropy": mean_ent,
-                    "mean_max_prob": mean_mp,
-                    "rejections": self.rejection_count_this_epoch,
-                }
-            )
-            self.entropies.clear()
-            self.max_probs.clear()
-            self.rejection_count_this_epoch = 0
-            return train_loss, val_loss
+        mean_ent = float(torch.tensor(self.entropies).mean()) if self.entropies else 0.0
+        mean_mp = float(torch.tensor(self.max_probs).mean()) if self.max_probs else 0.0
+        logging.info(
+            {
+                "event": "EPOCH_SUMMARY",
+                "epoch": self.train_steps,
+                "mean_entropy": mean_ent,
+                "mean_max_prob": mean_mp,
+                "rejections": self.rejection_count_this_epoch,
+            }
+        )
+        self.entropies.clear()
+        self.max_probs.clear()
+        self.rejection_count_this_epoch = 0
+        return train_loss, val_loss
 
     def evaluate_val_loss(self, dl_val: DataLoader) -> float:
         """Return the average loss on ``dl_val`` across the ensemble."""
