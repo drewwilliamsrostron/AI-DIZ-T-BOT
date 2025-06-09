@@ -109,3 +109,32 @@ def compute_days_in_profit(equity_curve, init_balance):
                 else:
                     total_s += f * dt
     return total_s / 86400.0
+
+
+###############################################################################
+# compute_trade_metrics
+###############################################################################
+
+
+def compute_trade_metrics(trades):
+    """Return win rate, profit factor and average duration for given trades."""
+    if not trades:
+        return {"win_rate": 0.0, "profit_factor": 0.0, "avg_duration": 0.0}
+    returns = [t.get("return", 0.0) for t in trades]
+    wins = [r for r in returns if r > 0]
+    losses = [-r for r in returns if r < 0]
+    win_rate = len(wins) / len(returns)
+    profit = float(np.sum(wins))
+    loss = float(np.sum(losses))
+    if loss > 1e-12:
+        profit_factor = profit / loss
+    elif profit > 0:
+        profit_factor = float("inf")
+    else:
+        profit_factor = 0.0
+    avg_duration = float(np.mean([t.get("duration", 0.0) for t in trades]))
+    return {
+        "win_rate": win_rate,
+        "profit_factor": profit_factor,
+        "avg_duration": avg_duration,
+    }

@@ -7,7 +7,11 @@ import talib
 import torch
 
 import artibot.globals as G
-from .metrics import inactivity_exponential_penalty, compute_days_in_profit
+from .metrics import (
+    inactivity_exponential_penalty,
+    compute_days_in_profit,
+    compute_trade_metrics,
+)
 
 
 def compute_indicators(data_full, hp):
@@ -359,6 +363,11 @@ def robust_backtest(ensemble, data_full, indicators=None):
         dd = (eqdf["balance"] - rollmax) / rollmax
         mdd = dd.min()
 
+    metrics = compute_trade_metrics(trades)
+    win_rate = metrics["win_rate"]
+    profit_factor = metrics["profit_factor"]
+    avg_duration = metrics["avg_duration"]
+
     net_score = net_pct / 100.0
     shr_score = sharpe
     trade_count = len(trades)
@@ -385,4 +394,7 @@ def robust_backtest(ensemble, data_full, indicators=None):
         "inactivity_penalty": tot_inact_pen,
         "days_without_trading": 0.0,
         "days_in_profit": days_in_pf,
+        "win_rate": win_rate,
+        "profit_factor": profit_factor,
+        "avg_trade_duration": avg_duration,
     }
