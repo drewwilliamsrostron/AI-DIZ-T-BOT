@@ -11,6 +11,7 @@ meta-agent updates. Worker threads communicate short messages via
 import time
 import threading
 import queue
+import collections
 import matplotlib
 
 matplotlib.use("TkAgg")
@@ -55,6 +56,8 @@ global_num_trades = 0
 global_win_rate = 0.0
 global_profit_factor = 0.0
 global_avg_trade_duration = 0.0
+global_avg_win = 0.0
+global_avg_loss = 0.0
 global_inactivity_penalty = None
 global_composite_reward = None
 global_days_without_trading = None
@@ -72,6 +75,8 @@ global_best_num_trades = 0
 global_best_win_rate = 0.0
 global_best_profit_factor = 0.0
 global_best_avg_trade_duration = 0.0
+global_best_avg_win = 0.0
+global_best_avg_loss = 0.0
 global_best_inactivity_penalty = None
 global_best_composite_reward = None
 global_best_days_in_profit = None
@@ -107,11 +112,24 @@ global_attention_weights_history = []
 global_attention_entropy_history = []
 global_phemex_data = []
 global_days_in_profit = 0.0
+global_validation_summary = {}
+nuclear_key_enabled = True
 live_bars_queue = queue.Queue()
+live_sharpe_history = collections.deque(maxlen=1000)
+live_drawdown_history = collections.deque(maxlen=1000)
+trading_paused = False
+
+# gating flag
+nuclear_key_enabled = False
 
 # Simple status indicator updated by threads
-global_status_primary = "Initializing"
-global_status_secondary = ""
+
+global_primary_status = "Initializing..."
+global_secondary_status = ""
+
+# Flag toggled by GUI when user enables live trading
+live_trading_enabled = False
+
 
 # Protect shared state across threads
 state_lock = threading.Lock()
@@ -119,24 +137,35 @@ state_lock = threading.Lock()
 model_lock = threading.Lock()
 
 
-def set_status(primary: str, secondary: str) -> None:
-    """Thread-safe update of status fields."""
+
+
+def set_status(msg: str, secondary: str | None = None) -> None:
+    """Thread-safe update of status messages."""
     with state_lock:
-        global global_status_primary, global_status_secondary
-        global_status_primary = primary
-        global_status_secondary = secondary
+        global global_primary_status, global_secondary_status
+        global_primary_status = msg
+        if secondary is not None:
+            global_secondary_status = secondary
+
 
 
 def get_status() -> str:
-    """Return the combined status string in a thread-safe manner."""
+    """Return the primary status message in a thread-safe manner."""
     with state_lock:
-        return f"{global_status_primary} {global_status_secondary}".strip()
+        return global_primary_status
 
 
 def get_status_full() -> tuple[str, str]:
-    """Return both status fields."""
+    """Return ``(primary, secondary)`` status messages."""
     with state_lock:
-        return global_status_primary, global_status_secondary
+        return global_primary_status, global_secondary_status
+
+
+def get_status_full() -> str:
+    """Return the status message along with the current epoch count."""
+    with state_lock:
+        return f"{global_status_message} | epoch {epoch_count}"
+
 
 
 def inc_epoch() -> None:
@@ -146,15 +175,52 @@ def inc_epoch() -> None:
         epoch_count += 1
 
 
+def set_nuclear_key(enabled: bool) -> None:
+    """Enable or disable the nuclear key trading gate."""
+    global nuclear_key_enabled
+    with state_lock:
+        nuclear_key_enabled = enabled
+
+
+def is_nuclear_key_enabled() -> bool:
+    """Return ``True`` when the nuclear key gate is active."""
+    with state_lock:
+        return nuclear_key_enabled
+
+
 ###############################################################################
 # Helper used by worker threads to show countdowns while sleeping
 ###############################################################################
+
 def status_sleep(primary: str, secondary: str, seconds: float) -> None:
     """Sleep in 1s increments and update status fields."""
+
+
+
     end = time.monotonic() + seconds
     while True:
         remaining = int(end - time.monotonic())
         if remaining <= 0:
             break
+
         set_status(primary, f"{secondary} ({remaining}s)".strip())
+
         time.sleep(1)
+
+
+def cancel_open_orders() -> None:
+    """Placeholder to cancel all outstanding orders."""
+    logging.info("CANCEL_OPEN_ORDERS")
+
+
+def close_position() -> None:
+    """Placeholder to close any open position."""
+    logging.info("CLOSE_POSITION")
+
+
+def update_trade_params(sl_mult: float, tp_mult: float) -> None:
+    """Update stop-loss and take-profit multipliers."""
+    global global_SL_multiplier, global_TP_multiplier
+    with state_lock:
+        global_SL_multiplier = sl_mult
+        global_TP_multiplier = tp_mult

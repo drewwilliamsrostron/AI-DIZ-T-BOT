@@ -23,14 +23,18 @@ def load_rl_module():
     stub.Dataset = Dataset
     stub.random = _random
 
+
     def status_sleep(primary: str, secondary: str, t: float) -> None:
+
         pass
 
     stub.status_sleep = status_sleep
 
+
     def set_status(primary: str, secondary: str) -> None:
         stub.global_status_primary = primary
         stub.global_status_secondary = secondary
+
 
     def get_status_full() -> tuple[str, str]:
         return stub.global_status_primary, stub.global_status_secondary

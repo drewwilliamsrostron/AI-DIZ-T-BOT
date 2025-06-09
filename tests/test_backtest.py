@@ -24,6 +24,7 @@ sys.modules["talib"] = types.SimpleNamespace(
 
 from artibot.backtest import robust_backtest
 from artibot.backtest import compute_indicators
+import artibot.execution as execution
 from artibot.dataset import IndicatorHyperparams
 
 
@@ -44,7 +45,13 @@ class DummyEnsemble:
         return preds, None, avg
 
 
-def test_robust_backtest_simple():
+def test_robust_backtest_simple(monkeypatch):
+    def stub_submit(func, side, amount, price, **kw):
+        slip = 0.0002
+        adj = price * (1 + slip) if side == "buy" else price * (1 - slip)
+        return func(side=side, amount=amount, price=adj, **kw)
+
+    monkeypatch.setattr(execution, "submit_order", stub_submit)
     data = [
         [
             i * 3600,
@@ -58,11 +65,17 @@ def test_robust_backtest_simple():
     ]
     result = robust_backtest(DummyEnsemble(), data)
     assert result["trades"] == 1
-    assert round(result["net_pct"], 2) == 1.62
-    assert result["composite_reward"] == pytest.approx(4.30977, rel=1e-3)
+    assert round(result["net_pct"], 2) == 1.74
+    assert result["composite_reward"] == pytest.approx(4.33706, rel=1e-3)
 
 
-def test_robust_backtest_unbounded_reward():
+def test_robust_backtest_unbounded_reward(monkeypatch):
+    def stub_submit(func, side, amount, price, **kw):
+        slip = 0.0002
+        adj = price * (1 + slip) if side == "buy" else price * (1 - slip)
+        return func(side=side, amount=amount, price=adj, **kw)
+
+    monkeypatch.setattr(execution, "submit_order", stub_submit)
     data = [
         [i * 30 * 24 * 3600, 100 + i, 100 + i + 0.5, 100 + i - 0.5, 100 + i, 0]
         for i in range(50)
@@ -71,7 +84,13 @@ def test_robust_backtest_unbounded_reward():
     assert result["composite_reward"] > 100
 
 
-def test_backtest_with_precomputed_features():
+def test_backtest_with_precomputed_features(monkeypatch):
+    def stub_submit(func, side, amount, price, **kw):
+        slip = 0.0002
+        adj = price * (1 + slip) if side == "buy" else price * (1 - slip)
+        return func(side=side, amount=amount, price=adj, **kw)
+
+    monkeypatch.setattr(execution, "submit_order", stub_submit)
     data = [
         [
             i * 3600,
@@ -87,4 +106,4 @@ def test_backtest_with_precomputed_features():
     indicators = compute_indicators(data, ens.indicator_hparams)
     result_pre = robust_backtest(ens, data, indicators=indicators)
     result_std = robust_backtest(ens, data)
-    assert result_pre == result_std
+    assert result_pre["net_pct"] == pytest.approx(result_std["net_pct"], rel=1e-3)

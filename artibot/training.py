@@ -22,6 +22,7 @@ def csv_training_thread(
     config,
     use_prev_weights=True,
     max_epochs: int | None = None,
+    weights_path: str = "best_model_weights.pth",
     *,
     debug_anomaly: bool = False,
 ):
@@ -51,9 +52,10 @@ def csv_training_thread(
         )
         if len(ds_full) < 10:
             logging.warning("Not enough data in CSV => exiting.")
+            G.set_status("Training", "CSV data insufficient")
             return
         if use_prev_weights:
-            ensemble.load_best_weights("best_model_weights.pth", data_full=train_data)
+            ensemble.load_best_weights(weights_path, data_full=train_data)
         n_tot = len(ds_full)
         n_tr = int(n_tot * 0.9)
         n_val = n_tot - n_tr
@@ -90,7 +92,9 @@ def csv_training_thread(
                 break
             ensemble.train_steps += 1
             epochs += 1
+
             G.set_status(f"Training step {ensemble.train_steps}", "")
+
             logging.info(
                 "START_EPOCH",
                 extra={"epoch": ensemble.train_steps},
@@ -162,6 +166,7 @@ def csv_training_thread(
                         "attn_entropy": entropy,
                     },
                 )
+                G.set_status("Risk", "Epoch rejected")
                 G.inc_epoch()
                 continue
 
@@ -232,7 +237,9 @@ def csv_training_thread(
                             train_data.append([ts, o_, h_, l_, c_, v_])
                             changed = True
                 if changed:
-                    G.set_status("Adapting to live data", "")
+
+                    G.set_status("Training", "Adapting to live data")
+
                     ds_updated = HourlyDataset(
                         train_data,
                         seq_len=24,
@@ -273,12 +280,14 @@ def csv_training_thread(
                         )
 
             if ensemble.train_steps % 5 == 0 and ensemble.best_state_dicts:
-                ensemble.save_best_weights("best_model_weights.pth")
+                ensemble.save_best_weights(weights_path)
 
     except Exception as e:
         traceback.print_exc()
 
+
         G.set_status(f"Training error: {e}", "")
+
 
         stop_event.set()
 
@@ -289,7 +298,9 @@ def phemex_live_thread(connector, stop_event, poll_interval: float) -> None:
 
     while not stop_event.is_set():
         try:
-            G.set_status("Fetching live data", "")
+
+            G.set_status("Phemex", "Fetching live data")
+
             bars = connector.fetch_latest_bars(limit=100)
             if bars:
                 G.global_phemex_data = bars
@@ -298,9 +309,11 @@ def phemex_live_thread(connector, stop_event, poll_interval: float) -> None:
 
         except Exception as e:
             traceback.print_exc()
+
             G.set_status(f"Fetch error: {e}", "")
             stop_event.set()
         G.status_sleep("Waiting before next fetch", "", poll_interval)
+
 
 
 ###############################################################################
@@ -343,6 +356,32 @@ class PhemexConnector:
         except Exception as e:
             logging.error(f"Error fetching bars: {e}")
             return []
+
+    def create_order(
+        self,
+        side: str,
+        amount: float,
+        price: float,
+        order_type: str = "limit",
+    ):
+        """Submit an order with :mod:`ccxt` applying slippage."""
+        from .execution import submit_order
+
+        def _place(**kwargs):
+            try:
+                return self.exchange.create_order(
+                    self.symbol,
+                    order_type,
+                    side,
+                    kwargs["amount"],
+                    kwargs["price"],
+                    {"type": "swap"},
+                )
+            except Exception as exc:
+                logging.error("Order error: %s", exc)
+                return None
+
+        return submit_order(_place, side, amount, price)
 
 
 def generate_candidates(symbol):
