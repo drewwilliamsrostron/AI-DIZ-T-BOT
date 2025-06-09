@@ -7,6 +7,7 @@ import logging
 
 import re
 import sys
+import json
 
 from .dataset import HourlyDataset
 from .ensemble import reject_if_risky
