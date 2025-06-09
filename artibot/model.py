@@ -65,13 +65,17 @@ class TradingModel(nn.Module):
         x = self.pos_encoder(x)
         # inspect attention from the first encoder layer
         q = k = v = x
-        attn_output, attn_weights = self.transformer_encoder.layers[0].self_attn(
-            q,
-            k,
-            v,
-            need_weights=True,
-            average_attn_weights=False,
-        )
+        # The first layer's attention weights are only used for logging.
+        # Wrap the call in ``no_grad`` so the extra forward pass does not
+        # interfere with autograd and cause version mismatches during backward.
+        with torch.no_grad():
+            attn_output, attn_weights = self.transformer_encoder.layers[0].self_attn(
+                q,
+                k,
+                v,
+                need_weights=True,
+                average_attn_weights=False,
+            )
         p = attn_weights.mean(dim=(0, 1))
         entropy = utils.attention_entropy(p)
         max_prob = p.max().item()
