@@ -124,6 +124,7 @@ nuclear_key_enabled = False
 
 global_primary_status = "Initializing..."
 global_secondary_status = ""
+global_progress_pct = 0.0
 
 # Flag toggled by GUI when user enables live trading
 live_trading_enabled = False
@@ -190,14 +191,25 @@ def status_sleep(primary: str, secondary: str, seconds: float) -> None:
     """Sleep in 1s increments and update status fields."""
 
     end = time.monotonic() + seconds
+    total = seconds
+    with state_lock:
+        global global_progress_pct
+        global_progress_pct = 0.0
     while True:
-        remaining = int(end - time.monotonic())
+        remaining = end - time.monotonic()
         if remaining <= 0:
             break
 
-        set_status(primary, f"{secondary} ({remaining}s)".strip())
+        pct = int(100 * (total - remaining) / total)
+        with state_lock:
+            global_progress_pct = pct
+
+        set_status(primary, f"{secondary} ({int(remaining)}s)".strip())
 
         time.sleep(1)
+
+    with state_lock:
+        global_progress_pct = 100
 
 
 def cancel_open_orders() -> None:

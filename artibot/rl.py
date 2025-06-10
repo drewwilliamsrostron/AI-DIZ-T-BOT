@@ -225,6 +225,7 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
         [prev_r, best_r, st_sharpe, abs(st_dd), st_trades, st_days], dtype=np.float32
     )
 
+    cycle_count = 0
     while True:
         try:
             if G.epoch_count < 1:
@@ -248,8 +249,6 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                 dtype=np.float32,
             )
 
-            G.set_status("Meta agent updating", "")
-
             a_idx, logp, val_s = agent.pick_action(state)
             with G.model_lock, torch.no_grad():
                 (
@@ -268,6 +267,12 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
             curr2 = G.global_composite_reward if G.global_composite_reward else 0.0
             rew_delta = curr2 - curr_r
             agent.update(state, a_idx, rew_delta, new_state, logp, val_s)
+
+            G.set_status(
+                "Meta agent",
+                f"Update {cycle_count}, last Δreward={rew_delta:.2f}",
+            )
+            cycle_count += 1
 
             summary = (
                 f"Meta Update => s:{state} => a_idx={a_idx}, r:{rew_delta:.2f}\n"

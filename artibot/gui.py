@@ -158,9 +158,10 @@ class TradingGUI:
         )
         self.weights_label.pack(side=tk.RIGHT, padx=5)
 
-        self.progress = ttk.Progressbar(self.footer, mode="indeterminate", length=150)
+        self.progress = ttk.Progressbar(
+            self.footer, mode="determinate", length=150, maximum=100
+        )
         self.progress.pack(side=tk.LEFT, padx=5)
-        self._progress_running = False
 
         self.pred_label = ttk.Label(
             self.info_frame, text="AI Prediction: N/A", font=("Helvetica", 12)
@@ -631,14 +632,7 @@ class TradingGUI:
         # update status line
         primary, secondary = G.get_status_full()
         self.status_var.set(f"{primary}\n{secondary}")
-        if any(k in primary.lower() for k in ["meta agent", "updating"]):
-            if not self._progress_running:
-                self.progress.start(10)
-                self._progress_running = True
-        else:
-            if self._progress_running:
-                self.progress.stop()
-                self._progress_running = False
+        self.progress["value"] = G.global_progress_pct
 
         # manage trading buttons
         if should_enable_live_trading() and not G.live_trading_enabled:
