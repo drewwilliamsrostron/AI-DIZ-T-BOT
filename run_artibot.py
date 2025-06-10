@@ -4,6 +4,8 @@
 
 import logging
 from logging.handlers import RotatingFileHandler
+import os
+import torch
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 root = logging.getLogger()
@@ -21,6 +23,8 @@ from artibot.utils import setup_logging
 if __name__ == "__main__":
     setup_logging()
     ensure_dependencies()
+    torch.set_num_threads(os.cpu_count() or 1)
+    torch.set_num_interop_threads(os.cpu_count() or 1)
     from artibot.bot_app import run_bot, CONFIG
 
     ans = input("Use LIVE API? [y/N]: ").strip().lower()
