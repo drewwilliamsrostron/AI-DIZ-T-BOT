@@ -35,8 +35,9 @@ python run_artibot.py
 
 4. On the very first run the program installs its Python dependencies automatically via `environment.ensure_dependencies()`. The GUI may sit on *Initializing…* for a few minutes while packages download—just let it finish.
 5. Optional: set `"NUM_WORKERS"` in `master_config.json` to override the number
-   of DataLoader processes. The default value is `max(1, os.cpu_count() or 1)`.
-   If NumExpr prints a warning about thread count, export
+   of DataLoader processes. On Windows the background training thread defaults to
+   `0` workers to avoid hangs—set it to `4` or `8` if epochs run extremely
+   slowly. If NumExpr prints a warning about thread count, export
    `NUMEXPR_MAX_THREADS` to the same value.
 
 
