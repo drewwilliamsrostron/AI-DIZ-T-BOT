@@ -48,6 +48,7 @@ def csv_training_thread(
     # training history lists live on the globals module
 
     try:
+        G.epoch_count = 0
         holdout_len = max(1, int(len(data) * 0.1))
         train_data = data[:-holdout_len] if len(data) > holdout_len else data
         holdout_data = data[-holdout_len:] if len(data) > holdout_len else []
@@ -81,9 +82,7 @@ def csv_training_thread(
         default_workers = os.cpu_count() or 0
         if config.get("FORCE_ZERO_WORKERS"):
             default_workers = 0
-        elif sys.platform.startswith("win") or (
-            threading.current_thread() is not threading.main_thread()
-        ):
+        elif threading.current_thread() is not threading.main_thread():
             default_workers = 0  # avoid hangs on problematic platforms
         workers = int(config.get("NUM_WORKERS", default_workers))
         dl_train = DataLoader(
@@ -124,8 +123,8 @@ def csv_training_thread(
                 holdout_res = robust_backtest(
                     ensemble, holdout_data, indicators=holdout_indicators
                 )
-                G.global_holdout_sharpe = holdout_res["sharpe"]
-                G.global_holdout_max_drawdown = holdout_res["max_drawdown"]
+                G.global_holdout_sharpe = holdout_res.get("sharpe", 0.0)
+                G.global_holdout_max_drawdown = holdout_res.get("max_drawdown", 0.0)
             else:
                 G.global_holdout_sharpe = 0.0
                 G.global_holdout_max_drawdown = 0.0
@@ -270,9 +269,7 @@ def csv_training_thread(
                         default_workers = os.cpu_count() or 0
                         if config.get("FORCE_ZERO_WORKERS"):
                             default_workers = 0
-                        elif sys.platform.startswith("win") or (
-                            threading.current_thread() is not threading.main_thread()
-                        ):
+                        elif threading.current_thread() is not threading.main_thread():
                             default_workers = 0
                         workers = int(config.get("NUM_WORKERS", default_workers))
                         dl_tr_ = DataLoader(
