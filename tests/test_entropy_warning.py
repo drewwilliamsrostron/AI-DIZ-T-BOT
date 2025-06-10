@@ -52,7 +52,7 @@ def test_entropy_warning(monkeypatch, caplog):
             logits = feat @ self.w
             return logits, SimpleNamespace(), torch.zeros(batch)
 
-    ens.models = [DummyModel()]
+    ens.models = [DummyModel().to(device)]
     ens.optimizers = [torch.optim.Adam(ens.models[0].parameters(), lr=1e-3)]
 
     ds = TensorDataset(torch.zeros(1, 24, 8), torch.zeros(1, dtype=torch.long))
