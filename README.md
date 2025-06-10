@@ -68,6 +68,7 @@ Old bot versions/             - assorted historical scripts
 
 The GUI includes a status indicator at the bottom showing what the bot is currently doing (training, fetching data, etc.). When a background thread is waiting or sleeping, the status line displays a countdown so you can see the bot is still active.
 
+All threads call `set_status(primary, secondary)` and you can read both via `get_status_full()`.
 ## Running the test-suite
 
 The repo includes lightweight tests that stub heavy dependencies so they run quickly. After installing requirements, execute:
@@ -97,6 +98,7 @@ pytest -q
 ## Advanced usage
 
 The helper modules in `artibot.utils` auto-select a CUDA device when
+Orders are sent through `execution.submit_order`, which adds a short random delay and jitter to emulate slippage.
 available and configure JSON logging.  `scripts/sweep.py` performs a small
 grid search over learning rates and TP/SL multipliers, writing the reward for
 each combination to `sweeps/results.csv`.
