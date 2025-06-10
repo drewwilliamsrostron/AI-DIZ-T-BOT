@@ -8,7 +8,7 @@ from artibot.ensemble import EnsembleModel
 
 
 def test_csv_thread_uses_cpu_count(monkeypatch):
-    monkeypatch.setattr(os, "cpu_count", lambda: 3)
+    monkeypatch.setattr(os, "cpu_count", lambda: 12)
     called = {}
 
     def fake_loader(*args, **kwargs):
@@ -35,4 +35,4 @@ def test_csv_thread_uses_cpu_count(monkeypatch):
     stop = threading.Event()
     csv_training_thread(ens, data, stop, {}, use_prev_weights=False, max_epochs=1)
 
-    assert called.get("workers") == 3
+    assert called.get("workers") == 12

@@ -80,7 +80,7 @@ def csv_training_thread(
         )
 
         pin = ensemble.device.type == "cuda"
-        default_workers = min(os.cpu_count() or 1, 8)
+        default_workers = os.cpu_count() or 1
         if config.get("FORCE_ZERO_WORKERS"):
             default_workers = 0
         elif threading.current_thread() is not threading.main_thread():
@@ -281,7 +281,7 @@ def csv_training_thread(
                         nv_ = nt_ - ntr_
                         ds_tr_, ds_val_ = random_split(ds_updated, [ntr_, nv_])
                         pin = ensemble.device.type == "cuda"
-                        default_workers = min(os.cpu_count() or 1, 8)
+                        default_workers = os.cpu_count() or 1
                         if config.get("FORCE_ZERO_WORKERS"):
                             default_workers = 0
                         elif threading.current_thread() is not threading.main_thread():
