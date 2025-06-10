@@ -148,6 +148,10 @@ def run_bot(max_epochs: int | None = None) -> None:
     logging.info(msg)
 
     ensemble = EnsembleModel(device=device, n_models=2, lr=3e-4, weight_decay=1e-4)
+    if hasattr(torch, "set_float32_matmul_precision"):
+        torch.set_float32_matmul_precision("high")
+    if hasattr(torch, "compile"):
+        ensemble.models = [torch.compile(m) for m in ensemble.models]
     from .validation import schedule_monthly_validation
 
     schedule_monthly_validation(csv_path, config)

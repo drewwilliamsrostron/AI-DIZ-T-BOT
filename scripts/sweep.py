@@ -8,6 +8,7 @@ import logging
 import threading
 import os
 import numpy as np
+import torch
 
 
 from artibot.environment import ensure_dependencies
@@ -29,6 +30,10 @@ def main() -> None:
         ensemble = EnsembleModel(
             device=get_device(), n_models=1, lr=lr, weight_decay=1e-4
         )
+        if hasattr(torch, "set_float32_matmul_precision"):
+            torch.set_float32_matmul_precision("high")
+        if hasattr(torch, "compile"):
+            ensemble.models = [torch.compile(m) for m in ensemble.models]
         import artibot.globals as G
 
         G.global_SL_multiplier = sl_m

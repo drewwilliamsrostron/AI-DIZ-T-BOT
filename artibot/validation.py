@@ -2,6 +2,7 @@
 
 import threading
 from typing import Iterable
+import torch
 
 import numpy as np
 import pandas as pd
@@ -51,6 +52,10 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
         return []
     device = get_device()
     ensemble = EnsembleModel(device=device, n_models=1, lr=3e-4, weight_decay=1e-4)
+    if hasattr(torch, "set_float32_matmul_precision"):
+        torch.set_float32_matmul_precision("high")
+    if hasattr(torch, "compile"):
+        ensemble.models = [torch.compile(m) for m in ensemble.models]
     results = []
     one_year = YEAR_HOURS
     six_years = 6 * one_year
