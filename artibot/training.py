@@ -5,6 +5,7 @@ import artibot.globals as G
 
 import logging
 import os
+import datetime
 
 import re
 import sys
@@ -107,7 +108,8 @@ def csv_training_thread(
             ensemble.train_steps += 1
             epochs += 1
 
-            G.set_status(f"Training step {ensemble.train_steps}", "")
+            progress = int(100 * ensemble.train_steps / max_epochs) if max_epochs else 0
+            G.global_progress_pct = progress
 
             logging.info(
                 "START_EPOCH",
@@ -118,6 +120,13 @@ def csv_training_thread(
             tl, vl = ensemble.train_one_epoch(
                 dl_train, dl_val, train_data, stop_event, features=train_indicators
             )
+
+            status_msg = (
+                f"Epoch {ensemble.train_steps}/{max_epochs} – loss {tl:.4f}"
+                if max_epochs
+                else f"Epoch {ensemble.train_steps} – loss {tl:.4f}"
+            )
+            G.set_status("Training", status_msg)
 
             if holdout_data:
                 holdout_res = robust_backtest(
@@ -315,13 +324,16 @@ def phemex_live_thread(connector, stop_event, poll_interval: float) -> None:
     while not stop_event.is_set():
         try:
 
-            G.set_status("Phemex", "Fetching live data")
-
             bars = connector.fetch_latest_bars(limit=100)
             if bars:
                 G.global_phemex_data = bars
 
                 G.live_bars_queue.put(bars)
+
+            G.set_status(
+                "Fetching",
+                f"{len(bars)} bars received at {datetime.datetime.now():%H:%M:%S}",
+            )
 
         except Exception as e:
             traceback.print_exc()
