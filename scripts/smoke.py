@@ -6,6 +6,7 @@ import json
 import logging
 import argparse
 import numpy as np
+import torch
 
 from artibot.environment import ensure_dependencies
 from artibot.dataset import load_csv_hourly
@@ -26,6 +27,10 @@ def main() -> None:
     ensemble = EnsembleModel(
         device=get_device(), n_models=1, lr=1e-4, weight_decay=1e-4
     )
+    if hasattr(torch, "set_float32_matmul_precision"):
+        torch.set_float32_matmul_precision("high")
+    if hasattr(torch, "compile"):
+        ensemble.models = [torch.compile(m) for m in ensemble.models]
     stop = threading.Event()
     csv_training_thread(
         ensemble,

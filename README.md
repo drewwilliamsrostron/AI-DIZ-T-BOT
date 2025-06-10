@@ -46,6 +46,10 @@ API connection.
 6. PyTorch is configured on startup to use all CPU cores for intra- and
    inter‑op parallelism via `torch.set_num_threads(os.cpu_count() or 1)` and
    `torch.set_num_interop_threads(os.cpu_count() or 1)`.
+7. When running on PyTorch ≥ 2.2 the bot sets
+   `torch.set_float32_matmul_precision("high")` and compiles each model with
+   `torch.compile`. Both calls are guarded with `hasattr` so older versions work
+   unchanged.
 
 
 ## Project structure
