@@ -52,7 +52,6 @@ def main() -> None:
             result["sharpe"],
             result["max_drawdown"],
             attn_entropy,
-            result["profit_factor"],
         ):
             continue
         rows.append(

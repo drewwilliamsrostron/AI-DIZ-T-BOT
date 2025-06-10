@@ -107,10 +107,9 @@ each combination to `sweeps/results.csv`.
 ## Risk filters & attention diagnostics
 
 Every epoch logs the Transformer attention mean and entropy. By default a model
-is rejected when Sharpe drops below **1.0**, drawdown exceeds **-30 %**, the
-attention entropy falls under **1.0** or the profit factor is under **1.0**.
-These limits can be overridden via
-`MIN_SHARPE`, `MAX_DRAWDOWN`, `MIN_ENTROPY` and `MIN_PROFIT_FACTOR` in
+is rejected when Sharpe drops below **1.0**, drawdown exceeds **-30 %**, or the
+attention entropy falls under **1.0**. These limits can be overridden via
+`MIN_SHARPE`, `MAX_DRAWDOWN` and `MIN_ENTROPY` in
 `master_config.json` to suit
 different risk appetites. The sweep script outputs the metrics and skips
 rejected rows. Visualise one batch of weights with:
