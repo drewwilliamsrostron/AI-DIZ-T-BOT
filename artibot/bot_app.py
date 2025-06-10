@@ -142,6 +142,10 @@ def run_bot(max_epochs: int | None = None) -> None:
     from .utils import get_device
 
     device = get_device()
+    msg = f"Using device: {device.type}"
+    if device.type == "cuda":
+        msg += f" ({torch.cuda.get_device_name(0)})"
+    logging.info(msg)
 
     ensemble = EnsembleModel(device=device, n_models=2, lr=3e-4, weight_decay=1e-4)
     from .validation import schedule_monthly_validation
