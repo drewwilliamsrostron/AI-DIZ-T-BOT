@@ -10,6 +10,7 @@ from tkinter import ttk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
+import logging
 from .metrics import nuclear_key_condition
 from .live_risk import update_auto_pause
 
@@ -677,6 +678,7 @@ class TradingGUI:
     def enable_live_trading(self):
         """Activate live trading after user confirmation."""
         G.live_trading_enabled = True
+        logging.info("LIVE_TRADING_ENABLED")
         G.set_status("Live trading enabled", "Use caution")
         self.nuclear_button.config(state=tk.DISABLED)
 
