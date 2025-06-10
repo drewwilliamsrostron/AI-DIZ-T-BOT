@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 import types
 import sys
 from importlib.machinery import ModuleSpec
