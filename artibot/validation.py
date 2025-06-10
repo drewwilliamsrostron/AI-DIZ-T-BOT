@@ -5,6 +5,7 @@ from typing import Iterable
 
 import numpy as np
 import pandas as pd
+import logging
 
 import artibot.globals as G
 from .backtest import robust_backtest
@@ -74,12 +75,14 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
 def gate_nuclear_key(sharpes: Iterable[float], threshold: float = 1.0) -> bool:
     """Update ``G.nuclear_key_enabled`` based on ``sharpes``."""
     mean_sharpe = float(np.mean(list(sharpes))) if sharpes else 0.0
-    G.nuclear_key_enabled = mean_sharpe >= threshold
-    return G.nuclear_key_enabled
+    enabled = mean_sharpe >= threshold
+    G.set_nuclear_key(enabled)
+    return enabled
 
 
 def validate_and_gate(csv_path: str, config: dict) -> dict:
     """Run validation and update globals."""
+    logging.info("VALIDATION_START")
     results = walk_forward_analysis(csv_path, config)
     distributions = [
         monte_carlo_sharpe(equity_returns(r.get("equity_curve", []))) for r in results
@@ -91,6 +94,7 @@ def validate_and_gate(csv_path: str, config: dict) -> dict:
         "mean_sharpe": float(np.mean(flat)) if flat else 0.0,
     }
     G.global_validation_summary = summary
+    logging.info("VALIDATION_DONE", extra=summary)
     return summary
 
 
@@ -103,6 +107,7 @@ def schedule_monthly_validation(
     # scheduling and persistence of jobs.
 
     def _run() -> None:
+        logging.info("VALIDATION_TRIGGER")
         validate_and_gate(csv_path, config)
         schedule_monthly_validation(csv_path, config, interval=interval)
 
