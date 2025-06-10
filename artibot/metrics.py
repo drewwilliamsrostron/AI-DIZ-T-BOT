@@ -3,6 +3,8 @@
 import numpy as np
 import pandas as pd
 
+DAY_SEC = 24 * 60 * 60
+
 # ruff: noqa: F403, F405
 
 
@@ -88,27 +90,55 @@ def inactivity_exponential_penalty(gap_in_secs, max_penalty=100.0):
 ###############################################################################
 # compute_days_in_profit (unchanged)
 ###############################################################################
-def compute_days_in_profit(equity_curve, init_balance):
-    """Count days equity stays above the starting balance."""
-    total_s = 0.0
+def compute_days_in_profit(
+    equity_curve,
+    init_balance,
+    *,
+    day_seconds: float = DAY_SEC,
+):
+    """Return days the equity stays above ``init_balance``.
+
+    Parameters
+    ----------
+    equity_curve : sequence[tuple[float, float]]
+        ``(timestamp, balance)`` pairs in ascending order.
+    init_balance : float
+        The starting capital level to compare against.
+    day_seconds : float, optional
+        Number of seconds that constitute one day.  Defaults to ``DAY_SEC``
+        (24 hours).  Override for non-24 hour markets.
+
+    The previous implementation used a Python loop over ``equity_curve``.
+    This version converts the input to :class:`numpy.ndarray` and relies on
+    vectorised operations for the intersection logic.  It provides identical
+    results while avoiding Python-level iteration.
+    """
+
     if len(equity_curve) < 2:
         return 0.0
-    for i in range(1, len(equity_curve)):
-        t_prev, b_prev = equity_curve[i - 1]
-        t_curr, b_curr = equity_curve[i]
-        dt = t_curr - t_prev
-        if b_prev >= init_balance and b_curr >= init_balance:
-            total_s += dt
-        elif b_prev < init_balance and b_curr < init_balance:
-            pass
-        else:
-            if b_curr != b_prev:
-                f = (init_balance - b_prev) / (b_curr - b_prev)
-                if b_prev < init_balance and b_curr >= init_balance:
-                    total_s += (1 - f) * dt
-                else:
-                    total_s += f * dt
-    return total_s / 86400.0
+
+    arr = np.asarray(equity_curve, dtype=float)
+    t = arr[:, 0]
+    b = arr[:, 1]
+
+    above = b >= init_balance
+    dt = np.diff(t)
+
+    full = dt[above[:-1] & above[1:]]
+
+    cross_up = (~above[:-1]) & above[1:]
+    cross_down = above[:-1] & (~above[1:])
+    slope = b[1:] - b[:-1]
+    frac = np.zeros_like(slope)
+    nz = slope != 0
+    frac[nz] = (init_balance - b[:-1][nz]) / slope[nz]
+    frac = np.clip(frac, 0.0, 1.0)
+
+    partial_up = dt[cross_up] * (1 - frac[cross_up])
+    partial_down = dt[cross_down] * frac[cross_down]
+
+    total_s = np.sum(full) + np.sum(partial_up) + np.sum(partial_down)
+    return float(total_s) / day_seconds
 
 
 ###############################################################################
@@ -119,8 +149,8 @@ def compute_days_in_profit(equity_curve, init_balance):
 def compute_trade_metrics(trades):
     """Return win rate, profit factor and average duration for given trades.
 
-    The function also returns the average win and loss percentages so the GUI
-    can display recent trade quality.
+    The implementation now leverages :mod:`numpy` arrays for all calculations
+    to minimise Python overhead on large trade lists.
     """
 
     if not trades:
@@ -132,23 +162,26 @@ def compute_trade_metrics(trades):
             "avg_loss": 0.0,
         }
 
-    returns = [t.get("return", 0.0) for t in trades]
-    wins = [r for r in returns if r > 0]
-    losses = [-r for r in returns if r < 0]
+    returns = np.fromiter((t.get("return", 0.0) for t in trades), dtype=float)
+    durations = np.fromiter((t.get("duration", 0.0) for t in trades), dtype=float)
 
-    win_rate = len(wins) / len(returns)
-    profit = float(np.sum(wins))
-    loss = float(np.sum(losses))
+    wins = returns[returns > 0]
+    losses = returns[returns < 0]
+
+    win_rate = float(wins.size) / float(returns.size)
+    profit = wins.sum()
+    loss = -losses.sum()
+
     if loss > 1e-12:
-        profit_factor = profit / loss
+        profit_factor = float(profit / loss)
     elif profit > 0:
         profit_factor = float("inf")
     else:
         profit_factor = 0.0
 
-    avg_duration = float(np.mean([t.get("duration", 0.0) for t in trades]))
-    avg_win = float(np.mean(wins)) if wins else 0.0
-    avg_loss = float(np.mean(losses)) if losses else 0.0
+    avg_duration = float(durations.mean()) if durations.size else 0.0
+    avg_win = float(wins.mean()) if wins.size else 0.0
+    avg_loss = float((-losses).mean()) if losses.size else 0.0
 
     return {
         "win_rate": win_rate,

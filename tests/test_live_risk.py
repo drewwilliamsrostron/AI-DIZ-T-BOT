@@ -1,5 +1,6 @@
 import artibot.globals as G
 from artibot.live_risk import update_auto_pause
+from artibot.metrics import DAY_SEC
 
 
 def test_auto_pause_low_sharpe():
@@ -9,7 +10,7 @@ def test_auto_pause_low_sharpe():
     ts = 0
     for _ in range(7):
         update_auto_pause(0.9, -0.05, ts=ts)
-        ts += 86400
+        ts += DAY_SEC
     assert G.trading_paused is True
 
 
