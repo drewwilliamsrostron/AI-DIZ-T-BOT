@@ -43,6 +43,9 @@ API connection.
    true` to disable multiprocessing. If NumExpr prints a warning about thread
    limits, the environment module sets `NUMEXPR_MAX_THREADS` to the detected CPU
    count when the variable is not already defined.
+6. PyTorch is configured on startup to use all CPU cores for intra- and
+   inter‑op parallelism via `torch.set_num_threads(os.cpu_count() or 1)` and
+   `torch.set_num_interop_threads(os.cpu_count() or 1)`.
 
 
 ## Project structure
