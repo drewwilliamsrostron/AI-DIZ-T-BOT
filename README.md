@@ -115,4 +115,20 @@ python scripts/plot_attention.py weights.npy
 ```
 Entropy should stay between 1 and 2.5; zero means collapse.
 
-<!-- TODO: document the Nuclear Key workflow and manual overrides -->
+
+## Nuclear Key workflow
+
+Live trades are gated by the *Nuclear Key*.  Trading only proceeds when the
+latest Sharpe ratio is at least **1.5**, drawdown is above **-20 %** and the
+profit factor exceeds **1.5**.  When any metric falls outside these limits the
+button labelled "Nuclear Key" turns grey and orders are blocked.
+
+The dashboard includes buttons to close or edit the active trade and to enable
+live mode.  "Close Active Trade" cancels all orders and exits the current
+position.  "Edit Trade" lets you tweak SL/TP multipliers for the next order.
+"Nuclear Key" becomes available once the gate conditions pass and requires a
+manual click to start live trading.
+
+A lightweight validation pipeline runs periodically (via
+`schedule_monthly_validation`) to recalculate the Sharpe distribution and update
+the gate state automatically.

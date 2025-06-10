@@ -11,6 +11,10 @@ os.environ.setdefault("NUCLEAR_KEY", "0")
 os.environ.setdefault("USE_WEIGHT_DIALOG", "0")
 import artibot.environment
 
+import types
+
+sys.modules.setdefault("openai", types.SimpleNamespace())
+
 
 def noop() -> None:
     pass

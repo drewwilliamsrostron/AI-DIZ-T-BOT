@@ -211,9 +211,7 @@ class MetaTransformerRL:
 def meta_control_loop(ensemble, dataset, agent, interval=5.0):
     """Periodically tweak training parameters using the meta agent."""
 
-
     G.status_sleep("Starting meta agent", "", 2.0)
-
 
     # old initial state was just 2 dims. Now we add (sharpe, dd, trades, days_in_profit)
     prev_r = G.global_composite_reward if G.global_composite_reward else 0.0
@@ -250,9 +248,7 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                 dtype=np.float32,
             )
 
-
             G.set_status("Meta agent updating", "")
-
 
             a_idx, logp, val_s = agent.pick_action(state)
             with G.model_lock, torch.no_grad():
@@ -267,9 +263,7 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                     nthr,
                 ) = agent.apply_action(a_idx)
 
-
             G.status_sleep("Meta agent sleeping", "", interval)
-
 
             curr2 = G.global_composite_reward if G.global_composite_reward else 0.0
             rew_delta = curr2 - curr_r
@@ -297,14 +291,12 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                 msg = "\n[Stagnation] Forced random reinit of primary model!\n"
                 G.global_ai_adjustments_log += msg
 
-
             G.status_sleep("Meta agent idle", "", 0.5)
 
         except Exception as e:
             G.set_status(f"Meta error: {e}", "")
             traceback.print_exc()
             G.status_sleep("Meta agent failed", "", 5.0)
-
 
 
 ###############################################################################

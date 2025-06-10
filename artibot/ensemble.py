@@ -184,14 +184,11 @@ class EnsembleModel:
         G.global_net_pct = current_result["net_pct"]
         G.global_num_trades = current_result["trades"]
 
-
         G.global_win_rate = current_result["win_rate"]
         G.global_profit_factor = current_result["profit_factor"]
         G.global_avg_trade_duration = current_result["avg_trade_duration"]
         G.global_avg_win = current_result.get("avg_win", 0.0)
         G.global_avg_loss = current_result.get("avg_loss", 0.0)
-
-
 
         dfy, table_str = compute_yearly_stats(
             current_result["equity_curve"],
