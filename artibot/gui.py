@@ -366,20 +366,10 @@ class TradingGUI:
         self.status_label.grid(
             row=20, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
         )
-        self.nuclear_btn = tk.Button(
-            self.info_frame,
-            text="Nuclear Key",
-            state=tk.DISABLED,
-            bg="grey",
-        )
-        self.nuclear_btn.grid(row=21, column=0, padx=5, pady=5, columnspan=2)
-
-        # TODO: consolidate ``nuclear_btn`` and ``nuclear_button`` into a single
-        # control to avoid confusing duplicates.
 
         # trading control buttons
         self.controls_frame = ttk.Frame(self.info_frame)
-        self.controls_frame.grid(row=19, column=0, columnspan=2, pady=5)
+        self.controls_frame.grid(row=21, column=0, columnspan=2, pady=5)
         self.nuclear_button = ttk.Button(
             self.controls_frame,
             text="Nuclear Key",
@@ -404,7 +394,7 @@ class TradingGUI:
             self.info_frame, text="Validation: N/A", font=("Helvetica", 12)
         )
         self.validation_label.grid(
-            row=19, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
+            row=22, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
         )
 
         # Use sidebar as container to avoid mixing pack/grid on the root
@@ -667,9 +657,9 @@ class TradingGUI:
         if nuclear_key_condition(
             G.global_sharpe, G.global_max_drawdown, G.global_profit_factor
         ):
-            self.nuclear_btn.config(state=tk.NORMAL, bg="green")
+            self.nuclear_button.config(state=tk.NORMAL)
         else:
-            self.nuclear_btn.config(state=tk.DISABLED, bg="grey")
+            self.nuclear_button.config(state=tk.DISABLED)
 
         update_auto_pause(G.global_sharpe, G.global_max_drawdown)
 

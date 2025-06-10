@@ -24,7 +24,7 @@ from torch.utils.data import DataLoader
 from .backtest import robust_backtest
 from .dataset import IndicatorHyperparams
 import artibot.globals as G
-from .metrics import compute_yearly_stats, nuclear_key_condition
+from .metrics import compute_yearly_stats
 from .model import TradingModel
 
 
@@ -71,13 +71,18 @@ def nuclear_key_gate(
         except Exception:
             thresholds = {}
 
-    min_profit_factor = float(thresholds.get("MIN_PROFIT_FACTOR", 1.0))
+    min_entropy = float(thresholds.get("MIN_ENTROPY", 1.0))
+    min_sharpe = float(thresholds.get("MIN_SHARPE", 1.0))
+    max_drawdown = float(thresholds.get("MAX_DRAWDOWN", -0.30))
+    min_profit_factor = 1.5
 
     if not G.is_nuclear_key_enabled():
         return True
 
     return (
-        nuclear_key_condition(sharpe, max_dd, profit_factor)
+        entropy >= min_entropy
+        and sharpe >= min_sharpe
+        and max_dd >= max_drawdown
         and profit_factor >= min_profit_factor
     )
 
