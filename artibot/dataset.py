@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 import talib
 import torch
+
+from .utils import rolling_zscore
 from torch.utils.data import Dataset
 
 import artibot.globals as G
@@ -159,14 +161,7 @@ class HourlyDataset(Dataset):
         # again afterwards to be safe.
         feats = np.nan_to_num(feats)
 
-        df_feats = pd.DataFrame(feats)
-        roll_mean = df_feats.rolling(window=50, min_periods=1).mean()
-        roll_std = df_feats.rolling(window=50, min_periods=1).std().replace(0, 1e-8)
-        scaled_feats = ((df_feats - roll_mean) / roll_std).to_numpy()
-
-        scaled_feats = np.clip(scaled_feats, -50.0, 50.0)
-
-        scaled_feats = np.nan_to_num(scaled_feats)
+        scaled_feats = rolling_zscore(feats, window=50)
 
         from numpy.lib.stride_tricks import sliding_window_view
 

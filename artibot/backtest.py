@@ -6,6 +6,8 @@ import pandas as pd
 import talib
 import torch
 
+from .utils import rolling_zscore
+
 import artibot.globals as G
 from .execution import submit_order
 from . import risk
@@ -16,8 +18,13 @@ from .metrics import (
 )
 
 
-def compute_indicators(data_full, hp):
-    """Return SMA, RSI and MACD arrays for ``data_full``."""
+def compute_indicators(data_full, hp, *, with_scaled: bool = False):
+    """Return indicator arrays for ``data_full``.
+
+    When ``with_scaled`` is ``True`` the returned dictionary also contains a
+    ``scaled`` key with normalised feature vectors matching the dataset
+    preprocessing.
+    """
 
     raw = np.array(data_full, dtype=np.float64)
     closes = raw[:, 4]
@@ -34,11 +41,25 @@ def compute_indicators(data_full, hp):
         closes, fastperiod=fast_macd, slowperiod=slow_macd, signalperiod=sig_macd
     )
 
-    return {
+    out = {
         "sma": sma.astype(np.float32),
         "rsi": rsi.astype(np.float32),
         "macd": macd_.astype(np.float32),
     }
+
+    if with_scaled:
+        feats = np.column_stack(
+            [
+                raw[:, 1:6],
+                out["sma"],
+                out["rsi"],
+                out["macd"],
+            ]
+        )
+        feats = np.nan_to_num(feats)
+        out["scaled"] = rolling_zscore(feats, window=50)
+
+    return out
 
 
 ###############################################################################
@@ -92,7 +113,7 @@ def robust_backtest(ensemble, data_full, indicators=None):
         raw_data[:, 0] //= 1000
 
     if indicators is None:
-        indic = compute_indicators(data_full, hp)
+        indic = compute_indicators(data_full, hp, with_scaled=True)
     else:
         indic = indicators
 
@@ -100,23 +121,20 @@ def robust_backtest(ensemble, data_full, indicators=None):
     rsi = indic["rsi"]
     macd_ = indic["macd"]
 
-    extd = np.column_stack(
-        [
-            raw_data[:, 1:6],
-            sma.astype(np.float32),
-            rsi.astype(np.float32),
-            macd_.astype(np.float32),
-        ]
-    ).astype(np.float32)
+    if "scaled" in indic:
+        extd = indic["scaled"].astype(np.float32)
+    else:
+        feats = np.column_stack(
+            [
+                raw_data[:, 1:6],
+                sma.astype(np.float32),
+                rsi.astype(np.float32),
+                macd_.astype(np.float32),
+            ]
+        )
+        feats = np.nan_to_num(feats)
+        extd = rolling_zscore(feats, window=50)
 
-    df_extd = pd.DataFrame(extd)
-    roll_mean = df_extd.rolling(window=50, min_periods=1).mean()
-    roll_std = df_extd.rolling(window=50, min_periods=1).std().replace(0, 1e-8)
-    extd = ((df_extd - roll_mean) / roll_std).to_numpy()
-
-    extd = np.clip(extd, -50.0, 50.0)
-
-    extd = np.nan_to_num(extd)
     timestamps = raw_data[:, 0]
 
     from numpy.lib.stride_tricks import sliding_window_view
