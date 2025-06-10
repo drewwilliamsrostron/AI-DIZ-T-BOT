@@ -407,8 +407,9 @@ class TradingGUI:
             row=19, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
         )
 
-        self.frame_ai = ttk.Frame(root)
-        self.frame_ai.pack(side=tk.RIGHT, fill=tk.Y, padx=5, pady=5)
+        # Use sidebar as container to avoid mixing pack/grid on the root
+        self.frame_ai = ttk.Frame(self.sidebar)
+        self.frame_ai.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         self.ai_output_label = ttk.Label(
             self.frame_ai, text="Latest AI Adjustments:", font=("Helvetica", 12, "bold")
         )
@@ -416,8 +417,8 @@ class TradingGUI:
         self.ai_output_text = tk.Text(self.frame_ai, width=40, height=10, wrap="word")
         self.ai_output_text.pack(fill=tk.BOTH, expand=True)
 
-        self.frame_ai_log = ttk.Frame(root)
-        self.frame_ai_log.pack(side=tk.RIGHT, fill=tk.Y, padx=5, pady=5)
+        self.frame_ai_log = ttk.Frame(self.sidebar)
+        self.frame_ai_log.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         self.ai_log_label = ttk.Label(
             self.frame_ai_log,
             text="AI Adjustments Log:",
