@@ -28,6 +28,7 @@ class JsonFormatter(logging.Formatter):
             "max_dd": getattr(record, "max_dd", None),
             "attn_entropy": getattr(record, "attn_entropy", None),
             "lr": getattr(record, "lr", None),
+            "profit_factor": getattr(record, "profit_factor", None),
         }
         return json.dumps(base)
 
