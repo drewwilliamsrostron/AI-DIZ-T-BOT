@@ -48,7 +48,12 @@ def main() -> None:
             if G.global_attention_entropy_history
             else 0.0
         )
-        if reject_if_risky(result["sharpe"], result["max_drawdown"], attn_entropy):
+        if reject_if_risky(
+            result["sharpe"],
+            result["max_drawdown"],
+            attn_entropy,
+            result["profit_factor"],
+        ):
             continue
         rows.append(
             {

@@ -32,6 +32,7 @@ def reject_if_risky(
     sharpe: float,
     max_dd: float,
     entropy: float,
+    profit_factor: float,
     *,
     thresholds: dict | None = None,
 ) -> bool:
@@ -48,18 +49,23 @@ def reject_if_risky(
     min_entropy = float(thresholds.get("MIN_ENTROPY", 1.0))
     min_sharpe = float(thresholds.get("MIN_SHARPE", 1.0))
     max_drawdown = float(thresholds.get("MAX_DRAWDOWN", -0.30))
+    min_profit_factor = float(thresholds.get("MIN_PROFIT_FACTOR", 1.0))
 
     if entropy < min_entropy:
         return True  # reject collapsed runs
+    if profit_factor < min_profit_factor:
+        return True
     return max_dd < max_drawdown or sharpe < min_sharpe
 
 
-def nuclear_key_gate(sharpe: float, max_dd: float, entropy: float) -> bool:
+def nuclear_key_gate(
+    sharpe: float, max_dd: float, entropy: float, profit_factor: float
+) -> bool:
     """Return ``True`` when trading is allowed based on the nuclear key state."""
 
     if not G.is_nuclear_key_enabled():
         return True
-    return not reject_if_risky(sharpe, max_dd, entropy)
+    return not reject_if_risky(sharpe, max_dd, entropy, profit_factor)
 
 
 def choose_best(rewards: list[float]) -> float:
@@ -184,14 +190,11 @@ class EnsembleModel:
         G.global_net_pct = current_result["net_pct"]
         G.global_num_trades = current_result["trades"]
 
-
         G.global_win_rate = current_result["win_rate"]
         G.global_profit_factor = current_result["profit_factor"]
         G.global_avg_trade_duration = current_result["avg_trade_duration"]
         G.global_avg_win = current_result.get("avg_win", 0.0)
         G.global_avg_loss = current_result.get("avg_loss", 0.0)
-
-
 
         dfy, table_str = compute_yearly_stats(
             current_result["equity_curve"],
@@ -361,7 +364,10 @@ class EnsembleModel:
 
             if cur_reward > self.best_composite_reward:
                 if reject_if_risky(
-                    G.global_sharpe, G.global_max_drawdown, attn_entropy
+                    G.global_sharpe,
+                    G.global_max_drawdown,
+                    attn_entropy,
+                    G.global_profit_factor,
                 ):
                     self.rejection_count_this_epoch += 1
                     logging.info(
