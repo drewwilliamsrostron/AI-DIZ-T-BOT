@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import time
 
+from artibot.metrics import DAY_SEC
+
 import artibot.globals as G
 
 
@@ -16,8 +18,8 @@ def update_auto_pause(sharpe: float, drawdown: float, ts: float | None = None) -
     G.live_sharpe_history.append((ts, float(sharpe)))
     G.live_drawdown_history.append((ts, float(drawdown)))
 
-    seven_days_ago = ts - 7 * 86400
-    day_ago = ts - 86400
+    seven_days_ago = ts - 7 * DAY_SEC
+    day_ago = ts - DAY_SEC
 
     sharpes = [s for t, s in G.live_sharpe_history if t >= seven_days_ago]
     dds = [d for t, d in G.live_drawdown_history if t >= day_ago]
