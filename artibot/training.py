@@ -80,7 +80,7 @@ def csv_training_thread(
         )
 
         pin = ensemble.device.type == "cuda"
-        default_workers = min(os.cpu_count() or 1, 8)
+        default_workers = os.cpu_count() or 1
         if config.get("FORCE_ZERO_WORKERS"):
             default_workers = 0
         elif threading.current_thread() is not threading.main_thread():
@@ -88,11 +88,26 @@ def csv_training_thread(
             # hang on some platforms (notably Windows).
             default_workers = 0
         workers = int(config.get("NUM_WORKERS", default_workers))
+        logging.info(
+            "DATALOADER", extra={"workers": workers, "device": ensemble.device.type}
+        )
         dl_train = DataLoader(
-            ds_train, batch_size=128, shuffle=True, num_workers=workers, pin_memory=pin
+            ds_train,
+            batch_size=128,
+            shuffle=True,
+            num_workers=workers,
+            pin_memory=pin,
+            persistent_workers=bool(workers),
+            prefetch_factor=2,
         )
         dl_val = DataLoader(
-            ds_val, batch_size=128, shuffle=False, num_workers=workers, pin_memory=pin
+            ds_val,
+            batch_size=128,
+            shuffle=False,
+            num_workers=workers,
+            pin_memory=pin,
+            persistent_workers=bool(workers),
+            prefetch_factor=2,
         )
 
         adapt_live = bool(config.get("ADAPT_TO_LIVE", False))
@@ -278,18 +293,24 @@ def csv_training_thread(
                         nv_ = nt_ - ntr_
                         ds_tr_, ds_val_ = random_split(ds_updated, [ntr_, nv_])
                         pin = ensemble.device.type == "cuda"
-                        default_workers = min(os.cpu_count() or 1, 8)
+                        default_workers = os.cpu_count() or 1
                         if config.get("FORCE_ZERO_WORKERS"):
                             default_workers = 0
                         elif threading.current_thread() is not threading.main_thread():
                             default_workers = 0
                         workers = int(config.get("NUM_WORKERS", default_workers))
+                        logging.info(
+                            "DATALOADER",
+                            extra={"workers": workers, "device": ensemble.device.type},
+                        )
                         dl_tr_ = DataLoader(
                             ds_tr_,
                             batch_size=128,
                             shuffle=True,
                             num_workers=workers,
                             pin_memory=pin,
+                            persistent_workers=bool(workers),
+                            prefetch_factor=2,
                         )
                         dl_val_ = DataLoader(
                             ds_val_,
@@ -297,6 +318,8 @@ def csv_training_thread(
                             shuffle=False,
                             num_workers=workers,
                             pin_memory=pin,
+                            persistent_workers=bool(workers),
+                            prefetch_factor=2,
                         )
                         train_indicators = compute_indicators(
                             train_data, ensemble.indicator_hparams, with_scaled=True

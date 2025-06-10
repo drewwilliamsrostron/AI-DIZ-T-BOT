@@ -37,12 +37,15 @@ The launcher prints your Phemex account balance on start so you can verify the
 API connection.
 
 4. On the very first run the program installs its Python dependencies automatically via `environment.ensure_dependencies()`. The GUI may sit on *Initializing…* for a few minutes while packages download—just let it finish.
-5. The DataLoader worker count now defaults to your CPU core count. Define
-   `"NUM_WORKERS"` in `master_config.json` to set a specific value or add
-   `"FORCE_ZERO_WORKERS": true` to disable multiprocessing. If NumExpr prints a
-   warning about thread limits, the environment module now sets
-   `NUMEXPR_MAX_THREADS` to the detected CPU count when the variable is not
-   already defined.
+5. The DataLoader worker count now defaults to all available CPU cores
+   (`os.cpu_count()` with no 8‑worker cap). Define `"NUM_WORKERS"` in
+   `master_config.json` to set a specific value or add `"FORCE_ZERO_WORKERS":
+   true` to disable multiprocessing. If NumExpr prints a warning about thread
+   limits, the environment module sets `NUMEXPR_MAX_THREADS` to the detected CPU
+   count when the variable is not already defined.
+6. PyTorch is configured on startup to use all CPU cores for intra- and
+   inter‑op parallelism via `torch.set_num_threads(os.cpu_count() or 1)` and
+   `torch.set_num_interop_threads(os.cpu_count() or 1)`.
 
 
 ## Project structure
