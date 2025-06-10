@@ -38,7 +38,7 @@ import platform
 import logging
 
 
-os.environ.setdefault("NUMEXPR_MAX_THREADS", "8")
+os.environ.setdefault("NUMEXPR_MAX_THREADS", str(os.cpu_count()))
 
 
 def _install_pytorch_for_env() -> None:
