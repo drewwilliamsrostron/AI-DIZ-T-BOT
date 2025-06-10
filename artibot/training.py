@@ -83,8 +83,18 @@ def csv_training_thread(
         default_workers = os.cpu_count() or 0
         if config.get("FORCE_ZERO_WORKERS"):
             default_workers = 0
-        elif threading.current_thread() is not threading.main_thread():
-            default_workers = 0  # avoid hangs on problematic platforms
+        else:
+            import multiprocessing as _mp
+            import platform as _pf
+
+            if _mp.get_start_method() == "spawn" and _pf.system() == "Windows":
+                # PyTorch's DataLoader struggles to pickle our Dataset on
+                # Windows spawn mode, so fall back to a single worker.
+                default_workers = 0
+            elif threading.current_thread() is not threading.main_thread():
+                # Avoid multiprocessing when running inside a thread as this can
+                # hang on some platforms (notably Windows).
+                default_workers = 0
         workers = int(config.get("NUM_WORKERS", default_workers))
         dl_train = DataLoader(
             ds_train, batch_size=128, shuffle=True, num_workers=workers, pin_memory=pin
