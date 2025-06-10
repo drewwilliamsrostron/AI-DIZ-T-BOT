@@ -21,7 +21,7 @@ backend.FigureCanvasTkAgg = object
 backend.__spec__ = ModuleSpec("matplotlib.backends.backend_tkagg", loader=None)
 sys.modules.setdefault("matplotlib.backends.backend_tkagg", backend)
 
-from artibot import gui, globals as G
+from artibot import gui, globals as G  # noqa: E402
 
 
 def test_should_enable_live_trading():
