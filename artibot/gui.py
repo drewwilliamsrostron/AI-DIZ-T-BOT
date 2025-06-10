@@ -4,6 +4,7 @@
 import artibot.globals as G
 import numpy as np
 import datetime
+import os
 import tkinter as tk
 from tkinter import ttk
 import matplotlib.pyplot as plt
@@ -59,12 +60,34 @@ def select_weight_file(use_prev: bool = True) -> str | None:
 
 
 class TradingGUI:
-    def __init__(self, root, ensemble):
+    def __init__(self, root, ensemble, weights_path: str | None = None):
         self.root = root
         self.ensemble = ensemble
+        self.weights_path = weights_path
         self.root.title("Complex AI Trading w/ Robust Backtest + Live Phemex")
-        self.notebook = ttk.Notebook(root)
-        self.notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # ------------------------------------------------------------------
+        # overall layout
+        # ------------------------------------------------------------------
+        root.columnconfigure(0, weight=3)
+        root.columnconfigure(1, weight=1)
+        root.rowconfigure(0, weight=1)
+        root.rowconfigure(1, weight=0)
+
+        self.main_frame = ttk.Frame(root)
+        self.main_frame.grid(row=0, column=0, sticky="nsew")
+
+        self.sidebar = ttk.Frame(root)
+        self.sidebar.grid(row=0, column=1, sticky="ns")
+
+        self.footer = ttk.Frame(root)
+        self.footer.grid(row=1, column=0, columnspan=2, sticky="ew")
+
+        # ------------------------------------------------------------------
+        # notebook with charts
+        # ------------------------------------------------------------------
+        self.notebook = ttk.Notebook(self.main_frame)
+        self.notebook.pack(fill=tk.BOTH, expand=True)
 
         self.frame_train = ttk.Frame(self.notebook)
         self.notebook.add(self.frame_train, text="Training vs. Validation")
@@ -98,37 +121,59 @@ class TradingGUI:
 
         self.frame_trades = ttk.Frame(self.notebook)
         self.notebook.add(self.frame_trades, text="Trade Details")
-        self.trade_text = tk.Text(self.frame_trades, width=50, height=20)
-        self.trade_text.pack(fill=tk.BOTH, expand=True)
+        cols = ("Date", "Side", "Size", "Entry", "Exit", "PnL")
+        self.trade_tree = ttk.Treeview(
+            self.frame_trades, columns=cols, show="headings", height=10
+        )
+        for c in cols:
+            self.trade_tree.heading(c, text=c)
+            self.trade_tree.column(c, anchor=tk.CENTER)
+        trade_scroll = ttk.Scrollbar(
+            self.frame_trades, orient="vertical", command=self.trade_tree.yview
+        )
+        self.trade_tree.configure(yscrollcommand=trade_scroll.set)
+        self.trade_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        trade_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.frame_yearly_perf = ttk.Frame(self.notebook)
         self.notebook.add(self.frame_yearly_perf, text="Best Strategy Yearly Perf")
         self.yearly_perf_text = tk.Text(self.frame_yearly_perf, width=50, height=20)
         self.yearly_perf_text.pack(fill=tk.BOTH, expand=True)
 
-        self.info_frame = ttk.Frame(root)
-        self.info_frame.pack(side=tk.BOTTOM, fill=tk.X)
-        disclaimer_text = "NOT INVESTMENT ADVICE! Demo only.\nUse caution."
+        self.info_frame = ttk.LabelFrame(self.sidebar, text="Performance")
+        self.info_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        disclaimer_text = "NOT INVESTMENT ADVICE! Demo only."
         self.disclaimer_label = ttk.Label(
-            self.info_frame,
+            self.footer,
             text=disclaimer_text,
             font=("Helvetica", 9, "italic"),
             foreground="darkred",
         )
-        self.disclaimer_label.grid(row=0, column=0, sticky=tk.W, padx=5, pady=2)
+        self.disclaimer_label.pack(side=tk.LEFT, padx=5)
+
+        self.weights_label = ttk.Label(
+            self.footer,
+            text=f"Weights: {os.path.basename(self.weights_path) if self.weights_path else 'N/A'}",
+            font=("Helvetica", 9, "italic"),
+        )
+        self.weights_label.pack(side=tk.RIGHT, padx=5)
+
+        self.progress = ttk.Progressbar(self.footer, mode="indeterminate", length=150)
+        self.progress.pack(side=tk.LEFT, padx=5)
+        self._progress_running = False
 
         self.pred_label = ttk.Label(
             self.info_frame, text="AI Prediction: N/A", font=("Helvetica", 12)
         )
-        self.pred_label.grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
+        self.pred_label.grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         self.conf_label = ttk.Label(
             self.info_frame, text="Confidence: N/A", font=("Helvetica", 12)
         )
-        self.conf_label.grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
+        self.conf_label.grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
         self.epoch_label = ttk.Label(
             self.info_frame, text="Training Steps: 0", font=("Helvetica", 12)
         )
-        self.epoch_label.grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
+        self.epoch_label.grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
 
         self.current_hyper_label = ttk.Label(
             self.info_frame,
@@ -379,8 +424,9 @@ class TradingGUI:
             font=("Helvetica", 12, "bold"),
         )
         self.ai_log_label.pack(anchor="n")
-        self.ai_log_text = tk.Text(self.frame_ai_log, width=40, height=10, wrap="word")
-        self.ai_log_text.pack(fill=tk.BOTH, expand=True)
+        self.ai_log_list = tk.Listbox(self.frame_ai_log, width=40, height=10)
+        self.ai_log_list.pack(fill=tk.BOTH, expand=True)
+        self._log_lines = 0
 
         self.update_interval = 2000
         self.root.after(self.update_interval, self.update_dashboard)
@@ -468,12 +514,24 @@ class TradingGUI:
             )
         self.canvas_details.draw()
 
-        self.trade_text.delete("1.0", tk.END)
+        for row in self.trade_tree.get_children():
+            self.trade_tree.delete(row)
         if G.global_trade_details:
-            summary = format_trade_details(G.global_trade_details)
-            self.trade_text.insert(tk.END, summary)
+            recent = G.global_trade_details[-50:]
+            for tr in recent:
+                dt = datetime.datetime.fromtimestamp(tr.get("entry_time", 0))
+                date = dt.strftime("%Y-%m-%d")
+                values = (
+                    date,
+                    tr.get("side", ""),
+                    tr.get("size", 0),
+                    f"{tr.get('entry_price', 0):.2f}",
+                    f"{tr.get('exit_price', 0):.2f}",
+                    f"{tr.get('return', 0) * 100:.2f}",
+                )
+                self.trade_tree.insert("", tk.END, values=values)
         else:
-            self.trade_text.insert(tk.END, "No Trade Details")
+            self.trade_tree.insert("", tk.END, values=("No data", "", "", "", "", ""))
 
         self.yearly_perf_text.delete("1.0", tk.END)
         if G.global_best_yearly_stats_table:
@@ -570,12 +628,26 @@ class TradingGUI:
 
         self.ai_output_text.delete("1.0", tk.END)
         self.ai_output_text.insert(tk.END, G.global_ai_adjustments)
-        self.ai_log_text.delete("1.0", tk.END)
-        self.ai_log_text.insert(tk.END, G.global_ai_adjustments_log)
+
+        log_lines = G.global_ai_adjustments_log.strip().splitlines()
+        if len(log_lines) > self._log_lines:
+            for line in log_lines[self._log_lines :]:
+                ts = datetime.datetime.now().strftime("%H:%M:%S")
+                self.ai_log_list.insert(tk.END, f"{ts} | {line}")
+                self.ai_log_list.yview_moveto(1.0)
+            self._log_lines = len(log_lines)
 
         # update status line
         primary, secondary = G.get_status_full()
         self.status_var.set(f"{primary}\n{secondary}")
+        if any(k in primary.lower() for k in ["meta agent", "updating"]):
+            if not self._progress_running:
+                self.progress.start(10)
+                self._progress_running = True
+        else:
+            if self._progress_running:
+                self.progress.stop()
+                self._progress_running = False
 
         # manage trading buttons
         if should_enable_live_trading() and not G.live_trading_enabled:
