@@ -81,6 +81,10 @@ def csv_training_thread(
 
         pin = ensemble.device.type == "cuda"
         default_workers = min(os.cpu_count() or 1, 8)
+        if sys.platform.startswith("win"):
+            # ``spawn`` requires picklable datasets which may break
+            # on Windows, so fall back to single-worker mode.
+            default_workers = 0
         if config.get("FORCE_ZERO_WORKERS"):
             default_workers = 0
         elif threading.current_thread() is not threading.main_thread():
@@ -378,6 +382,17 @@ class PhemexConnector:
             if c in self.exchange.markets:
                 self.symbol = c
                 break
+
+    def get_account_stats(self) -> dict:
+        """Return a simplified account balance dictionary."""
+        try:
+            bal = self.exchange.fetch_balance()
+        except Exception as exc:  # pragma: no cover - network errors
+            logging.error("Balance fetch error: %s", exc)
+            return {}
+
+        totals = bal.get("total", {})
+        return {"total": totals}
 
     def fetch_latest_bars(self, limit=100):
         try:
