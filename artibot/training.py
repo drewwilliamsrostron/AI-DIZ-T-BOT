@@ -81,10 +81,6 @@ def csv_training_thread(
 
         pin = ensemble.device.type == "cuda"
         default_workers = min(os.cpu_count() or 1, 8)
-        if sys.platform.startswith("win"):
-            # ``spawn`` requires picklable datasets which may break
-            # on Windows, so fall back to single-worker mode.
-            default_workers = 0
         if config.get("FORCE_ZERO_WORKERS"):
             default_workers = 0
         elif threading.current_thread() is not threading.main_thread():
