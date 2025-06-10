@@ -383,6 +383,17 @@ class PhemexConnector:
                 self.symbol = c
                 break
 
+    def get_account_stats(self) -> dict:
+        """Return a simplified account balance dictionary."""
+        try:
+            bal = self.exchange.fetch_balance()
+        except Exception as exc:  # pragma: no cover - network errors
+            logging.error("Balance fetch error: %s", exc)
+            return {}
+
+        totals = bal.get("total", {})
+        return {"total": totals}
+
     def fetch_latest_bars(self, limit=100):
         try:
             bars = self.exchange.fetch_ohlcv(self.symbol, timeframe="1h", limit=limit)
