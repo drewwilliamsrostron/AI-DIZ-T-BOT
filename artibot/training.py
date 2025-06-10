@@ -92,10 +92,22 @@ def csv_training_thread(
             "DATALOADER", extra={"workers": workers, "device": ensemble.device.type}
         )
         dl_train = DataLoader(
-            ds_train, batch_size=128, shuffle=True, num_workers=workers, pin_memory=pin
+            ds_train,
+            batch_size=128,
+            shuffle=True,
+            num_workers=workers,
+            pin_memory=pin,
+            persistent_workers=bool(workers),
+            prefetch_factor=2,
         )
         dl_val = DataLoader(
-            ds_val, batch_size=128, shuffle=False, num_workers=workers, pin_memory=pin
+            ds_val,
+            batch_size=128,
+            shuffle=False,
+            num_workers=workers,
+            pin_memory=pin,
+            persistent_workers=bool(workers),
+            prefetch_factor=2,
         )
 
         adapt_live = bool(config.get("ADAPT_TO_LIVE", False))
@@ -297,6 +309,8 @@ def csv_training_thread(
                             shuffle=True,
                             num_workers=workers,
                             pin_memory=pin,
+                            persistent_workers=bool(workers),
+                            prefetch_factor=2,
                         )
                         dl_val_ = DataLoader(
                             ds_val_,
@@ -304,6 +318,8 @@ def csv_training_thread(
                             shuffle=False,
                             num_workers=workers,
                             pin_memory=pin,
+                            persistent_workers=bool(workers),
+                            prefetch_factor=2,
                         )
                         train_indicators = compute_indicators(
                             train_data, ensemble.indicator_hparams, with_scaled=True
