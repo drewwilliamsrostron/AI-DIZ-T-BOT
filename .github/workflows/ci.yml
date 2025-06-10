@@ -1,0 +1,18 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install -U pip
+          pip install numpy pandas torch matplotlib ccxt --extra-index-url https://download.pytorch.org/whl/cpu
+      - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: pytest -q
