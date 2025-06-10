@@ -2,8 +2,9 @@
   "ExpandedNodes": [
     "",
     "\\artibot",
-    "\\TestResults"
+    "\\TestResults",
+    "\\tests"
   ],
-  "SelectedNode": "\\bot.log",
+  "SelectedNode": "\\run_artibot.py",
   "PreviewInSolutionExplorer": false
 }
