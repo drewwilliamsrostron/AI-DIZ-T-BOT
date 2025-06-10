@@ -172,6 +172,7 @@ def csv_training_thread(
                 "attn": attn_mean,
                 "attn_entropy": attn_entropy,
                 "lr": lr_now,
+                "profit_factor": G.global_profit_factor,
             }
             logging.info(
                 "EPOCH_METRICS",
