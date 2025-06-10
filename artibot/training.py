@@ -88,6 +88,9 @@ def csv_training_thread(
             # hang on some platforms (notably Windows).
             default_workers = 0
         workers = int(config.get("NUM_WORKERS", default_workers))
+        logging.info(
+            "DATALOADER", extra={"workers": workers, "device": ensemble.device.type}
+        )
         dl_train = DataLoader(
             ds_train, batch_size=128, shuffle=True, num_workers=workers, pin_memory=pin
         )
@@ -284,6 +287,10 @@ def csv_training_thread(
                         elif threading.current_thread() is not threading.main_thread():
                             default_workers = 0
                         workers = int(config.get("NUM_WORKERS", default_workers))
+                        logging.info(
+                            "DATALOADER",
+                            extra={"workers": workers, "device": ensemble.device.type},
+                        )
                         dl_tr_ = DataLoader(
                             ds_tr_,
                             batch_size=128,
