@@ -170,10 +170,12 @@ def inc_epoch() -> None:
 
 
 def set_nuclear_key(enabled: bool) -> None:
-    """Enable or disable the nuclear key trading gate."""
+    """Enable or disable the nuclear key trading gate and log the change."""
     global nuclear_key_enabled
     with state_lock:
         nuclear_key_enabled = enabled
+    status = "ENABLED" if enabled else "DISABLED"
+    logging.info("NUCLEAR_KEY_%s", status)
 
 
 def is_nuclear_key_enabled() -> bool:
