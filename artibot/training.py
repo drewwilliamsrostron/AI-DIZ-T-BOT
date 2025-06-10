@@ -4,6 +4,7 @@
 import artibot.globals as G
 
 import logging
+import os
 
 import re
 import sys
@@ -77,11 +78,13 @@ def csv_training_thread(
         )
 
         pin = ensemble.device.type == "cuda"
-        default_workers = 8
-        if sys.platform.startswith("win"):
-            default_workers = 0  # Windows spawn needs picklable modules
-        elif threading.current_thread() is not threading.main_thread():
-            default_workers = 0  # avoid hanging when launched in a thread
+        default_workers = os.cpu_count() or 0
+        if config.get("FORCE_ZERO_WORKERS"):
+            default_workers = 0
+        elif sys.platform.startswith("win") or (
+            threading.current_thread() is not threading.main_thread()
+        ):
+            default_workers = 0  # avoid hangs on problematic platforms
         workers = int(config.get("NUM_WORKERS", default_workers))
         dl_train = DataLoader(
             ds_train, batch_size=128, shuffle=True, num_workers=workers, pin_memory=pin
@@ -264,13 +267,13 @@ def csv_training_thread(
                         nv_ = nt_ - ntr_
                         ds_tr_, ds_val_ = random_split(ds_updated, [ntr_, nv_])
                         pin = ensemble.device.type == "cuda"
-                        default_workers = 8
-                        if sys.platform.startswith("win"):
-                            default_workers = 0  # Windows spawn needs picklable modules
-                        elif threading.current_thread() is not threading.main_thread():
-                            default_workers = (
-                                0  # avoid hanging when launched in a thread
-                            )
+                        default_workers = os.cpu_count() or 0
+                        if config.get("FORCE_ZERO_WORKERS"):
+                            default_workers = 0
+                        elif sys.platform.startswith("win") or (
+                            threading.current_thread() is not threading.main_thread()
+                        ):
+                            default_workers = 0
                         workers = int(config.get("NUM_WORKERS", default_workers))
                         dl_tr_ = DataLoader(
                             ds_tr_,
