@@ -359,20 +359,30 @@ class PhemexConnector:
     def __init__(self, config):
         self.symbol = config.get("symbol", "BTC/USDT")
         api_conf = config.get("API", {})
-        self.api_key = api_conf.get("API_KEY_LIVE", "")
-        self.api_secret = api_conf.get("API_SECRET_LIVE", "")
+        self.live_trading = bool(api_conf.get("LIVE_TRADING", True))
+        if self.live_trading:
+            self.api_key = api_conf.get("API_KEY_LIVE", "")
+            self.api_secret = api_conf.get("API_SECRET_LIVE", "")
+            api_url = api_conf.get("API_URL_LIVE")
+        else:
+            self.api_key = api_conf.get("API_KEY_TEST", "")
+            self.api_secret = api_conf.get("API_SECRET_TEST", "")
+            api_url = api_conf.get("API_URL_TEST")
         default_type = api_conf.get("DEFAULT_TYPE", "spot")
         import ccxt
 
         try:
-            self.exchange = ccxt.phemex(
-                {
-                    "apiKey": self.api_key,
-                    "secret": self.api_secret,
-                    "enableRateLimit": True,
-                    "options": {"defaultType": default_type},
-                }
-            )
+            params = {
+                "apiKey": self.api_key,
+                "secret": self.api_secret,
+                "enableRateLimit": True,
+                "options": {"defaultType": default_type},
+            }
+            if api_url:
+                params["urls"] = {"api": {"public": api_url, "private": api_url}}
+            self.exchange = ccxt.phemex(params)
+            if not self.live_trading:
+                self.exchange.set_sandbox_mode(True)
         except Exception as e:
             logging.error(f"Error initializing exchange: {e}")
             sys.exit(1)
