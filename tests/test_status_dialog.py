@@ -37,7 +37,7 @@ def test_weight_dialog_custom(monkeypatch):
 
 def test_nuclear_gate():
     G.set_nuclear_key(False)
-    assert nuclear_key_gate(0.2, -0.5, 0.5) is True
+    assert nuclear_key_gate(0.2, -0.5, 0.5, 2.0) is True
     G.set_nuclear_key(True)
-    assert nuclear_key_gate(0.8, -0.4, 0.5) is False
-    assert nuclear_key_gate(1.2, -0.1, 1.2) is True
+    assert nuclear_key_gate(0.8, -0.4, 0.5, 0.8) is False
+    assert nuclear_key_gate(1.2, -0.1, 1.2, 1.5) is True

@@ -159,7 +159,8 @@ def csv_training_thread(
             sharpe = G.global_sharpe
             max_dd = G.global_max_drawdown
             entropy = attn_entropy
-            if reject_if_risky(sharpe, max_dd, entropy):
+            profit_factor = G.global_profit_factor
+            if reject_if_risky(sharpe, max_dd, entropy, profit_factor):
                 logging.info(
                     "REJECTED",
                     extra={
