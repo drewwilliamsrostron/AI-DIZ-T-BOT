@@ -1,5 +1,5 @@
 import artibot.globals as G
-from artibot.gui import select_weight_file
+from artibot.gui import select_weight_file, ask_use_prev_weights
 from artibot.ensemble import nuclear_key_gate
 import sys
 import types
@@ -33,6 +33,34 @@ def test_weight_dialog_custom(monkeypatch):
     monkeypatch.setitem(sys.modules, "tkinter.filedialog", tk_stub.filedialog)
     path = select_weight_file()
     assert path == "foo.pth"
+
+
+class DummyRoot:
+    def withdraw(self):
+        pass
+
+    def destroy(self):
+        pass
+
+
+def test_startup_dialog_yes(monkeypatch):
+    tk_stub = types.SimpleNamespace(
+        Tk=lambda: DummyRoot(),
+        messagebox=types.SimpleNamespace(askyesno=lambda *a, **k: True),
+    )
+    monkeypatch.setitem(sys.modules, "tkinter", tk_stub)
+    monkeypatch.setitem(sys.modules, "tkinter.messagebox", tk_stub.messagebox)
+    assert ask_use_prev_weights(tk_module=tk_stub) is True
+
+
+def test_startup_dialog_no(monkeypatch):
+    tk_stub = types.SimpleNamespace(
+        Tk=lambda: DummyRoot(),
+        messagebox=types.SimpleNamespace(askyesno=lambda *a, **k: False),
+    )
+    monkeypatch.setitem(sys.modules, "tkinter", tk_stub)
+    monkeypatch.setitem(sys.modules, "tkinter.messagebox", tk_stub.messagebox)
+    assert ask_use_prev_weights(tk_module=tk_stub) is False
 
 
 def test_nuclear_gate():

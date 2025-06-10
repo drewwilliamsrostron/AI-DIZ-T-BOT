@@ -59,6 +59,21 @@ def select_weight_file(use_prev: bool = True) -> str | None:
     )
 
 
+def ask_use_prev_weights(default: bool = True, tk_module=tk) -> bool:
+    """Return ``True`` when the user opts to load the last weights."""
+    root = tk_module.Tk()
+    root.withdraw()
+    try:
+        result = tk_module.messagebox.askyesno(
+            "Load Weights", "Use previous best weights?"
+        )
+    finally:
+        root.destroy()
+    if result is None:
+        return default
+    return bool(result)
+
+
 class TradingGUI:
     def __init__(self, root, ensemble, weights_path: str | None = None):
         self.root = root
