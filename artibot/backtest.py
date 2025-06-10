@@ -85,7 +85,7 @@ def robust_backtest(ensemble, data_full, indicators=None):
     delta = 0.1
 
     def _price_with_noise(side: str, price: float) -> float:
-        return submit_order(lambda **kw: kw["price"], side, 0.0, price)
+        return submit_order(lambda **kw: kw["price"], side, 0.0, price, delay=0.0)
 
     raw_data = np.array(data_full, dtype=np.float64)
     if raw_data[:, 0].max() > 1_000_000_000_000:
