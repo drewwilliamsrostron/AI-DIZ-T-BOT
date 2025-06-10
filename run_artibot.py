@@ -21,6 +21,9 @@ from artibot.utils import setup_logging
 if __name__ == "__main__":
     setup_logging()
     ensure_dependencies()
-    from artibot.bot_app import run_bot
+    from artibot.bot_app import run_bot, CONFIG
+
+    ans = input("Use LIVE API? [y/N]: ").strip().lower()
+    CONFIG.setdefault("API", {})["LIVE_TRADING"] = ans.startswith("y")
 
     run_bot()
