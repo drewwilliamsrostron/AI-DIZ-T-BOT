@@ -3,6 +3,7 @@
 import threading
 from typing import Iterable
 import torch
+import sys
 
 import numpy as np
 import pandas as pd
@@ -54,8 +55,10 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
     ensemble = EnsembleModel(device=device, n_models=1, lr=3e-4, weight_decay=1e-4)
     if hasattr(torch, "set_float32_matmul_precision"):
         torch.set_float32_matmul_precision("high")
-    if hasattr(torch, "compile"):
+    if hasattr(torch, "compile") and sys.version_info < (3, 12):
         ensemble.models = [torch.compile(m) for m in ensemble.models]
+    else:
+        logging.info("Skipping torch.compile on Python 3.12+")
     results = []
     one_year = YEAR_HOURS
     six_years = 6 * one_year
