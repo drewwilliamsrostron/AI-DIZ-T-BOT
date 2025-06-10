@@ -107,3 +107,15 @@ def test_backtest_with_precomputed_features(monkeypatch):
     result_pre = robust_backtest(ens, data, indicators=indicators)
     result_std = robust_backtest(ens, data)
     assert result_pre["net_pct"] == pytest.approx(result_std["net_pct"], rel=5e-3)
+
+
+def test_trade_details_have_size(monkeypatch):
+    def stub_submit(func, side, amount, price, **kw):
+        return func(side=side, amount=amount, price=price, **kw)
+
+    monkeypatch.setattr(execution, "submit_order", stub_submit)
+    data = [[i * 3600, 100.0, 101.0, 99.0, 100.0, 0.0] for i in range(30)]
+    result = robust_backtest(DummyEnsemble(), data)
+    assert result["trade_details"], "Expected at least one trade"
+    trade = result["trade_details"][0]
+    assert "size" in trade and abs(trade["size"]) > 0
