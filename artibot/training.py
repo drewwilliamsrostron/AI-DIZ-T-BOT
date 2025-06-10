@@ -35,6 +35,7 @@ def csv_training_thread(
     integrate more gating checks.
     """
     import traceback
+    import threading
 
     import numpy as np
     import torch
@@ -73,6 +74,11 @@ def csv_training_thread(
 
         pin = ensemble.device.type == "cuda"
         default_workers = 8
+        if (
+            sys.platform.startswith("win")
+            and threading.current_thread() is not threading.main_thread()
+        ):
+            default_workers = 0  # dataloader workers can hang on Windows threads
         workers = int(config.get("NUM_WORKERS", default_workers))
         dl_train = DataLoader(
             ds_train, batch_size=128, shuffle=True, num_workers=workers, pin_memory=pin
@@ -257,6 +263,14 @@ def csv_training_thread(
                         ds_tr_, ds_val_ = random_split(ds_updated, [ntr_, nv_])
                         pin = ensemble.device.type == "cuda"
                         default_workers = 8
+                        if (
+                            sys.platform.startswith("win")
+                            and threading.current_thread()
+                            is not threading.main_thread()
+                        ):
+                            default_workers = (
+                                0  # dataloader workers can hang on Windows threads
+                            )
                         workers = int(config.get("NUM_WORKERS", default_workers))
                         dl_tr_ = DataLoader(
                             ds_tr_,
