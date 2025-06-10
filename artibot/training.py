@@ -65,9 +65,13 @@ def csv_training_thread(
         n_val = n_tot - n_tr
         ds_train, ds_val = random_split(ds_full, [n_tr, n_val])
 
-        train_indicators = compute_indicators(train_data, ensemble.indicator_hparams)
+        train_indicators = compute_indicators(
+            train_data, ensemble.indicator_hparams, with_scaled=True
+        )
         holdout_indicators = (
-            compute_indicators(holdout_data, ensemble.indicator_hparams)
+            compute_indicators(
+                holdout_data, ensemble.indicator_hparams, with_scaled=True
+            )
             if holdout_data
             else None
         )
@@ -284,7 +288,7 @@ def csv_training_thread(
                             pin_memory=pin,
                         )
                         train_indicators = compute_indicators(
-                            train_data, ensemble.indicator_hparams
+                            train_data, ensemble.indicator_hparams, with_scaled=True
                         )
                         ensemble.train_one_epoch(
                             dl_tr_,

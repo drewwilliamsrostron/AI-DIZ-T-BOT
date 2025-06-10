@@ -103,7 +103,7 @@ def test_backtest_with_precomputed_features(monkeypatch):
         for i in range(30)
     ]
     ens = DummyEnsemble()
-    indicators = compute_indicators(data, ens.indicator_hparams)
+    indicators = compute_indicators(data, ens.indicator_hparams, with_scaled=True)
     result_pre = robust_backtest(ens, data, indicators=indicators)
     result_std = robust_backtest(ens, data)
     assert result_pre["net_pct"] == pytest.approx(result_std["net_pct"], rel=5e-3)

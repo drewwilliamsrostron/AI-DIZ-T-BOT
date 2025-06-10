@@ -8,6 +8,8 @@ import json
 
 import math
 import torch
+import pandas as pd
+import numpy as np
 
 
 def get_device() -> torch.device:
@@ -54,3 +56,22 @@ def attention_entropy(tensor: torch.Tensor) -> float:
         ent = 0.0
     max_ent = math.log(p.size(-1))
     return min(ent, max_ent)
+
+
+def rolling_zscore(arr: np.ndarray, window: int = 50) -> np.ndarray:
+    """Return rolling z-score normalised ``arr``.
+
+    Parameters
+    ----------
+    arr:
+        2D array of features to be standardised.
+    window:
+        Rolling window size used for mean and standard deviation.
+    """
+
+    df = pd.DataFrame(arr, dtype=float)
+    roll_mean = df.rolling(window=window, min_periods=1).mean()
+    roll_std = df.rolling(window=window, min_periods=1).std().replace(0, 1e-8)
+    scaled = ((df - roll_mean) / roll_std).to_numpy(dtype=float)
+    scaled = np.clip(scaled, -50.0, 50.0)
+    return np.nan_to_num(scaled).astype(np.float32)
