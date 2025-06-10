@@ -192,6 +192,15 @@ class TradingGUI:
         )
         self.epoch_label.grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
 
+        self.balance_label = ttk.Label(
+            self.info_frame, text="USDT Balance: N/A", font=("Helvetica", 12)
+        )
+        self.balance_label.grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
+        self.position_label = ttk.Label(
+            self.info_frame, text="Position: None", font=("Helvetica", 12)
+        )
+        self.position_label.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
+
         self.current_hyper_label = ttk.Label(
             self.info_frame,
             text="Current Hyperparameters:",
@@ -553,6 +562,13 @@ class TradingGUI:
         self.pred_label.config(text=f"AI Prediction: {pred_str}")
         self.conf_label.config(text=f"Confidence: {conf:.2f}")
         self.epoch_label.config(text=f"Training Steps: {steps}")
+        bal = G.global_account_stats.get("total", {}).get("USDT", 0.0)
+        self.balance_label.config(text=f"USDT Balance: {bal:.2f}")
+        if G.global_position_side:
+            pos = f"{G.global_position_side} {G.global_position_size:.4f}"
+        else:
+            pos = "None"
+        self.position_label.config(text=f"Position: {pos}")
 
         current_lr = self.ensemble.optimizers[0].param_groups[0]["lr"]
         self.lr_label.config(text=f"LR: {current_lr:.2e}")

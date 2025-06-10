@@ -129,6 +129,11 @@ global_progress_pct = 0.0
 # Flag toggled by GUI when user enables live trading
 live_trading_enabled = False
 
+# Live account info updated by the trading loop
+global_account_stats: dict = {}
+global_position_side: str | None = None
+global_position_size: float = 0.0
+
 
 # Protect shared state across threads
 state_lock = threading.Lock()
@@ -217,11 +222,17 @@ def status_sleep(primary: str, secondary: str, seconds: float) -> None:
 def cancel_open_orders() -> None:
     """Placeholder to cancel all outstanding orders."""
     logging.info("CANCEL_OPEN_ORDERS")
+    global global_position_side, global_position_size
+    global_position_side = None
+    global_position_size = 0.0
 
 
 def close_position() -> None:
     """Placeholder to close any open position."""
     logging.info("CLOSE_POSITION")
+    global global_position_side, global_position_size
+    global_position_side = None
+    global_position_size = 0.0
 
 
 def update_trade_params(sl_mult: float, tp_mult: float) -> None:
