@@ -22,6 +22,9 @@ class DummyEx:
         self.created.append((symbol, order_type, side, amount, price))
         return {"id": "1"}
 
+    def fetch_balance(self):
+        return {"total": {"BTC": 1.0}}
+
 
 def test_phemex_connector(monkeypatch):
     mod = types.SimpleNamespace(phemex=lambda *a, **k: DummyEx())
@@ -33,4 +36,9 @@ def test_phemex_connector(monkeypatch):
     order = conn.create_order("buy", 1.0, 100.0)
     assert order == {"id": "1"}
     assert conn.exchange.created[0][2] == "buy"
+
     assert conn.exchange.sandbox is True
+
+    stats = conn.get_account_stats()
+    assert stats == {"total": {"BTC": 1.0}}
+

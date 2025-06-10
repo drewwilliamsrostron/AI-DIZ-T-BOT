@@ -33,6 +33,9 @@ python -m venv .venv && source .venv/bin/activate
 python run_artibot.py
 ```
 
+The launcher prints your Phemex account balance on start so you can verify the
+API connection.
+
 4. On the very first run the program installs its Python dependencies automatically via `environment.ensure_dependencies()`. The GUI may sit on *Initializing…* for a few minutes while packages download—just let it finish.
 5. The DataLoader worker count now defaults to your CPU core count. Define
    `"NUM_WORKERS"` in `master_config.json` to set a specific value or add

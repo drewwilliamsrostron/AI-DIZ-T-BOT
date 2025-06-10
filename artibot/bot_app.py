@@ -149,6 +149,9 @@ def run_bot(max_epochs: int | None = None) -> None:
     schedule_monthly_validation(csv_path, config)
 
     connector = PhemexConnector(config)
+    stats = connector.get_account_stats()
+    if stats:
+        logging.info("ACCOUNT_STATS %s", json.dumps(stats))
     stop_event = threading.Event()
 
     train_th = threading.Thread(
