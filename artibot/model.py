@@ -9,7 +9,7 @@ import torch.nn as nn
 
 from .dataset import TradeParams
 import artibot.globals as G
-from . import utils
+from .utils import attention_entropy
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ class TradingModel(nn.Module):
                 average_attn_weights=False,
             )
         p = attn_weights.mean(dim=(0, 1))
-        entropy = utils.attention_entropy(p)
+        entropy = attention_entropy(p)
         max_prob = p.max().item()
         self.last_entropy = float(entropy)
         self.last_max_prob = float(max_prob)

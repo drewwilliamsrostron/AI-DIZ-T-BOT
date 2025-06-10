@@ -403,3 +403,26 @@ def robust_backtest(ensemble, data_full, indicators=None):
         "avg_win": avg_win,
         "avg_loss": avg_loss,
     }
+
+
+if __name__ == "__main__":
+    from .dataset import load_csv_hourly
+    from .ensemble import EnsembleModel
+    from .training import csv_training_thread
+    from .utils import get_device
+    from .bot_app import CONFIG
+    import threading
+
+    data = load_csv_hourly("Gemini_BTCUSD_1h.csv")
+    ens = EnsembleModel(device=get_device(), n_models=1)
+    stop = threading.Event()
+    csv_training_thread(
+        ens,
+        data,
+        stop,
+        CONFIG,
+        use_prev_weights=False,
+        max_epochs=1,
+    )
+    result = robust_backtest(ens, data)
+    print(result)

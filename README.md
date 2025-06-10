@@ -15,7 +15,7 @@ Legacy CSV feeds store prices scaled by `1e5` or `1e3`. The loader now detects t
 python scripts/smoke.py
 ```
 
-It runs a short 50‑epoch training session and prints the final composite reward and average candle range.
+It runs a quick 10‑epoch training session and prints the final composite reward and average candle range.
 
 ## Usage
 
