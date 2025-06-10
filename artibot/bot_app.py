@@ -33,7 +33,7 @@ def load_master_config(path: str = "master_config.json") -> dict:
 from .dataset import HourlyDataset, load_csv_hourly
 from .ensemble import EnsembleModel
 import artibot.globals as G
-from .gui import TradingGUI
+from .gui import TradingGUI, ask_use_prev_weights
 from .rl import MetaTransformerRL, meta_control_loop
 from .training import (
     PhemexConnector,
@@ -118,11 +118,12 @@ def run_bot(max_epochs: int | None = None) -> None:
     os.makedirs(weights_dir, exist_ok=True)
     weights_path = os.path.join(weights_dir, "best_model_weights.pth")
 
-    use_prev_weights = bool(config.get("USE_PREV_WEIGHTS", True))
     if config.get("SHOW_WEIGHT_SELECTOR"):
         use_prev_weights, sel = weight_selector_dialog(config)
         if sel:
             weights_path = sel
+    else:
+        use_prev_weights = ask_use_prev_weights(config.get("USE_PREV_WEIGHTS", True))
 
     if os.path.isfile(weights_path):
         if not use_prev_weights:
