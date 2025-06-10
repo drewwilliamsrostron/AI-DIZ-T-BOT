@@ -41,4 +41,3 @@ def test_phemex_connector(monkeypatch):
 
     stats = conn.get_account_stats()
     assert stats == {"total": {"BTC": 1.0}}
-

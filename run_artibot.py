@@ -2,6 +2,10 @@
 
 # ruff: noqa: E402
 
+from artibot.environment import ensure_dependencies
+
+ensure_dependencies()
+
 import logging
 from logging.handlers import RotatingFileHandler
 import os
@@ -10,6 +14,11 @@ import time
 import numpy as np
 import torch
 import talib
+
+from artibot.utils import setup_logging, get_device
+from artibot.ensemble import EnsembleModel
+import artibot.globals as G
+from exchanges import ExchangeConnector
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 root = logging.getLogger()
@@ -21,18 +30,10 @@ root.addHandler(fh)
 logging.getLogger("artibot.model").setLevel(logging.INFO)
 logging.getLogger("artibot.ensemble").setLevel(logging.INFO)
 
-from artibot.environment import ensure_dependencies
-from artibot.utils import setup_logging, get_device
-from artibot.ensemble import EnsembleModel
-import artibot.globals as G
-from exchanges import ExchangeConnector
-
 
 def main() -> None:
     """Run the live trading loop using the pre-trained model."""
-
     setup_logging()
-    ensure_dependencies()
     torch.set_num_threads(os.cpu_count() or 1)
     torch.set_num_interop_threads(os.cpu_count() or 1)
 

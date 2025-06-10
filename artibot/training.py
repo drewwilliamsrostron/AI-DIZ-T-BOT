@@ -387,7 +387,7 @@ class PhemexConnector:
             self.api_key = api_conf.get("API_KEY_TEST", "")
             self.api_secret = api_conf.get("API_SECRET_TEST", "")
             api_url = api_conf.get("API_URL_TEST")
-        default_type = api_conf.get("DEFAULT_TYPE", "spot")
+        default_type = api_conf.get("DEFAULT_TYPE", "swap")
         import ccxt
 
         try:
