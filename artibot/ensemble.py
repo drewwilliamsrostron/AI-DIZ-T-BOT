@@ -404,6 +404,16 @@ class EnsembleModel:
                     self.patience_counter = 0
                     self.best_state_dicts = [m.state_dict() for m in self.models]
                     self.save_best_weights()
+                    logging.info(
+                        "NEW_BEST",
+                        extra={
+                            "epoch": self.train_steps,
+                            "sharpe": G.global_sharpe,
+                            "max_dd": G.global_max_drawdown,
+                            "attn_entropy": attn_entropy,
+                            "lr": self.optimizers[0].param_groups[0]["lr"],
+                        },
+                    )
             else:
                 self.patience_counter += 1
                 # If net improvements are small => bigger patience
