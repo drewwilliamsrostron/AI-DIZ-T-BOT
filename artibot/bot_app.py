@@ -182,7 +182,7 @@ def run_bot(max_epochs: int | None = None) -> None:
     meta_th.start()
 
     root = tk.Tk()
-    TradingGUI(root, ensemble)
+    TradingGUI(root, ensemble, weights_path)
     try:
         root.mainloop()
     except KeyboardInterrupt:
