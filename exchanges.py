@@ -1,7 +1,6 @@
 """CCXT-based helper for simplified Phemex access."""
 
 import logging
-import time
 
 
 class ExchangeConnector:
@@ -40,9 +39,6 @@ class ExchangeConnector:
         self.exchange.load_markets()
 
     def fetch_latest_bars(self, timeframe: str = "1h", limit: int = 24):
-        now = int(time.time())
-        last_hour = now - (now % 3600)
-        since_ms = (last_hour - limit * 3600) * 1000
         logging.debug(
             "fetch_ohlcv → symbol=%s",
             self.symbol,
@@ -51,7 +47,6 @@ class ExchangeConnector:
             bars = self.exchange.fetch_ohlcv(
                 self.symbol,
                 timeframe=timeframe,
-                since=since_ms,
                 limit=limit,
             )
         except Exception as primary:  # pragma: no cover - network errors
@@ -70,7 +65,6 @@ class ExchangeConnector:
                     bars = self.exchange.fetch_ohlcv(
                         market_id,
                         timeframe=timeframe,
-                        since=since_ms,
                         limit=limit,
                     )
                 except Exception as fallback:  # pragma: no cover - network errors
