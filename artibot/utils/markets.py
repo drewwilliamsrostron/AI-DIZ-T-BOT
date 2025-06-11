@@ -36,6 +36,18 @@ def generate_candidates(symbol: str) -> List[str]:
                 token,
             }
         )
+        m = re.match(r"(?i)^([a-z0-9]+)(USDT|USD)$", token)
+        if m:
+            base, quote = m.groups()
+            cands.update(
+                {
+                    f"{base}/{quote}",
+                    f"{base}{quote}",
+                    f"{base}:{quote}",
+                    f"{base}/{quote}:{quote}",
+                    f"{base}{quote}:{quote}",
+                }
+            )
     else:
         cands.add(symbol)
     return list(cands)
