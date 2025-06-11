@@ -11,8 +11,6 @@ import sys
 import os
 import json
 
-from .utils.markets import generate_candidates
-
 from .dataset import HourlyDataset
 from .ensemble import reject_if_risky
 from .backtest import robust_backtest, compute_indicators
@@ -379,7 +377,7 @@ class PhemexConnector:
     """Thin wrapper around ccxt for polling Phemex."""
 
     def __init__(self, config):
-        self.symbol = config.get("symbol", "BTCUSD")
+        self.symbol = config.get("symbol", "BTC/USD:BTC")
         api_conf = config.get("API", {})
         self.live_trading = bool(api_conf.get("LIVE_TRADING", True))
 
@@ -407,6 +405,7 @@ class PhemexConnector:
                     "apiKey": key,
                     "secret": secret,
                     "enableRateLimit": True,
+                    "options": {"defaultType": self.default_type},
                 }
             )
             if not self.live_trading:
@@ -416,10 +415,6 @@ class PhemexConnector:
             sys.exit(1)
 
         self.exchange.load_markets()
-        for cand in generate_candidates(self.symbol):
-            if cand in self.exchange.markets:
-                self.symbol = cand
-                break
 
     def get_account_stats(self) -> dict:
         """Return a simplified account balance dictionary."""
