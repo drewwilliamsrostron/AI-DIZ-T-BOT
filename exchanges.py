@@ -3,8 +3,6 @@
 import logging
 import time
 
-from artibot.utils.markets import generate_candidates
-
 
 class ExchangeConnector:
     """Thin wrapper around :mod:`ccxt` for simple order placement."""
@@ -42,11 +40,6 @@ class ExchangeConnector:
         if not self.live:
             self.exchange.set_sandbox_mode(True)
         self.exchange.load_markets()
-
-        for cand in generate_candidates(self.symbol):
-            if cand in self.exchange.markets:
-                self.symbol = cand
-                break
 
     def fetch_latest_bars(self, limit: int = 24):
         now = int(time.time())
