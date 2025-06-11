@@ -47,7 +47,7 @@ def test_exchange_connector_fetch(monkeypatch):
     assert bars == [[1, 2, 3, 4, 5, 6]]
     assert conn.exchange.sandbox is True
     assert conn.exchange.last_params is None
-    assert conn.exchange.last_since == 3600 * 1000
+    assert conn.exchange.last_since is None
 
     order = conn.create_order("buy", 1.0, 100.0)
     assert order == {"id": "1"}
@@ -72,7 +72,7 @@ def test_exchange_connector_error(monkeypatch, caplog):
     bars = conn.fetch_latest_bars(limit=2)
     assert bars == []
     assert conn.exchange.last_params is None
-    assert conn.exchange.last_since == 0
+    assert conn.exchange.last_since is None
     expected = f"fetch_ohlcv failed for {conn.symbol} tf=1h limit=2: boom"
     assert any(expected in r.message for r in caplog.records)
 

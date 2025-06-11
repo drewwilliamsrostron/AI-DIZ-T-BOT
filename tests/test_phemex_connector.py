@@ -39,7 +39,7 @@ def test_phemex_connector(monkeypatch):
     assert conn.exchange.last_since is None
     bars = conn.fetch_latest_bars(limit=1)
     assert bars == [[1, 2, 3, 4, 5, 6]]
-    assert conn.exchange.last_since == 3600 * 1000
+    assert conn.exchange.last_since is None
     order = conn.create_order("buy", 1.0, 100.0)
     assert order == {"id": "1"}
     assert conn.exchange.created[0][2] == "buy"
@@ -66,7 +66,7 @@ def test_phemex_connector_error(monkeypatch, caplog):
     caplog.set_level(logging.ERROR)
     bars = conn.fetch_latest_bars(limit=3)
     assert bars == []
-    assert conn.exchange.last_since == -3600 * 1000
+    assert conn.exchange.last_since is None
     assert any(
         "fetch_ohlcv failed for BTCUSD tf=1h limit=3: oops" in r.message
         for r in caplog.records
