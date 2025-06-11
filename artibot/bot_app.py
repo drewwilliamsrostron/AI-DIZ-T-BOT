@@ -155,9 +155,13 @@ def run_bot(max_epochs: int | None = None) -> None:
         ensemble.models = [torch.compile(m) for m in ensemble.models]
     else:
         logging.info("Skipping torch.compile on Python 3.12+")
-    from .validation import schedule_monthly_validation
+    from .validation import schedule_monthly_validation, validate_and_gate
 
     schedule_monthly_validation(csv_path, config)
+    validate_th = threading.Thread(
+        target=lambda: validate_and_gate(csv_path, config), daemon=True
+    )
+    validate_th.start()
 
     connector = PhemexConnector(config)
     stats = connector.get_account_stats()
@@ -204,7 +208,12 @@ def run_bot(max_epochs: int | None = None) -> None:
         pass
 
     stop_event.set()
-    threads = [("train", train_th), ("phemex", phemex_th), ("meta", meta_th)]
+    threads = [
+        ("train", train_th),
+        ("phemex", phemex_th),
+        ("meta", meta_th),
+        ("validate", validate_th),
+    ]
     for name, th in threads:
         if th.is_alive():
             th.join(timeout=5.0)

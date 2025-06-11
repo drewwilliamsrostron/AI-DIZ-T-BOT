@@ -39,8 +39,8 @@ artibot/                      - production code
 
 | Name / path | Role | Parameters / config | Example |
 |-------------|------|--------------------|---------|
-| **run_artibot.py** | Command line entry for live trading. | reads `master_config.json` | `python run_artibot.py` |
-| **run_bot** (`artibot.bot_app`) | Start training loop, live polling and GUI. | `max_epochs=None` | `python -m artibot` |
+| **run_artibot.py** | Command line entry for live trading. Prompts for live vs testnet and launches the GUI automatically. Trading stays disabled until backtest metrics enable the nuclear key. | reads `master_config.json` | `python run_artibot.py` |
+| **run_bot** (`artibot.bot_app`) | Start training loop, live polling and GUI. | `max_epochs=None` | `import artibot; artibot.run_bot()` |
 | **csv_training_thread** (`artibot.training`) | Train on CSV data in a worker thread. | `ensemble`, `data`, `stop_event`, `config`, `max_epochs` | used inside `run_bot` |
 | **phemex_live_thread** (`artibot.training`) | Fetch recent bars from Phemex. | `connector`, `stop_event`, `poll_interval` | used inside `run_bot` |
 | **EnsembleModel** (`artibot.ensemble`) | Container for Transformer models. | `device`, `n_models=2`, `lr=3e-4`, `weight_decay=1e-4` | `ens = EnsembleModel(device)` |
