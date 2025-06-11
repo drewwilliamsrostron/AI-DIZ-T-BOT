@@ -4,9 +4,9 @@ repos:
     hooks:
       - id: ruff-check
         args: [--fix]
-        exclude: old_ARTIBOT.py|Last_working_bot_but_one_py
+        exclude: old_ARTIBOT.py|Last_working_bot_but_one_py|Old Trading code \(Webbot\)/.*
   - repo: https://github.com/psf/black
     rev: 24.4.2
     hooks:
       - id: black
-        exclude: old_ARTIBOT.py|Last_working_bot_but_one_py
+        exclude: old_ARTIBOT.py|Last_working_bot_but_one_py|Old Trading code \(Webbot\)/.*
