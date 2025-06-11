@@ -63,7 +63,7 @@ def main() -> None:
     poll_int = float(CONFIG.get("LIVE_POLL_INTERVAL", 60))
     risk_pct = float(CONFIG.get("RISK_PERCENT", 0.01))
 
-    G.live_trading_enabled = False #false if test api, true if live api 
+    G.live_trading_enabled = False  # false if test api, true if live api
 
     try:
         while True:

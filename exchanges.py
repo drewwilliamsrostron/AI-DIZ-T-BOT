@@ -1,6 +1,7 @@
 """CCXT-based helper for simplified Phemex access."""
 
 import logging
+import time
 
 from artibot.utils.markets import generate_candidates
 
@@ -48,10 +49,14 @@ class ExchangeConnector:
                 break
 
     def fetch_latest_bars(self, limit: int = 24):
+        now = int(time.time())
+        last_hour = now - (now % 3600)
+        since_ms = (last_hour - limit * 3600) * 1000
         try:
             return self.exchange.fetch_ohlcv(
                 self.symbol,
                 timeframe="1h",
+                since=since_ms,
                 limit=limit,
                 params={"type": self.default_type},
             )
