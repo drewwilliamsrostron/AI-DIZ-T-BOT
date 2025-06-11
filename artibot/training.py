@@ -398,7 +398,10 @@ class PhemexConnector:
                 "options": {"defaultType": default_type},
             }
             if api_url:
-                params["urls"] = {"api": {"public": api_url, "private": api_url}}
+                hostname = (
+                    api_url.replace("https://", "").replace("http://", "").split("/")[0]
+                )
+                params["hostname"] = hostname
             self.exchange = ccxt.phemex(params)
             if not self.live_trading:
                 self.exchange.set_sandbox_mode(True)
