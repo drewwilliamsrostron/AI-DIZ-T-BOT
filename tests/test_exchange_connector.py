@@ -16,6 +16,7 @@ class DummyEx:
         self.sandbox = False
         self.last_params = None
         self.last_since = None
+        self.created = []
 
     def load_markets(self):
         pass
@@ -27,6 +28,10 @@ class DummyEx:
         self.last_params = params
         self.last_since = since
         return [[1, 2, 3, 4, 5, 6]]
+
+    def create_order(self, symbol, order_type, side, amount, price, params=None):
+        self.created.append((symbol, order_type, side, amount, price, params))
+        return {"id": "1"}
 
 
 def test_exchange_connector_fetch(monkeypatch):
@@ -43,6 +48,11 @@ def test_exchange_connector_fetch(monkeypatch):
     assert conn.exchange.sandbox is True
     assert conn.exchange.last_params == {"type": "swap"}
     assert conn.exchange.last_since == 3600 * 1000
+
+    order = conn.create_order("buy", 1.0, 100.0)
+    assert order == {"id": "1"}
+    assert conn.exchange.created[0][2] == "buy"
+    assert conn.exchange.created[0][-1] == {"type": "swap"}
 
 
 class ErrorEx(DummyEx):
