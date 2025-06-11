@@ -10,7 +10,7 @@ class ExchangeConnector:
     def __init__(self, config):
         import ccxt
 
-        #self.symbol = config.get("symbol", "BTC/USDT")
+        # self.symbol = config.get("symbol", "BTC/USDT")
         self.symbol = config.get("symbol", "BTCUSD")
         api_conf = config.get("API", {})
         self.live = bool(api_conf.get("LIVE_TRADING", False))
@@ -96,4 +96,7 @@ class ExchangeConnector:
         return bars if bars else []
 
     def create_order(self, side: str, amount: float, price=None, order_type="market"):
-        return self.exchange.create_order(self.symbol, order_type, side, amount, price)
+        params = {"type": self.default_type}
+        return self.exchange.create_order(
+            self.symbol, order_type, side, amount, price, params
+        )
