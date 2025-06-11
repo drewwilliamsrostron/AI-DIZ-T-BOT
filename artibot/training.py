@@ -376,40 +376,50 @@ class PhemexConnector:
     """Thin wrapper around ccxt for polling Phemex."""
 
     def __init__(self, config):
-        self.symbol = config.get("symbol", "BTC/USDT")
+        self.symbol = config.get("symbol", "BTCUSD")
         api_conf = config.get("API", {})
         self.live_trading = bool(api_conf.get("LIVE_TRADING", True))
-        if self.live_trading:
-            self.api_key = api_conf.get("API_KEY_LIVE", "")
-            self.api_secret = api_conf.get("API_SECRET_LIVE", "")
-            api_url = api_conf.get("API_URL_LIVE")
-        else:
-            self.api_key = api_conf.get("API_KEY_TEST", "")
-            self.api_secret = api_conf.get("API_SECRET_TEST", "")
-            api_url = api_conf.get("API_URL_TEST")
+
+        key = (
+            api_conf.get("API_KEY_LIVE", "")
+            if self.live_trading
+            else api_conf.get("API_KEY_TEST", "")
+        )
+        secret = (
+            api_conf.get("API_SECRET_LIVE", "")
+            if self.live_trading
+            else api_conf.get("API_SECRET_TEST", "")
+        )
+
+        api_url_live = api_conf.get("API_URL_LIVE", "https://api.phemex.com")
+        api_url_test = api_conf.get(
+            "API_URL_TEST", "https://testnet-api.phemex.com"
+        )
         self.default_type = api_conf.get("DEFAULT_TYPE", "swap")
+
         import ccxt
 
         try:
-            params = {
-                "apiKey": self.api_key,
-                "secret": self.api_secret,
-                "enableRateLimit": True,
-                "options": {"defaultType": self.default_type},
-            }
-            if api_url:
-                params["urls"] = {"api": api_url}
-            self.exchange = ccxt.phemex(params)
+            self.exchange = ccxt.phemex(
+                {
+                    "urls": {
+                        "api": {"live": api_url_live, "test": api_url_test}
+                    },
+                    "apiKey": key,
+                    "secret": secret,
+                    "enableRateLimit": True,
+                }
+            )
             if not self.live_trading:
                 self.exchange.set_sandbox_mode(True)
-        except Exception as e:
-            logging.error(f"Error initializing exchange: {e}")
+        except Exception as exc:
+            logging.error("Error initializing exchange: %s", exc)
             sys.exit(1)
+
         self.exchange.load_markets()
-        cands = generate_candidates(self.symbol)
-        for c in cands:
-            if c in self.exchange.markets:
-                self.symbol = c
+        for cand in generate_candidates(self.symbol):
+            if cand in self.exchange.markets:
+                self.symbol = cand
                 break
 
     def get_account_stats(self) -> dict:
@@ -425,10 +435,24 @@ class PhemexConnector:
 
     def fetch_latest_bars(self, limit=100):
         try:
-            bars = self.exchange.fetch_ohlcv(self.symbol, timeframe="1h", limit=limit)
+            bars = self.exchange.fetch_ohlcv(
+                self.symbol,
+                timeframe="1h",
+                limit=limit,
+                params={"type": self.default_type},
+            )
             return bars if bars else []
-        except Exception as e:
-            logging.error(f"Error fetching bars: {e}")
+        except TypeError:
+            try:
+                bars = self.exchange.fetch_ohlcv(
+                    self.symbol, timeframe="1h", limit=limit
+                )
+                return bars if bars else []
+            except Exception as exc:
+                logging.error("Error fetching bars: %s", exc)
+                return []
+        except Exception as exc:
+            logging.error("Error fetching bars: %s", exc)
             return []
 
     def create_order(
