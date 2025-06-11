@@ -438,19 +438,32 @@ class PhemexConnector:
                 limit=limit,
                 params={"type": self.default_type},
             )
-            return bars if bars else []
         except TypeError:
             try:
                 bars = self.exchange.fetch_ohlcv(
-                    self.symbol, timeframe="1h", limit=limit
+                    self.symbol,
+                    timeframe="1h",
+                    limit=limit,
                 )
-                return bars if bars else []
             except Exception as exc:
-                logging.error("Error fetching bars: %s", exc)
+                logging.error(
+                    "fetch_ohlcv failed for %s tf=%s limit=%s: %s",
+                    self.symbol,
+                    "1h",
+                    limit,
+                    exc,
+                )
                 return []
         except Exception as exc:
-            logging.error("Error fetching bars: %s", exc)
+            logging.error(
+                "fetch_ohlcv failed for %s tf=%s limit=%s: %s",
+                self.symbol,
+                "1h",
+                limit,
+                exc,
+            )
             return []
+        return bars if bars else []
 
     def create_order(
         self,

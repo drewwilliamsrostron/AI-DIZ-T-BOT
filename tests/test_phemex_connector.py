@@ -1,4 +1,5 @@
 import types
+import logging
 import sys
 from artibot.training import PhemexConnector
 
@@ -42,3 +43,22 @@ def test_phemex_connector(monkeypatch):
 
     stats = conn.get_account_stats()
     assert stats == {"total": {"BTC": 1.0}}
+
+
+class ErrorEx(DummyEx):
+    def fetch_ohlcv(self, symbol, timeframe="1h", limit=100):
+        raise RuntimeError("oops")
+
+
+def test_phemex_connector_error(monkeypatch, caplog):
+    mod = types.SimpleNamespace(phemex=lambda *a, **k: ErrorEx())
+    monkeypatch.setitem(sys.modules, "ccxt", mod)
+    conf = {"symbol": "BTC/USD", "API": {"LIVE_TRADING": False}}
+    conn = PhemexConnector(conf)
+    caplog.set_level(logging.ERROR)
+    bars = conn.fetch_latest_bars(limit=3)
+    assert bars == []
+    assert any(
+        "fetch_ohlcv failed for BTC/USD tf=1h limit=3: oops" in r.message
+        for r in caplog.records
+    )
