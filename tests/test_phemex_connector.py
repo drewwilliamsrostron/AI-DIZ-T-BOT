@@ -7,7 +7,7 @@ from artibot.training import PhemexConnector
 
 class DummyEx:
     def __init__(self):
-        self.markets = {"BTC/USD:BTC": {}}
+        self.markets = {"BTCUSD": {}}
         self.created = []
         self.sandbox = False
         self.last_since = None
@@ -34,7 +34,7 @@ def test_phemex_connector(monkeypatch):
     mod = types.SimpleNamespace(phemex=lambda *a, **k: DummyEx())
     monkeypatch.setitem(sys.modules, "ccxt", mod)
     monkeypatch.setattr(time, "time", lambda: 3600 * 2 + 10)
-    conf = {"symbol": "BTC/USD:BTC", "API": {"LIVE_TRADING": False}}
+    conf = {"symbol": "BTCUSD", "API": {"LIVE_TRADING": False}}
     conn = PhemexConnector(conf)
     assert conn.exchange.last_since is None
     bars = conn.fetch_latest_bars(limit=1)
@@ -61,13 +61,13 @@ def test_phemex_connector_error(monkeypatch, caplog):
     mod = types.SimpleNamespace(phemex=lambda *a, **k: ErrorEx())
     monkeypatch.setitem(sys.modules, "ccxt", mod)
     monkeypatch.setattr(time, "time", lambda: 3600 * 2 + 10)
-    conf = {"symbol": "BTC/USD:BTC", "API": {"LIVE_TRADING": False}}
+    conf = {"symbol": "BTCUSD", "API": {"LIVE_TRADING": False}}
     conn = PhemexConnector(conf)
     caplog.set_level(logging.ERROR)
     bars = conn.fetch_latest_bars(limit=3)
     assert bars == []
     assert conn.exchange.last_since == -3600 * 1000
     assert any(
-        "fetch_ohlcv failed for BTC/USD:BTC tf=1h limit=3: oops" in r.message
+        "fetch_ohlcv failed for BTCUSD tf=1h limit=3: oops" in r.message
         for r in caplog.records
     )

@@ -59,7 +59,7 @@ Create `master_config.json` with your credentials. Important keys:
     "API_URL_LIVE": "https://api.phemex.com",
     "API_URL_TEST": "https://testnet-api.phemex.com"
   },
-  "symbol": "BTC/USD:BTC",
+  "symbol": "BTCUSD",
   "CSV_PATH": "Gemini_BTCUSD_1h.csv",
   "NUM_WORKERS": 4,
   "ADAPT_TO_LIVE": true,

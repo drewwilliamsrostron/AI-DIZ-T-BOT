@@ -10,7 +10,8 @@ class ExchangeConnector:
     def __init__(self, config):
         import ccxt
 
-        self.symbol = config.get("symbol", "BTC/USDT")
+        #self.symbol = config.get("symbol", "BTC/USDT")
+        self.symbol = config.get("symbol", "BTCUSD")
         api_conf = config.get("API", {})
         self.live = bool(api_conf.get("LIVE_TRADING", False))
         key = (
