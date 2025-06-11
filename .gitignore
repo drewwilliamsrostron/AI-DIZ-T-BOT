@@ -1,2 +1,6 @@
 __pycache__/
 *.pyc
+
+# Ignore Visual Studio files
+.vs/
+*.vsidx
