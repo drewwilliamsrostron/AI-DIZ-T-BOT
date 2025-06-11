@@ -1,6 +1,10 @@
+# ruff: noqa: E402
 import logging
 import sys
 import types
+
+sys.modules.setdefault("torch", types.SimpleNamespace())
+sys.modules.setdefault("pandas", types.SimpleNamespace())
 
 from exchanges import ExchangeConnector
 
@@ -9,6 +13,7 @@ class DummyEx:
     def __init__(self):
         self.markets = {"BTC/USD": {}, "BTCUSD": {}}
         self.sandbox = False
+        self.last_params = None
 
     def load_markets(self):
         pass
@@ -16,7 +21,8 @@ class DummyEx:
     def set_sandbox_mode(self, mode):
         self.sandbox = mode
 
-    def fetch_ohlcv(self, symbol, timeframe="1h", limit=100):
+    def fetch_ohlcv(self, symbol, timeframe="1h", limit=100, params=None):
+        self.last_params = params
         return [[1, 2, 3, 4, 5, 6]]
 
 
@@ -31,10 +37,12 @@ def test_exchange_connector_fetch(monkeypatch):
     bars = conn.fetch_latest_bars(limit=1)
     assert bars == [[1, 2, 3, 4, 5, 6]]
     assert conn.exchange.sandbox is True
+    assert conn.exchange.last_params == {"type": "swap"}
 
 
 class ErrorEx(DummyEx):
-    def fetch_ohlcv(self, symbol, timeframe="1h", limit=100):
+    def fetch_ohlcv(self, symbol, timeframe="1h", limit=100, params=None):
+        self.last_params = params
         raise RuntimeError("boom")
 
 
@@ -46,6 +54,7 @@ def test_exchange_connector_error(monkeypatch, caplog):
     caplog.set_level(logging.ERROR)
     bars = conn.fetch_latest_bars(limit=2)
     assert bars == []
+    assert conn.exchange.last_params == {"type": "swap"}
     assert any(
         "fetch_ohlcv failed for BTCUSD tf=1h limit=2: boom" in r.message
         for r in caplog.records
