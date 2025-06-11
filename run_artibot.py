@@ -49,8 +49,6 @@ def main() -> None:
     logging.info("Trading mode: %s", mode)
 
     connector = ExchangeConnector(CONFIG)
-    if use_sandbox:
-        connector.exchange.set_sandbox_mode(True)
     try:
         bal = connector.exchange.fetch_balance()
         logging.info("ACCOUNT_BALANCE %s", json.dumps(bal))
