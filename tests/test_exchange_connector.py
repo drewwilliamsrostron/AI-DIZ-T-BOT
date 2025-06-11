@@ -63,5 +63,51 @@ def test_exchange_connector_error(monkeypatch, caplog):
     assert bars == []
     assert conn.exchange.last_params == {"type": "swap"}
     assert conn.exchange.last_since == 0
-    expected = f"fetch_ohlcv failed for {conn.symbol} tf=1h limit=2: boom"
-    assert any(expected in r.message for r in caplog.records)
+    assert any("primary fetch failed" in r.message for r in caplog.records)
+    assert any("fallback fetch failed" in r.message for r in caplog.records)
+
+
+def test_connector_urls_sandbox(monkeypatch):
+    captured = {}
+
+    def factory(params):
+        captured["params"] = params
+        return DummyEx()
+
+    mod = types.SimpleNamespace(phemex=factory)
+    monkeypatch.setitem(sys.modules, "ccxt", mod)
+    conf = {
+        "symbol": "BTC/USD:BTC",
+        "API": {
+            "LIVE_TRADING": False,
+            "API_URL_LIVE": "https://live",
+            "API_URL_TEST": "https://test",
+        },
+    }
+    conn = ExchangeConnector(conf)
+    urls = captured["params"]["urls"]["api"]
+    assert urls == {"public": "https://test", "private": "https://test"}
+    assert conn.exchange.sandbox is True
+
+
+def test_connector_urls_live(monkeypatch):
+    captured = {}
+
+    def factory(params):
+        captured["params"] = params
+        return DummyEx()
+
+    mod = types.SimpleNamespace(phemex=factory)
+    monkeypatch.setitem(sys.modules, "ccxt", mod)
+    conf = {
+        "symbol": "BTC/USD:BTC",
+        "API": {
+            "LIVE_TRADING": True,
+            "API_URL_LIVE": "https://live",
+            "API_URL_TEST": "https://test",
+        },
+    }
+    conn = ExchangeConnector(conf)
+    urls = captured["params"]["urls"]["api"]
+    assert urls == {"public": "https://live", "private": "https://live"}
+    assert conn.exchange.sandbox is False

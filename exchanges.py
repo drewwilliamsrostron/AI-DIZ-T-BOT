@@ -35,8 +35,8 @@ class ExchangeConnector:
         if api_url_live or api_url_test:
             params["urls"] = {
                 "api": {
-                    "live": api_url_live,
-                    "test": api_url_test,
+                    "public": api_url_live if self.live else api_url_test,
+                    "private": api_url_live if self.live else api_url_test,
                 }
             }
 
