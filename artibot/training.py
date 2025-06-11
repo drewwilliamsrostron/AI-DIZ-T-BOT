@@ -4,11 +4,11 @@
 import artibot.globals as G
 
 import logging
-import os
 import datetime
 import time
 
 import sys
+import os
 import json
 
 from .utils.markets import generate_candidates
@@ -39,7 +39,6 @@ def csv_training_thread(
     integrate more gating checks.
     """
     import traceback
-    import threading
 
     import numpy as np
     import torch
@@ -83,16 +82,15 @@ def csv_training_thread(
 
         pin = ensemble.device.type == "cuda"
         default_workers = os.cpu_count() or 1
-        if config.get("FORCE_ZERO_WORKERS"):
-            default_workers = 0
-        elif threading.current_thread() is not threading.main_thread():
-            # Avoid multiprocessing when running inside a thread as this can
-            # hang on some platforms (notably Windows).
-            default_workers = 0
-        workers = int(config.get("NUM_WORKERS", default_workers))
+        workers = (
+            0
+            if sys.platform.startswith("win")
+            else int(config.get("NUM_WORKERS", default_workers))
+        )
         logging.info(
             "DATALOADER", extra={"workers": workers, "device": ensemble.device.type}
         )
+        print("[DEBUG] About to create DataLoader")
         dl_train = DataLoader(
             ds_train,
             batch_size=128,
@@ -111,6 +109,7 @@ def csv_training_thread(
             persistent_workers=bool(workers),
             prefetch_factor=2,
         )
+        print("[DEBUG] DataLoader created")
 
         adapt_live = bool(config.get("ADAPT_TO_LIVE", False))
         dummy_input = torch.randn(1, 24, 8, device=ensemble.device)
@@ -296,15 +295,16 @@ def csv_training_thread(
                         ds_tr_, ds_val_ = random_split(ds_updated, [ntr_, nv_])
                         pin = ensemble.device.type == "cuda"
                         default_workers = os.cpu_count() or 1
-                        if config.get("FORCE_ZERO_WORKERS"):
-                            default_workers = 0
-                        elif threading.current_thread() is not threading.main_thread():
-                            default_workers = 0
-                        workers = int(config.get("NUM_WORKERS", default_workers))
+                        workers = (
+                            0
+                            if sys.platform.startswith("win")
+                            else int(config.get("NUM_WORKERS", default_workers))
+                        )
                         logging.info(
                             "DATALOADER",
                             extra={"workers": workers, "device": ensemble.device.type},
                         )
+                        print("[DEBUG] About to create DataLoader")
                         dl_tr_ = DataLoader(
                             ds_tr_,
                             batch_size=128,
@@ -323,6 +323,7 @@ def csv_training_thread(
                             persistent_workers=bool(workers),
                             prefetch_factor=2,
                         )
+                        print("[DEBUG] DataLoader created")
                         train_indicators = compute_indicators(
                             train_data, ensemble.indicator_hparams, with_scaled=True
                         )

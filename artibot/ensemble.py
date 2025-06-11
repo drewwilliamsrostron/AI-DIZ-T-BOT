@@ -14,7 +14,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.cuda.amp import GradScaler, autocast
+
+try:
+    from torch.amp import GradScaler, autocast  # PyTorch >=2.3
+except Exception:  # pragma: no cover - older versions
+    from torch.cuda.amp import GradScaler, autocast
 from torch.optim.lr_scheduler import (
     ReduceLROnPlateau,
     CosineAnnealingWarmRestarts,
@@ -102,17 +106,19 @@ class EnsembleModel:
 
     def __init__(
         self,
-        device,
-        n_models=2,
+        device: torch.device | None = None,
+        n_models: int = 2,
         lr=3e-4,
         weight_decay=1e-4,
         weights_path="best_model_weights.pth",
     ):
+        device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.device = device
         self.weights_path = weights_path
 
         # (6) We changed TradingModel to bigger capacity above
         self.models = [TradingModel().to(device) for _ in range(n_models)]
+        print("[DEBUG] Model moved to device")
         self.optimizers = [
             optim.Adam(m.parameters(), lr=lr, weight_decay=weight_decay)
             for m in self.models
@@ -122,11 +128,13 @@ class EnsembleModel:
         )
         self.mse_loss_fn = nn.MSELoss()
         amp_on = device.type == "cuda"
+        print(f"[DEBUG] Using device: {device}, AMP enabled: {amp_on}")
         # GradScaler's `device` arg is not supported on older PyTorch versions
         if "device" in inspect.signature(GradScaler).parameters:
-            self.scaler = GradScaler(enabled=amp_on, device=self.device.type)
+            self.scaler = GradScaler(enabled=amp_on, device=device)
         else:
             self.scaler = GradScaler(enabled=amp_on)
+        print("[DEBUG] Scaler init complete")
         self.best_val_loss = float("inf")
         self.best_composite_reward = float("-inf")
         self.best_state_dicts = None
@@ -469,7 +477,7 @@ class EnsembleModel:
                             if "device" in inspect.signature(GradScaler).parameters:
                                 self.scaler = GradScaler(
                                     enabled=(self.device.type == "cuda"),
-                                    device=self.device.type,
+                                    device=self.device,
                                 )
                             else:
                                 self.scaler = GradScaler(
@@ -642,3 +650,13 @@ class EnsembleModel:
                     G.global_best_yearly_stats_table = best_table
             except Exception:
                 pass
+
+
+def main() -> None:
+    """Simple sanity check when run directly."""
+    EnsembleModel()
+    print("[DEBUG] EnsembleModel initialised")
+
+
+if __name__ == "__main__":
+    main()
