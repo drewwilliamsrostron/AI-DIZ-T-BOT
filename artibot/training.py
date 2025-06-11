@@ -5,7 +5,6 @@ import artibot.globals as G
 
 import logging
 import datetime
-import time
 
 import sys
 import os
@@ -428,21 +427,16 @@ class PhemexConnector:
         return {"total": totals}
 
     def fetch_latest_bars(self, limit=100):
-        now = int(time.time())
-        last_hour = now - (now % 3600)
-        since_ms = (last_hour - limit * 3600) * 1000
         logging.debug(
-            "fetch_ohlcv -> %s tf=%s since=%s limit=%s",
+            "fetch_ohlcv -> %s tf=%s limit=%s",
             self.symbol,
             "1h",
-            since_ms,
             limit,
         )
         try:
             bars = self.exchange.fetch_ohlcv(
                 self.symbol,
                 timeframe="1h",
-                since=since_ms,
                 limit=limit,
             )
         except Exception as exc:
