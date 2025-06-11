@@ -408,8 +408,7 @@ class PhemexConnector:
                     "options": {"defaultType": self.default_type},
                 }
             )
-            if not self.live_trading:
-                self.exchange.set_sandbox_mode(True)
+            self.exchange.set_sandbox_mode(not self.live_trading)
         except Exception as exc:
             logging.error("Error initializing exchange: %s", exc)
             sys.exit(1)
