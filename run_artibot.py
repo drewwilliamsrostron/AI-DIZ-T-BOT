@@ -60,7 +60,6 @@ def main() -> None:
     if os.path.isfile(weights_path):
         ensemble.load_best_weights(weights_path)
 
-    symbol = CONFIG.get("symbol", "BTC/USDT")
     poll_int = float(CONFIG.get("LIVE_POLL_INTERVAL", 60))
     risk_pct = float(CONFIG.get("RISK_PERCENT", 0.01))
 
@@ -69,7 +68,7 @@ def main() -> None:
     try:
         while True:
             try:
-                bars = connector.exchange.fetch_ohlcv(symbol, timeframe="1h", limit=24)
+                bars = connector.fetch_latest_bars(limit=24)
             except Exception as exc:  # pragma: no cover - network errors
                 logging.error("fetch_ohlcv failed: %s", exc)
                 time.sleep(poll_int)
@@ -114,7 +113,7 @@ def main() -> None:
             amount = (usdt_bal * risk_pct) / price
 
             try:
-                order = connector.create_order(symbol, side_signal, amount)
+                order = connector.create_order(side_signal, amount)
                 logging.info("ORDER_PLACED %s", order)
                 G.global_position_side = side_signal
                 G.global_position_size = amount
