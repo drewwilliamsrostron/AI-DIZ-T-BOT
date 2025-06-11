@@ -1,8 +1,8 @@
 """CCXT-based helper for simplified Phemex access."""
 
 import logging
-import re
-from typing import List
+
+from artibot.utils.markets import generate_candidates
 
 
 class ExchangeConnector:
@@ -41,25 +41,10 @@ class ExchangeConnector:
             self.exchange.set_sandbox_mode(True)
         self.exchange.load_markets()
 
-        for cand in self._generate_candidates(self.symbol):
+        for cand in generate_candidates(self.symbol):
             if cand in self.exchange.markets:
                 self.symbol = cand
                 break
-
-    # ------------------------------------------------------------------
-    @staticmethod
-    def _generate_candidates(symbol: str) -> List[str]:
-        parts = [p for p in re.split(r"[/:]", symbol) if p]
-        if len(parts) == 2:
-            base, quote = parts
-            return [
-                f"{base}/{quote}",
-                f"{base}{quote}",
-                f"{base}:{quote}",
-                f"{base}/USDT",
-                f"{base}USDT",
-            ]
-        return [symbol]
 
     def fetch_latest_bars(self, limit: int = 24):
         try:

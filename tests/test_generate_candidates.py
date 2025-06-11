@@ -1,4 +1,4 @@
-from artibot.training import generate_candidates
+from artibot.utils.markets import generate_candidates
 
 
 def test_single_token_variants():

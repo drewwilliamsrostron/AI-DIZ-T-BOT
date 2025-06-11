@@ -7,9 +7,10 @@ import logging
 import os
 import datetime
 
-import re
 import sys
 import json
+
+from .utils.markets import generate_candidates
 
 from .dataset import HourlyDataset
 from .ensemble import reject_if_risky
@@ -392,9 +393,7 @@ class PhemexConnector:
         )
 
         api_url_live = api_conf.get("API_URL_LIVE", "https://api.phemex.com")
-        api_url_test = api_conf.get(
-            "API_URL_TEST", "https://testnet-api.phemex.com"
-        )
+        api_url_test = api_conf.get("API_URL_TEST", "https://testnet-api.phemex.com")
         self.default_type = api_conf.get("DEFAULT_TYPE", "swap")
 
         import ccxt
@@ -402,9 +401,7 @@ class PhemexConnector:
         try:
             self.exchange = ccxt.phemex(
                 {
-                    "urls": {
-                        "api": {"live": api_url_live, "test": api_url_test}
-                    },
+                    "urls": {"api": {"live": api_url_live, "test": api_url_test}},
                     "apiKey": key,
                     "secret": secret,
                     "enableRateLimit": True,
@@ -480,42 +477,6 @@ class PhemexConnector:
                 return None
 
         return submit_order(_place, side, amount, price)
-
-
-def generate_candidates(symbol):
-    """Return possible market symbol permutations."""
-    parts = [p for p in re.split(r"[/:]", symbol) if p]
-    cands = set()
-    if len(parts) == 2:
-        base, quote = parts
-        cands.update(
-            {
-                f"{base}/{quote}",
-                f"{base}{quote}",
-                f"{base}:{quote}",
-                f"{base}/USDT",
-                f"{base}USDT",
-                f"{base}/{quote}:{quote}",
-                f"{base}/{quote}:USDT",
-                f"{base}{quote}:{quote}",
-                f"{base}USDT:USDT",
-            }
-        )
-    elif len(parts) == 1:
-        token = parts[0]
-        cands.update(
-            {
-                f"{token}/USD",
-                f"{token}USD",
-                f"{token}/USD:USD",
-                f"{token}USDT",
-                token,
-            }
-        )
-    else:
-        cands.add(symbol)
-
-    return list(cands)
 
 
 ###############################################################################
