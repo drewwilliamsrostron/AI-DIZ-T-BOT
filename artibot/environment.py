@@ -11,6 +11,24 @@ Complex AI Trading + Continuous Training + Robust Backtest Each Epoch + Live Phe
 import sys
 import os
 import warnings
+import subprocess
+import importlib.metadata as imd
+
+
+def _ensure_numpy_lt2() -> None:
+    """Downgrade to NumPy <2 if an incompatible version is installed."""
+    try:
+        ver = imd.version("numpy")
+        if not ver.startswith("1."):
+            print("[env] Downgrading incompatible NumPy", ver, "→ <2.0")
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", "--force-reinstall", "numpy<2"]
+            )
+    except Exception:
+        pass
+
+
+_ensure_numpy_lt2()
 
 # This prevents torch from emitting experimental API warnings under NumPy 2
 os.environ.setdefault("NUMPY_EXPERIMENTAL_ARRAY_API", "1")
