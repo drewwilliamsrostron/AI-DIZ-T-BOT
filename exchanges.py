@@ -23,9 +23,8 @@ class ExchangeConnector:
         )
         default_type = api_conf.get("DEFAULT_TYPE", "swap")
         self.default_type = default_type
-        api_url = (
-            api_conf.get("API_URL_LIVE") if self.live else api_conf.get("API_URL_TEST")
-        )
+        api_url_live = api_conf.get("API_URL_LIVE")
+        api_url_test = api_conf.get("API_URL_TEST")
 
         params = {
             "apiKey": key,
@@ -33,64 +32,52 @@ class ExchangeConnector:
             "enableRateLimit": True,
             "options": {"defaultType": default_type},
         }
-        if api_url:
-            params["urls"] = {"api": {"public": api_url, "private": api_url}}
+        if api_url_live or api_url_test:
+            params["urls"] = {
+                "api": {
+                    "live": api_url_live,
+                    "test": api_url_test,
+                }
+            }
 
         self.exchange = ccxt.phemex(params)
-        if not self.live:
-            self.exchange.set_sandbox_mode(True)
+        self.exchange.set_sandbox_mode(not self.live)
         self.exchange.load_markets()
 
-    def fetch_latest_bars(self, limit: int = 24):
+    def fetch_latest_bars(self, timeframe: str = "1h", limit: int = 24):
         now = int(time.time())
         last_hour = now - (now % 3600)
         since_ms = (last_hour - limit * 3600) * 1000
         params = {"type": self.default_type}
         logging.debug(
-            "fetch_ohlcv -> %s tf=%s since=%s limit=%s params=%s",
+            "fetch_ohlcv → symbol=%s params=%s",
             self.symbol,
-            "1h",
-            since_ms,
-            limit,
             params,
         )
         try:
             bars = self.exchange.fetch_ohlcv(
                 self.symbol,
-                timeframe="1h",
+                timeframe=timeframe,
                 since=since_ms,
                 limit=limit,
                 params=params,
             )
-        except TypeError:
-            logging.debug("TypeError on fetch_ohlcv, retrying without params")
+        except Exception as primary:  # pragma: no cover - network errors
+            logging.error("primary fetch failed: %s", primary)
             try:
+                market_id = self.exchange.market(self.symbol)["id"]
+                logging.debug("retrying fetch with market_id %s", market_id)
                 bars = self.exchange.fetch_ohlcv(
-                    self.symbol,
-                    timeframe="1h",
+                    market_id,
+                    timeframe=timeframe,
                     since=since_ms,
                     limit=limit,
                 )
-            except Exception as exc:  # pragma: no cover - network errors
-                logging.error(
-                    "fetch_ohlcv failed for %s tf=%s limit=%s: %s",
-                    self.symbol,
-                    "1h",
-                    limit,
-                    exc,
-                )
+            except Exception as fallback:  # pragma: no cover - network errors
+                logging.error("fallback fetch failed: %s", fallback)
                 return []
-        except Exception as exc:  # pragma: no cover - network errors
-            logging.error(
-                "fetch_ohlcv failed for %s tf=%s limit=%s: %s",
-                self.symbol,
-                "1h",
-                limit,
-                exc,
-            )
-            return []
-        logging.debug("fetched %d bars", len(bars) if bars else 0)
-        return bars
+        logging.info("Fetched %d bars", len(bars) if bars else 0)
+        return bars if bars else []
 
     def create_order(self, side: str, amount: float, price=None, order_type="market"):
         return self.exchange.create_order(self.symbol, order_type, side, amount, price)
