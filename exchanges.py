@@ -60,6 +60,23 @@ class ExchangeConnector:
                 limit=limit,
                 params={"type": self.default_type},
             )
+        except TypeError:
+            try:
+                return self.exchange.fetch_ohlcv(
+                    self.symbol,
+                    timeframe="1h",
+                    since=since_ms,
+                    limit=limit,
+                )
+            except Exception as exc:  # pragma: no cover - network errors
+                logging.error(
+                    "fetch_ohlcv failed for %s tf=%s limit=%s: %s",
+                    self.symbol,
+                    "1h",
+                    limit,
+                    exc,
+                )
+                return []
         except Exception as exc:  # pragma: no cover - network errors
             logging.error(
                 "fetch_ohlcv failed for %s tf=%s limit=%s: %s",
