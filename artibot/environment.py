@@ -23,6 +23,7 @@ warnings.filterwarnings(
 warnings.filterwarnings(
     "ignore",
     message=r"A module that was compiled using NumPy 1.x.*",
+    module=r"torch.nn.modules.transformer",
     category=UserWarning,
 )
 
@@ -67,7 +68,7 @@ def _install_pytorch_for_env() -> None:
     major, minor = sys.version_info[:2]
 
     # crude CUDA check: we’ll try GPU wheels first only when a NVIDIA adapter
-    # is visible to Windows.  Fall back to CPU if the install fails later.
+    # visible to Windows. Fall back to CPU if the install fails later.
     cuda_ok = platform.system() == "Windows" and "NVIDIA" in subprocess.getoutput(
         "wmic path win32_VideoController get name"
     )
