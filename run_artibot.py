@@ -73,7 +73,7 @@ def main() -> None:
         while True:
             logging.info("Fetching latest bars…")
             try:
-                bars = connector.fetch_latest_bars(limit=24)
+                bars = connector.fetch_latest_bars(limit=100)
             except Exception as exc:  # pragma: no cover - network errors
                 logging.error("fetch_ohlcv failed: %s", exc)
                 time.sleep(poll_int)

@@ -38,7 +38,7 @@ class ExchangeConnector:
         self.exchange.set_sandbox_mode(not self.live)
         self.exchange.load_markets()
 
-    def fetch_latest_bars(self, timeframe: str = "1h", limit: int = 24):
+    def fetch_latest_bars(self, timeframe: str = "1h", limit: int = 100):
         logging.debug(
             "fetch_ohlcv → symbol=%s",
             self.symbol,
