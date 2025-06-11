@@ -96,7 +96,7 @@ def test_connector_urls_sandbox(monkeypatch):
     }
     conn = ExchangeConnector(conf)
     urls = captured["params"]["urls"]["api"]
-    assert urls == {"public": "https://test", "private": "https://test"}
+    assert urls == {"live": "https://live", "test": "https://test"}
     assert conn.exchange.sandbox is True
 
 
@@ -119,5 +119,5 @@ def test_connector_urls_live(monkeypatch):
     }
     conn = ExchangeConnector(conf)
     urls = captured["params"]["urls"]["api"]
-    assert urls == {"public": "https://live", "private": "https://live"}
+    assert urls == {"live": "https://live", "test": "https://test"}
     assert conn.exchange.sandbox is False
