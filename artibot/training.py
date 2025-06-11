@@ -387,7 +387,7 @@ class PhemexConnector:
             self.api_key = api_conf.get("API_KEY_TEST", "")
             self.api_secret = api_conf.get("API_SECRET_TEST", "")
             api_url = api_conf.get("API_URL_TEST")
-        default_type = api_conf.get("DEFAULT_TYPE", "swap")
+        self.default_type = api_conf.get("DEFAULT_TYPE", "swap")
         import ccxt
 
         try:
@@ -395,13 +395,10 @@ class PhemexConnector:
                 "apiKey": self.api_key,
                 "secret": self.api_secret,
                 "enableRateLimit": True,
-                "options": {"defaultType": default_type},
+                "options": {"defaultType": self.default_type},
             }
             if api_url:
-                hostname = (
-                    api_url.replace("https://", "").replace("http://", "").split("/")[0]
-                )
-                params["hostname"] = hostname
+                params["urls"] = {"api": api_url}
             self.exchange = ccxt.phemex(params)
             if not self.live_trading:
                 self.exchange.set_sandbox_mode(True)
@@ -452,7 +449,7 @@ class PhemexConnector:
                     side,
                     kwargs["amount"],
                     kwargs["price"],
-                    {"type": "swap"},
+                    {"type": self.default_type},
                 )
             except Exception as exc:
                 logging.error("Order error: %s", exc)
@@ -478,6 +475,17 @@ def generate_candidates(symbol):
                 f"{base}/{quote}:USDT",
                 f"{base}{quote}:{quote}",
                 f"{base}USDT:USDT",
+            }
+        )
+    elif len(parts) == 1:
+        token = parts[0]
+        cands.update(
+            {
+                f"{token}/USD",
+                f"{token}USD",
+                f"{token}/USD:USD",
+                f"{token}USDT",
+                token,
             }
         )
     else:
