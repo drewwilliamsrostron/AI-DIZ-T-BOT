@@ -7,6 +7,9 @@ import datetime
 import os
 import tkinter as tk
 from tkinter import ttk
+import matplotlib
+
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
