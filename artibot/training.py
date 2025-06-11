@@ -377,7 +377,8 @@ class PhemexConnector:
     """Thin wrapper around ccxt for polling Phemex."""
 
     def __init__(self, config):
-        self.symbol = config.get("symbol", "BTCUSD")
+        # Symbol is currently fixed for simplicity
+        self.symbol = "BTCUSD"
         api_conf = config.get("API", {})
         self.live_trading = bool(api_conf.get("LIVE_TRADING", True))
 

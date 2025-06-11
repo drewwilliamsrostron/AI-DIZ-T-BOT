@@ -44,7 +44,8 @@ not defined and loads a small NumPy 2.x compatibility shim. Set
 
 ## Configuration
 
-Create `master_config.json` with your credentials. Important keys:
+Create `master_config.json` with your credentials. The bot currently trades
+`BTCUSD` only so the symbol option was removed. Important keys:
 
 ```json
 {
@@ -59,7 +60,6 @@ Create `master_config.json` with your credentials. Important keys:
     "API_URL_LIVE": "https://api.phemex.com",
     "API_URL_TEST": "https://testnet-api.phemex.com"
   },
-  "symbol": "BTCUSD",
   "CSV_PATH": "Gemini_BTCUSD_1h.csv",
   "NUM_WORKERS": 4,
   "ADAPT_TO_LIVE": true,
