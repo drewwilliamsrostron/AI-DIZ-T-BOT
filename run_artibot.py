@@ -40,9 +40,17 @@ def main() -> None:
     from artibot.bot_app import CONFIG
 
     ans = input("Use LIVE API? [y/N]: ").strip().lower()
-    CONFIG.setdefault("API", {})["LIVE_TRADING"] = ans.startswith("y")
+    use_live_api = ans.startswith("y")
+    use_sandbox = not use_live_api
+    CONFIG.setdefault("API", {})["LIVE_TRADING"] = use_live_api
+    G.use_sandbox = use_sandbox
+
+    mode = "LIVE" if use_live_api else "SANDBOX"
+    logging.info("Trading mode: %s", mode)
 
     connector = ExchangeConnector(CONFIG)
+    if use_sandbox:
+        connector.exchange.set_sandbox_mode(True)
     try:
         bal = connector.exchange.fetch_balance()
         logging.info("ACCOUNT_BALANCE %s", json.dumps(bal))
@@ -62,7 +70,6 @@ def main() -> None:
 
     poll_int = float(CONFIG.get("LIVE_POLL_INTERVAL", 60))
     risk_pct = float(CONFIG.get("RISK_PERCENT", 0.01))
-    G.live_trading_enabled = CONFIG.get("API", {}).get("LIVE_TRADING", False)
 
     try:
         while True:
@@ -101,7 +108,7 @@ def main() -> None:
             price = float(arr[-1, 4])
             logging.info("SIGNAL %s conf=%.3f", side_signal, conf)
 
-            if G.trading_paused or not G.live_trading_enabled or side_signal == "hold":
+            if G.trading_paused or side_signal == "hold":
                 time.sleep(poll_int)
                 continue
 
