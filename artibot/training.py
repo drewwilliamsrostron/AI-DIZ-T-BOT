@@ -460,8 +460,7 @@ class PhemexConnector:
 
 def generate_candidates(symbol):
     """Return possible market symbol permutations."""
-    parts = re.split(r"[/:]", symbol)
-    parts = [x for x in parts if x]
+    parts = [p for p in re.split(r"[/:]", symbol) if p]
     cands = set()
     if len(parts) == 2:
         base, quote = parts
@@ -472,10 +471,15 @@ def generate_candidates(symbol):
                 f"{base}:{quote}",
                 f"{base}/USDT",
                 f"{base}USDT",
+                f"{base}/{quote}:{quote}",
+                f"{base}/{quote}:USDT",
+                f"{base}{quote}:{quote}",
+                f"{base}USDT:USDT",
             }
         )
     else:
         cands.add(symbol)
+
     return list(cands)
 
 
