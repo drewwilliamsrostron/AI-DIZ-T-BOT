@@ -23,6 +23,7 @@ class ExchangeConnector:
             else api_conf.get("API_SECRET_TEST")
         )
         default_type = api_conf.get("DEFAULT_TYPE", "swap")
+        self.default_type = default_type
         api_url = (
             api_conf.get("API_URL_LIVE") if self.live else api_conf.get("API_URL_TEST")
         )
@@ -48,7 +49,12 @@ class ExchangeConnector:
 
     def fetch_latest_bars(self, limit: int = 24):
         try:
-            return self.exchange.fetch_ohlcv(self.symbol, timeframe="1h", limit=limit)
+            return self.exchange.fetch_ohlcv(
+                self.symbol,
+                timeframe="1h",
+                limit=limit,
+                params={"type": self.default_type},
+            )
         except Exception as exc:  # pragma: no cover - network errors
             logging.error(
                 "fetch_ohlcv failed for %s tf=%s limit=%s: %s",
