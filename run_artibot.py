@@ -68,7 +68,12 @@ def main() -> None:
 
     try:
         while True:
-            bars = connector.exchange.fetch_ohlcv(symbol, timeframe="1h", limit=24)
+            try:
+                bars = connector.exchange.fetch_ohlcv(symbol, timeframe="1h", limit=24)
+            except Exception as exc:  # pragma: no cover - network errors
+                logging.error("fetch_ohlcv failed: %s", exc)
+                time.sleep(poll_int)
+                continue
             if not bars:
                 time.sleep(poll_int)
                 continue
