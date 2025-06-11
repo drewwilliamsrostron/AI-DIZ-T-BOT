@@ -63,18 +63,34 @@ class ExchangeConnector:
                 params=params,
             )
         except Exception as primary:  # pragma: no cover - network errors
-            logging.error("primary fetch failed: %s", primary)
-            try:
-                market_id = self.exchange.market(self.symbol)["id"]
-                logging.debug("retrying fetch with market_id %s", market_id)
-                bars = self.exchange.fetch_ohlcv(
-                    market_id,
-                    timeframe=timeframe,
-                    since=since_ms,
-                    limit=limit,
-                )
-            except Exception as fallback:  # pragma: no cover - network errors
-                logging.error("fallback fetch failed: %s", fallback)
+            logging.error(
+                "fetch_ohlcv failed for %s tf=%s limit=%s: %s",
+                self.symbol,
+                timeframe,
+                limit,
+                primary,
+            )
+            if hasattr(self.exchange, "market"):
+                market_id = self.symbol
+                try:
+                    market_id = self.exchange.market(self.symbol)["id"]
+                    logging.debug("retrying fetch with market_id %s", market_id)
+                    bars = self.exchange.fetch_ohlcv(
+                        market_id,
+                        timeframe=timeframe,
+                        since=since_ms,
+                        limit=limit,
+                    )
+                except Exception as fallback:  # pragma: no cover - network errors
+                    logging.error(
+                        "fetch_ohlcv failed for %s tf=%s limit=%s: %s",
+                        market_id,
+                        timeframe,
+                        limit,
+                        fallback,
+                    )
+                    return []
+            else:
                 return []
         logging.info("Fetched %d bars", len(bars) if bars else 0)
         return bars if bars else []
