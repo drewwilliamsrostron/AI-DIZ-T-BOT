@@ -62,11 +62,11 @@ def main() -> None:
 
     poll_int = float(CONFIG.get("LIVE_POLL_INTERVAL", 60))
     risk_pct = float(CONFIG.get("RISK_PERCENT", 0.01))
-
-    G.live_trading_enabled = False  # false if test api, true if live api
+    G.live_trading_enabled = CONFIG.get("API", {}).get("LIVE_TRADING", False)
 
     try:
         while True:
+            logging.info("Fetching latest bars…")
             try:
                 bars = connector.fetch_latest_bars(limit=24)
             except Exception as exc:  # pragma: no cover - network errors
@@ -74,6 +74,10 @@ def main() -> None:
                 time.sleep(poll_int)
                 continue
             if not bars:
+                logging.warning(
+                    "No bars retrieved from exchange, retrying in %.0f seconds…",
+                    poll_int,
+                )
                 time.sleep(poll_int)
                 continue
 
