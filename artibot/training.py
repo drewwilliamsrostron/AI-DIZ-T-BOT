@@ -431,14 +431,12 @@ class PhemexConnector:
         now = int(time.time())
         last_hour = now - (now % 3600)
         since_ms = (last_hour - limit * 3600) * 1000
-        params = {"type": self.default_type}
         logging.debug(
-            "fetch_ohlcv -> %s tf=%s since=%s limit=%s params=%s",
+            "fetch_ohlcv -> %s tf=%s since=%s limit=%s",
             self.symbol,
             "1h",
             since_ms,
             limit,
-            params,
         )
         try:
             bars = self.exchange.fetch_ohlcv(
@@ -446,26 +444,7 @@ class PhemexConnector:
                 timeframe="1h",
                 since=since_ms,
                 limit=limit,
-                params=params,
             )
-        except TypeError:
-            logging.debug("TypeError on fetch_ohlcv, retrying without params")
-            try:
-                bars = self.exchange.fetch_ohlcv(
-                    self.symbol,
-                    timeframe="1h",
-                    since=since_ms,
-                    limit=limit,
-                )
-            except Exception as exc:
-                logging.error(
-                    "fetch_ohlcv failed for %s tf=%s limit=%s: %s",
-                    self.symbol,
-                    "1h",
-                    limit,
-                    exc,
-                )
-                return []
         except Exception as exc:
             logging.error(
                 "fetch_ohlcv failed for %s tf=%s limit=%s: %s",

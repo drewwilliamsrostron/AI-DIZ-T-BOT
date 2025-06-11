@@ -43,11 +43,9 @@ class ExchangeConnector:
         now = int(time.time())
         last_hour = now - (now % 3600)
         since_ms = (last_hour - limit * 3600) * 1000
-        params = {"type": self.default_type}
         logging.debug(
-            "fetch_ohlcv → symbol=%s params=%s",
+            "fetch_ohlcv → symbol=%s",
             self.symbol,
-            params,
         )
         try:
             bars = self.exchange.fetch_ohlcv(
@@ -55,7 +53,6 @@ class ExchangeConnector:
                 timeframe=timeframe,
                 since=since_ms,
                 limit=limit,
-                params=params,
             )
         except Exception as primary:  # pragma: no cover - network errors
             logging.error(
