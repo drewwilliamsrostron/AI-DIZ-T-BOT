@@ -52,17 +52,27 @@ class ExchangeConnector:
         now = int(time.time())
         last_hour = now - (now % 3600)
         since_ms = (last_hour - limit * 3600) * 1000
+        params = {"type": self.default_type}
+        logging.debug(
+            "fetch_ohlcv -> %s tf=%s since=%s limit=%s params=%s",
+            self.symbol,
+            "1h",
+            since_ms,
+            limit,
+            params,
+        )
         try:
-            return self.exchange.fetch_ohlcv(
+            bars = self.exchange.fetch_ohlcv(
                 self.symbol,
                 timeframe="1h",
                 since=since_ms,
                 limit=limit,
-                params={"type": self.default_type},
+                params=params,
             )
         except TypeError:
+            logging.debug("TypeError on fetch_ohlcv, retrying without params")
             try:
-                return self.exchange.fetch_ohlcv(
+                bars = self.exchange.fetch_ohlcv(
                     self.symbol,
                     timeframe="1h",
                     since=since_ms,
@@ -86,6 +96,8 @@ class ExchangeConnector:
                 exc,
             )
             return []
+        logging.debug("fetched %d bars", len(bars) if bars else 0)
+        return bars
 
     def create_order(self, side: str, amount: float, price=None, order_type="market"):
         return self.exchange.create_order(self.symbol, order_type, side, amount, price)
