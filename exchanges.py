@@ -50,7 +50,13 @@ class ExchangeConnector:
         try:
             return self.exchange.fetch_ohlcv(self.symbol, timeframe="1h", limit=limit)
         except Exception as exc:  # pragma: no cover - network errors
-            logging.error("fetch_ohlcv failed: %s", exc)
+            logging.error(
+                "fetch_ohlcv failed for %s tf=%s limit=%s: %s",
+                self.symbol,
+                "1h",
+                limit,
+                exc,
+            )
             return []
 
     def create_order(self, side: str, amount: float, price=None, order_type="market"):

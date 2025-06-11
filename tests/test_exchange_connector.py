@@ -1,5 +1,6 @@
-import types
+import logging
 import sys
+import types
 
 from exchanges import ExchangeConnector
 
@@ -30,3 +31,22 @@ def test_exchange_connector_fetch(monkeypatch):
     bars = conn.fetch_latest_bars(limit=1)
     assert bars == [[1, 2, 3, 4, 5, 6]]
     assert conn.exchange.sandbox is True
+
+
+class ErrorEx(DummyEx):
+    def fetch_ohlcv(self, symbol, timeframe="1h", limit=100):
+        raise RuntimeError("boom")
+
+
+def test_exchange_connector_error(monkeypatch, caplog):
+    mod = types.SimpleNamespace(phemex=lambda *a, **k: ErrorEx())
+    monkeypatch.setitem(sys.modules, "ccxt", mod)
+    conf = {"symbol": "BTCUSD", "API": {"LIVE_TRADING": False}}
+    conn = ExchangeConnector(conf)
+    caplog.set_level(logging.ERROR)
+    bars = conn.fetch_latest_bars(limit=2)
+    assert bars == []
+    assert any(
+        "fetch_ohlcv failed for BTCUSD tf=1h limit=2: boom" in r.message
+        for r in caplog.records
+    )
