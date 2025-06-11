@@ -117,6 +117,9 @@ live_sharpe_history = collections.deque(maxlen=1000)
 live_drawdown_history = collections.deque(maxlen=1000)
 trading_paused = False
 
+# When ``True`` orders are routed to the Phemex testnet
+use_sandbox = True
+
 # gating flag
 nuclear_key_enabled = False
 

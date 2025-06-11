@@ -50,6 +50,7 @@ Create `master_config.json` with your credentials. Important keys:
 {
   "API": {
     "LIVE_TRADING": true,
+    "SIMULATED_TRADING": false,
     "API_KEY_LIVE": "...",
     "API_SECRET_LIVE": "...",
     "API_KEY_TEST": "...",
@@ -101,7 +102,8 @@ python scripts/smoke.py --summary
 ### Live vs. Sandbox
 
 Answer `n` at the startup prompt or set `LIVE_TRADING` to `false` in the config
-to use the Phemex testnet. Respond `y` to trade on the real exchange.
+to route orders to the Phemex sandbox while still running the full trading
+cycle. Respond `y` for real trades on the live exchange.
 
 ## Testing
 
