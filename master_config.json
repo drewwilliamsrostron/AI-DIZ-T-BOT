@@ -3,8 +3,8 @@
         "LIVE_TRADING": true,
         "API_KEY_LIVE": "cbe78363-8e5f-497a-875f-e2e813146748",
         "API_SECRET_LIVE": "YFyZmB7SSTRM4-0z9W9NSN1SgCiDYVvm-0NGkwGuzk5hYTdjNzkwYi1mYjczLTQyNTEtOWVhZi0yZDNjNTRkN2JlZDI",
-        "API_KEY_TEST": "052e3b80-bc14-4acb-abd5-c6fb172b7a25",
-        "API_SECRET_TEST": "MgvrsjefF6eVS2xTu-yGfQsAF56HoGA7N1TGLIEenuU5ZmM0YmEzOC01M2IzLTQ4ZjUtODVlZC1iY2Y1ZTBiNTYxZmE",
+        "API_KEY_TEST": "7bab00e2-c7bb-41cd-8875-9d4d65e0412e",
+        "API_SECRET_TEST": "iRO9iEaKNph5tTjwj-p7uzmSLuIEx_UAF7jpEjMry18xMTk5MjQwYy1lYjQwLTQwNjMtODI5NC01OTg0NGU0NTczNTU",
         "DEFAULT_TYPE": "swap",
         "API_URL_LIVE": "https://api.phemex.com",
         "API_URL_TEST": "https://testnet-api.phemex.com"
