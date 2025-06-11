@@ -11,6 +11,9 @@ Complex AI Trading + Continuous Training + Robust Backtest Each Epoch + Live Phe
 import sys
 import os
 
+# This prevents torch from emitting experimental API warnings under NumPy 2
+os.environ.setdefault("NUMPY_EXPERIMENTAL_ARRAY_API", "1")
+
 try:
     import numpy as _np
 except ModuleNotFoundError:
