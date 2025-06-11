@@ -44,12 +44,15 @@ CONFIG = load_master_config()
 
 def get_account_equity(exchange: Any) -> float:
     """Return total BTC equity converted to USDT."""
-    balance = exchange.fetch_balance()
-    btc_spot = balance["BTC"]["total"]
+    spot = exchange.fetch_balance()
+    btc_spot = spot.get("BTC", {}).get("total", 0)
 
     params = {"type": "swap", "code": "BTC"}
-    balance = exchange.fetch_balance(params=params)
-    btc_swap = balance["BTC"]["total"]
+    swap = exchange.fetch_balance(params=params)
+    btc_swap = swap.get("BTC", {}).get("total", 0)
+
+    if btc_spot == btc_swap == 0:
+        logging.warning("No BTC balance found – equity = 0")
 
     btc_usdt = exchange.fetch_ticker("BTC/USDT")["close"]
     return round((btc_spot + btc_swap) * btc_usdt, 8)
