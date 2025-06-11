@@ -11,6 +11,7 @@ from logging.handlers import RotatingFileHandler
 import os
 import json
 import time
+import math
 import numpy as np
 import torch
 import talib
@@ -29,6 +30,19 @@ root.addHandler(fh)
 # allow INFO only for key modules
 logging.getLogger("artibot.model").setLevel(logging.INFO)
 logging.getLogger("artibot.ensemble").setLevel(logging.INFO)
+
+
+def get_account_equity(exchange):
+    """Return total BTC equity converted to USDT."""
+
+    spot_bal = exchange.fetch_balance()
+    btc_spot = spot_bal.get("BTC", {}).get("total", 0.0)
+
+    swap_bal = exchange.fetch_balance(params={"type": "swap", "code": "BTC"})
+    btc_swap = swap_bal.get("BTC", {}).get("total", 0.0)
+
+    btc_usdt = exchange.fetch_ticker("BTC/USDT")["close"]
+    return round((btc_spot + btc_swap) * btc_usdt, 8)
 
 
 def main() -> None:
@@ -67,7 +81,9 @@ def main() -> None:
         ensemble.load_best_weights(weights_path)
 
     poll_int = float(CONFIG.get("LIVE_POLL_INTERVAL", 60))
-    risk_pct = float(CONFIG.get("RISK_PERCENT", 0.01))
+    risks = CONFIG.get("RISKS", {})
+    timeframe = CONFIG.get("TIMEFRAME", "1h")
+    leverage = float(CONFIG.get("LEVERAGE", 10))
 
     try:
         while True:
@@ -103,7 +119,6 @@ def main() -> None:
             seq_t = torch.tensor(feats, dtype=torch.float32).unsqueeze(0).to(device)
             idx, conf, _ = ensemble.predict(seq_t)
             side_signal = {0: "buy", 1: "sell", 2: "hold"}[idx]
-            price = float(arr[-1, 4])
             logging.info("SIGNAL %s conf=%.3f", side_signal, conf)
 
             if G.trading_paused or side_signal == "hold":
@@ -111,21 +126,40 @@ def main() -> None:
                 continue
 
             try:
+                equity = get_account_equity(connector.exchange)
                 bal = connector.exchange.fetch_balance()
                 G.global_account_stats = bal
-                usdt_bal = bal.get("total", {}).get("USDT", 0.0)
             except Exception as exc:  # pragma: no cover - network errors
-                logging.error("Balance fetch error: %s", exc)
+                logging.error("Equity fetch error: %s", exc)
                 time.sleep(poll_int)
                 continue
 
-            amount = (usdt_bal * risk_pct) / price
+            risk_pct = float(risks.get(timeframe, 10)) / 100.0
+            usd_risk = equity * risk_pct
+            contracts = usd_risk * leverage
+
+            market = connector.exchange.market(connector.symbol)
+            step = market.get("precision", {}).get("amount") or 1
+            min_qty = market.get("limits", {}).get("amount", {}).get("min") or 1
+            contracts = math.floor(contracts / step) * step
+
+            if not G.is_nuclear_key_enabled():
+                logging.info("NUCLEAR_KEY_DISABLED – skipping trade")
+                time.sleep(poll_int)
+                continue
+
+            if contracts < min_qty:
+                logging.info(
+                    "ORDER_SKIPPED – qty %.2f < min lot %d", contracts, min_qty
+                )
+                time.sleep(poll_int)
+                continue
 
             try:
-                order = connector.create_order(side_signal, amount)
+                order = connector.create_order(side_signal, contracts)
                 logging.info("ORDER_PLACED %s", order)
                 G.global_position_side = side_signal
-                G.global_position_size = amount
+                G.global_position_size = contracts
             except Exception as exc:  # pragma: no cover - order errors
                 logging.error("Order failed: %s", exc)
                 G.trading_paused = True
