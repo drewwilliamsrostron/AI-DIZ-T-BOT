@@ -38,7 +38,7 @@ def test_exchange_connector_fetch(monkeypatch):
     mod = types.SimpleNamespace(phemex=lambda *a, **k: DummyEx())
     monkeypatch.setitem(sys.modules, "ccxt", mod)
     monkeypatch.setattr(time, "time", lambda: 3600 * 2 + 10)
-    conf = {"symbol": "BTCUSD", "API": {"LIVE_TRADING": False}}
+    conf = {"API": {"LIVE_TRADING": False}}
     conn = ExchangeConnector(conf)
 
     assert conn.symbol in conn.exchange.markets
@@ -66,7 +66,7 @@ def test_exchange_connector_error(monkeypatch, caplog):
     mod = types.SimpleNamespace(phemex=lambda *a, **k: ErrorEx())
     monkeypatch.setitem(sys.modules, "ccxt", mod)
     monkeypatch.setattr(time, "time", lambda: 3600 * 2 + 10)
-    conf = {"symbol": "BTCUSD", "API": {"LIVE_TRADING": False}}
+    conf = {"API": {"LIVE_TRADING": False}}
     conn = ExchangeConnector(conf)
     caplog.set_level(logging.ERROR)
     bars = conn.fetch_latest_bars(limit=2)
@@ -87,7 +87,6 @@ def test_connector_urls_sandbox(monkeypatch):
     mod = types.SimpleNamespace(phemex=factory)
     monkeypatch.setitem(sys.modules, "ccxt", mod)
     conf = {
-        "symbol": "BTCUSD",
         "API": {
             "LIVE_TRADING": False,
             "API_URL_LIVE": "https://live",
@@ -110,7 +109,6 @@ def test_connector_urls_live(monkeypatch):
     mod = types.SimpleNamespace(phemex=factory)
     monkeypatch.setitem(sys.modules, "ccxt", mod)
     conf = {
-        "symbol": "BTCUSD",
         "API": {
             "LIVE_TRADING": True,
             "API_URL_LIVE": "https://live",
