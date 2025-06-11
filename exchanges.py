@@ -32,13 +32,12 @@ class ExchangeConnector:
             "enableRateLimit": True,
             "options": {"defaultType": default_type},
         }
-        if api_url_live or api_url_test:
-            params["urls"] = {
-                "api": {
-                    "public": api_url_live if self.live else api_url_test,
-                    "private": api_url_live if self.live else api_url_test,
-                }
+        params["urls"] = {
+            "api": {
+                "public": api_url_live if self.live else api_url_test,
+                "private": api_url_live if self.live else api_url_test,
             }
+        }
 
         self.exchange = ccxt.phemex(params)
         self.exchange.set_sandbox_mode(not self.live)

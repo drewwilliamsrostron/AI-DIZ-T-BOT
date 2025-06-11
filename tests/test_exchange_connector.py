@@ -63,8 +63,8 @@ def test_exchange_connector_error(monkeypatch, caplog):
     assert bars == []
     assert conn.exchange.last_params == {"type": "swap"}
     assert conn.exchange.last_since == 0
-    assert any("primary fetch failed" in r.message for r in caplog.records)
-    assert any("fallback fetch failed" in r.message for r in caplog.records)
+    expected = f"fetch_ohlcv failed for {conn.symbol} tf=1h limit=2: boom"
+    assert any(expected in r.message for r in caplog.records)
 
 
 def test_connector_urls_sandbox(monkeypatch):
