@@ -9,6 +9,7 @@ import datetime
 import sys
 import os
 import json
+import torch
 
 from .dataset import HourlyDataset
 from .ensemble import reject_if_risky
@@ -38,7 +39,6 @@ def csv_training_thread(
     import traceback
 
     import numpy as np
-    import torch
     from torch.utils.data import DataLoader, random_split
 
     if debug_anomaly:
@@ -78,12 +78,7 @@ def csv_training_thread(
         )
 
         pin = ensemble.device.type == "cuda"
-        default_workers = os.cpu_count() or 1
-        workers = (
-            0
-            if sys.platform.startswith("win")
-            else int(config.get("NUM_WORKERS", default_workers))
-        )
+        workers = max(1, os.cpu_count() - 1)
         logging.info(
             "DATALOADER", extra={"workers": workers, "device": ensemble.device.type}
         )
@@ -95,7 +90,7 @@ def csv_training_thread(
             num_workers=workers,
             pin_memory=pin,
             persistent_workers=bool(workers),
-            prefetch_factor=2,
+            prefetch_factor=2 if workers > 0 else None,
         )
         dl_val = DataLoader(
             ds_val,
@@ -104,7 +99,7 @@ def csv_training_thread(
             num_workers=workers,
             pin_memory=pin,
             persistent_workers=bool(workers),
-            prefetch_factor=2,
+            prefetch_factor=2 if workers > 0 else None,
         )
         print("[DEBUG] DataLoader created")
 
@@ -291,12 +286,7 @@ def csv_training_thread(
                         nv_ = nt_ - ntr_
                         ds_tr_, ds_val_ = random_split(ds_updated, [ntr_, nv_])
                         pin = ensemble.device.type == "cuda"
-                        default_workers = os.cpu_count() or 1
-                        workers = (
-                            0
-                            if sys.platform.startswith("win")
-                            else int(config.get("NUM_WORKERS", default_workers))
-                        )
+                        workers = max(1, os.cpu_count() - 1)
                         logging.info(
                             "DATALOADER",
                             extra={"workers": workers, "device": ensemble.device.type},
@@ -309,7 +299,7 @@ def csv_training_thread(
                             num_workers=workers,
                             pin_memory=pin,
                             persistent_workers=bool(workers),
-                            prefetch_factor=2,
+                            prefetch_factor=2 if workers > 0 else None,
                         )
                         dl_val_ = DataLoader(
                             ds_val_,
@@ -318,7 +308,7 @@ def csv_training_thread(
                             num_workers=workers,
                             pin_memory=pin,
                             persistent_workers=bool(workers),
-                            prefetch_factor=2,
+                            prefetch_factor=2 if workers > 0 else None,
                         )
                         print("[DEBUG] DataLoader created")
                         train_indicators = compute_indicators(

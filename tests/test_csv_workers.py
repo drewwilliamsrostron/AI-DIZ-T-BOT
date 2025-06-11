@@ -35,7 +35,7 @@ def test_csv_thread_uses_cpu_count(monkeypatch):
     stop = threading.Event()
     csv_training_thread(ens, data, stop, {}, use_prev_weights=False, max_epochs=1)
 
-    assert called.get("workers") == 12
+    assert called.get("workers") == 11
 
 
 def test_persistent_workers_enabled(monkeypatch):
