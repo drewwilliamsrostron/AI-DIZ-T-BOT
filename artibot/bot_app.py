@@ -120,7 +120,7 @@ def run_bot(max_epochs: int | None = None) -> None:
 
     weights_dir = os.path.abspath(os.path.expanduser(config.get("WEIGHTS_DIR", ".")))
     os.makedirs(weights_dir, exist_ok=True)
-    weights_path = os.path.join(weights_dir, "best_model_weights.pth")
+    weights_path = os.path.join(weights_dir, "best.pt")
 
     if config.get("SHOW_WEIGHT_SELECTOR"):
         use_prev_weights, sel = weight_selector_dialog(config)
@@ -193,7 +193,7 @@ def run_bot(max_epochs: int | None = None) -> None:
     train_th.start()
 
     poll_interval = config["LIVE_POLL_INTERVAL"]
-    live_path = os.path.join(os.path.dirname(weights_path), "live_model.pth")
+    live_path = os.path.join(os.path.dirname(weights_path), "live_model.pt")
     phemex_th = threading.Thread(
         target=phemex_live_thread,
         args=(connector, stop_event, poll_interval, ensemble, live_path),

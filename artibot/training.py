@@ -61,7 +61,7 @@ def csv_training_thread(
     config,
     use_prev_weights=True,
     max_epochs: int | None = None,
-    weights_path: str = "best_model_weights.pth",
+    weights_path: str = "best.pt",
     *,
     debug_anomaly: bool = False,
 ):
@@ -363,7 +363,7 @@ def phemex_live_thread(
     stop_event,
     poll_interval: float,
     ensemble=None,
-    live_weight_path: str = "live_model.pth",
+    live_weight_path: str = "live_model.pt",
 ) -> None:
     """Continuously fetch recent bars from Phemex at a configurable interval."""
     import traceback

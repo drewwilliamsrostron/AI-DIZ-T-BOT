@@ -20,7 +20,7 @@ def test_weight_dialog_default(monkeypatch):
     monkeypatch.setitem(sys.modules, "tkinter.messagebox", tk_stub.messagebox)
     monkeypatch.setitem(sys.modules, "tkinter.filedialog", tk_stub.filedialog)
     path = select_weight_file()
-    assert path == "best_model_weights.pth"
+    assert path == "best.pt"
 
 
 def test_weight_dialog_custom(monkeypatch):
