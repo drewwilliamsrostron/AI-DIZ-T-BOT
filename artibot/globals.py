@@ -142,6 +142,9 @@ start_equity: float = 0.0
 live_equity: float = 0.0
 live_trade_count: int = 0
 
+# Flag toggled by training thread when new live weights are ready
+live_weights_updated: bool = False
+
 
 # Protect shared state across threads
 state_lock = threading.Lock()
@@ -195,6 +198,22 @@ def is_nuclear_key_enabled() -> bool:
     """Return ``True`` when the nuclear key gate is active."""
     with state_lock:
         return nuclear_key_enabled
+
+
+def set_live_weights_updated(value: bool) -> None:
+    """Set the flag signalling updated live weights."""
+    global live_weights_updated
+    with state_lock:
+        live_weights_updated = value
+
+
+def pop_live_weights_updated() -> bool:
+    """Return and reset the live weight update flag."""
+    global live_weights_updated
+    with state_lock:
+        val = live_weights_updated
+        live_weights_updated = False
+    return val
 
 
 ###############################################################################
