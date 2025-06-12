@@ -130,3 +130,19 @@ def test_fetch_position(monkeypatch):
     monkeypatch.delattr(ex, "fetch_position_risk")
     side, sz, entry = _fetch_position(ex)
     assert side == "LONG" and sz == 3.0 and entry == 99.0
+
+
+def test_on_test_trade_places_order(monkeypatch):
+    called = {}
+
+    def fake_order(side, amount):
+        called["side"] = side
+        called["amount"] = amount
+        return {"side": side, "amount": amount}
+
+    ui.connector = types.SimpleNamespace()
+    monkeypatch.setattr(ui.connector, "create_order", fake_order, raising=False)
+    ui.log_trade = lambda msg: None
+    ui.on_test_trade("buy")
+
+    assert called == {"side": "buy", "amount": 1}
