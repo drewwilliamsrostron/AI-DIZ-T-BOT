@@ -335,6 +335,17 @@ def csv_training_thread(
                             features=train_indicators,
                         )
 
+            equity = G.global_equity_curve[-1][1] if G.global_equity_curve else 0.0
+            val_sharpe = G.global_holdout_sharpe
+            logging.info(
+                "Epoch %d  loss=%.4f  sharpe=%.3f  val=%.3f  cur_equity=%.2f",
+                ensemble.train_steps,
+                tl,
+                G.global_sharpe,
+                val_sharpe,
+                equity,
+            )
+
             if ensemble.train_steps % 5 == 0 and ensemble.best_state_dicts:
                 ensemble.save_best_weights(weights_path)
 

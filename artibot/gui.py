@@ -447,13 +447,13 @@ class TradingGUI:
         self.btn_buy = ttk.Button(
             self.controls_frame,
             text="Test BUY",
-            command=lambda: self.on_test_trade("buy"),
+            command=self.on_test_buy,
         )
         self.btn_buy.pack(side=tk.LEFT, padx=5)
         self.btn_sell = ttk.Button(
             self.controls_frame,
             text="Test SELL",
-            command=lambda: self.on_test_trade("sell"),
+            command=self.on_test_sell,
         )
         self.btn_sell.pack(side=tk.LEFT, padx=5)
         self.btn_close = ttk.Button(
@@ -812,6 +812,16 @@ class TradingGUI:
             except Exception:
                 pass
 
+    def on_test_buy(self) -> None:
+        """Handle Test BUY button press."""
+        logging.info("BUTTON Test BUY clicked")
+        self.on_test_trade("buy")
+
+    def on_test_sell(self) -> None:
+        """Handle Test SELL button press."""
+        logging.info("BUTTON Test SELL clicked")
+        self.on_test_trade("sell")
+
     def on_test_trade(self, side: str) -> None:
         """Submit a single-contract order using the latest known price."""
 
@@ -860,10 +870,12 @@ class TradingGUI:
 
     def close_trade(self):
         """Signal the trading loop to close the current position."""
+        logging.info("BUTTON Close Active Trade clicked")
         self.close_requested = True
 
     def edit_trade(self):
         """Popup dialog to adjust SL/TP multipliers."""
+        logging.info("BUTTON Edit Trade clicked")
         win = tk.Toplevel(self.root)
         win.title("Edit Trade")
         ttk.Label(win, text="SL Multiplier:").grid(row=0, column=0, padx=5, pady=5)
