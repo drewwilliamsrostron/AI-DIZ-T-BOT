@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from logging.handlers import RotatingFileHandler
 import sys
 import json
 
@@ -35,13 +36,18 @@ class JsonFormatter(logging.Formatter):
 
 def setup_logging() -> None:
     """Configure root logger to emit JSON-formatted messages."""
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(JsonFormatter())
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(JsonFormatter())
+
+    file_handler = RotatingFileHandler("bot.log", maxBytes=5_000_000, backupCount=3)
+    file_handler.setFormatter(JsonFormatter())
+
     root = logging.getLogger()
     for h in list(root.handlers):
-        if isinstance(h, logging.StreamHandler):
+        if isinstance(h, (logging.StreamHandler, RotatingFileHandler)):
             root.removeHandler(h)
-    root.addHandler(handler)
+    root.addHandler(stream_handler)
+    root.addHandler(file_handler)
 
 
 def attention_entropy(tensor: torch.Tensor) -> float:
