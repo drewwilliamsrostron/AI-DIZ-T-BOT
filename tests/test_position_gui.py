@@ -101,3 +101,32 @@ def test_update_position_buttons():
     assert ui.btn_buy["state"] == "disabled"
     assert ui.btn_sell["state"] == "disabled"
     assert ui.btn_close["state"] == "normal"
+
+
+def test_fetch_position(monkeypatch):
+    from artibot.gui import _fetch_position
+
+    ex = types.SimpleNamespace()
+
+    def risk(symbol):
+        return {"size": -2.0, "entryPrice": 42.0}
+
+    def allpos():
+        return [
+            {
+                "symbol": "BTCUSD",
+                "info": {"type": "swap"},
+                "contracts": 3.0,
+                "entryPrice": 99.0,
+            }
+        ]
+
+    monkeypatch.setattr(ex, "fetch_position_risk", risk, raising=False)
+    monkeypatch.setattr(ex, "fetch_positions", allpos, raising=False)
+
+    side, sz, entry = _fetch_position(ex)
+    assert side == "SHORT" and sz == 2.0 and entry == 42.0
+
+    monkeypatch.delattr(ex, "fetch_position_risk")
+    side, sz, entry = _fetch_position(ex)
+    assert side == "LONG" and sz == 3.0 and entry == 99.0

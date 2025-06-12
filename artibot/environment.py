@@ -16,16 +16,28 @@ import importlib.metadata as imd
 
 
 def _ensure_numpy_lt2() -> None:
-    """Downgrade to NumPy <2 if an incompatible version is installed."""
+    """Downgrade to NumPy <2 once per process tree."""
+    if os.environ.get("NUMPY_PIN_DONE"):
+        return
     try:
         ver = imd.version("numpy")
         if not ver.startswith("1."):
             print("[env] Downgrading incompatible NumPy", ver, "→ <2.0")
             subprocess.check_call(
-                [sys.executable, "-m", "pip", "install", "--force-reinstall", "numpy<2"]
+                [
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "install",
+                    "--quiet",
+                    "--no-input",
+                    "--force-reinstall",
+                    "numpy<2",
+                ]
             )
-    except Exception:
-        pass
+    except Exception as e:
+        print("[env] NumPy pin failed:", e)
+    os.environ["NUMPY_PIN_DONE"] = "1"
 
 
 _ensure_numpy_lt2()
