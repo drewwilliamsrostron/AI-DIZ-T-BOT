@@ -87,6 +87,30 @@ def test_compute_yearly_stats_basic():
     assert "2023" in table and "2024" in table
 
 
+def test_compute_monthly_stats_basic():
+    def ts(s: str) -> int:
+        return int(pd.Timestamp(s).timestamp())
+
+    eq = [
+        (ts("2023-01-01"), 100),
+        (ts("2023-01-31"), 110),
+        (ts("2023-02-01"), 110),
+        (ts("2023-02-28"), 121),
+    ]
+    trades = [
+        {"entry_time": ts("2023-01-15")},
+        {"entry_time": ts("2023-02-20")},
+    ]
+
+    df, table = metrics.compute_monthly_stats(eq, trades)
+
+    assert list(df.index) == ["2023-01", "2023-02"]
+    assert df.loc["2023-01", "NetPct"] == 10.0
+    assert df.loc["2023-01", "Trades"] == 1
+    assert df.loc["2023-02", "Trades"] == 1
+    assert isinstance(table, str)
+
+
 def test_compute_trade_metrics_basic():
     trades = [
         {"return": 0.1, "duration": 10},
