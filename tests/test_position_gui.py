@@ -135,14 +135,21 @@ def test_fetch_position(monkeypatch):
 def test_on_test_trade_places_order(monkeypatch):
     called = {}
 
-    def fake_order(side, amount):
+    def fake_order(side, amount, price):
         called["side"] = side
         called["amount"] = amount
-        return {"side": side, "amount": amount}
+        called["price"] = price
+        return {"side": side, "amount": amount, "price": price}
 
     ui.connector = types.SimpleNamespace()
     monkeypatch.setattr(ui.connector, "create_order", fake_order, raising=False)
+    monkeypatch.setattr(
+        ui.connector,
+        "fetch_latest_bars",
+        lambda limit=1: [[1, 2, 3, 4, 99]],
+        raising=False,
+    )
     ui.log_trade = lambda msg: None
     ui.on_test_trade("buy")
 
-    assert called == {"side": "buy", "amount": 1}
+    assert called == {"side": "buy", "amount": 1, "price": 99}
