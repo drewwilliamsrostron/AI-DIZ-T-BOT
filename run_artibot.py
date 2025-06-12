@@ -42,6 +42,9 @@ def main() -> None:
     setup_logging()
     torch.set_num_threads(os.cpu_count() or 1)
     torch.set_num_interop_threads(os.cpu_count() or 1)
+    G.start_equity = 0.0
+    G.live_equity = 0.0
+    G.live_trade_count = 0
 
     ans = input("Use LIVE trading? (y/N): ").strip().lower()
     use_live = ans.startswith("y")
@@ -55,9 +58,20 @@ def main() -> None:
         stats = connector.get_account_stats()
         logging.info("ACCOUNT_BALANCE %s", json.dumps(stats))
         G.global_account_stats = stats
-        G.start_equity = stats.get("total", {}).get("USDT", 0.0)
-        G.live_equity = G.start_equity
-        G.live_trade_count = 0
+    try:
+        stats = connector.get_account_stats()
+        logging.info("ACCOUNT_BALANCE %s", json.dumps(stats))
+        G.global_account_stats = stats
+
+        # -------- unified balance → globals ----------
+        equity = stats.get("total", {}).get("USDT", 0.0)
+        G.start_equity      = equity          # for PnL gating / NK logic
+        G.live_equity       = equity
+        G.live_trade_count  = 0
+        # ---------------------------------------------
+    except Exception as exc:  # pragma: no cover - network errors
+        logging.error("Balance fetch failed: %s", exc)
+
     except Exception as exc:  # pragma: no cover - network errors
         logging.error("Balance fetch failed: %s", exc)
 

@@ -7,7 +7,7 @@ from artibot.training import csv_training_thread
 from artibot.ensemble import EnsembleModel
 
 
-def test_csv_thread_uses_cpu_count(monkeypatch):
+def test_csv_thread_uses_config(monkeypatch):
     monkeypatch.setattr(os, "cpu_count", lambda: 12)
     called = {}
 
@@ -34,13 +34,15 @@ def test_csv_thread_uses_cpu_count(monkeypatch):
 
     data = [[i, 0, 0, 0, 0, 0] for i in range(50)]
     stop = threading.Event()
-    csv_training_thread(ens, data, stop, {}, use_prev_weights=False, max_epochs=1)
+    csv_training_thread(
+        ens, data, stop, {"NUM_WORKERS": 3}, use_prev_weights=False, max_epochs=1
+    )
 
-    assert called.get("workers") == 10
-    assert called.get("persistent") is False
+    assert called.get("workers") == 3
+    assert called.get("persistent") is True
 
 
-def test_persistent_workers_disabled(monkeypatch):
+def test_persistent_workers_enabled(monkeypatch):
     monkeypatch.setattr(os, "cpu_count", lambda: 2)
     called = {}
 
@@ -68,4 +70,4 @@ def test_persistent_workers_disabled(monkeypatch):
     stop = threading.Event()
     csv_training_thread(ens, data, stop, {}, use_prev_weights=False, max_epochs=1)
 
-    assert called.get("persistent") is False
+    assert called.get("persistent") is True
