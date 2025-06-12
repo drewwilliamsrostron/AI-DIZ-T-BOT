@@ -6,6 +6,8 @@ import time
 from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 
+import artibot.globals as G
+
 if TYPE_CHECKING:  # pragma: no cover - hints only
     from .training import PhemexConnector
 
@@ -33,6 +35,8 @@ def open_position(
     """Place an order via ``connector`` and return a ``Position``."""
 
     connector.create_order(side, amount, price, order_type="market")
+    with G.state_lock:
+        G.live_trade_count += 1
     return Position(
         side=side,
         size=amount if side == "long" else -amount,
@@ -48,5 +52,12 @@ def close_position(connector: "PhemexConnector", pos: Position, price: float) ->
 
     exit_side = "sell" if pos.side == "long" else "buy"
     connector.create_order(exit_side, abs(pos.size), price, order_type="market")
+    try:
+        stats = connector.get_account_stats()
+        equity = stats.get("total", {}).get("USDT", 0.0)
+    except Exception:
+        equity = G.live_equity
+    with G.state_lock:
+        G.live_equity = equity
     pos.side = None
     pos.size = 0.0

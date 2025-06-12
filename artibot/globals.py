@@ -138,6 +138,9 @@ live_trading_enabled = False
 global_account_stats: dict = {}
 global_position_side: str | None = None
 global_position_size: float = 0.0
+start_equity: float = 0.0
+live_equity: float = 0.0
+live_trade_count: int = 0
 
 
 # Protect shared state across threads
