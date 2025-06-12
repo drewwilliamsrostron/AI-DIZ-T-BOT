@@ -78,6 +78,25 @@ def ask_use_prev_weights(default: bool = True, tk_module=tk) -> bool:
     return bool(result)
 
 
+def _fetch_position(exchange):
+    """Return (side, size, entry) for the BTCUSD swap position."""
+    try:
+        if hasattr(exchange, "fetch_position_risk"):
+            pos = exchange.fetch_position_risk("BTCUSD")
+            sz = pos.get("size", 0)
+            side = "LONG" if sz > 0 else ("SHORT" if sz < 0 else "NONE")
+            return (side, abs(sz), pos.get("entryPrice", 0))
+        allpos = exchange.fetch_positions()
+        for p in allpos:
+            if p["symbol"] == "BTCUSD" and p["info"].get("type") == "swap":
+                sz = p["contracts"]
+                side = "LONG" if sz > 0 else ("SHORT" if sz < 0 else "NONE")
+                return (side, abs(sz), p["entryPrice"])
+    except Exception as e:  # pragma: no cover - network errors
+        logging.error("Position fetch failed: %s", e)
+    return ("NONE", 0.0, 0.0)
+
+
 class TradingGUI:
     def __init__(self, root, ensemble, weights_path: str | None = None, connector=None):
         self.root = root
@@ -739,14 +758,8 @@ class TradingGUI:
     def refresh_stats(self) -> None:
         if not self.connector:
             return
-        try:
-            pos = self.connector.exchange.fetch_position_risk("BTCUSD")
-        except Exception as exc:  # pragma: no cover - network errors
-            logging.error("Position fetch failed: %s", exc)
-            self.root.after(10000, self.refresh_stats)
-            return
-        side = "LONG" if pos["side"] > 0 else ("SHORT" if pos["side"] < 0 else "NONE")
-        self.update_position(side, abs(pos["size"]), pos["entryPrice"])
+        side, sz, entry = _fetch_position(self.connector.exchange)
+        self.update_position(side, sz, entry)
         self.root.after(10000, self.refresh_stats)
 
     def on_test_trade(self, side: str) -> None:
