@@ -406,14 +406,18 @@ class PhemexConnector:
         self.exchange.load_markets()
 
     def get_account_stats(self) -> dict:
-        """Return a simplified account balance dictionary."""
+        """Return account balances including USDT equity."""
+        from .utils.account import get_account_equity
+
         try:
             bal = self.exchange.fetch_balance()
+            equity = get_account_equity(self.exchange)
         except Exception as exc:  # pragma: no cover - network errors
             logging.error("Balance fetch error: %s", exc)
-            return {}
+            return {"total": {}}
 
-        totals = bal.get("total", {})
+        totals = dict(bal.get("total", {}))
+        totals["USDT"] = equity
         return {"total": totals}
 
     def fetch_latest_bars(self, limit=100):

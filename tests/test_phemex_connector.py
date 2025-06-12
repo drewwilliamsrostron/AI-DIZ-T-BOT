@@ -33,6 +33,7 @@ class DummyEx:
 def test_phemex_connector(monkeypatch):
     mod = types.SimpleNamespace(phemex=lambda *a, **k: DummyEx())
     monkeypatch.setitem(sys.modules, "ccxt", mod)
+    monkeypatch.setattr("artibot.utils.account.get_account_equity", lambda ex: 100.0)
     monkeypatch.setattr(time, "time", lambda: 3600 * 2 + 10)
     conf = {"API": {"LIVE_TRADING": False}}
     conn = PhemexConnector(conf)
@@ -48,7 +49,7 @@ def test_phemex_connector(monkeypatch):
     assert conn.exchange.sandbox is True
 
     stats = conn.get_account_stats()
-    assert stats == {"total": {"BTC": 1.0}}
+    assert stats == {"total": {"BTC": 1.0, "USDT": 100.0}}
 
 
 class ErrorEx(DummyEx):
