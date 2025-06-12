@@ -196,3 +196,6 @@ def ensure_dependencies():
     if os.environ.get("ARTIBOT_SKIP_INSTALL") == "1":
         return
     install_dependencies()
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "--force-reinstall", "numpy<2"]
+    )
