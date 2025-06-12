@@ -96,6 +96,9 @@ def run_bot(max_epochs: int | None = None) -> None:
     G.epoch_count = 0
     G.global_attention_weights_history = []
     G.global_ai_adjustments = ""
+    G.start_equity = 0.0
+    G.live_equity = 0.0
+    G.live_trade_count = 0
 
     config = CONFIG
     G.global_min_hold_seconds = config.get(
@@ -167,6 +170,10 @@ def run_bot(max_epochs: int | None = None) -> None:
     stats = connector.get_account_stats()
     if stats:
         logging.info("ACCOUNT_STATS %s", json.dumps(stats))
+        G.global_account_stats = stats
+        equity = stats.get("total", {}).get("USDT", 0.0)
+        G.start_equity = equity
+        G.live_equity = equity
     stop_event = threading.Event()
 
     train_th = threading.Thread(

@@ -42,6 +42,9 @@ def main() -> None:
     setup_logging()
     torch.set_num_threads(os.cpu_count() or 1)
     torch.set_num_interop_threads(os.cpu_count() or 1)
+    G.start_equity = 0.0
+    G.live_equity = 0.0
+    G.live_trade_count = 0
 
     ans = input("Use LIVE trading? (y/N): ").strip().lower()
     use_live = ans.startswith("y")
@@ -55,6 +58,9 @@ def main() -> None:
         stats = connector.get_account_stats()
         logging.info("ACCOUNT_BALANCE %s", json.dumps(stats))
         G.global_account_stats = stats
+        equity = stats.get("total", {}).get("USDT", 0.0)
+        G.start_equity = equity
+        G.live_equity = equity
     except Exception as exc:  # pragma: no cover - network errors
         logging.error("Balance fetch failed: %s", exc)
 
