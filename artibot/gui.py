@@ -786,6 +786,27 @@ class TradingGUI:
             order = self.connector.create_order(side, 1, price)
             print(f"[UI] Test order placed: {order}")
             self.log_trade(f"[TEST] {order}")
+
+            close_side = "sell" if side == "buy" else "buy"
+
+            def auto_close() -> None:
+                try:
+                    if G.global_phemex_data and G.global_phemex_data[-1][4] > 0:
+                        close_price = G.global_phemex_data[-1][4]
+                    else:
+                        bars = self.connector.fetch_latest_bars(limit=1)
+                        close_price = bars[-1][4] if bars else price
+
+                    close_order = self.connector.create_order(
+                        close_side, 1, close_price
+                    )
+                    print(f"[UI] Test close order: {close_order}")
+                    self.log_trade(f"[TEST-CLOSE] {close_order}")
+                except Exception as e:  # pragma: no cover - network errors
+                    print(f"[UI] Test close failed: {e}")
+                    self.log_trade(f"[TEST-CLOSE-ERROR] {e}")
+
+            self.root.after(10000, auto_close)
         except Exception as e:  # pragma: no cover - network errors
             print(f"[UI] Test trade failed: {e}")
             self.log_trade(f"[TEST-ERROR] {e}")

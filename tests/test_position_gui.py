@@ -90,6 +90,7 @@ ui.btn_close = DummyWidget()
 ui.label_side = DummyWidget()
 ui.label_size = DummyWidget()
 ui.label_entry = DummyWidget()
+ui.root = DummyTk()
 
 
 def test_update_position_buttons():
@@ -133,12 +134,10 @@ def test_fetch_position(monkeypatch):
 
 
 def test_on_test_trade_places_order(monkeypatch):
-    called = {}
+    called = []
 
     def fake_order(side, amount, price):
-        called["side"] = side
-        called["amount"] = amount
-        called["price"] = price
+        called.append({"side": side, "amount": amount, "price": price})
         return {"side": side, "amount": amount, "price": price}
 
     ui.connector = types.SimpleNamespace()
@@ -150,6 +149,23 @@ def test_on_test_trade_places_order(monkeypatch):
         raising=False,
     )
     ui.log_trade = lambda msg: None
+    after_args = {}
+
+    def fake_after(ms, func):
+        after_args["delay"] = ms
+        after_args["func"] = func
+
+    ui.root.after = fake_after
     ui.on_test_trade("buy")
 
-    assert called == {"side": "buy", "amount": 1, "price": 99}
+    assert called[0] == {"side": "buy", "amount": 1, "price": 99}
+    assert after_args["delay"] == 10000
+
+    monkeypatch.setattr(
+        ui.connector,
+        "fetch_latest_bars",
+        lambda limit=1: [[1, 2, 3, 4, 101]],
+        raising=False,
+    )
+    after_args["func"]()
+    assert called[1]["side"] == "sell"
