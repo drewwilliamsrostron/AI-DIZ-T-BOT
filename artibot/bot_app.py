@@ -193,9 +193,10 @@ def run_bot(max_epochs: int | None = None) -> None:
     train_th.start()
 
     poll_interval = config["LIVE_POLL_INTERVAL"]
+    live_path = os.path.join(os.path.dirname(weights_path), "live_model.pth")
     phemex_th = threading.Thread(
         target=phemex_live_thread,
-        args=(connector, stop_event, poll_interval),
+        args=(connector, stop_event, poll_interval, ensemble, live_path),
         daemon=True,
     )
     phemex_th.start()

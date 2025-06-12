@@ -88,12 +88,13 @@ class MetaTransformerRL:
         value_range: tuple[float, float] = (-10.0, 10.0),
         target_range: tuple[float, float] = (-10.0, 10.0),
     ):
-        self.model = TransformerMetaAgent()
+        self._model = TransformerMetaAgent()
+        self.state_dim = self._model.state_dim
         # expose the underlying action space so other methods don't
         # need to reach into the model attribute. Without this the
         # ``pick_action`` method fails with ``AttributeError``.
-        self.action_space = self.model.action_space
-        self.opt = optim.Adam(self.model.parameters(), lr=lr)
+        self.action_space = self._model.action_space
+        self.opt = optim.Adam(self._model.parameters(), lr=lr)
         self.gamma = 0.95
         self.ensemble = ensemble
         self.value_range = value_range
@@ -109,6 +110,16 @@ class MetaTransformerRL:
         # Rest of init remains
         self.steps = 0
         self.last_improvement = 0
+
+    @property
+    def model(self):
+        return self._model
+
+    @model.setter
+    def model(self, value):
+        self._model = value
+        if not hasattr(self._model, "state_dim"):
+            self._model.state_dim = self.state_dim
 
     def pick_action(self, state_np):
         # scheduled exploration
@@ -160,7 +171,12 @@ class MetaTransformerRL:
         loss_v = F.mse_loss(val_s, torch.tensor([target], device=val_s.device))
         loss = loss_p + loss_v
         self.opt.zero_grad()
-        loss.backward()
+        if loss.requires_grad:
+            loss.backward()
+        else:
+            for p in self.model.parameters():
+                if p.requires_grad:
+                    p.grad = torch.zeros_like(p)
         torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
         self.opt.step()
         if reward > 0:
