@@ -5,6 +5,7 @@ import artibot.globals as G
 import numpy as np
 import datetime
 import os
+import threading
 import tkinter as tk
 from tkinter import ttk
 import matplotlib
@@ -469,6 +470,12 @@ class TradingGUI:
             command=self.edit_trade,
         )
         self.edit_button.pack(side=tk.LEFT, padx=5)
+        self.validate_button = ttk.Button(
+            self.controls_frame,
+            text="Manual Validate",
+            command=self.manual_validate,
+        )
+        self.validate_button.pack(side=tk.LEFT, padx=5)
         self.force_nk_var = tk.BooleanVar(False)
         self.force_nk_chk = ttk.Checkbutton(
             self.controls_frame,
@@ -905,3 +912,30 @@ class TradingGUI:
     def on_toggle_force_nk(self) -> None:
         """Update ``G.nuke_armed`` from the checkbox state."""
         G.nuke_armed = bool(self.force_nk_var.get())
+
+    def manual_validate(self) -> None:
+        """Run validation in a worker thread and update UI."""
+
+        self.validation_label.config(text="Validating...")
+        self.validate_button.config(state="disabled")
+
+        def _run() -> None:
+            from .bot_app import CONFIG
+            from .validation import validate_and_gate
+
+            csv_path = CONFIG.get("CSV_PATH", "")
+            if not os.path.isabs(csv_path):
+                here = os.path.dirname(os.path.abspath(__file__))
+                csv_path = os.path.join(here, "..", csv_path)
+            csv_path = os.path.abspath(os.path.expanduser(csv_path))
+            try:
+                G.set_status("Manual validation", "running")
+                validate_and_gate(csv_path, CONFIG)
+            except Exception as exc:  # pragma: no cover - validation errors
+                logging.error("Manual validation failed: %s", exc)
+            finally:
+                G.set_status("Manual validation done", "")
+                G.global_progress_pct = 0
+                self.root.after(0, lambda: self.validate_button.config(state="normal"))
+
+        threading.Thread(target=_run, daemon=True).start()

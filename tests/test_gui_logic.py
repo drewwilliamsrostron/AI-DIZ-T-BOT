@@ -40,3 +40,37 @@ def test_should_enable_live_trading():
     assert gui.should_enable_live_trading() is True
     G.live_equity = 105.0
     assert gui.should_enable_live_trading() is False
+
+
+def test_manual_validation_button(monkeypatch):
+    bot_app.CONFIG["CSV_PATH"] = "data.csv"
+    called = {}
+
+    def fake_validate(path, cfg):
+        called["path"] = path
+        called["cfg"] = cfg
+
+    monkeypatch.setattr("artibot.validation.validate_and_gate", fake_validate)
+
+    class DummyThread:
+        def __init__(self, target, daemon=None):
+            self.target = target
+
+        def start(self):
+            self.target()
+
+    monkeypatch.setattr(gui.threading, "Thread", DummyThread)
+
+    ui = gui.TradingGUI.__new__(gui.TradingGUI)
+    ui.root = types.SimpleNamespace(after=lambda *a, **k: None)
+    ui.validation_label = types.SimpleNamespace(
+        config=lambda **kw: called.setdefault("label", kw)
+    )
+    ui.validate_button = types.SimpleNamespace(
+        config=lambda **kw: called.setdefault("btn", kw)
+    )
+
+    ui.manual_validate()
+
+    assert called["path"].endswith("data.csv")
+    assert called["btn"]["state"] == "disabled"
