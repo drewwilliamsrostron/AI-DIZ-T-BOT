@@ -773,10 +773,17 @@ class TradingGUI:
                 pass
 
     def on_test_trade(self, side: str) -> None:
+        """Submit a single-contract order using the latest known price."""
+
         print(f"[UI] Test {side.upper()} clicked")
         try:
-            contracts = 1
-            order = self.connector.create_order(side, contracts)
+            if G.global_phemex_data and G.global_phemex_data[-1][4] > 0:
+                price = G.global_phemex_data[-1][4]
+            else:
+                bars = self.connector.fetch_latest_bars(limit=1)
+                price = bars[-1][4] if bars else 0.0
+
+            order = self.connector.create_order(side, 1, price)
             print(f"[UI] Test order placed: {order}")
             self.log_trade(f"[TEST] {order}")
         except Exception as e:  # pragma: no cover - network errors
