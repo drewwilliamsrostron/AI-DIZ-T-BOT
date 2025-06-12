@@ -762,11 +762,26 @@ class TradingGUI:
         self.update_position(side, sz, entry)
         self.root.after(10000, self.refresh_stats)
 
+    def log_trade(self, msg: str) -> None:
+        """Append a trade message to the AI log list."""
+        logging.info(msg)
+        if hasattr(self, "ai_log_list"):
+            try:
+                self.ai_log_list.insert(tk.END, msg)
+                self.ai_log_list.yview_moveto(1.0)
+            except Exception:
+                pass
+
     def on_test_trade(self, side: str) -> None:
-        if self.label_side["text"] != "NONE":
-            logging.info("[TEST] Position open, skip")
-            return
-        self.update_position("LONG" if side == "buy" else "SHORT", 1.0, 0.0)
+        print(f"[UI] Test {side.upper()} clicked")
+        try:
+            contracts = 1
+            order = self.connector.create_order(side, contracts)
+            print(f"[UI] Test order placed: {order}")
+            self.log_trade(f"[TEST] {order}")
+        except Exception as e:  # pragma: no cover - network errors
+            print(f"[UI] Test trade failed: {e}")
+            self.log_trade(f"[TEST-ERROR] {e}")
 
     def enable_live_trading(self):
         """Activate live trading after user confirmation."""

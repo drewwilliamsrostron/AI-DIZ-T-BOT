@@ -118,7 +118,7 @@ def main() -> None:
     import tkinter as tk
 
     root = tk.Tk()
-    _gui = TradingGUI(root, ensemble, weights_path, connector)
+    gui = TradingGUI(root, ensemble, weights_path, connector)  # noqa: F841
 
     logging.info("Tkinter dashboard starting on main thread…")
 

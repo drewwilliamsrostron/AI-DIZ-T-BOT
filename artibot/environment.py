@@ -207,7 +207,7 @@ def ensure_dependencies():
     """Install required packages if they are missing."""
     if os.environ.get("ARTIBOT_SKIP_INSTALL") == "1":
         return
+    if os.environ.get("NUMPY_PIN_DONE") != "1":
+        _ensure_numpy_lt2()
+        os.environ["NUMPY_PIN_DONE"] = "1"
     install_dependencies()
-    subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", "--force-reinstall", "numpy<2"]
-    )
