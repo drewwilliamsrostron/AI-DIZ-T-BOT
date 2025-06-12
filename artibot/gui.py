@@ -65,8 +65,8 @@ def select_weight_file(use_prev: bool = True) -> str | None:
     """Return the weight file path based on user selection."""
     from tkinter import messagebox, filedialog
 
-    if use_prev and messagebox.askyesno("Load Weights", "Use best_model_weights.pth?"):
-        return "best_model_weights.pth"
+    if use_prev and messagebox.askyesno("Load Weights", "Use best.pt?"):
+        return "best.pt"
     return (
         filedialog.askopenfilename(
             title="Select weight file", filetypes=[("PyTorch", "*.pth")]

@@ -8,6 +8,7 @@ from typing import Iterable, Optional, Tuple
 from threading import Event
 import logging
 import random
+import hashlib
 
 import os
 import shutil
@@ -104,6 +105,21 @@ def nuclear_key_gate(
     )
 
 
+def nk_gate_passes() -> bool:
+    """Return ``True`` when the current metrics pass the NK gate."""
+    entropy = (
+        float(G.global_attention_entropy_history[-1])
+        if G.global_attention_entropy_history
+        else 0.0
+    )
+    return nuclear_key_gate(
+        G.global_sharpe,
+        G.global_max_drawdown,
+        entropy,
+        G.global_profit_factor,
+    )
+
+
 def choose_best(rewards: list[float]) -> float:
     """Return the highest reward from ``rewards``.
 
@@ -123,7 +139,7 @@ class EnsembleModel:
         n_models: int = 2,
         lr=3e-4,
         weight_decay=1e-4,
-        weights_path="best_model_weights.pth",
+        weights_path="best.pt",
     ):
         device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.device = device
@@ -255,14 +271,25 @@ class EnsembleModel:
             G.global_best_sharpe = current_result["sharpe"]
             self.best_state_dicts = [m.state_dict() for m in self.models]
             self.save_best_weights(self.weights_path)
-            live_path = os.path.join(
-                os.path.dirname(self.weights_path), "live_model.pth"
-            )
+            md5 = ""
             try:
-                shutil.copy(self.weights_path, live_path)
-                G.set_live_weights_updated(True)
-            except Exception as exc:
-                logging.error("Live weight copy failed: %s", exc)
+                with open(self.weights_path, "rb") as f:
+                    md5 = hashlib.md5(f.read()).hexdigest()
+            except Exception:
+                md5 = ""
+            promote = G.nuke_armed or nk_gate_passes()
+            if promote:
+                live_path = os.path.join(
+                    os.path.dirname(self.weights_path), "live_model.pt"
+                )
+                try:
+                    shutil.copy(self.weights_path, live_path)
+                    G.set_live_weights_updated(True)
+                    logging.info("PROMOTED_BEST hash=%s", md5)
+                except Exception as exc:
+                    logging.error("Live weight copy failed: %s", exc)
+            else:
+                logging.info("NEW_BEST held")
 
         # (4) We'll define an extended state for the meta-agent,
         # but that happens in meta_control_loop.

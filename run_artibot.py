@@ -72,7 +72,7 @@ def main() -> None:
         os.path.expanduser(CONFIG.get("WEIGHTS_DIR", "weights"))
     )
     os.makedirs(weights_dir, exist_ok=True)
-    weights_path = os.path.join(weights_dir, "best_model_weights.pth")
+    weights_path = os.path.join(weights_dir, "best.pt")
     use_prev_weights = ask_use_prev_weights(CONFIG.get("USE_PREV_WEIGHTS", True))
     if os.path.isfile(weights_path) and use_prev_weights:
         ensemble.load_best_weights(weights_path)
@@ -104,7 +104,7 @@ def main() -> None:
     train_th.start()
 
     poll_interval = CONFIG.get("LIVE_POLL_INTERVAL", 60)
-    live_path = os.path.join(os.path.dirname(weights_path), "live_model.pth")
+    live_path = os.path.join(os.path.dirname(weights_path), "live_model.pt")
     live_feed_th = threading.Thread(
         target=phemex_live_thread,
         args=(connector, stop_event, poll_interval, ensemble, live_path),
