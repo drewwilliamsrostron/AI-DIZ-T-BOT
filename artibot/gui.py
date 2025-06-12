@@ -476,7 +476,7 @@ class TradingGUI:
             command=self.manual_validate,
         )
         self.validate_button.pack(side=tk.LEFT, padx=5)
-        self.force_nk_var = tk.BooleanVar(False)
+        self.force_nk_var = tk.BooleanVar(value=False)
         self.force_nk_chk = ttk.Checkbutton(
             self.controls_frame,
             text="Bypass NK",
