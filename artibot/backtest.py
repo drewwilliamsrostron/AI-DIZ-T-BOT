@@ -1,8 +1,11 @@
 """Backtesting utilities for evaluating strategies."""
 
-# ruff: noqa: F403, F405
+# ruff: noqa: F403, F405, E402
 import numpy as np
 import pandas as pd
+from .environment import ensure_dependencies
+
+ensure_dependencies()
 import talib
 import torch
 
