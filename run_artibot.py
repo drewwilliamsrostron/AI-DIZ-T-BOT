@@ -24,7 +24,6 @@ import talib
 import torch
 
 from artibot.utils import setup_logging, get_device
-from artibot.utils.account import get_account_equity
 from artibot.ensemble import EnsembleModel
 from artibot.dataset import HourlyDataset, load_csv_hourly
 from artibot.training import (
@@ -66,9 +65,9 @@ def main() -> None:
 
     connector = PhemexConnector(CONFIG)
     try:
-        bal = connector.exchange.fetch_balance()
-        logging.info("ACCOUNT_BALANCE %s", json.dumps(bal))
-        G.global_account_stats = bal
+        stats = connector.get_account_stats()
+        logging.info("ACCOUNT_BALANCE %s", json.dumps(stats))
+        G.global_account_stats = stats
     except Exception as exc:  # pragma: no cover - network errors
         logging.error("Balance fetch failed: %s", exc)
 
@@ -180,9 +179,9 @@ def main() -> None:
                 continue
 
             try:
-                equity = get_account_equity(connector.exchange)
-                bal = connector.exchange.fetch_balance()
-                G.global_account_stats = bal
+                stats = connector.get_account_stats()
+                equity = stats.get("total", {}).get("USDT", 0.0)
+                G.global_account_stats = stats
             except Exception as exc:  # pragma: no cover - network errors
                 logging.error("Equity fetch error: %s", exc)
                 time.sleep(poll_int)
