@@ -469,6 +469,14 @@ class TradingGUI:
             command=self.edit_trade,
         )
         self.edit_button.pack(side=tk.LEFT, padx=5)
+        self.force_nk_var = tk.BooleanVar(False)
+        self.force_nk_chk = ttk.Checkbutton(
+            self.controls_frame,
+            text="Bypass NK",
+            variable=self.force_nk_var,
+            command=self.on_toggle_force_nk,
+        )
+        self.force_nk_chk.pack(side=tk.LEFT, padx=5)
 
         self.validation_label = ttk.Label(
             self.info_frame, text="Validation: N/A", font=("Helvetica", 12)
@@ -736,7 +744,8 @@ class TradingGUI:
 
         # update status line
         primary, secondary = G.get_status_full()
-        self.status_var.set(f"{primary}\n{secondary}")
+        nk_state = "ARMED" if G.nuke_armed else "SAFE"
+        self.status_var.set(f"{primary} | NK {nk_state}\n{secondary}")
         self.progress["value"] = G.global_progress_pct
 
         # manage trading buttons
@@ -892,3 +901,7 @@ class TradingGUI:
         ttk.Button(win, text="Apply", command=apply).grid(
             row=2, column=0, columnspan=2, pady=5
         )
+
+    def on_toggle_force_nk(self) -> None:
+        """Update ``G.nuke_armed`` from the checkbox state."""
+        G.nuke_armed = bool(self.force_nk_var.get())
