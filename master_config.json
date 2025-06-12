@@ -19,6 +19,8 @@
     "MAX_DRAWDOWN": -0.3,
     "MIN_ENTROPY": 1.0,
     "MIN_PROFIT_FACTOR": 1.0,
+    "NK_MIN_PNL": 0.0,
+    "NK_MIN_TRADES": 0,
     "SHOW_WEIGHT_SELECTOR": false,
     "USE_PREV_WEIGHTS": true,
     "WEIGHTS_DIR": "weights",

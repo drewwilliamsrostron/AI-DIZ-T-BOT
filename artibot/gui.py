@@ -43,10 +43,21 @@ def format_trade_details(trades, limit=50):
 
 
 def should_enable_live_trading() -> bool:
-    """Return ``True`` when validation metrics meet risk criteria."""
+    """Return ``True`` when validation and live metrics meet risk limits."""
     sharpe = G.global_holdout_sharpe
     dd = G.global_holdout_max_drawdown
-    return sharpe >= 1.0 and dd >= -0.30
+    pnl = G.live_equity - G.start_equity
+    trades = G.live_trade_count
+    try:  # avoid circular import during tests
+        from .bot_app import CONFIG
+
+        min_pnl = float(CONFIG.get("NK_MIN_PNL", 0.0))
+        min_trades = int(CONFIG.get("NK_MIN_TRADES", 0))
+    except Exception:  # pragma: no cover - CONFIG may not exist
+        min_pnl = 0.0
+        min_trades = 0
+
+    return sharpe >= 1.0 and dd >= -0.30 and pnl >= min_pnl and trades >= min_trades
 
 
 def select_weight_file(use_prev: bool = True) -> str | None:
@@ -729,7 +740,24 @@ class TradingGUI:
         self.progress["value"] = G.global_progress_pct
 
         # manage trading buttons
-        if should_enable_live_trading() and not G.live_trading_enabled:
+        try:
+            from .bot_app import CONFIG
+
+            min_pnl = float(CONFIG.get("NK_MIN_PNL", 0.0))
+            min_trades = int(CONFIG.get("NK_MIN_TRADES", 0))
+        except Exception:  # pragma: no cover - CONFIG may not exist
+            min_pnl = 0.0
+            min_trades = 0
+
+        live_pnl = G.live_equity - G.start_equity
+        trade_cnt = G.live_trade_count
+
+        if (
+            should_enable_live_trading()
+            and not G.live_trading_enabled
+            and live_pnl >= min_pnl
+            and trade_cnt >= min_trades
+        ):
             self.nuclear_button.config(state=tk.NORMAL)
         else:
             self.nuclear_button.config(state=tk.DISABLED)
@@ -742,9 +770,10 @@ class TradingGUI:
             self.validation_label.config(text=f"Val Sharpe: {sharpe:.2f} NK: {enabled}")
 
         # evaluate nuclear key and auto-pause rules
-        if nuclear_key_condition(
+        allowed = nuclear_key_condition(
             G.global_sharpe, G.global_max_drawdown, G.global_profit_factor
-        ):
+        )
+        if allowed and live_pnl >= min_pnl and trade_cnt >= min_trades:
             self.nuclear_button.config(state=tk.NORMAL)
         else:
             self.nuclear_button.config(state=tk.DISABLED)

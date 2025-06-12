@@ -55,6 +55,9 @@ def main() -> None:
         stats = connector.get_account_stats()
         logging.info("ACCOUNT_BALANCE %s", json.dumps(stats))
         G.global_account_stats = stats
+        G.start_equity = stats.get("total", {}).get("USDT", 0.0)
+        G.live_equity = G.start_equity
+        G.live_trade_count = 0
     except Exception as exc:  # pragma: no cover - network errors
         logging.error("Balance fetch failed: %s", exc)
 
