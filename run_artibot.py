@@ -113,7 +113,14 @@ def main() -> None:
     live_feed_th.start()
 
     ds = HourlyDataset(data, seq_len=24, threshold=G.GLOBAL_THRESHOLD, train_mode=False)
-    meta_agent = MetaTransformerRL(ensemble=ensemble, lr=1e-3)
+    clamp_min = CONFIG.get("CLAMP_MIN", -10.0)
+    clamp_max = CONFIG.get("CLAMP_MAX", 10.0)
+    meta_agent = MetaTransformerRL(
+        ensemble=ensemble,
+        lr=1e-3,
+        value_range=(clamp_min, clamp_max),
+        target_range=(clamp_min, clamp_max),
+    )
     meta_th = threading.Thread(
         target=lambda: meta_control_loop(ensemble, ds, meta_agent), daemon=True
     )

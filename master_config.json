@@ -21,6 +21,8 @@
     "MIN_PROFIT_FACTOR": 1.0,
     "NK_MIN_PNL": 0.0,
     "NK_MIN_TRADES": 0,
+    "CLAMP_MIN": -10.0,
+    "CLAMP_MAX": 10.0,
     "SHOW_WEIGHT_SELECTOR": false,
     "USE_PREV_WEIGHTS": true,
     "WEIGHTS_DIR": "weights",
