@@ -124,6 +124,8 @@ use_sandbox = True
 
 # gating flag
 nuclear_key_enabled = False
+# Set to ``True`` when the GUI bypasses the nuclear key gate
+nuke_armed = False
 
 # Simple status indicator updated by threads
 

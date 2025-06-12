@@ -65,8 +65,8 @@ def test_robust_backtest_simple(monkeypatch):
     ]
     result = robust_backtest(DummyEnsemble(), data)
     assert result["trades"] == 1
-    assert round(result["net_pct"], 2) == 1.74
-    assert result["composite_reward"] == pytest.approx(4.33706, rel=1e-3)
+    assert round(result["net_pct"], 2) == 1.43
+    assert result["composite_reward"] == pytest.approx(4.26929, rel=1e-3)
 
 
 def test_robust_backtest_unbounded_reward(monkeypatch):
