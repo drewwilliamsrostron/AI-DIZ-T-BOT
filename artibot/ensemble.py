@@ -33,6 +33,18 @@ from .metrics import compute_yearly_stats, compute_monthly_stats
 from .model import TradingModel
 
 
+def update_best(epoch: int, sharpe: float, net_pct: float, best_ckpt_path: str) -> None:
+    """Log a NEW_BEST event with key metrics."""
+
+    logging.info(
+        "NEW_BEST  epoch=%d  sharpe=%.3f  net_pct=%.2f  saved %s",
+        epoch,
+        sharpe,
+        net_pct,
+        best_ckpt_path,
+    )
+
+
 def reject_if_risky(
     sharpe: float,
     max_dd: float,
@@ -540,6 +552,12 @@ class EnsembleModel:
                 initial_balance=100.0,
             )
             G.global_best_monthly_stats_table = best_monthly
+            update_best(
+                self.train_steps,
+                current_result["sharpe"],
+                current_result["net_pct"],
+                self.weights_path,
+            )
 
         mean_ent = float(torch.tensor(self.entropies).mean()) if self.entropies else 0.0
         mean_mp = float(torch.tensor(self.max_probs).mean()) if self.max_probs else 0.0
