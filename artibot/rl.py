@@ -14,6 +14,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import traceback
+import logging
+import math
 
 
 ###############################################################################
@@ -164,7 +166,11 @@ class MetaTransformerRL:
             _, val_ns = self.model(ns)
 
         target = reward + self.gamma * val_ns.item()
-        target = float(np.clip(target, self.target_range[0], self.target_range[1]))
+        if not math.isfinite(target):
+            logging.warning("Non-finite target: %s", target)
+            target = self.target_range[1] if target > 0 else self.target_range[0]
+        else:
+            target = float(np.clip(target, self.target_range[0], self.target_range[1]))
         val_s = val_s.clamp(min=self.value_range[0], max=self.value_range[1])
         advantage = target - val_s.item()
         loss_p = -lp_s * advantage
