@@ -27,4 +27,3 @@ def get_account_equity(exchange: Any) -> float:
     except Exception as e:  # pragma: no cover - network errors
         logging.error("Equity fetch error: %s", e)
         return 0.0
-
