@@ -9,6 +9,7 @@ from artibot.ensemble import EnsembleModel
 
 def test_csv_thread_uses_cpu_count(monkeypatch):
     monkeypatch.setattr(os, "cpu_count", lambda: 12)
+    monkeypatch.setattr("artibot.training.MAX_WORKERS", 10)
     called = {}
 
     def fake_loader(*args, **kwargs):
@@ -35,7 +36,7 @@ def test_csv_thread_uses_cpu_count(monkeypatch):
     stop = threading.Event()
     csv_training_thread(ens, data, stop, {}, use_prev_weights=False, max_epochs=1)
 
-    assert called.get("workers") == 11
+    assert called.get("workers") == 10
 
 
 def test_persistent_workers_enabled(monkeypatch):
