@@ -58,9 +58,20 @@ def main() -> None:
         stats = connector.get_account_stats()
         logging.info("ACCOUNT_BALANCE %s", json.dumps(stats))
         G.global_account_stats = stats
+    try:
+        stats = connector.get_account_stats()
+        logging.info("ACCOUNT_BALANCE %s", json.dumps(stats))
+        G.global_account_stats = stats
+
+        # -------- unified balance → globals ----------
         equity = stats.get("total", {}).get("USDT", 0.0)
-        G.start_equity = equity
-        G.live_equity = equity
+        G.start_equity      = equity          # for PnL gating / NK logic
+        G.live_equity       = equity
+        G.live_trade_count  = 0
+        # ---------------------------------------------
+    except Exception as exc:  # pragma: no cover - network errors
+        logging.error("Balance fetch failed: %s", exc)
+
     except Exception as exc:  # pragma: no cover - network errors
         logging.error("Balance fetch failed: %s", exc)
 
