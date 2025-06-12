@@ -15,13 +15,35 @@ import os
 import json
 import torch
 import multiprocessing
+import gc
 
 # leave two cores free for the GUI / system
-MAX_WORKERS = max(1, multiprocessing.cpu_count() - 2)
+CPU_LIMIT = max(1, multiprocessing.cpu_count() - 2)
 
 # make Torch & OpenMP respect the same limit
-torch.set_num_threads(MAX_WORKERS)
-os.environ["OMP_NUM_THREADS"] = str(MAX_WORKERS)
+torch.set_num_threads(CPU_LIMIT)
+os.environ["OMP_NUM_THREADS"] = str(CPU_LIMIT)
+
+
+def rebuild_loader(old_loader, dataset, batch_size=128, shuffle=True):
+    """Dispose of an existing DataLoader and create a replacement."""
+
+    # Gracefully stop and free all worker processes
+    if old_loader is not None:
+        if getattr(old_loader, "_iterator", None) is not None:
+            old_loader._iterator._shutdown_workers()
+        del old_loader
+        gc.collect()
+
+    num_workers = max(1, os.cpu_count() - 2)
+    return torch.utils.data.DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        persistent_workers=False,
+        pin_memory=False,
+    )
 
 
 ###############################################################################
@@ -47,7 +69,7 @@ def csv_training_thread(
     import traceback
 
     import numpy as np
-    from torch.utils.data import DataLoader, random_split
+    from torch.utils.data import random_split
 
     if debug_anomaly:
         torch.autograd.set_detect_anomaly(True)
@@ -85,30 +107,13 @@ def csv_training_thread(
             else None
         )
 
-        pin = ensemble.device.type == "cuda"
-        workers = MAX_WORKERS
+        workers = max(1, os.cpu_count() - 2)
         logging.info(
             "DATALOADER", extra={"workers": workers, "device": ensemble.device.type}
         )
         print("[DEBUG] About to create DataLoader")
-        dl_train = DataLoader(
-            ds_train,
-            batch_size=128,
-            shuffle=True,
-            num_workers=workers,
-            pin_memory=pin,
-            persistent_workers=workers > 0,
-            prefetch_factor=2 if workers > 0 else None,
-        )
-        dl_val = DataLoader(
-            ds_val,
-            batch_size=128,
-            shuffle=False,
-            num_workers=workers,
-            pin_memory=pin,
-            persistent_workers=workers > 0,
-            prefetch_factor=2 if workers > 0 else None,
-        )
+        dl_train = rebuild_loader(None, ds_train, batch_size=128, shuffle=True)
+        dl_val = rebuild_loader(None, ds_val, batch_size=128, shuffle=False)
         print("[DEBUG] DataLoader created")
 
         adapt_live = bool(config.get("ADAPT_TO_LIVE", False))
@@ -293,38 +298,25 @@ def csv_training_thread(
                         ntr_ = int(nt_ * 0.9)
                         nv_ = nt_ - ntr_
                         ds_tr_, ds_val_ = random_split(ds_updated, [ntr_, nv_])
-                        pin = ensemble.device.type == "cuda"
-                        workers = MAX_WORKERS
+                        workers = max(1, os.cpu_count() - 2)
                         logging.info(
                             "DATALOADER",
                             extra={"workers": workers, "device": ensemble.device.type},
                         )
                         print("[DEBUG] About to create DataLoader")
-                        dl_tr_ = DataLoader(
-                            ds_tr_,
-                            batch_size=128,
-                            shuffle=True,
-                            num_workers=workers,
-                            pin_memory=pin,
-                            persistent_workers=workers > 0,
-                            prefetch_factor=2 if workers > 0 else None,
+                        dl_train = rebuild_loader(
+                            dl_train, ds_tr_, batch_size=128, shuffle=True
                         )
-                        dl_val_ = DataLoader(
-                            ds_val_,
-                            batch_size=128,
-                            shuffle=False,
-                            num_workers=workers,
-                            pin_memory=pin,
-                            persistent_workers=workers > 0,
-                            prefetch_factor=2 if workers > 0 else None,
+                        dl_val = rebuild_loader(
+                            dl_val, ds_val_, batch_size=128, shuffle=False
                         )
                         print("[DEBUG] DataLoader created")
                         train_indicators = compute_indicators(
                             train_data, ensemble.indicator_hparams, with_scaled=True
                         )
                         ensemble.train_one_epoch(
-                            dl_tr_,
-                            dl_val_,
+                            dl_train,
+                            dl_val,
                             train_data,
                             stop_event,
                             features=train_indicators,
