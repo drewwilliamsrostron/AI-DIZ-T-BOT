@@ -450,9 +450,9 @@ class PhemexConnector:
         side: str,
         amount: float,
         price: float,
-        order_type: str = "limit",
+        order_type: str = "market",
     ):
-        """Submit an order with :mod:`ccxt` applying slippage."""
+        """Submit a market order with :mod:`ccxt` applying slippage."""
         from .execution import submit_order
 
         def _place(**kwargs):

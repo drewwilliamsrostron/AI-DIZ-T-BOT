@@ -32,7 +32,7 @@ def open_position(
 ) -> Position:
     """Place an order via ``connector`` and return a ``Position``."""
 
-    connector.create_order(side, amount, price)
+    connector.create_order(side, amount, price, order_type="market")
     return Position(
         side=side,
         size=amount if side == "long" else -amount,
@@ -47,6 +47,6 @@ def close_position(connector: "PhemexConnector", pos: Position, price: float) ->
     """Submit an exit order and reset ``pos`` in place."""
 
     exit_side = "sell" if pos.side == "long" else "buy"
-    connector.create_order(exit_side, abs(pos.size), price)
+    connector.create_order(exit_side, abs(pos.size), price, order_type="market")
     pos.side = None
     pos.size = 0.0
