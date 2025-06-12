@@ -9,11 +9,11 @@ from artibot.ensemble import EnsembleModel
 
 def test_csv_thread_uses_cpu_count(monkeypatch):
     monkeypatch.setattr(os, "cpu_count", lambda: 12)
-    monkeypatch.setattr("artibot.training.MAX_WORKERS", 10)
     called = {}
 
     def fake_loader(*args, **kwargs):
         called["workers"] = kwargs.get("num_workers")
+        called["persistent"] = kwargs.get("persistent_workers")
 
         class DL:
             pass
@@ -37,9 +37,10 @@ def test_csv_thread_uses_cpu_count(monkeypatch):
     csv_training_thread(ens, data, stop, {}, use_prev_weights=False, max_epochs=1)
 
     assert called.get("workers") == 10
+    assert called.get("persistent") is False
 
 
-def test_persistent_workers_enabled(monkeypatch):
+def test_persistent_workers_disabled(monkeypatch):
     monkeypatch.setattr(os, "cpu_count", lambda: 2)
     called = {}
 
@@ -67,4 +68,4 @@ def test_persistent_workers_enabled(monkeypatch):
     stop = threading.Event()
     csv_training_thread(ens, data, stop, {}, use_prev_weights=False, max_epochs=1)
 
-    assert called.get("persistent") is True
+    assert called.get("persistent") is False
