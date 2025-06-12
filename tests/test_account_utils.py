@@ -19,5 +19,3 @@ def test_get_account_equity():
     eq = get_account_equity(ex)
     assert eq == 1000.0  # (0.5 + 0.5) * 1000
     assert ex.calls == [None, {"type": "swap", "code": "BTC"}]
-
-

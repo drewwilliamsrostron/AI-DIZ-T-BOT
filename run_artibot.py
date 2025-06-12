@@ -2,8 +2,8 @@
 
 This script loads ``master_config.json`` and asks whether to use the live
 Phemex API. It then launches the training threads, live data polling,
-Tkinter dashboard and validation workers in the background while running
-an order execution loop in the foreground.
+Tkinter dashboard and validation workers.  The dashboard runs on the main
+thread so closing the window cleanly shuts down all workers.
 """
 
 # ruff: noqa: E402
@@ -14,14 +14,8 @@ ensure_dependencies()
 
 import json
 import logging
-import math
 import os
 import threading
-import time
-import types
-
-import numpy as np
-import talib
 import torch
 
 from artibot.utils import setup_logging, get_device
@@ -40,20 +34,6 @@ from artibot.bot_app import load_master_config
 
 
 CONFIG = load_master_config()
-
-
-def _gui_thread(
-    container: dict,
-    ensemble: EnsembleModel,
-    weights_path: str,
-    connector: PhemexConnector,
-) -> None:
-    import tkinter as tk
-
-    root = tk.Tk()
-    gui = TradingGUI(root, ensemble, weights_path, connector)
-    container["gui"] = gui
-    root.mainloop()
 
 
 def main() -> None:
@@ -116,12 +96,12 @@ def main() -> None:
     train_th.start()
 
     poll_interval = CONFIG.get("LIVE_POLL_INTERVAL", 60)
-    phemex_th = threading.Thread(
+    live_feed_th = threading.Thread(
         target=phemex_live_thread,
         args=(connector, stop_event, poll_interval),
         daemon=True,
     )
-    phemex_th.start()
+    live_feed_th.start()
 
     ds = HourlyDataset(data, seq_len=24, threshold=G.GLOBAL_THRESHOLD, train_mode=False)
     meta_agent = MetaTransformerRL(ensemble=ensemble, lr=1e-3)
@@ -130,149 +110,26 @@ def main() -> None:
     )
     meta_th.start()
 
-    gui_container: dict = {}
-    gui_th = threading.Thread(
-        target=_gui_thread,
-        args=(gui_container, ensemble, weights_path, connector),
-        daemon=True,
-    )
-    gui_th.start()
-    while "gui" not in gui_container:
-        time.sleep(0.1)
-    gui_ref = gui_container["gui"]
-
     validate_th = threading.Thread(
         target=lambda: validate_and_gate(csv_path, CONFIG), daemon=True
     )
     validate_th.start()
 
-    risks = CONFIG.get("RISKS", {})
-    timeframe = CONFIG.get("TIMEFRAME", "1h")
-    leverage = float(CONFIG.get("LEVERAGE", 10))
-    poll_int = float(poll_interval)
+    import tkinter as tk
 
-    current_position = types.SimpleNamespace(side="NONE", size=0.0, entry=0.0)
+    root = tk.Tk()
+    _gui = TradingGUI(root, ensemble, weights_path, connector)
+
+    logging.info("Tkinter dashboard starting on main thread…")
 
     try:
-        while True:
-            if gui_ref.close_requested and current_position.side != "NONE":
-                close_side = "buy" if current_position.side == "SHORT" else "sell"
-                try:
-                    connector.create_order(close_side, current_position.size)
-                except Exception as exc:  # pragma: no cover - order errors
-                    logging.error("Close order failed: %s", exc)
-                gui_ref.root.after(0, gui_ref.update_position, "NONE", 0, 0)
-                current_position.side = "NONE"
-                current_position.size = 0
-                current_position.entry = 0.0
-                gui_ref.close_requested = False
-
-            logging.info("Fetching latest bars…")
-            try:
-                bars = connector.fetch_latest_bars(limit=100)
-            except Exception as exc:  # pragma: no cover - network errors
-                logging.error("fetch_ohlcv failed: %s", exc)
-                time.sleep(poll_int)
-                continue
-            if not bars:
-                logging.warning(
-                    "No bars retrieved from exchange, retrying in %.0f seconds…",
-                    poll_int,
-                )
-                time.sleep(poll_int)
-                continue
-
-            arr = np.array(bars, dtype=np.float64)
-            closes = arr[:, 4]
-            sma = np.convolve(closes, np.ones(10) / 10, mode="same")
-            rsi = talib.RSI(closes, timeperiod=14)
-            macd, _, _ = talib.MACD(closes)
-            feats = np.column_stack(
-                [
-                    arr[:, 1:6],
-                    sma.astype(np.float32),
-                    rsi.astype(np.float32),
-                    macd.astype(np.float32),
-                ]
-            )
-            feats = np.nan_to_num(feats).astype(np.float32)
-            seq_t = torch.tensor(feats, dtype=torch.float32).unsqueeze(0).to(device)
-            idx, conf, _ = ensemble.predict(seq_t)
-            side_signal = {0: "buy", 1: "sell", 2: "hold"}[idx]
-            logging.info("SIGNAL %s conf=%.3f", side_signal, conf)
-
-            signal_side = (
-                "LONG"
-                if side_signal == "buy"
-                else ("SHORT" if side_signal == "sell" else "NONE")
-            )
-            if current_position.side == signal_side:
-                time.sleep(poll_int)
-                continue
-
-            if G.trading_paused or side_signal == "hold":
-                time.sleep(poll_int)
-                continue
-
-            try:
-                stats = connector.get_account_stats()
-                equity = stats.get("total", {}).get("USDT", 0.0)
-                G.global_account_stats = stats
-            except Exception as exc:  # pragma: no cover - network errors
-                logging.error("Equity fetch error: %s", exc)
-                time.sleep(poll_int)
-                continue
-
-            risk_pct = float(risks.get(timeframe, 10)) / 100.0
-            usd_risk = equity * risk_pct
-            contracts = usd_risk * leverage
-
-            market = connector.exchange.market(connector.symbol)
-            step = market.get("precision", {}).get("amount") or 1
-            min_qty = market.get("limits", {}).get("amount", {}).get("min") or 1
-            contracts = math.floor(contracts / step) * step
-
-            if not G.is_nuclear_key_enabled():
-                logging.info("NUCLEAR_KEY_DISABLED – skipping trade")
-                time.sleep(poll_int)
-                continue
-
-            if contracts < min_qty:
-                logging.info(
-                    "ORDER_SKIPPED – qty %.2f < min lot %d", contracts, min_qty
-                )
-                time.sleep(poll_int)
-                continue
-
-            try:
-                order = connector.create_order(side_signal, contracts)
-                logging.info("ORDER_PLACED %s", order)
-                entry = (
-                    float(order.get("price", 0.0)) if isinstance(order, dict) else 0.0
-                )
-                current_position.side = signal_side
-                current_position.size = contracts
-                current_position.entry = entry
-                gui_ref.root.after(
-                    0, gui_ref.update_position, signal_side, contracts, entry
-                )
-            except Exception as exc:  # pragma: no cover - order errors
-                logging.error("Order failed: %s", exc)
-                G.trading_paused = True
-
-            time.sleep(poll_int)
+        root.mainloop()
     except KeyboardInterrupt:
-        logging.info("Stopping…")
-    finally:
-        stop_event.set()
-        for th in [train_th, phemex_th, meta_th, validate_th, gui_th]:
-            if th.is_alive():
-                th.join(timeout=5.0)
-        try:
-            G.cancel_open_orders()
-            G.close_position()
-        except Exception as exc:  # pragma: no cover - network errors
-            logging.error("Cleanup failed: %s", exc)
+        pass
+
+    stop_event.set()
+    for th in (train_th, live_feed_th, meta_th, validate_th):
+        th.join()
 
 
 if __name__ == "__main__":
