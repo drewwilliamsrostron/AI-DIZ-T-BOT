@@ -11,6 +11,7 @@ import random
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import traceback
 
@@ -79,7 +80,14 @@ class TransformerMetaAgent(nn.Module):
 
 
 class MetaTransformerRL:
-    def __init__(self, ensemble, lr=1e-3):
+    def __init__(
+        self,
+        ensemble,
+        lr: float = 1e-3,
+        *,
+        value_range: tuple[float, float] = (-10.0, 10.0),
+        target_range: tuple[float, float] = (-10.0, 10.0),
+    ):
         self.model = TransformerMetaAgent()
         # expose the underlying action space so other methods don't
         # need to reach into the model attribute. Without this the
@@ -88,6 +96,8 @@ class MetaTransformerRL:
         self.opt = optim.Adam(self.model.parameters(), lr=lr)
         self.gamma = 0.95
         self.ensemble = ensemble
+        self.value_range = value_range
+        self.target_range = target_range
 
         # (7) Scheduled exploration
         # Change epsilon parameters for longer exploration
@@ -140,14 +150,18 @@ class MetaTransformerRL:
         dist = torch.distributions.Categorical(logits=pol_s)
         lp_s = dist.log_prob(torch.tensor([action_idx]))
         with torch.no_grad():
-            pol_ns, val_ns = self.model(ns)
+            _, val_ns = self.model(ns)
+
         target = reward + self.gamma * val_ns.item()
+        target = float(np.clip(target, self.target_range[0], self.target_range[1]))
+        val_s = val_s.clamp(min=self.value_range[0], max=self.value_range[1])
         advantage = target - val_s.item()
         loss_p = -lp_s * advantage
-        loss_v = 0.5 * (val_s - target) ** 2
+        loss_v = F.mse_loss(val_s, torch.tensor([target], device=val_s.device))
         loss = loss_p + loss_v
         self.opt.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
         self.opt.step()
         if reward > 0:
             self.last_improvement = 0
