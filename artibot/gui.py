@@ -79,10 +79,12 @@ def ask_use_prev_weights(default: bool = True, tk_module=tk) -> bool:
 
 
 class TradingGUI:
-    def __init__(self, root, ensemble, weights_path: str | None = None):
+    def __init__(self, root, ensemble, weights_path: str | None = None, connector=None):
         self.root = root
         self.ensemble = ensemble
         self.weights_path = weights_path
+        self.connector = connector
+        self.close_requested = False
         self.root.title("Complex AI Trading w/ Robust Backtest + Live Phemex")
 
         # ------------------------------------------------------------------
@@ -406,12 +408,26 @@ class TradingGUI:
             state=tk.DISABLED,
         )
         self.nuclear_button.pack(side=tk.LEFT, padx=5)
-        self.close_button = ttk.Button(
+
+        self.btn_buy = ttk.Button(
+            self.controls_frame,
+            text="Test BUY",
+            command=lambda: self.on_test_trade("buy"),
+        )
+        self.btn_buy.pack(side=tk.LEFT, padx=5)
+        self.btn_sell = ttk.Button(
+            self.controls_frame,
+            text="Test SELL",
+            command=lambda: self.on_test_trade("sell"),
+        )
+        self.btn_sell.pack(side=tk.LEFT, padx=5)
+        self.btn_close = ttk.Button(
             self.controls_frame,
             text="Close Active Trade",
             command=self.close_trade,
+            state="disabled",
         )
-        self.close_button.pack(side=tk.LEFT, padx=5)
+        self.btn_close.pack(side=tk.LEFT, padx=5)
         self.edit_button = ttk.Button(
             self.controls_frame,
             text="Edit Trade",
@@ -425,6 +441,18 @@ class TradingGUI:
         self.validation_label.grid(
             row=22, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
         )
+
+        self.pos_frame = ttk.LabelFrame(self.info_frame, text="Current Position")
+        self.pos_frame.grid(row=23, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
+        ttk.Label(self.pos_frame, text="Side:").grid(row=0, column=0, sticky=tk.W)
+        self.label_side = ttk.Label(self.pos_frame, text="NONE")
+        self.label_side.grid(row=0, column=1, sticky=tk.W)
+        ttk.Label(self.pos_frame, text="Size:").grid(row=1, column=0, sticky=tk.W)
+        self.label_size = ttk.Label(self.pos_frame, text="0")
+        self.label_size.grid(row=1, column=1, sticky=tk.W)
+        ttk.Label(self.pos_frame, text="Entry:").grid(row=2, column=0, sticky=tk.W)
+        self.label_entry = ttk.Label(self.pos_frame, text="0.0 USDT")
+        self.label_entry.grid(row=2, column=1, sticky=tk.W)
 
         # Use sidebar as container to avoid mixing pack/grid on the root
         self.frame_ai = ttk.Frame(self.sidebar)
@@ -450,6 +478,7 @@ class TradingGUI:
 
         self.update_interval = 2000
         self.root.after(self.update_interval, self.update_dashboard)
+        self.root.after(10000, self.refresh_stats)
 
     def update_dashboard(self):
         """Refresh all dashboard widgets from shared state."""
@@ -694,6 +723,38 @@ class TradingGUI:
 
         self.root.after(self.update_interval, self.update_dashboard)
 
+    def update_position(self, side: str, size: float, entry: float) -> None:
+        self.label_side["text"] = side
+        self.label_size["text"] = f"{size:.0f}"
+        self.label_entry["text"] = f"{entry:.2f}"
+        if side == "NONE":
+            self.btn_close["state"] = "disabled"
+            self.btn_buy["state"] = "normal"
+            self.btn_sell["state"] = "normal"
+        else:
+            self.btn_close["state"] = "normal"
+            self.btn_buy["state"] = "disabled"
+            self.btn_sell["state"] = "disabled"
+
+    def refresh_stats(self) -> None:
+        if not self.connector:
+            return
+        try:
+            pos = self.connector.exchange.fetch_position_risk("BTCUSD")
+        except Exception as exc:  # pragma: no cover - network errors
+            logging.error("Position fetch failed: %s", exc)
+            self.root.after(10000, self.refresh_stats)
+            return
+        side = "LONG" if pos["side"] > 0 else ("SHORT" if pos["side"] < 0 else "NONE")
+        self.update_position(side, abs(pos["size"]), pos["entryPrice"])
+        self.root.after(10000, self.refresh_stats)
+
+    def on_test_trade(self, side: str) -> None:
+        if self.label_side["text"] != "NONE":
+            logging.info("[TEST] Position open, skip")
+            return
+        self.update_position("LONG" if side == "buy" else "SHORT", 1.0, 0.0)
+
     def enable_live_trading(self):
         """Activate live trading after user confirmation."""
         G.live_trading_enabled = True
@@ -702,10 +763,8 @@ class TradingGUI:
         self.nuclear_button.config(state=tk.DISABLED)
 
     def close_trade(self):
-        """Cancel orders and close the current position."""
-        G.cancel_open_orders()
-        G.close_position()
-        G.set_status("Trade closed", "All orders cancelled")
+        """Signal the trading loop to close the current position."""
+        self.close_requested = True
 
     def edit_trade(self):
         """Popup dialog to adjust SL/TP multipliers."""
