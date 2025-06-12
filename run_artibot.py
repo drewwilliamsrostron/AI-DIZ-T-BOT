@@ -18,13 +18,13 @@ import math
 import os
 import threading
 import time
-from typing import Any
 
 import numpy as np
 import talib
 import torch
 
 from artibot.utils import setup_logging, get_device
+from artibot.utils.account import get_account_equity
 from artibot.ensemble import EnsembleModel
 from artibot.dataset import HourlyDataset, load_csv_hourly
 from artibot.training import (
@@ -40,22 +40,6 @@ from artibot.bot_app import load_master_config
 
 
 CONFIG = load_master_config()
-
-
-def get_account_equity(exchange: Any) -> float:
-    """Return total BTC equity converted to USDT."""
-    spot = exchange.fetch_balance()
-    btc_spot = spot.get("BTC", {}).get("total", 0)
-
-    params = {"type": "swap", "code": "BTC"}
-    swap = exchange.fetch_balance(params=params)
-    btc_swap = swap.get("BTC", {}).get("total", 0)
-
-    if btc_spot == btc_swap == 0:
-        logging.warning("No BTC balance found – equity = 0")
-
-    btc_usdt = exchange.fetch_ticker("BTC/USDT")["close"]
-    return round((btc_spot + btc_swap) * btc_usdt, 8)
 
 
 def _gui_thread(ensemble: EnsembleModel, weights_path: str) -> None:
