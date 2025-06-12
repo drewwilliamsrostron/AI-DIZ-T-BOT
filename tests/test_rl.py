@@ -148,6 +148,38 @@ def test_apply_action_custom_space():
     assert ensemble.indicator_hparams == rl.IndicatorHyperparams(15, 12, 15, 30, 14)
 
 
+def test_update_nan_protection():
+    rl = load_rl_module()
+
+    class DummyModel(rl.torch.nn.Module):
+        def __init__(self, n_actions) -> None:
+            super().__init__()
+            self.param = rl.torch.nn.Parameter(rl.torch.zeros(1))
+            self.n_actions = n_actions
+
+        def forward(self, x):
+            val = rl.torch.tensor([rl.torch.inf])
+            return rl.torch.zeros((1, self.n_actions)), val
+
+    agent = rl.MetaTransformerRL(ensemble=None)
+    agent.action_space = [(0.0,)]
+    agent.model = DummyModel(len(agent.action_space))
+    agent.n_actions = 1
+    agent.opt = rl.optim.SGD(agent.model.parameters(), lr=0.1)
+
+    agent.update(
+        rl.np.zeros(agent.model.state_dim),
+        0,
+        rl.torch.inf,
+        rl.np.zeros(agent.model.state_dim),
+        rl.torch.tensor([0.0]),
+        0.0,
+    )
+
+    for p in agent.model.parameters():
+        assert rl.torch.isfinite(p).all()
+
+
 def test_no_warnings(recwarn):
     import warnings  # noqa: F401
     import run_artibot  # noqa: F401
