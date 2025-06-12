@@ -25,8 +25,15 @@ torch.set_num_threads(CPU_LIMIT)
 os.environ["OMP_NUM_THREADS"] = str(CPU_LIMIT)
 
 
-def rebuild_loader(old_loader, dataset, batch_size=128, shuffle=True):
-    """Dispose of an existing DataLoader and create a replacement."""
+def rebuild_loader(
+    old_loader: torch.utils.data.DataLoader | None,
+    dataset: torch.utils.data.Dataset,
+    batch_size: int = 128,
+    shuffle: bool = True,
+    *,
+    num_workers: int,
+) -> torch.utils.data.DataLoader:
+    """Dispose of ``old_loader`` and return a new ``DataLoader``."""
 
     # Gracefully stop and free all worker processes
     if old_loader is not None:
@@ -35,13 +42,12 @@ def rebuild_loader(old_loader, dataset, batch_size=128, shuffle=True):
         del old_loader
         gc.collect()
 
-    num_workers = max(1, os.cpu_count() - 2)
     return torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size,
         shuffle=shuffle,
         num_workers=num_workers,
-        persistent_workers=False,
+        persistent_workers=True,
         pin_memory=False,
     )
 
@@ -107,14 +113,16 @@ def csv_training_thread(
             else None
         )
 
-        workers = max(1, os.cpu_count() - 2)
+        workers = int(config.get("NUM_WORKERS", max(1, os.cpu_count() - 2)))
         logging.info(
             "DATALOADER", extra={"workers": workers, "device": ensemble.device.type}
         )
-        print("[DEBUG] About to create DataLoader")
-        dl_train = rebuild_loader(None, ds_train, batch_size=128, shuffle=True)
-        dl_val = rebuild_loader(None, ds_val, batch_size=128, shuffle=False)
-        print("[DEBUG] DataLoader created")
+        dl_train = rebuild_loader(
+            None, ds_train, batch_size=128, shuffle=True, num_workers=workers
+        )
+        dl_val = rebuild_loader(
+            None, ds_val, batch_size=128, shuffle=False, num_workers=workers
+        )
 
         adapt_live = bool(config.get("ADAPT_TO_LIVE", False))
         dummy_input = torch.randn(1, 24, 8, device=ensemble.device)
@@ -298,19 +306,24 @@ def csv_training_thread(
                         ntr_ = int(nt_ * 0.9)
                         nv_ = nt_ - ntr_
                         ds_tr_, ds_val_ = random_split(ds_updated, [ntr_, nv_])
-                        workers = max(1, os.cpu_count() - 2)
                         logging.info(
                             "DATALOADER",
                             extra={"workers": workers, "device": ensemble.device.type},
                         )
-                        print("[DEBUG] About to create DataLoader")
                         dl_train = rebuild_loader(
-                            dl_train, ds_tr_, batch_size=128, shuffle=True
+                            dl_train,
+                            ds_tr_,
+                            batch_size=128,
+                            shuffle=True,
+                            num_workers=workers,
                         )
                         dl_val = rebuild_loader(
-                            dl_val, ds_val_, batch_size=128, shuffle=False
+                            dl_val,
+                            ds_val_,
+                            batch_size=128,
+                            shuffle=False,
+                            num_workers=workers,
                         )
-                        print("[DEBUG] DataLoader created")
                         train_indicators = compute_indicators(
                             train_data, ensemble.indicator_hparams, with_scaled=True
                         )
