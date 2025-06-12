@@ -74,6 +74,80 @@ def compute_yearly_stats(equity_curve, trades, initial_balance=100.0):
 
 
 ###############################################################################
+# Monthly Stats
+###############################################################################
+def compute_monthly_stats(equity_curve, trades, initial_balance=100.0):
+    """Aggregate monthly return statistics from an equity curve."""
+
+    if not equity_curve:
+        return pd.DataFrame(), "No data"
+
+    eq_df = pd.DataFrame(equity_curve, columns=["timestamp", "balance"])
+    if eq_df["timestamp"].max() > 1_000_000_000_000:
+        eq_df["timestamp"] //= 1000
+    eq_df["dt"] = pd.to_datetime(eq_df["timestamp"], unit="s")
+    eq_df.set_index("dt", inplace=True)
+    eq_df = eq_df.resample("1D").last().dropna()
+    if eq_df.empty:
+        return pd.DataFrame(), "No data"
+
+    trades_df = pd.DataFrame(trades)
+    if not trades_df.empty:
+        if trades_df["entry_time"].max() > 1_000_000_000_000:
+            trades_df["entry_time"] //= 1000
+        trades_df["entry_dt"] = pd.to_datetime(trades_df["entry_time"], unit="s")
+        trades_df.set_index("entry_dt", inplace=True)
+
+    month_rows = []
+    grouped = eq_df.groupby([eq_df.index.year, eq_df.index.month])
+    for (year, month), grp in grouped:
+        if len(grp) < 2:
+            continue
+        start_balance = grp["balance"].iloc[0]
+        end_balance = grp["balance"].iloc[-1]
+        net_pct_month = (
+            100.0
+            * (end_balance - start_balance)
+            / (start_balance if start_balance != 0 else 1e-8)
+        )
+        daily_returns = grp["balance"].pct_change().dropna()
+        mu = daily_returns.mean()
+        sigma = daily_returns.std()
+        sharpe_month = (mu * 252) / (sigma * np.sqrt(252)) if sigma > 1e-12 else 0.0
+        rolling_max = grp["balance"].cummax()
+        dd = (grp["balance"] - rolling_max) / rolling_max
+        mdd_month = dd.min() if not dd.empty else 0.0
+
+        if not trades_df.empty:
+            try:
+                trades_in_month = trades_df.loc[f"{year}-{month:02d}"]
+                num_trades_month = (
+                    len(trades_in_month) if not trades_in_month.empty else 0
+                )
+            except KeyError:
+                num_trades_month = 0
+        else:
+            num_trades_month = 0
+
+        month_rows.append(
+            {
+                "Month": f"{year}-{month:02d}",
+                "NetPct": net_pct_month,
+                "Sharpe": sharpe_month,
+                "MaxDD": mdd_month,
+                "Trades": num_trades_month,
+            }
+        )
+
+    if not month_rows:
+        return pd.DataFrame(), "No monthly data"
+
+    dfm = pd.DataFrame(month_rows).set_index("Month")
+    table_str = dfm.to_string(float_format=lambda x: f"{x: .2f}")
+    return dfm, table_str
+
+
+###############################################################################
 # inactivity_exponential_penalty (unchanged)
 ###############################################################################
 def inactivity_exponential_penalty(gap_in_secs, max_penalty=100.0):

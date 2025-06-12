@@ -180,6 +180,11 @@ class TradingGUI:
         self.yearly_perf_text = tk.Text(self.frame_yearly_perf, width=50, height=20)
         self.yearly_perf_text.pack(fill=tk.BOTH, expand=True)
 
+        self.frame_monthly_perf = ttk.Frame(self.notebook)
+        self.notebook.add(self.frame_monthly_perf, text="Best Strategy Monthly Results")
+        self.monthly_perf_text = tk.Text(self.frame_monthly_perf, width=50, height=20)
+        self.monthly_perf_text.pack(fill=tk.BOTH, expand=True)
+
         self.info_frame = ttk.LabelFrame(self.sidebar, text="Performance")
         self.info_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         disclaimer_text = "NOT INVESTMENT ADVICE! Demo only."
@@ -606,6 +611,12 @@ class TradingGUI:
             self.yearly_perf_text.insert(tk.END, G.global_best_yearly_stats_table)
         else:
             self.yearly_perf_text.insert(tk.END, "No yearly data")
+
+        self.monthly_perf_text.delete("1.0", tk.END)
+        if G.global_best_monthly_stats_table:
+            self.monthly_perf_text.insert(tk.END, G.global_best_monthly_stats_table)
+        else:
+            self.monthly_perf_text.insert(tk.END, "No monthly data")
 
         pred_str = G.global_current_prediction if G.global_current_prediction else "N/A"
         conf = G.global_ai_confidence if G.global_ai_confidence else 0.0

@@ -28,7 +28,7 @@ from torch.utils.data import DataLoader
 from .backtest import robust_backtest
 from .dataset import IndicatorHyperparams
 import artibot.globals as G
-from .metrics import compute_yearly_stats
+from .metrics import compute_yearly_stats, compute_monthly_stats
 from .model import TradingModel
 
 
@@ -229,6 +229,13 @@ class EnsembleModel:
             initial_balance=100.0,
         )
         G.global_yearly_stats_table = table_str
+
+        _, monthly_table = compute_monthly_stats(
+            current_result["equity_curve"],
+            current_result["trade_details"],
+            initial_balance=100.0,
+        )
+        G.global_monthly_stats_table = monthly_table
 
         # (4) We'll define an extended state for the meta-agent,
         # but that happens in meta_control_loop.
@@ -512,6 +519,13 @@ class EnsembleModel:
             )
             G.global_best_yearly_stats_table = best_table
 
+            _, best_monthly = compute_monthly_stats(
+                current_result["equity_curve"],
+                current_result["trade_details"],
+                initial_balance=100.0,
+            )
+            G.global_best_monthly_stats_table = best_monthly
+
         mean_ent = float(torch.tensor(self.entropies).mean()) if self.entropies else 0.0
         mean_mp = float(torch.tensor(self.max_probs).mean()) if self.max_probs else 0.0
         logging.info(
@@ -648,6 +662,13 @@ class EnsembleModel:
                         initial_balance=100.0,
                     )
                     G.global_best_yearly_stats_table = best_table
+
+                    _, best_monthly = compute_monthly_stats(
+                        loaded_result["equity_curve"],
+                        loaded_result["trade_details"],
+                        initial_balance=100.0,
+                    )
+                    G.global_best_monthly_stats_table = best_monthly
             except Exception:
                 pass
 
