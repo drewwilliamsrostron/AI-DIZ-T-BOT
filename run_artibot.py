@@ -18,6 +18,7 @@ import math
 import os
 import threading
 import time
+import types
 
 import numpy as np
 import talib
@@ -42,11 +43,17 @@ from artibot.bot_app import load_master_config
 CONFIG = load_master_config()
 
 
-def _gui_thread(ensemble: EnsembleModel, weights_path: str) -> None:
+def _gui_thread(
+    container: dict,
+    ensemble: EnsembleModel,
+    weights_path: str,
+    connector: PhemexConnector,
+) -> None:
     import tkinter as tk
 
     root = tk.Tk()
-    TradingGUI(root, ensemble, weights_path)
+    gui = TradingGUI(root, ensemble, weights_path, connector)
+    container["gui"] = gui
     root.mainloop()
 
 
@@ -124,10 +131,16 @@ def main() -> None:
     )
     meta_th.start()
 
+    gui_container: dict = {}
     gui_th = threading.Thread(
-        target=_gui_thread, args=(ensemble, weights_path), daemon=True
+        target=_gui_thread,
+        args=(gui_container, ensemble, weights_path, connector),
+        daemon=True,
     )
     gui_th.start()
+    while "gui" not in gui_container:
+        time.sleep(0.1)
+    gui_ref = gui_container["gui"]
 
     validate_th = threading.Thread(
         target=lambda: validate_and_gate(csv_path, CONFIG), daemon=True
@@ -139,8 +152,22 @@ def main() -> None:
     leverage = float(CONFIG.get("LEVERAGE", 10))
     poll_int = float(poll_interval)
 
+    current_position = types.SimpleNamespace(side="NONE", size=0.0, entry=0.0)
+
     try:
         while True:
+            if gui_ref.close_requested and current_position.side != "NONE":
+                close_side = "buy" if current_position.side == "SHORT" else "sell"
+                try:
+                    connector.create_order(close_side, current_position.size)
+                except Exception as exc:  # pragma: no cover - order errors
+                    logging.error("Close order failed: %s", exc)
+                gui_ref.root.after(0, gui_ref.update_position, "NONE", 0, 0)
+                current_position.side = "NONE"
+                current_position.size = 0
+                current_position.entry = 0.0
+                gui_ref.close_requested = False
+
             logging.info("Fetching latest bars…")
             try:
                 bars = connector.fetch_latest_bars(limit=100)
@@ -174,6 +201,15 @@ def main() -> None:
             idx, conf, _ = ensemble.predict(seq_t)
             side_signal = {0: "buy", 1: "sell", 2: "hold"}[idx]
             logging.info("SIGNAL %s conf=%.3f", side_signal, conf)
+
+            signal_side = (
+                "LONG"
+                if side_signal == "buy"
+                else ("SHORT" if side_signal == "sell" else "NONE")
+            )
+            if current_position.side == signal_side:
+                time.sleep(poll_int)
+                continue
 
             if G.trading_paused or side_signal == "hold":
                 time.sleep(poll_int)
@@ -212,8 +248,15 @@ def main() -> None:
             try:
                 order = connector.create_order(side_signal, contracts)
                 logging.info("ORDER_PLACED %s", order)
-                G.global_position_side = side_signal
-                G.global_position_size = contracts
+                entry = (
+                    float(order.get("price", 0.0)) if isinstance(order, dict) else 0.0
+                )
+                current_position.side = signal_side
+                current_position.size = contracts
+                current_position.entry = entry
+                gui_ref.root.after(
+                    0, gui_ref.update_position, signal_side, contracts, entry
+                )
             except Exception as exc:  # pragma: no cover - order errors
                 logging.error("Order failed: %s", exc)
                 G.trading_paused = True
