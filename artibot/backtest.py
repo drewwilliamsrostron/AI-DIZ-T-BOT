@@ -88,7 +88,7 @@ def robust_backtest(ensemble, data_full, indicators=None):
 
     LEVERAGE = 10
     min_hold_seconds = G.global_min_hold_seconds
-    commission_rate = 0.0006   # // 0.06 %   (was 0.0001, i.e. 0.01 %)
+    commission_rate = 0.0006  # // 0.06 %   (was 0.0001, i.e. 0.01 %)
     FUNDING_RATE = 0.0001
     device = ensemble.device
 

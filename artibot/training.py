@@ -5,6 +5,7 @@ import artibot.globals as G
 
 import logging
 import datetime
+import time
 
 from .dataset import HourlyDataset
 from .ensemble import reject_if_risky
@@ -394,7 +395,7 @@ def phemex_live_thread(
             except Exception as exc:
                 logging.error("Live weight load failed: %s", exc)
 
-        G.status_sleep("Waiting before next fetch", "", poll_interval)
+        time.sleep(max(0, 3600 - (time.time() % 3600)))
 
 
 ###############################################################################
