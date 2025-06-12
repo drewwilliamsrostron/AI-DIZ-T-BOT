@@ -10,6 +10,7 @@ import logging
 import random
 
 import os
+import shutil
 import numpy as np
 import torch
 import torch.nn as nn
@@ -236,6 +237,20 @@ class EnsembleModel:
             initial_balance=100.0,
         )
         G.global_monthly_stats_table = monthly_table
+
+        # update live weights when Sharpe improves
+        if current_result["sharpe"] > G.global_best_sharpe:
+            G.global_best_sharpe = current_result["sharpe"]
+            self.best_state_dicts = [m.state_dict() for m in self.models]
+            self.save_best_weights(self.weights_path)
+            live_path = os.path.join(
+                os.path.dirname(self.weights_path), "live_model.pth"
+            )
+            try:
+                shutil.copy(self.weights_path, live_path)
+                G.set_live_weights_updated(True)
+            except Exception as exc:
+                logging.error("Live weight copy failed: %s", exc)
 
         # (4) We'll define an extended state for the meta-agent,
         # but that happens in meta_control_loop.

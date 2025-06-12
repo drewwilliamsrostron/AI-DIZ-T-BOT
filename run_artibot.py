@@ -104,9 +104,10 @@ def main() -> None:
     train_th.start()
 
     poll_interval = CONFIG.get("LIVE_POLL_INTERVAL", 60)
+    live_path = os.path.join(os.path.dirname(weights_path), "live_model.pth")
     live_feed_th = threading.Thread(
         target=phemex_live_thread,
-        args=(connector, stop_event, poll_interval),
+        args=(connector, stop_event, poll_interval, ensemble, live_path),
         daemon=True,
     )
     live_feed_th.start()

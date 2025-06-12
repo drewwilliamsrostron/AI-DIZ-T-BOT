@@ -346,7 +346,13 @@ def csv_training_thread(
         stop_event.set()
 
 
-def phemex_live_thread(connector, stop_event, poll_interval: float) -> None:
+def phemex_live_thread(
+    connector,
+    stop_event,
+    poll_interval: float,
+    ensemble=None,
+    live_weight_path: str = "live_model.pth",
+) -> None:
     """Continuously fetch recent bars from Phemex at a configurable interval."""
     import traceback
 
@@ -369,6 +375,14 @@ def phemex_live_thread(connector, stop_event, poll_interval: float) -> None:
 
             G.set_status(f"Fetch error: {e}", "")
             stop_event.set()
+
+        if ensemble is not None and G.pop_live_weights_updated():
+            try:
+                ensemble.load_best_weights(live_weight_path)
+                logging.info("LIVE_WEIGHTS_LOADED")
+            except Exception as exc:
+                logging.error("Live weight load failed: %s", exc)
+
         G.status_sleep("Waiting before next fetch", "", poll_interval)
 
 
