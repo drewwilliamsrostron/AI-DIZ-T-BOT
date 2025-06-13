@@ -124,7 +124,8 @@ global_backtest_profit = []
 global_equity_curve = []
 global_attention_weights_history = []
 global_attention_entropy_history = []
-global_last_attention: list[list[list[float]]] | None = None
+# Most recent attention weights averaged across heads
+global_last_attention: list[list[float]] | None = None
 global_phemex_data = []
 global_days_in_profit = 0.0
 global_validation_summary = {}

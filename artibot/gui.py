@@ -608,11 +608,15 @@ class TradingGUI:
         self.ax_details.set_title("Live Attention Weights")
         if G.global_last_attention is not None:
             data = np.array(G.global_last_attention)
-            avg = data.mean(axis=0)
-            x_ = np.arange(avg.shape[0])
-            y_ = np.arange(avg.shape[1])
-            X, Y = np.meshgrid(x_, y_)
-            self.ax_details.plot_surface(X, Y, avg, cmap="viridis")
+            avg = data.mean(axis=0) if data.ndim == 3 else data
+            if avg.ndim >= 2:
+                x_ = np.arange(avg.shape[0])
+                y_ = np.arange(avg.shape[1])
+                X, Y = np.meshgrid(x_, y_)
+                self.ax_details.plot_surface(X, Y, avg, cmap="viridis")
+            else:
+                x_ = np.arange(len(avg))
+                self.ax_details.plot(x_, avg, marker="o", color="purple")
         elif G.global_attention_weights_history:
             x_ = list(range(1, len(G.global_attention_weights_history) + 1))
             self.ax_details.plot(
