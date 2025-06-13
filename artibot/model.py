@@ -93,6 +93,10 @@ class TradingModel(nn.Module):
         context = self.dropout(x)
         out_all = self.fc(context)
         w = torch.nan_to_num(p.unsqueeze(0))
+        try:
+            G.global_last_attention = w.squeeze(0).cpu().tolist()
+        except Exception:
+            pass
 
         # Risk fraction, SL/TP are scaled
         logits = out_all[:, :3]
