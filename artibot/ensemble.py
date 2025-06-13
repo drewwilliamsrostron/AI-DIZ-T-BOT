@@ -23,7 +23,7 @@ except Exception:  # pragma: no cover - older versions
     from torch.cuda.amp import GradScaler, autocast
 from torch.optim.lr_scheduler import (
     ReduceLROnPlateau,
-    CosineAnnealingWarmRestarts,
+    CosineAnnealingLR,
 )
 from torch.utils.data import DataLoader
 
@@ -149,7 +149,7 @@ class EnsembleModel:
         self.models = [TradingModel().to(device) for _ in range(n_models)]
         print("[DEBUG] Model moved to device")
         self.optimizers = [
-            optim.Adam(m.parameters(), lr=lr, weight_decay=weight_decay)
+            optim.AdamW(m.parameters(), lr=lr, weight_decay=weight_decay)
             for m in self.models
         ]
         self.criterion = nn.CrossEntropyLoss(
@@ -190,7 +190,7 @@ class EnsembleModel:
             )
             for opt in self.optimizers
         ]
-        self.cosine = [CosineAnnealingWarmRestarts(o, T_0=50) for o in self.optimizers]
+        self.cosine = [CosineAnnealingLR(o, T_max=100) for o in self.optimizers]
 
         self.warmup_steps = 1000
         self.step_count = 0
@@ -518,7 +518,7 @@ class EnsembleModel:
                                 .get("weight_decay", 0.0)
                             )
                             self.optimizers = [
-                                optim.Adam(m.parameters(), lr=lr, weight_decay=wd)
+                                optim.AdamW(m.parameters(), lr=lr, weight_decay=wd)
                                 for m in self.models
                             ]
                             self.schedulers = [
@@ -532,8 +532,7 @@ class EnsembleModel:
                                 for opt in self.optimizers
                             ]
                             self.cosine = [
-                                CosineAnnealingWarmRestarts(o, T_0=50)
-                                for o in self.optimizers
+                                CosineAnnealingLR(o, T_max=100) for o in self.optimizers
                             ]
                             if "device" in inspect.signature(GradScaler).parameters:
                                 self.scaler = GradScaler(
