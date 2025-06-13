@@ -4,7 +4,6 @@
 import os
 import random
 from typing import NamedTuple
-from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -16,6 +15,7 @@ from torch.utils.data import Dataset
 
 import artibot.globals as G
 import logging
+from .hyperparams import IndicatorHyperparams
 
 
 ###############################################################################
@@ -31,26 +31,6 @@ class TradeParams(NamedTuple):
 ###############################################################################
 # Dataclass for global indicator hyperparams
 ###############################################################################
-
-
-@dataclass
-class IndicatorHyperparams:
-    """Periods and toggles for optional indicators."""
-
-    use_sma: bool = True
-    sma_period: int = 10
-    use_rsi: bool = True
-    rsi_period: int = 9
-    use_macd: bool = True
-    macd_fast: int = 12
-    macd_slow: int = 26
-    macd_signal: int = 9
-    use_atr: bool = True
-    atr_period: int = 14
-    use_vortex: bool = True
-    vortex_period: int = 14
-    use_cmf: bool = True
-    cmf_period: int = 20
 
 
 ###############################################################################

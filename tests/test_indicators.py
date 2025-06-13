@@ -1,6 +1,7 @@
 import numpy as np
 from artibot import indicators
 from artibot import dataset
+from artibot.hyperparams import IndicatorHyperparams
 
 
 def test_vortex_length():
@@ -23,11 +24,11 @@ def test_cmf_length():
 
 def test_dataset_columns_flags():
     data = [[i, 1.0, 1.1, 0.9, 1.0, 1.0] for i in range(25)]
-    hp = dataset.IndicatorHyperparams()
+    hp = IndicatorHyperparams()
     ds = dataset.HourlyDataset(data, seq_len=3, indicator_hparams=hp)
     sample, _ = ds[0]
     base_cols = sample.shape[1]
-    hp_off = dataset.IndicatorHyperparams(use_atr=False, use_vortex=False, use_cmf=False)
+    hp_off = IndicatorHyperparams(use_atr=False, use_vortex=False, use_cmf=False)
     ds_off = dataset.HourlyDataset(data, seq_len=3, indicator_hparams=hp_off)
     sample_off, _ = ds_off[0]
     assert sample_off.shape[1] < base_cols

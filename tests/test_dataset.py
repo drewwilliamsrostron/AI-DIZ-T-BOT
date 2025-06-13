@@ -60,6 +60,7 @@ sys.modules.setdefault("sklearn", sklearn)
 sys.modules.setdefault("sklearn.preprocessing", preproc)
 
 from artibot import dataset
+from artibot.hyperparams import IndicatorHyperparams
 
 
 def test_load_csv_hourly_missing(tmp_path):
@@ -96,7 +97,7 @@ def test_hourlydataset_basic(monkeypatch):
     ds = dataset.HourlyDataset(
         data,
         seq_len=3,
-        indicator_hparams=dataset.IndicatorHyperparams(sma_period=1),
+        indicator_hparams=IndicatorHyperparams(sma_period=1),
     )
     assert len(ds) == 2
 
@@ -129,7 +130,7 @@ def test_hourlydataset_feature_counts(hp_kwargs, ichimoku, expected):
         [4, 1.02, 1.03, 1.015, 1.025, 0.0],
     ]
 
-    hp = dataset.IndicatorHyperparams(sma_period=1, **hp_kwargs)
+    hp = IndicatorHyperparams(sma_period=1, **hp_kwargs)
     ds = dataset.HourlyDataset(
         data,
         seq_len=3,

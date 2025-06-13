@@ -25,7 +25,7 @@ sys.modules["talib"] = types.SimpleNamespace(
 from artibot.backtest import robust_backtest
 from artibot.backtest import compute_indicators
 import artibot.execution as execution
-from artibot.dataset import IndicatorHyperparams
+from artibot.hyperparams import IndicatorHyperparams
 
 
 class DummyEnsemble:
