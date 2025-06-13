@@ -4,7 +4,6 @@
 import os
 import random
 from typing import NamedTuple
-from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -16,6 +15,7 @@ from torch.utils.data import Dataset
 
 import artibot.globals as G
 import logging
+from .hyperparams import IndicatorHyperparams
 
 
 ###############################################################################
@@ -31,22 +31,6 @@ class TradeParams(NamedTuple):
 ###############################################################################
 # Dataclass for global indicator hyperparams
 ###############################################################################
-
-
-@dataclass
-class IndicatorHyperparams:
-    """Periods and toggles for optional indicators."""
-
-    use_sma: bool = True
-    sma_period: int = 10
-    use_rsi: bool = True
-    rsi_period: int = 14
-    use_macd: bool = True
-    macd_fast: int = 12
-    macd_slow: int = 26
-    macd_signal: int = 9
-    use_atr: bool = False
-    atr_period: int = 50
 
 
 ###############################################################################
@@ -146,8 +130,6 @@ class HourlyDataset(Dataset):
         atr_threshold_k: float = 1.5,
         train_mode: bool = True,
         rebalance: bool = True,
-        use_vortex: bool = False,
-        use_cmf: bool = False,
         use_ichimoku: bool = False,
     ) -> None:
         self.data = data
@@ -159,8 +141,10 @@ class HourlyDataset(Dataset):
         self.atr_threshold_k = atr_threshold_k
         self.train_mode = train_mode
         self.rebalance = rebalance
-        self.use_vortex = use_vortex
-        self.use_cmf = use_cmf
+        self.use_vortex = indicator_hparams.use_vortex
+        self.vortex_period = indicator_hparams.vortex_period
+        self.use_cmf = indicator_hparams.use_cmf
+        self.cmf_period = indicator_hparams.cmf_period
         self.use_ichimoku = use_ichimoku
         self.samples, self.labels = self.preprocess()
 
@@ -216,13 +200,13 @@ class HourlyDataset(Dataset):
         if self.use_vortex:
             from .indicators import vortex
 
-            vp, vn = vortex(highs, lows, closes)
+            vp, vn = vortex(highs, lows, closes, period=self.vortex_period)
             cols.extend([vp.astype(np.float32), vn.astype(np.float32)])
 
         if self.use_cmf:
             from .indicators import cmf
 
-            cmf_v = cmf(highs, lows, closes, volume)
+            cmf_v = cmf(highs, lows, closes, volume, period=self.cmf_period)
             cols.append(cmf_v.astype(np.float32))
 
         if self.use_ichimoku:

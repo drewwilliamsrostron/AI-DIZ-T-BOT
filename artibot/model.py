@@ -43,7 +43,7 @@ class PositionalEncoding(nn.Module):
 # (6) Increase model capacity & dropout. For instance:
 # hidden_size=128, dropout=0.4, nhead=4, num_layers=4
 class TradingModel(nn.Module):
-    def __init__(self, input_size=8, hidden_size=128, num_classes=3, dropout=0.4):
+    def __init__(self, input_size=12, hidden_size=128, num_classes=3, dropout=0.4):
         super().__init__()
         self.hidden_size = hidden_size
         self.input_dim = input_size

@@ -28,8 +28,6 @@ def compute_indicators(
     hp,
     *,
     with_scaled: bool = False,
-    use_vortex: bool = False,
-    use_cmf: bool = False,
     use_ichimoku: bool = False,
 ):
     """Return indicator arrays for ``data_full``.
@@ -80,17 +78,21 @@ def compute_indicators(
 
     atr_vals = indicators.atr(highs, lows, closes, period=atr_period)
     out["atr"] = atr_vals.astype(np.float32)
-    if getattr(hp, "use_atr", False):
+    if getattr(hp, "use_atr", True):
         cols.append(out["atr"])
 
-    if use_vortex:
-        vp, vn = indicators.vortex(highs, lows, closes)
-        out["vortex_p"] = vp.astype(np.float32)
-        out["vortex_m"] = vn.astype(np.float32)
-        cols.extend([out["vortex_p"], out["vortex_m"]])
+    if getattr(hp, "use_vortex", True):
+        vp, vn = indicators.vortex(
+            highs, lows, closes, period=getattr(hp, "vortex_period", 14)
+        )
+        out["vortex_pos"] = vp.astype(np.float32)
+        out["vortex_neg"] = vn.astype(np.float32)
+        cols.extend([out["vortex_pos"], out["vortex_neg"]])
 
-    if use_cmf:
-        cmf_v = indicators.cmf(highs, lows, closes, volume)
+    if getattr(hp, "use_cmf", True):
+        cmf_v = indicators.cmf(
+            highs, lows, closes, volume, period=getattr(hp, "cmf_period", 20)
+        )
         out["cmf"] = cmf_v.astype(np.float32)
         cols.append(out["cmf"])
 

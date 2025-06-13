@@ -38,9 +38,34 @@ class HyperParams:
     conf_threshold: float = float(_CONFIG.get("CONF_THRESHOLD", 5e-5))
 
     use_sma: bool = bool(_CONFIG.get("USE_SMA", True))
-    use_vortex: bool = bool(_CONFIG.get("USE_VORTEX", False))
-    use_cmf: bool = bool(_CONFIG.get("USE_CMF", False))
+    use_vortex: bool = bool(_CONFIG.get("USE_VORTEX", True))
+    use_cmf: bool = bool(_CONFIG.get("USE_CMF", True))
     use_ichimoku: bool = bool(_CONFIG.get("USE_ICHIMOKU", False))
-    use_atr: bool = bool(_CONFIG.get("USE_ATR", False))
+    use_atr: bool = bool(_CONFIG.get("USE_ATR", True))
     use_momentum: bool = bool(_CONFIG.get("USE_MOMENTUM", False))
     use_bbw: bool = bool(_CONFIG.get("USE_BBW", False))
+
+
+###############################################################################
+# Dataclass for indicator-specific hyperparams
+###############################################################################
+
+
+@dataclass
+class IndicatorHyperparams:
+    """Periods and toggles for optional indicators."""
+
+    use_sma: bool = True
+    sma_period: int = 10
+    use_rsi: bool = True
+    rsi_period: int = 9
+    use_macd: bool = True
+    macd_fast: int = 12
+    macd_slow: int = 26
+    macd_signal: int = 9
+    use_atr: bool = True
+    atr_period: int = 14
+    use_vortex: bool = True
+    vortex_period: int = 14
+    use_cmf: bool = True
+    cmf_period: int = 20

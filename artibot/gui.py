@@ -682,16 +682,21 @@ class TradingGUI:
         self.atr_label.config(text=f"ATR: {G.global_ATR_period}")
         self.sl_label.config(text=f"SL: {G.global_SL_multiplier}")
         self.tp_label.config(text=f"TP: {G.global_TP_multiplier}")
-        flags = ["RSI", "SMA", "MACD", "ATR"]
+        hp = self.ensemble.indicator_hparams
+        flags = ["RSI", "SMA", "MACD"]
+        if hp.use_atr:
+            flags.append("ATR")
+        if hp.use_vortex:
+            flags.append("VORTEX")
+        if hp.use_cmf:
+            flags.append("CMF")
         optional = [
-            ("use_vortex", "VORTEX"),
-            ("use_cmf", "CMF"),
             ("use_ichimoku", "ICHIMOKU"),
             ("use_momentum", "MOM"),
             ("use_bbw", "BBW"),
         ]
         for attr, name in optional:
-            if getattr(self.ensemble.indicator_hparams, attr, False):
+            if getattr(hp, attr, False):
                 flags.append(name)
         self.indicator_label.config(text=f"Indicators: {','.join(flags)}")
         self.best_lr_label.config(
