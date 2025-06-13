@@ -5,9 +5,7 @@
 import artibot.globals as G
 from .hyperparams import HyperParams, IndicatorHyperparams
 from .model import PositionalEncoding
-from dataclasses import replace
 
-import itertools
 import random
 import numpy as np
 import torch
@@ -32,45 +30,44 @@ ACTION_SPACE = {
     "d_tp": (-2.0, 2.0),
 }
 
+ACTION_KEYS = list(ACTION_SPACE.keys())
+
 
 ###############################################################################
 # NEW: A bigger action space that includes adjusting RSI, SMA, MACD + threshold
 ###############################################################################
 class TransformerMetaAgent(nn.Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        # (1) Enhanced meta-agent exploration: bigger sets
-        # (5) threshold_space => optional
-        # Simplified action space
-        self.lr_space = [-0.3, -0.1, 0.1, 0.3]  # More aggressive adjustments
-        self.wd_space = [-0.3, 0.0, 0.3]
-        self.rsi_space = [-5, 0, 5]
-        self.sma_space = [-5, 0, 5]
-        self.macd_fast_space = [-5, 0, 5]
-        self.macd_slow_space = [-5, 0, 5]
-        self.macd_sig_space = [-3, 0, 3]
-        self.threshold_space = [-0.0001, 0.0, 0.0001]  # Bigger threshold steps
 
-        # Remove nested loops - use random sampling instead
-        self.action_space = list(
-            itertools.product(
-                self.lr_space,
-                self.wd_space,
-                self.rsi_space,
-                self.sma_space,
-                self.macd_fast_space,
-                self.macd_slow_space,
-                self.macd_sig_space,
-                self.threshold_space,
-            )
-        )
-        # Randomly sample 1000 possible combinations instead of full cartesian product
-        random.shuffle(self.action_space)
-        self.action_space = self.action_space[:1000]
+        self.action_keys = ACTION_KEYS
+        self.action_low = np.array([low for low, _ in ACTION_SPACE.values()])
+        self.action_high = np.array([high for _, high in ACTION_SPACE.values()])
 
-        # (4) State includes: [curr_reward, best_reward, sharpe, dd, trades, days_in_profit]
         self.state_dim = 6
-        self.n_actions = len(self.action_space)
+
+        d_model = 32
+        self.embed = nn.Linear(self.state_dim, d_model)
+        self.pos_enc = PositionalEncoding(d_model)
+        enc_layer = nn.TransformerEncoderLayer(
+            d_model=d_model,
+            nhead=1,
+            dim_feedforward=64,
+            batch_first=True,
+        )
+        self.transformer_enc = nn.TransformerEncoder(enc_layer, num_layers=2)
+        self.policy_head = nn.Linear(d_model, len(self.action_keys))
+        self.value_head = nn.Linear(d_model, 1)
+
+    def sample_action(self) -> dict[str, float]:
+        return {
+            k: (
+                random.uniform(low, high)
+                if isinstance(low, float)
+                else random.randint(low, high)
+            )
+            for k, (low, high) in ACTION_SPACE.items()
+        }
 
         # (6) bigger or the same
         d_model = 32
@@ -107,11 +104,7 @@ class MetaTransformerRL:
     ):
         self._model = TransformerMetaAgent()
         self.state_dim = self._model.state_dim
-        # expose the underlying action space so other methods don't
-        # need to reach into the model attribute. Without this the
-        # ``pick_action`` method fails with ``AttributeError``.
-        self.action_space = self._model.action_space
-        self.action_keys = list(ACTION_SPACE.keys())
+        self.action_keys = ACTION_KEYS
         self.opt = optim.AdamW(self._model.parameters(), lr=lr)
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.opt, T_max=100)
         self.gamma = 0.95
@@ -141,37 +134,10 @@ class MetaTransformerRL:
             self._model.state_dim = self.state_dim
 
     def pick_action(self, state_np):
-        # scheduled exploration
-        self.steps += 1
-        current_eps = max(self.eps_end, self.eps_start * (self.eps_decay**self.steps))
-        noise_scale = max(0.1, 1.0 - self.steps / 10000)  # added random noise
-
-        s = torch.tensor(state_np, dtype=torch.float32).unsqueeze(0)
-        with torch.no_grad():
-            pol, val = self.model(s)
-            dist = torch.distributions.Categorical(logits=pol)
-        if random.random() < current_eps:
-            # Add noise to action selection
-            a_idx = np.random.choice(len(self.action_space))
-            # Apply Gaussian noise to action parameters
-            selected_action = list(self.action_space[a_idx])
-            selected_action = [
-                x + np.random.normal(0, noise_scale) for x in selected_action
-            ]
-            a_idx = self._find_nearest_action(selected_action)
-            lp = dist.log_prob(torch.tensor([a_idx]))
-        else:
-            a_idx = dist.sample().item()
-            lp = dist.log_prob(torch.tensor([a_idx]))
-        return a_idx, lp, val.item()
-
-    def _find_nearest_action(self, candidate):
-        """Return the index of the closest action in the action space."""
-        if not isinstance(candidate, np.ndarray):
-            candidate = np.array(candidate, dtype=float)
-        actions = np.array(self.action_space, dtype=float)
-        dists = np.linalg.norm(actions - candidate, axis=1)
-        return int(np.argmin(dists))
+        act = self.model.sample_action()
+        logp = torch.tensor(0.0)
+        val = torch.tensor([0.0])
+        return act, logp, val
 
     def update(self, state_np, action_idx, reward, next_state_np, logprob, value):
         s = torch.tensor(state_np, dtype=torch.float32).unsqueeze(0)
@@ -208,71 +174,6 @@ class MetaTransformerRL:
         else:
             self.last_improvement += 1
 
-    def apply_action_index(self, action_idx):
-        # decode
-        (lr_adj, wd_adj, rsi_adj, sma_adj, mf_adj, ms_adj, sig_adj, thr_adj) = (
-            self.action_space[action_idx]
-        )
-        # 1) LR/WD
-        old_lr = self.ensemble.optimizers[0].param_groups[0]["lr"]
-        new_lr = old_lr * (1 + lr_adj)
-        new_lr = max(1e-6, min(new_lr, 1e-1))
-
-        old_wd = self.ensemble.optimizers[0].param_groups[0].get("weight_decay", 0)
-        new_wd = old_wd * (1 + wd_adj)
-        new_wd = max(0, min(new_wd, 1e-2))
-
-        for opt_ in self.ensemble.optimizers:
-            for grp in opt_.param_groups:
-                grp["lr"] = new_lr
-                grp["weight_decay"] = new_wd
-
-        # 2) indicator hyperparams
-        old_hp = self.ensemble.indicator_hparams
-        new_rsi = old_hp.rsi_period + rsi_adj
-        new_sma = old_hp.sma_period + sma_adj
-        new_mf = old_hp.macd_fast + mf_adj
-        new_ms = old_hp.macd_slow + ms_adj
-        new_sig = old_hp.macd_signal + sig_adj
-        # 5) also let meta-agent change threshold
-        new_threshold = G.GLOBAL_THRESHOLD + thr_adj
-
-        self.ensemble.indicator_hparams = replace(
-            old_hp,
-            rsi_period=new_rsi,
-            sma_period=new_sma,
-            macd_fast=new_mf,
-            macd_slow=new_ms,
-            macd_signal=new_sig,
-        )
-        # If you want the dataset to re-init => we would do self.ensemble.dynamic_threshold = new_threshold
-        # But for demonstration, we won't forcibly re-load the dataset now.
-
-        logging.info(
-            "META_MUTATION",
-            extra={
-                "lr": new_lr,
-                "wd": new_wd,
-                "rsi": new_rsi,
-                "sma": new_sma,
-                "macd_fast": new_mf,
-                "macd_slow": new_ms,
-                "macd_sig": new_sig,
-                "threshold": new_threshold,
-            },
-        )
-
-        return (
-            new_lr,
-            new_wd,
-            new_rsi,
-            new_sma,
-            new_mf,
-            new_ms,
-            new_sig,
-            new_threshold,
-        )
-
     def apply_action(
         self,
         hp: HyperParams,
@@ -301,18 +202,34 @@ class MetaTransformerRL:
         hp.sl = max(0.5, hp.sl + float(act.get("d_sl", 0.0)))
         hp.tp = max(0.5, hp.tp + float(act.get("d_tp", 0.0)))
 
+        act_str = ", ".join(
+            f"{k}={v:+.2f}" if isinstance(v, float) else f"{k}={v}"
+            for k, v in act.items()
+        )
+        logging.info(
+            "META_MUTATION %s sl=%.2f tp=%.2f atr=%d vortex=%d cmf=%d",
+            act_str,
+            hp.sl,
+            hp.tp,
+            indicator_hp.atr_period,
+            indicator_hp.vortex_period,
+            indicator_hp.cmf_period,
+        )
+
         G.sync_globals(hp, indicator_hp)
-
-    def random_mutate_hp(self, hp: HyperParams) -> HyperParams:
-        """Return ``hp`` unchanged (legacy stub for seeding)."""
-
-        return hp
 
 
 ###############################################################################
 # meta_control_loop
 ###############################################################################
-def meta_control_loop(ensemble, dataset, agent, interval=5.0):
+def meta_control_loop(
+    ensemble,
+    dataset,
+    agent,
+    hp: HyperParams,
+    indicator_hp: IndicatorHyperparams,
+    interval=5.0,
+):
     """Periodically tweak training parameters using the meta agent."""
 
     G.status_sleep("Starting meta agent", "", 2.0)
@@ -353,24 +270,15 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                 dtype=np.float32,
             )
 
-            a_idx, logp, val_s = agent.pick_action(state)
-            with G.model_lock, torch.no_grad():
-                (
-                    new_lr,
-                    new_wd,
-                    nrsi,
-                    nsma,
-                    nmacdf,
-                    nmacds,
-                    nmacdsig,
-                    nthr,
-                ) = agent.apply_action_index(a_idx)
+            act, logp, val_s = agent.pick_action(state)
+            with G.model_lock:
+                agent.apply_action(hp, indicator_hp, act)
 
             G.status_sleep("Meta agent sleeping", "", interval)
 
             curr2 = G.global_composite_reward if G.global_composite_reward else 0.0
             rew_delta = curr2 - curr_r
-            agent.update(state, a_idx, rew_delta, new_state, logp, val_s)
+            agent.update(state, 0, rew_delta, new_state, logp, val_s)
 
             G.set_status(
                 "Meta agent",
@@ -378,11 +286,11 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
             )
             cycle_count += 1
 
-            summary = (
-                f"Meta Update => s:{state} => a_idx={a_idx}, r:{rew_delta:.2f}\n"
-                f" newLR={new_lr:.2e}, newWD={new_wd:.2e}, rsi={nrsi}, sma={nsma}, "
-                f"macdF={nmacdf}, macdS={nmacds}, macdSig={nmacdsig}, threshold={nthr:.5f}"
+            act_str = ", ".join(
+                f"{k}={v:+.2f}" if isinstance(v, float) else f"{k}={v}"
+                for k, v in act.items()
             )
+            summary = f"META_MUTATION {act_str} sl={hp.sl:.2f} tp={hp.tp:.2f}"
             G.global_ai_adjustments_log += "\n" + summary
             G.global_ai_adjustments = summary
 

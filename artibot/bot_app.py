@@ -217,7 +217,14 @@ def run_bot(max_epochs: int | None = None) -> None:
         target_range=(clamp_min, clamp_max),
     )
     meta_th = threading.Thread(
-        target=lambda: meta_control_loop(ensemble, ds, meta_agent), daemon=True
+        target=lambda: meta_control_loop(
+            ensemble,
+            ds,
+            meta_agent,
+            ensemble.hp,
+            ensemble.indicator_hparams,
+        ),
+        daemon=True,
     )
     meta_th.start()
 

@@ -28,7 +28,7 @@ from torch.optim.lr_scheduler import (
 from torch.utils.data import DataLoader
 
 from .backtest import robust_backtest
-from .hyperparams import IndicatorHyperparams
+from .hyperparams import HyperParams, IndicatorHyperparams
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
 from .model import TradingModel
@@ -200,6 +200,7 @@ class EnsembleModel:
         self.indicator_hparams = IndicatorHyperparams(
             rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
         )
+        self.hp = HyperParams(indicator_hp=self.indicator_hparams)
 
     def train_one_epoch(
         self,

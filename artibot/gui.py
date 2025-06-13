@@ -668,13 +668,18 @@ class TradingGUI:
 
         current_lr = self.ensemble.optimizers[0].param_groups[0]["lr"]
         self.lr_label.config(text=f"LR: {current_lr:.2e}")
+        hp = self.ensemble.hp
+        ind = self.ensemble.indicator_hparams
         info = (
             "Indicators:\n"
-            f" ATR(p={G.global_ATR_period}) [{'✓' if G.global_use_ATR else '✗'}]\n"
-            f" VORTEX(p={G.global_VORTEX_period}) [{'✓' if G.global_use_VORTEX else '✗'}]\n"
-            f" CMF(p={G.global_CMF_period}) [{'✓' if G.global_use_CMF else '✗'}]\n"
-            f" SL Mult: {G.global_SL_multiplier}\n"
-            f" TP Mult: {G.global_TP_multiplier}"
+            f" ATR(p={ind.atr_period}) [{'✓' if ind.use_atr else '✗'}]\n"
+            f" VORTEX(p={ind.vortex_period}) [{'✓' if ind.use_vortex else '✗'}]\n"
+            f" CMF(p={ind.cmf_period}) [{'✓' if ind.use_cmf else '✗'}]\n"
+            f" RSI(p={ind.rsi_period})\n"
+            f" SMA(p={ind.sma_period})\n"
+            f" MACD({ind.macd_fast}/{ind.macd_slow}/{ind.macd_signal})\n"
+            f" SL Mult: {hp.sl}\n"
+            f" TP Mult: {hp.tp}"
         )
         self.indicator_label.config(text=info)
         self.best_lr_label.config(
