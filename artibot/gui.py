@@ -172,6 +172,10 @@ class TradingGUI:
             self.fig_details, master=self.frame_details
         )
         self.canvas_details.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        # previous attention weights for smooth animations
+        self._last_attention: np.ndarray | None = None
+        self._surf = None
+        self.anim_steps = 10
 
         self.frame_trades = ttk.Frame(self.notebook)
         self.notebook.add(self.frame_trades, text="Trade Details")
@@ -530,6 +534,23 @@ class TradingGUI:
         self.root.after(self.update_interval, self.update_dashboard)
         self.root.after(10000, self.refresh_stats)
 
+    def _animate_attention(
+        self, X: np.ndarray, Y: np.ndarray, new_data: np.ndarray
+    ) -> None:
+        """Animate the attention surface from the previous values."""
+        if self._last_attention is None or self._last_attention.shape != new_data.shape:
+            self._last_attention = new_data.copy()
+        diff = (new_data - self._last_attention) / float(self.anim_steps)
+        current = self._last_attention.copy()
+        for _ in range(self.anim_steps):
+            current += diff
+            if self._surf is not None:
+                self._surf.remove()
+            self._surf = self.ax_details.plot_surface(X, Y, current, cmap="viridis")
+            self.canvas_details.draw()
+            self.canvas_details.flush_events()
+        self._last_attention = new_data.copy()
+
     def update_dashboard(self):
         """Refresh all dashboard widgets from shared state."""
         self.ax_loss.clear()
@@ -613,15 +634,17 @@ class TradingGUI:
                 x_ = np.arange(avg.shape[0])
                 y_ = np.arange(avg.shape[1])
                 X, Y = np.meshgrid(x_, y_)
-                self.ax_details.plot_surface(X, Y, avg, cmap="viridis")
+                self._animate_attention(X, Y, avg)
             else:
                 x_ = np.arange(len(avg))
                 self.ax_details.plot(x_, avg, marker="o", color="purple")
+                self._last_attention = None
         elif G.global_attention_weights_history:
             x_ = list(range(1, len(G.global_attention_weights_history) + 1))
             self.ax_details.plot(
                 x_, G.global_attention_weights_history, marker="o", color="purple"
             )
+            self._last_attention = None
         self.canvas_details.draw()
 
         for row in self.trade_tree.get_children():
