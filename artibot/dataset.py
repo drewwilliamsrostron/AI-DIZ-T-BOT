@@ -139,6 +139,7 @@ class HourlyDataset(Dataset):
         use_vortex: bool = False,
         use_cmf: bool = False,
         use_ichimoku: bool = False,
+        use_atr: bool = False,
     ):
         self.data = data
         self.seq_len = seq_len
@@ -151,6 +152,7 @@ class HourlyDataset(Dataset):
         self.use_vortex = use_vortex
         self.use_cmf = use_cmf
         self.use_ichimoku = use_ichimoku
+        self.use_atr = use_atr
         self.samples, self.labels = self.preprocess()
 
     def preprocess(self):
@@ -184,6 +186,9 @@ class HourlyDataset(Dataset):
             rsi.astype(np.float32),
             macd.astype(np.float32),
         ]
+
+        if self.use_atr:
+            cols.append(atr_vals.astype(np.float32))
 
         if self.use_vortex:
             from .indicators import vortex
