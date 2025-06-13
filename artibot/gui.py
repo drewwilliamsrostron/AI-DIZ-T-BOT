@@ -172,6 +172,17 @@ class TradingGUI:
             self.fig_details, master=self.frame_details
         )
         self.canvas_details.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.attention_info = ttk.Label(
+            self.frame_details,
+            text=(
+                "This 3D surface shows which past price bars the model focuses on.\n"
+                "Higher peaks mean more attention. Updated live."
+            ),
+            font=("Helvetica", 9),
+            justify=tk.LEFT,
+            wraplength=400,
+        )
+        self.attention_info.pack(fill=tk.X, padx=5, pady=5)
         # previous attention weights for smooth animations
         self._last_attention: np.ndarray | None = None
         self._surf = None
