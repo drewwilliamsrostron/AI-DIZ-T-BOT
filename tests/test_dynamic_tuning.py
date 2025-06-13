@@ -20,3 +20,4 @@ def test_apply_action_syncs_globals():
     assert hp.tp == 6.5
     assert G.global_VORTEX_period == ind_hp.vortex_period
     assert G.global_TP_multiplier == hp.tp
+    assert G.global_RSI_period == ind_hp.rsi_period

@@ -675,9 +675,9 @@ class TradingGUI:
             f" ATR(p={ind.atr_period}) [{'✓' if ind.use_atr else '✗'}]\n"
             f" VORTEX(p={ind.vortex_period}) [{'✓' if ind.use_vortex else '✗'}]\n"
             f" CMF(p={ind.cmf_period}) [{'✓' if ind.use_cmf else '✗'}]\n"
-            f" RSI(p={ind.rsi_period})\n"
-            f" SMA(p={ind.sma_period})\n"
-            f" MACD({ind.macd_fast}/{ind.macd_slow}/{ind.macd_signal})\n"
+            f" RSI(p={ind.rsi_period}) [{'✓' if ind.use_rsi else '✗'}]\n"
+            f" SMA(p={ind.sma_period}) [{'✓' if ind.use_sma else '✗'}]\n"
+            f" MACD({ind.macd_fast}/{ind.macd_slow}/{ind.macd_signal}) [{'✓' if ind.use_macd else '✗'}]\n"
             f" SL Mult: {hp.sl}\n"
             f" TP Mult: {hp.tp}"
         )

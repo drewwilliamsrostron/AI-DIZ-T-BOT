@@ -41,6 +41,14 @@ global_CMF_period = 20
 global_use_ATR = True
 global_use_VORTEX = True
 global_use_CMF = True
+global_RSI_period = 9
+global_SMA_period = 10
+global_MACD_fast = 12
+global_MACD_slow = 26
+global_MACD_signal = 9
+global_use_RSI = True
+global_use_SMA = True
+global_use_MACD = True
 risk_fraction = 0.03
 GLOBAL_THRESHOLD = 5e-5
 global_min_hold_seconds = 1800
@@ -282,13 +290,24 @@ def sync_globals(hp, ind_hp) -> None:
 
     global global_SL_multiplier, global_TP_multiplier
     global global_ATR_period, global_VORTEX_period, global_CMF_period
+    global global_RSI_period, global_SMA_period
+    global global_MACD_fast, global_MACD_slow, global_MACD_signal
     global global_use_ATR, global_use_VORTEX, global_use_CMF
+    global global_use_RSI, global_use_SMA, global_use_MACD
     with state_lock:
         global_SL_multiplier = hp.sl
         global_TP_multiplier = hp.tp
         global_ATR_period = ind_hp.atr_period
         global_VORTEX_period = ind_hp.vortex_period
         global_CMF_period = ind_hp.cmf_period
+        global_RSI_period = ind_hp.rsi_period
+        global_SMA_period = ind_hp.sma_period
+        global_MACD_fast = ind_hp.macd_fast
+        global_MACD_slow = ind_hp.macd_slow
+        global_MACD_signal = ind_hp.macd_signal
         global_use_ATR = ind_hp.use_atr
         global_use_VORTEX = ind_hp.use_vortex
         global_use_CMF = ind_hp.use_cmf
+        global_use_RSI = ind_hp.use_rsi
+        global_use_SMA = ind_hp.use_sma
+        global_use_MACD = ind_hp.use_macd
