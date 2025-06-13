@@ -81,8 +81,21 @@ class ExchangeConnector:
         logging.info("Fetched %d bars", len(bars) if bars else 0)
         return bars if bars else []
 
-    def create_order(self, side: str, amount: float, price=None, order_type="market"):
+    def create_order(
+        self,
+        side: str,
+        amount: float,
+        price=None,
+        order_type="market",
+        *,
+        stop_loss: float | None = None,
+        take_profit: float | None = None,
+    ):
         params = {"type": self.default_type}
+        if stop_loss is not None:
+            params["stopLossPrice"] = stop_loss
+        if take_profit is not None:
+            params["takeProfitPrice"] = take_profit
         return self.exchange.create_order(
             self.symbol, order_type, side, amount, price, params
         )

@@ -501,9 +501,18 @@ class PhemexConnector:
         amount: float,
         price: float,
         order_type: str = "market",
+        *,
+        stop_loss: float | None = None,
+        take_profit: float | None = None,
     ):
         """Submit a market order with :mod:`ccxt` applying slippage."""
         from .execution import submit_order
+
+        params = {"type": self.default_type}
+        if stop_loss is not None:
+            params["stopLossPrice"] = stop_loss
+        if take_profit is not None:
+            params["takeProfitPrice"] = take_profit
 
         def _place(**kwargs):
             try:
@@ -513,7 +522,7 @@ class PhemexConnector:
                     side,
                     kwargs["amount"],
                     kwargs["price"],
-                    {"type": self.default_type},
+                    params,
                 )
             except Exception as exc:
                 logging.error("Order error: %s", exc)
