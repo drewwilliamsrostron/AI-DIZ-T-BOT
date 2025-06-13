@@ -100,3 +100,17 @@ def test_hourlydataset_basic(monkeypatch):
     assert sample.shape == (3, 8)
     assert label.shape == ()
     assert label.item() == 2
+
+
+def test_hourlydataset_use_atr():
+    data = [
+        [0, 1.0, 1.01, 0.99, 1.005, 0.0],
+        [1, 1.005, 1.015, 1.0, 1.01, 0.0],
+        [2, 1.01, 1.02, 1.005, 1.015, 0.0],
+        [3, 1.015, 1.025, 1.01, 1.02, 0.0],
+        [4, 1.02, 1.03, 1.015, 1.025, 0.0],
+    ]
+
+    ds = dataset.HourlyDataset(data, seq_len=3, sma_period=1, use_atr=True)
+    sample, _ = ds[0]
+    assert sample.shape == (3, 9)

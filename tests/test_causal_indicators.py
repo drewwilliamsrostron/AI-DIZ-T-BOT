@@ -33,17 +33,25 @@ def manual_vortex(high: np.ndarray, low: np.ndarray, close: np.ndarray, period: 
 def manual_cmf(
     high: np.ndarray, low: np.ndarray, close: np.ndarray, vol: np.ndarray, period: int
 ):
+    """Manual Chaikin Money Flow computed with a causal window.
+
+    Uses 1e-9 guards to avoid divide‑by‑zero when high == low or volume sum == 0.
+    """
     res = np.empty_like(high, dtype=float)
     for t in range(len(high)):
         start = max(0, t - period + 1)
-        h = high[start : t + 1]
-        low_slice = low[start : t + 1]
-        c = close[start : t + 1]
-        v = vol[start : t + 1]
-        hl_diff = np.where(h - low_slice == 0, 1e-9, h - low_slice)
-        mfm = ((c - low_slice) - (h - c)) / hl_diff
-        mfv_sum = (mfm * v).sum()
-        vol_sum = v.sum() if v.sum() != 0 else 1e-9
+        h_slice = high[start : t + 1]
+        l_slice = low[start : t + 1]
+        c_slice = close[start : t + 1]
+        v_slice = vol[start : t + 1]
+
+        # Money Flow Multiplier (MFM)
+        hl_diff = np.where(h_slice - l_slice == 0, 1e-9, h_slice - l_slice)
+        mfm = ((c_slice - l_slice) - (h_slice - c_slice)) / hl_diff
+
+        # Money Flow Volume (MFV)
+        mfv_sum = np.dot(mfm, v_slice)
+        vol_sum = v_slice.sum() if v_slice.sum() != 0 else 1e-9
         res[t] = mfv_sum / vol_sum
     return res
 
@@ -67,6 +75,10 @@ def manual_ichimoku(high: np.ndarray, low: np.ndarray):
         ) / 2
     return tenkan, kijun, span_a, span_b
 
+
+# -------------------------
+#  Unit‑tests (causality)
+# -------------------------
 
 def test_vortex_is_causal():
     high = np.linspace(10, 19, 10)
