@@ -102,6 +102,13 @@ global_best_yearly_stats_table = ""
 global_monthly_stats_table = ""
 global_best_monthly_stats_table = ""
 
+# Flags controlling components of the composite reward
+use_net_term = True
+use_sharpe_term = True
+use_drawdown_term = True
+use_trade_term = True
+use_profit_days_term = True
+
 ###############################################################################
 # GPT Memories (unchanged)
 ###############################################################################
