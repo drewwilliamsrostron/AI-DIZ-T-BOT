@@ -202,6 +202,7 @@ def csv_training_thread(
                 "reward": last_reward,
                 "sharpe": G.global_sharpe,
                 "max_dd": G.global_max_drawdown,
+                "net_pct": G.global_net_pct,
                 "holdout_sharpe": G.global_holdout_sharpe,
                 "holdout_dd": G.global_holdout_max_drawdown,
                 "attn": attn_mean,
@@ -350,12 +351,16 @@ def csv_training_thread(
             equity = G.global_equity_curve[-1][1] if G.global_equity_curve else 0.0
             val_sharpe = G.global_holdout_sharpe
             logging.info(
-                "Epoch %d  loss=%.4f  sharpe=%.3f  val=%.3f  cur_equity=%.2f",
-                ensemble.train_steps,
-                tl,
-                G.global_sharpe,
-                val_sharpe,
-                equity,
+                "EPOCH",
+                extra={
+                    "epoch": ensemble.train_steps,
+                    "loss": tl,
+                    "sharpe": G.global_sharpe,
+                    "val_sharpe": val_sharpe,
+                    "net_pct": G.global_net_pct,
+                    "lr": lr_now,
+                    "equity": equity,
+                },
             )
 
             if ensemble.train_steps % 5 == 0 and ensemble.best_state_dicts:
