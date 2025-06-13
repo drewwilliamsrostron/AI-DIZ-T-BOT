@@ -96,6 +96,7 @@ def csv_training_thread(
             atr_period=getattr(ensemble.indicator_hparams, "atr_period", 50),
             atr_threshold_k=getattr(ensemble.indicator_hparams, "atr_threshold_k", 1.5),
             train_mode=True,
+            use_atr=config.get("USE_ATR", False),
         )
         if len(ds_full) < 10:
             logging.warning("Not enough data in CSV => exiting.")
@@ -313,6 +314,7 @@ def csv_training_thread(
                             ensemble.indicator_hparams, "atr_threshold_k", 1.5
                         ),
                         train_mode=True,
+                        use_atr=config.get("USE_ATR", False),
                     )
                     if len(ds_updated) > 10:
                         nt_ = len(ds_updated)

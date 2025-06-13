@@ -119,6 +119,7 @@ def main() -> None:
         atr_period=getattr(ensemble.indicator_hparams, "atr_period", 50),
         atr_threshold_k=getattr(ensemble.indicator_hparams, "atr_threshold_k", 1.5),
         train_mode=False,
+        use_atr=CONFIG.get("USE_ATR", False),
     )
     clamp_min = CONFIG.get("CLAMP_MIN", -10.0)
     clamp_max = CONFIG.get("CLAMP_MAX", 10.0)
