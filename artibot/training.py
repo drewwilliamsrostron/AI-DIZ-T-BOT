@@ -90,7 +90,12 @@ def csv_training_thread(
         holdout_data = data[-holdout_len:] if len(data) > holdout_len else []
 
         ds_full = HourlyDataset(
-            train_data, seq_len=24, threshold=G.GLOBAL_THRESHOLD, train_mode=True
+            train_data,
+            seq_len=24,
+            sma_period=ensemble.indicator_hparams.sma_period,
+            atr_period=getattr(ensemble.indicator_hparams, "atr_period", 50),
+            atr_threshold_k=getattr(ensemble.indicator_hparams, "atr_threshold_k", 1.5),
+            train_mode=True,
         )
         if len(ds_full) < 10:
             logging.warning("Not enough data in CSV => exiting.")
@@ -299,7 +304,13 @@ def csv_training_thread(
                     ds_updated = HourlyDataset(
                         train_data,
                         seq_len=24,
-                        threshold=G.GLOBAL_THRESHOLD,
+                        sma_period=ensemble.indicator_hparams.sma_period,
+                        atr_period=getattr(
+                            ensemble.indicator_hparams, "atr_period", 50
+                        ),
+                        atr_threshold_k=getattr(
+                            ensemble.indicator_hparams, "atr_threshold_k", 1.5
+                        ),
                         train_mode=True,
                     )
                     if len(ds_updated) > 10:
