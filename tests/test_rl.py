@@ -5,7 +5,6 @@ import sys
 import types
 import numpy as np
 import torch
-import random
 from typing import NamedTuple
 from torch.utils.data import Dataset
 import random as _random
@@ -38,6 +37,7 @@ def load_rl_module():
 
     stub.set_status = set_status
     stub.get_status_full = get_status_full
+    stub.sync_globals = lambda *a, **k: None
     stub.GLOBAL_THRESHOLD = 0.0
     stub.global_ai_adjustments = ""
     stub.global_ai_adjustments_log = ""
@@ -70,43 +70,14 @@ def load_rl_module():
     return sys.modules["artibot.rl"]
 
 
-def test_find_nearest_action():
+def test_pick_action_returns_dict():
     rl = load_rl_module()
     agent = rl.MetaTransformerRL(ensemble=None)
-    agent.action_space = [(0.0, 0.0), (1.0, 1.0), (2.0, 2.0)]
-    idx = agent._find_nearest_action([1.1, 0.9])
-    assert idx == 1
-
-
-def test_pick_action_deterministic(monkeypatch):
-    rl = load_rl_module()
-    agent = rl.MetaTransformerRL(ensemble=None)
-    agent.action_space = [(0,), (1,), (2,)]
-
-    def fake_forward(self, x):
-        return torch.zeros((1, len(agent.action_space))), torch.tensor([[0.5]])
-
-    monkeypatch.setattr(
-        agent.model, "forward", fake_forward.__get__(agent.model, type(agent.model))
-    )
-
-    class DummyDist:
-        def __init__(self, logits=None):
-            pass
-
-        def sample(self):
-            return torch.tensor(2)
-
-        def log_prob(self, value):
-            return torch.tensor([0.25])
-
-    monkeypatch.setattr(random, "random", lambda: 1.0)
-    monkeypatch.setattr(rl.torch.distributions, "Categorical", DummyDist)
-
-    idx, logp, value = agent.pick_action(np.zeros(agent.model.state_dim))
-    assert idx == 2
-    assert value == 0.5
-    assert torch.isclose(logp, torch.tensor([0.25])).item()
+    act, logp, val = agent.pick_action(np.zeros(agent.model.state_dim))
+    assert isinstance(act, dict)
+    assert set(act.keys()) == set(rl.ACTION_KEYS)
+    assert torch.is_tensor(logp)
+    assert torch.is_tensor(val)
 
 
 def test_apply_action_custom_space():
@@ -128,36 +99,18 @@ def test_apply_action_custom_space():
             )
 
     ensemble = DummyEnsemble()
+    ensemble.hp = rl.HyperParams(indicator_hp=ensemble.indicator_hparams)
     agent = rl.MetaTransformerRL(ensemble)
-    agent.action_space = [(0.1, 0.2, 1, 2, 3, 4, 5, 0.05)]
-    agent.model.action_space = [(0.0,) * 8]
+    act = {k: 0 for k in rl.ACTION_KEYS}
+    act.update({"d_sl": -1, "d_tp": 0.5})
 
-    result = agent.apply_action_index(0)
-
-    assert result == pytest.approx(
-        (
-            0.011,
-            0.0012,
-            15,
-            12,
-            15,
-            30,
-            14,
-            0.05,
-        ),
-        rel=1e-5,
-    )
+    agent.apply_action(ensemble.hp, ensemble.indicator_hparams, act)
 
     pg = ensemble.optimizers[0].param_groups[0]
-    assert pg["lr"] == pytest.approx(0.011)
-    assert pg["weight_decay"] == pytest.approx(0.0012)
-    assert ensemble.indicator_hparams == rl.IndicatorHyperparams(
-        rsi_period=15,
-        sma_period=12,
-        macd_fast=15,
-        macd_slow=30,
-        macd_signal=14,
-    )
+    assert pg["lr"] == pytest.approx(0.01)
+    assert pg["weight_decay"] == pytest.approx(0.001)
+    assert ensemble.hp.sl == pytest.approx(4.0)
+    assert ensemble.hp.tp == pytest.approx(5.5)
 
 
 def test_update_nan_protection():

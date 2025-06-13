@@ -9,7 +9,8 @@ import artibot.globals as G
 import threading
 
 from artibot.ensemble import EnsembleModel
-from artibot.rl import MetaTransformerRL, IndicatorHyperparams
+from artibot.hyperparams import HyperParams
+from artibot.rl import ACTION_KEYS, MetaTransformerRL, IndicatorHyperparams
 from artibot.training import csv_training_thread
 from artibot.utils import get_device, setup_logging
 
@@ -152,10 +153,11 @@ def test_meta_mutation_logging(monkeypatch, caplog):
             )
 
     ens = DummyEnsemble()
+    ens.hp = HyperParams(indicator_hp=ens.indicator_hparams)
     agent = MetaTransformerRL(ens)
-    agent.action_space = [(0.1, 0.2, 1, 2, 3, 4, 5, 0.05)]
-    agent.model.action_space = [(0.0,) * 8]
+    act = {k: 0 for k in ACTION_KEYS}
+    act.update({"toggle_atr": 1})
 
     caplog.set_level(logging.INFO)
-    agent.apply_action_index(0)
+    agent.apply_action(ens.hp, ens.indicator_hparams, act)
     assert any("META_MUTATION" in r.message for r in caplog.records)
