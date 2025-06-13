@@ -132,7 +132,7 @@ def test_apply_action_custom_space():
     agent.action_space = [(0.1, 0.2, 1, 2, 3, 4, 5, 0.05)]
     agent.model.action_space = [(0.0,) * 8]
 
-    result = agent.apply_action(0)
+    result = agent.apply_action_index(0)
 
     assert result == pytest.approx(
         (

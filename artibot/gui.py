@@ -256,26 +256,15 @@ class TradingGUI:
             self.info_frame, text="LR: N/A", font=("Helvetica", 12)
         )
         self.lr_label.grid(row=5, column=0, sticky=tk.W, padx=5, pady=5)
-        self.atr_label = ttk.Label(
-            self.info_frame, text=f"ATR: {G.global_ATR_period}", font=("Helvetica", 12)
-        )
-        self.atr_label.grid(row=6, column=0, sticky=tk.W, padx=5, pady=5)
-        self.sl_label = ttk.Label(
-            self.info_frame,
-            text=f"SL: {G.global_SL_multiplier}",
-            font=("Helvetica", 12),
-        )
-        self.sl_label.grid(row=7, column=0, sticky=tk.W, padx=5, pady=5)
-        self.tp_label = ttk.Label(
-            self.info_frame,
-            text=f"TP: {G.global_TP_multiplier}",
-            font=("Helvetica", 12),
-        )
-        self.tp_label.grid(row=8, column=0, sticky=tk.W, padx=5, pady=5)
         self.indicator_label = ttk.Label(
-            self.info_frame, text="Indicators: RSI,SMA,MACD", font=("Helvetica", 12)
+            self.info_frame,
+            text="",
+            font=("Helvetica", 12),
+            justify=tk.LEFT,
         )
-        self.indicator_label.grid(row=8, column=1, sticky=tk.W, padx=5, pady=5)
+        self.indicator_label.grid(
+            row=6, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5
+        )
 
         self.best_hyper_label = ttk.Label(
             self.info_frame,
@@ -679,26 +668,15 @@ class TradingGUI:
 
         current_lr = self.ensemble.optimizers[0].param_groups[0]["lr"]
         self.lr_label.config(text=f"LR: {current_lr:.2e}")
-        self.atr_label.config(text=f"ATR: {G.global_ATR_period}")
-        self.sl_label.config(text=f"SL: {G.global_SL_multiplier}")
-        self.tp_label.config(text=f"TP: {G.global_TP_multiplier}")
-        hp = self.ensemble.indicator_hparams
-        flags = ["RSI", "SMA", "MACD"]
-        if hp.use_atr:
-            flags.append("ATR")
-        if hp.use_vortex:
-            flags.append("VORTEX")
-        if hp.use_cmf:
-            flags.append("CMF")
-        optional = [
-            ("use_ichimoku", "ICHIMOKU"),
-            ("use_momentum", "MOM"),
-            ("use_bbw", "BBW"),
-        ]
-        for attr, name in optional:
-            if getattr(hp, attr, False):
-                flags.append(name)
-        self.indicator_label.config(text=f"Indicators: {','.join(flags)}")
+        info = (
+            "Indicators:\n"
+            f" ATR(p={G.global_ATR_period}) [{'✓' if G.global_use_ATR else '✗'}]\n"
+            f" VORTEX(p={G.global_VORTEX_period}) [{'✓' if G.global_use_VORTEX else '✗'}]\n"
+            f" CMF(p={G.global_CMF_period}) [{'✓' if G.global_use_CMF else '✗'}]\n"
+            f" SL Mult: {G.global_SL_multiplier}\n"
+            f" TP Mult: {G.global_TP_multiplier}"
+        )
+        self.indicator_label.config(text=info)
         self.best_lr_label.config(
             text=f"Best LR: {G.global_best_lr if G.global_best_lr else 'N/A'}"
         )

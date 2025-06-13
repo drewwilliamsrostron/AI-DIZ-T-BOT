@@ -157,5 +157,5 @@ def test_meta_mutation_logging(monkeypatch, caplog):
     agent.model.action_space = [(0.0,) * 8]
 
     caplog.set_level(logging.INFO)
-    agent.apply_action(0)
+    agent.apply_action_index(0)
     assert any("META_MUTATION" in r.message for r in caplog.records)

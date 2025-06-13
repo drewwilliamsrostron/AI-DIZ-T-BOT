@@ -36,6 +36,11 @@ client = openai  # alias
 global_SL_multiplier = 5
 global_TP_multiplier = 5
 global_ATR_period = 50
+global_VORTEX_period = 14
+global_CMF_period = 20
+global_use_ATR = True
+global_use_VORTEX = True
+global_use_CMF = True
 risk_fraction = 0.03
 GLOBAL_THRESHOLD = 5e-5
 global_min_hold_seconds = 1800
@@ -270,3 +275,20 @@ def update_trade_params(sl_mult: float, tp_mult: float) -> None:
     with state_lock:
         global_SL_multiplier = sl_mult
         global_TP_multiplier = tp_mult
+
+
+def sync_globals(hp, ind_hp) -> None:
+    """Synchronise hyperparams with module-level globals."""
+
+    global global_SL_multiplier, global_TP_multiplier
+    global global_ATR_period, global_VORTEX_period, global_CMF_period
+    global global_use_ATR, global_use_VORTEX, global_use_CMF
+    with state_lock:
+        global_SL_multiplier = hp.sl
+        global_TP_multiplier = hp.tp
+        global_ATR_period = ind_hp.atr_period
+        global_VORTEX_period = ind_hp.vortex_period
+        global_CMF_period = ind_hp.cmf_period
+        global_use_ATR = ind_hp.use_atr
+        global_use_VORTEX = ind_hp.use_vortex
+        global_use_CMF = ind_hp.use_cmf

@@ -3,7 +3,7 @@
 # ruff: noqa: F403, F405
 
 import artibot.globals as G
-from .hyperparams import HyperParams, IndicatorHyperparams  # noqa: F401
+from .hyperparams import HyperParams, IndicatorHyperparams
 from .model import PositionalEncoding
 from dataclasses import replace
 
@@ -17,6 +17,20 @@ import torch.optim as optim
 import traceback
 import logging
 import math
+
+
+ACTION_SPACE = {
+    "lr": (-3e-4, 3e-4),
+    "wd": (-3e-5, 3e-5),
+    "toggle_atr": (0, 1),
+    "toggle_vortex": (0, 1),
+    "toggle_cmf": (0, 1),
+    "d_atr_period": (-4, 4),
+    "d_vortex_period": (-4, 4),
+    "d_cmf_period": (-4, 4),
+    "d_sl": (-2.0, 2.0),
+    "d_tp": (-2.0, 2.0),
+}
 
 
 ###############################################################################
@@ -97,6 +111,7 @@ class MetaTransformerRL:
         # need to reach into the model attribute. Without this the
         # ``pick_action`` method fails with ``AttributeError``.
         self.action_space = self._model.action_space
+        self.action_keys = list(ACTION_SPACE.keys())
         self.opt = optim.AdamW(self._model.parameters(), lr=lr)
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.opt, T_max=100)
         self.gamma = 0.95
@@ -193,7 +208,7 @@ class MetaTransformerRL:
         else:
             self.last_improvement += 1
 
-    def apply_action(self, action_idx):
+    def apply_action_index(self, action_idx):
         # decode
         (lr_adj, wd_adj, rsi_adj, sma_adj, mf_adj, ms_adj, sig_adj, thr_adj) = (
             self.action_space[action_idx]
@@ -258,50 +273,38 @@ class MetaTransformerRL:
             new_threshold,
         )
 
+    def apply_action(
+        self,
+        hp: HyperParams,
+        indicator_hp: IndicatorHyperparams,
+        act: dict[str, float],
+    ) -> None:
+        """Mutate ``hp`` and ``indicator_hp`` in-place based on ``act``."""
+
+        if act.get("toggle_atr"):
+            indicator_hp.use_atr = not indicator_hp.use_atr
+        if act.get("toggle_vortex"):
+            indicator_hp.use_vortex = not indicator_hp.use_vortex
+        if act.get("toggle_cmf"):
+            indicator_hp.use_cmf = not indicator_hp.use_cmf
+
+        indicator_hp.atr_period = max(
+            4, indicator_hp.atr_period + int(act.get("d_atr_period", 0))
+        )
+        indicator_hp.vortex_period = max(
+            4, indicator_hp.vortex_period + int(act.get("d_vortex_period", 0))
+        )
+        indicator_hp.cmf_period = max(
+            4, indicator_hp.cmf_period + int(act.get("d_cmf_period", 0))
+        )
+
+        hp.sl = max(0.5, hp.sl + float(act.get("d_sl", 0.0)))
+        hp.tp = max(0.5, hp.tp + float(act.get("d_tp", 0.0)))
+
+        G.sync_globals(hp, indicator_hp)
+
     def random_mutate_hp(self, hp: HyperParams) -> HyperParams:
-        """Return ``hp`` with random tweaks applied."""
-        hp = replace(hp)
-
-        if random.random() < 0.5:
-            old = hp.sl
-            hp.sl = max(0.1, hp.sl + random.uniform(-1.0, 1.0))
-            logging.info("HP_MUTATION sl %.4f -> %.4f", old, hp.sl)
-
-        if random.random() < 0.5:
-            old = hp.tp
-            hp.tp = max(0.1, hp.tp + random.uniform(-1.0, 1.0))
-            logging.info("HP_MUTATION tp %.4f -> %.4f", old, hp.tp)
-
-        if random.random() < 0.5:
-            old = hp.atr_period
-            hp.atr_period = max(5, int(hp.atr_period + random.randint(-5, 5)))
-            logging.info("HP_MUTATION atr_period %d -> %d", old, hp.atr_period)
-
-        if random.random() < 0.5:
-            old = hp.conf_threshold
-            hp.conf_threshold = max(
-                0.0, hp.conf_threshold + random.uniform(-1e-4, 1e-4)
-            )
-            logging.info(
-                "HP_MUTATION conf_threshold %.6f -> %.6f",
-                old,
-                hp.conf_threshold,
-            )
-
-        if random.random() < 0.3:
-            old = hp.use_ichimoku
-            hp.use_ichimoku = not hp.use_ichimoku
-            logging.info("HP_MUTATION use_ichimoku %s -> %s", old, hp.use_ichimoku)
-
-        if random.random() < 0.3:
-            old = hp.use_vortex
-            hp.use_vortex = not hp.use_vortex
-            logging.info("HP_MUTATION use_vortex %s -> %s", old, hp.use_vortex)
-
-        if random.random() < 0.3:
-            old = hp.use_cmf
-            hp.use_cmf = not hp.use_cmf
-            logging.info("HP_MUTATION use_cmf %s -> %s", old, hp.use_cmf)
+        """Return ``hp`` unchanged (legacy stub for seeding)."""
 
         return hp
 
@@ -361,7 +364,7 @@ def meta_control_loop(ensemble, dataset, agent, interval=5.0):
                     nmacds,
                     nmacdsig,
                     nthr,
-                ) = agent.apply_action(a_idx)
+                ) = agent.apply_action_index(a_idx)
 
             G.status_sleep("Meta agent sleeping", "", interval)
 

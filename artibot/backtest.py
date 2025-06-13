@@ -25,7 +25,7 @@ from .metrics import (
 
 def compute_indicators(
     data_full,
-    hp,
+    indicator_hp,
     *,
     with_scaled: bool = False,
     use_ichimoku: bool = False,
@@ -43,30 +43,34 @@ def compute_indicators(
     lows = raw[:, 3]
     volume = raw[:, 5] if raw.shape[1] > 5 else np.zeros_like(closes)
 
-    atr_period = getattr(hp, "atr_period", 50)
+    atr_period = indicator_hp.atr_period
 
-    rsi_period = max(2, min(getattr(hp, "rsi_period", 14), 50))
-    sma_period = max(2, min(getattr(hp, "sma_period", 10), 100))
+    rsi_period = max(2, min(getattr(indicator_hp, "rsi_period", 14), 50))
+    sma_period = max(2, min(getattr(indicator_hp, "sma_period", 10), 100))
     fast_macd = max(
-        2, min(getattr(hp, "macd_fast", 12), getattr(hp, "macd_slow", 26) - 1)
+        2,
+        min(
+            getattr(indicator_hp, "macd_fast", 12),
+            getattr(indicator_hp, "macd_slow", 26) - 1,
+        ),
     )
-    slow_macd = max(fast_macd + 1, min(getattr(hp, "macd_slow", 26), 200))
-    sig_macd = max(1, min(getattr(hp, "macd_signal", 9), 50))
+    slow_macd = max(fast_macd + 1, min(getattr(indicator_hp, "macd_slow", 26), 200))
+    sig_macd = max(1, min(getattr(indicator_hp, "macd_signal", 9), 50))
 
     out = {}
     cols = [raw[:, 1:6]]
 
-    if getattr(hp, "use_sma", True):
+    if getattr(indicator_hp, "use_sma", True):
         sma = trailing_sma(closes, sma_period)
         out["sma"] = sma.astype(np.float32)
         cols.append(out["sma"])
 
-    if getattr(hp, "use_rsi", True):
+    if getattr(indicator_hp, "use_rsi", True):
         rsi = talib.RSI(closes, timeperiod=rsi_period)
         out["rsi"] = rsi.astype(np.float32)
         cols.append(out["rsi"])
 
-    if getattr(hp, "use_macd", True):
+    if getattr(indicator_hp, "use_macd", True):
         macd_, _sig, _hist = talib.MACD(
             closes,
             fastperiod=fast_macd,
@@ -78,20 +82,20 @@ def compute_indicators(
 
     atr_vals = indicators.atr(highs, lows, closes, period=atr_period)
     out["atr"] = atr_vals.astype(np.float32)
-    if getattr(hp, "use_atr", True):
+    if getattr(indicator_hp, "use_atr", True):
         cols.append(out["atr"])
 
-    if getattr(hp, "use_vortex", True):
+    if getattr(indicator_hp, "use_vortex", True):
         vp, vn = indicators.vortex(
-            highs, lows, closes, period=getattr(hp, "vortex_period", 14)
+            highs, lows, closes, period=getattr(indicator_hp, "vortex_period", 14)
         )
         out["vortex_pos"] = vp.astype(np.float32)
         out["vortex_neg"] = vn.astype(np.float32)
         cols.extend([out["vortex_pos"], out["vortex_neg"]])
 
-    if getattr(hp, "use_cmf", True):
+    if getattr(indicator_hp, "use_cmf", True):
         cmf_v = indicators.cmf(
-            highs, lows, closes, volume, period=getattr(hp, "cmf_period", 20)
+            highs, lows, closes, volume, period=getattr(indicator_hp, "cmf_period", 20)
         )
         out["cmf"] = cmf_v.astype(np.float32)
         cols.append(out["cmf"])
@@ -209,7 +213,7 @@ def robust_backtest(ensemble, data_full, indicators=None):
         highs - lows,
         np.maximum(np.abs(highs - prev_close), np.abs(lows - prev_close)),
     )
-    atr = pd.Series(tr).rolling(G.global_ATR_period, min_periods=1).mean().to_numpy()
+    atr = pd.Series(tr).rolling(hp.atr_period, min_periods=1).mean().to_numpy()
 
     init_bal = 100.0
     bal = init_bal

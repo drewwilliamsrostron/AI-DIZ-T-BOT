@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import artibot.globals as G
+
 import json
 import os
 
@@ -33,9 +35,10 @@ class HyperParams:
     weight_decay: float = float(_CONFIG.get("WEIGHT_DECAY", 1e-4))
     sl: float = float(_CONFIG.get("SL", 5.0))
     tp: float = float(_CONFIG.get("TP", 5.0))
-    atr_period: int = int(_CONFIG.get("ATR_PERIOD", 50))
     atr_threshold_k: float = float(_CONFIG.get("ATR_THRESHOLD_K", 1.5))
     conf_threshold: float = float(_CONFIG.get("CONF_THRESHOLD", 5e-5))
+
+    indicator_hp: "IndicatorHyperparams" = None
 
     use_sma: bool = bool(_CONFIG.get("USE_SMA", True))
     use_vortex: bool = bool(_CONFIG.get("USE_VORTEX", True))
@@ -44,6 +47,15 @@ class HyperParams:
     use_atr: bool = bool(_CONFIG.get("USE_ATR", True))
     use_momentum: bool = bool(_CONFIG.get("USE_MOMENTUM", False))
     use_bbw: bool = bool(_CONFIG.get("USE_BBW", False))
+
+    def __post_init__(self) -> None:
+        if self.indicator_hp is None:
+            self.indicator_hp = IndicatorHyperparams()
+        G.sync_globals(self, self.indicator_hp)
+
+    @property
+    def atr_period(self) -> int:
+        return self.indicator_hp.atr_period
 
 
 ###############################################################################
@@ -69,3 +81,29 @@ class IndicatorHyperparams:
     vortex_period: int = 14
     use_cmf: bool = True
     cmf_period: int = 20
+
+    def __post_init__(self) -> None:
+        mapping = {
+            "use_sma": "USE_SMA",
+            "sma_period": "SMA_PERIOD",
+            "use_rsi": "USE_RSI",
+            "rsi_period": "RSI_PERIOD",
+            "use_macd": "USE_MACD",
+            "macd_fast": "MACD_FAST",
+            "macd_slow": "MACD_SLOW",
+            "macd_signal": "MACD_SIGNAL",
+            "use_atr": "USE_ATR",
+            "atr_period": "ATR_PERIOD",
+            "use_vortex": "USE_VORTEX",
+            "vortex_period": "VORTEX_PERIOD",
+            "use_cmf": "USE_CMF",
+            "cmf_period": "CMF_PERIOD",
+        }
+        for attr, key in mapping.items():
+            if key in _CONFIG:
+                cur = getattr(self, attr)
+                typ = type(cur)
+                try:
+                    setattr(self, attr, typ(_CONFIG[key]))
+                except Exception:
+                    pass
