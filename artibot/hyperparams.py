@@ -18,6 +18,7 @@ def _load_master_config(path: str = "master_config.json") -> dict:
     except FileNotFoundError:
         return {}
 
+
 _CONFIG = _load_master_config()
 
 
@@ -43,4 +44,3 @@ class HyperParams:
     use_atr: bool = bool(_CONFIG.get("USE_ATR", False))
     use_momentum: bool = bool(_CONFIG.get("USE_MOMENTUM", False))
     use_bbw: bool = bool(_CONFIG.get("USE_BBW", False))
-
