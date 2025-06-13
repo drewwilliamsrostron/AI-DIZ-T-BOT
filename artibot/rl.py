@@ -4,7 +4,6 @@
 
 import artibot.globals as G
 from .model import PositionalEncoding
-from .dataset import IndicatorHyperparams
 from .hyperparams import HyperParams
 from dataclasses import replace
 
@@ -223,7 +222,8 @@ class MetaTransformerRL:
         # 5) also let meta-agent change threshold
         new_threshold = G.GLOBAL_THRESHOLD + thr_adj
 
-        self.ensemble.indicator_hparams = IndicatorHyperparams(
+        self.ensemble.indicator_hparams = replace(
+            old_hp,
             rsi_period=new_rsi,
             sma_period=new_sma,
             macd_fast=new_mf,

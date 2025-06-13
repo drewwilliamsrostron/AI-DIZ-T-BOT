@@ -115,8 +115,7 @@ def main() -> None:
     ds = HourlyDataset(
         data,
         seq_len=24,
-        sma_period=ensemble.indicator_hparams.sma_period,
-        atr_period=getattr(ensemble.indicator_hparams, "atr_period", 50),
+        indicator_hparams=ensemble.indicator_hparams,
         atr_threshold_k=getattr(ensemble.indicator_hparams, "atr_threshold_k", 1.5),
         train_mode=False,
     )

@@ -47,28 +47,39 @@ def compute_indicators(
 
     atr_period = getattr(hp, "atr_period", 50)
 
-    rsi_period = max(2, min(hp.rsi_period, 50))
-    sma_period = max(2, min(hp.sma_period, 100))
-    fast_macd = max(2, min(hp.macd_fast, hp.macd_slow - 1))
-    slow_macd = max(fast_macd + 1, min(hp.macd_slow, 200))
-    sig_macd = max(1, min(hp.macd_signal, 50))
-
-    sma = trailing_sma(closes, sma_period)
-    rsi = talib.RSI(closes, timeperiod=rsi_period)
-    macd_, _sig, _hist = talib.MACD(
-        closes, fastperiod=fast_macd, slowperiod=slow_macd, signalperiod=sig_macd
+    rsi_period = max(2, min(getattr(hp, "rsi_period", 14), 50))
+    sma_period = max(2, min(getattr(hp, "sma_period", 10), 100))
+    fast_macd = max(
+        2, min(getattr(hp, "macd_fast", 12), getattr(hp, "macd_slow", 26) - 1)
     )
+    slow_macd = max(fast_macd + 1, min(getattr(hp, "macd_slow", 26), 200))
+    sig_macd = max(1, min(getattr(hp, "macd_signal", 9), 50))
+
+    out = {}
+    cols = [raw[:, 1:6]]
+
+    if getattr(hp, "use_sma", True):
+        sma = trailing_sma(closes, sma_period)
+        out["sma"] = sma.astype(np.float32)
+        cols.append(out["sma"])
+
+    if getattr(hp, "use_rsi", True):
+        rsi = talib.RSI(closes, timeperiod=rsi_period)
+        out["rsi"] = rsi.astype(np.float32)
+        cols.append(out["rsi"])
+
+    if getattr(hp, "use_macd", True):
+        macd_, _sig, _hist = talib.MACD(
+            closes,
+            fastperiod=fast_macd,
+            slowperiod=slow_macd,
+            signalperiod=sig_macd,
+        )
+        out["macd"] = macd_.astype(np.float32)
+        cols.append(out["macd"])
 
     atr_vals = indicators.atr(highs, lows, closes, period=atr_period)
-
-    out = {
-        "sma": sma.astype(np.float32),
-        "rsi": rsi.astype(np.float32),
-        "macd": macd_.astype(np.float32),
-        "atr": atr_vals.astype(np.float32),
-    }
-
-    cols = [raw[:, 1:6], out["sma"], out["rsi"], out["macd"]]
+    out["atr"] = atr_vals.astype(np.float32)
     if getattr(hp, "use_atr", False):
         cols.append(out["atr"])
 
@@ -154,21 +165,21 @@ def robust_backtest(ensemble, data_full, indicators=None):
     else:
         indic = indicators
 
-    sma = indic["sma"]
-    rsi = indic["rsi"]
-    macd_ = indic["macd"]
+    sma = indic.get("sma")
+    rsi = indic.get("rsi")
+    macd_ = indic.get("macd")
 
     if "scaled" in indic:
         extd = indic["scaled"].astype(np.float32)
     else:
-        feats = np.column_stack(
-            [
-                raw_data[:, 1:6],
-                sma.astype(np.float32),
-                rsi.astype(np.float32),
-                macd_.astype(np.float32),
-            ]
-        )
+        cols = [raw_data[:, 1:6]]
+        if sma is not None:
+            cols.append(sma.astype(np.float32))
+        if rsi is not None:
+            cols.append(rsi.astype(np.float32))
+        if macd_ is not None:
+            cols.append(macd_.astype(np.float32))
+        feats = np.column_stack(cols)
         feats = np.nan_to_num(feats)
         extd = rolling_zscore(feats, window=50)
 
@@ -176,7 +187,7 @@ def robust_backtest(ensemble, data_full, indicators=None):
 
     from numpy.lib.stride_tricks import sliding_window_view
 
-    windows = sliding_window_view(extd, (24, 8)).squeeze()
+    windows = sliding_window_view(extd, (24, extd.shape[1])).squeeze()
 
     windows = np.clip(windows, -50.0, 50.0)
 
