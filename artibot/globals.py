@@ -53,6 +53,16 @@ risk_fraction = 0.03
 GLOBAL_THRESHOLD = 5e-5
 global_min_hold_seconds = 1800
 
+# Maximum exposure per side as a fraction of equity
+MAX_SIDE_EXPOSURE_PCT = 0.10
+
+# Desired long/short fractions controlled by the meta agent
+global_long_frac = 0.0
+global_short_frac = 0.0
+# Gross USD value of each leg based on ``live_equity``
+gross_long_usd = 0.0
+gross_short_usd = 0.0
+
 global_best_params = {
     "SL_multiplier": global_SL_multiplier,
     "TP_multiplier": global_TP_multiplier,
@@ -168,6 +178,9 @@ live_trade_count: int = 0
 
 # Flag toggled by training thread when new live weights are ready
 live_weights_updated: bool = False
+
+# Singleton hedge book managing open long/short legs
+hedge_book = None
 
 
 # Protect shared state across threads
@@ -303,6 +316,8 @@ def sync_globals(hp, ind_hp) -> None:
     global global_MACD_fast, global_MACD_slow, global_MACD_signal
     global global_use_ATR, global_use_VORTEX, global_use_CMF
     global global_use_RSI, global_use_SMA, global_use_MACD
+    global global_long_frac, global_short_frac
+    global gross_long_usd, gross_short_usd
     with state_lock:
         global_SL_multiplier = hp.sl
         global_TP_multiplier = hp.tp
@@ -320,3 +335,7 @@ def sync_globals(hp, ind_hp) -> None:
         global_use_RSI = ind_hp.use_rsi
         global_use_SMA = ind_hp.use_sma
         global_use_MACD = ind_hp.use_macd
+        global_long_frac = hp.long_frac
+        global_short_frac = hp.short_frac
+        gross_long_usd = global_long_frac * live_equity
+        gross_short_usd = global_short_frac * live_equity

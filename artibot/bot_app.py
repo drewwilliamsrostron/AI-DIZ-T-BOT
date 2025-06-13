@@ -99,6 +99,9 @@ def run_bot(max_epochs: int | None = None) -> None:
     G.start_equity = 0.0
     G.live_equity = 0.0
     G.live_trade_count = 0
+    from .position import HedgeBook
+
+    G.hedge_book = HedgeBook()
 
     config = CONFIG
     G.global_min_hold_seconds = config.get(

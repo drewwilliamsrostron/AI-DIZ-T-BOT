@@ -37,6 +37,8 @@ ACTION_SPACE = {
     "d_cmf_period": (-4, 4),
     "d_sl": (-2.0, 2.0),
     "d_tp": (-2.0, 2.0),
+    "d_long_frac": (-0.04, 0.04),
+    "d_short_frac": (-0.04, 0.04),
 }
 
 ACTION_KEYS = list(ACTION_SPACE.keys())
@@ -235,19 +237,35 @@ class MetaTransformerRL:
 
         hp.sl = max(0.5, hp.sl + float(act.get("d_sl", 0.0)))
         hp.tp = max(0.5, hp.tp + float(act.get("d_tp", 0.0)))
+        hp.long_frac = float(
+            np.clip(
+                hp.long_frac + float(act.get("d_long_frac", 0.0)),
+                0.0,
+                G.MAX_SIDE_EXPOSURE_PCT,
+            )
+        )
+        hp.short_frac = float(
+            np.clip(
+                hp.short_frac + float(act.get("d_short_frac", 0.0)),
+                0.0,
+                G.MAX_SIDE_EXPOSURE_PCT,
+            )
+        )
 
         act_str = ", ".join(
             f"{k}={v:+.2f}" if isinstance(v, float) else f"{k}={v}"
             for k, v in act.items()
         )
         logging.info(
-            "META_MUTATION %s sl=%.2f tp=%.2f atr=%d vortex=%d cmf=%d",
+            "META_MUTATION %s sl=%.2f tp=%.2f atr=%d vortex=%d cmf=%d, long%%=%.3f, short%%=%.3f",
             act_str,
             hp.sl,
             hp.tp,
             indicator_hp.atr_period,
             indicator_hp.vortex_period,
             indicator_hp.cmf_period,
+            hp.long_frac,
+            hp.short_frac,
         )
 
         G.sync_globals(hp, indicator_hp)
