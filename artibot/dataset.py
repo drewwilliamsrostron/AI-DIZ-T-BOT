@@ -131,6 +131,8 @@ class HourlyDataset(Dataset):
         seq_len=24,
         threshold=G.GLOBAL_THRESHOLD,
         sma_period=10,
+        atr_period: int = 50,
+        atr_threshold_k: float = 1.5,
         train_mode=True,
         rebalance=True,
         *,
@@ -142,6 +144,8 @@ class HourlyDataset(Dataset):
         self.seq_len = seq_len
         self.threshold = threshold
         self.sma_period = sma_period
+        self.atr_period = atr_period
+        self.atr_threshold_k = atr_threshold_k
         self.train_mode = train_mode
         self.rebalance = rebalance
         self.use_vortex = use_vortex
@@ -169,6 +173,10 @@ class HourlyDataset(Dataset):
         highs = data_np[:, 2].astype(np.float64)
         lows = data_np[:, 3].astype(np.float64)
         volume = data_np[:, 5].astype(np.float64)
+
+        from .indicators import atr
+
+        atr_vals = atr(highs, lows, closes, period=self.atr_period)
 
         cols = [
             data_np[:, 1:6],
@@ -223,11 +231,14 @@ class HourlyDataset(Dataset):
         last_close_raw = raw_closes[self.seq_len - 1 : -1]
         next_close_raw = raw_closes[self.seq_len :]
         rets = (next_close_raw - last_close_raw) / (last_close_raw + 1e-8)
-        labels = np.where(
-            rets > self.threshold, 0, np.where(rets < -self.threshold, 1, 2)
-        )
+        thresholds = self.atr_threshold_k * atr_vals[self.seq_len - 1 : -1]
+        labels = np.where(rets > thresholds, 0, np.where(rets < -thresholds, 1, 2))
 
-        mask = np.isfinite(windows).all(axis=(1, 2)) & np.isfinite(rets)
+        mask = (
+            np.isfinite(windows).all(axis=(1, 2))
+            & np.isfinite(rets)
+            & np.isfinite(thresholds)
+        )
         windows = windows[mask]
         labels = labels[mask]
 

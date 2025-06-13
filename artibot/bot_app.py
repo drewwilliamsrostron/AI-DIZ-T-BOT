@@ -201,7 +201,14 @@ def run_bot(max_epochs: int | None = None) -> None:
     )
     phemex_th.start()
 
-    ds = HourlyDataset(data, seq_len=24, threshold=G.GLOBAL_THRESHOLD, train_mode=False)
+    ds = HourlyDataset(
+        data,
+        seq_len=24,
+        sma_period=ensemble.indicator_hparams.sma_period,
+        atr_period=getattr(ensemble.indicator_hparams, "atr_period", 50),
+        atr_threshold_k=getattr(ensemble.indicator_hparams, "atr_threshold_k", 1.5),
+        train_mode=False,
+    )
     clamp_min = config.get("CLAMP_MIN", -10.0)
     clamp_max = config.get("CLAMP_MAX", 10.0)
     meta_agent = MetaTransformerRL(

@@ -99,4 +99,4 @@ def test_hourlydataset_basic(monkeypatch):
     sample, label = ds[0]
     assert sample.shape == (3, 8)
     assert label.shape == ()
-    assert label.item() == 0
+    assert label.item() == 2

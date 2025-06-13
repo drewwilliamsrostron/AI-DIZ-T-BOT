@@ -45,6 +45,8 @@ def compute_indicators(
     lows = raw[:, 3]
     volume = raw[:, 5] if raw.shape[1] > 5 else np.zeros_like(closes)
 
+    atr_period = getattr(hp, "atr_period", 50)
+
     rsi_period = max(2, min(hp.rsi_period, 50))
     sma_period = max(2, min(hp.sma_period, 100))
     fast_macd = max(2, min(hp.macd_fast, hp.macd_slow - 1))
@@ -57,13 +59,18 @@ def compute_indicators(
         closes, fastperiod=fast_macd, slowperiod=slow_macd, signalperiod=sig_macd
     )
 
+    atr_vals = indicators.atr(highs, lows, closes, period=atr_period)
+
     out = {
         "sma": sma.astype(np.float32),
         "rsi": rsi.astype(np.float32),
         "macd": macd_.astype(np.float32),
+        "atr": atr_vals.astype(np.float32),
     }
 
     cols = [raw[:, 1:6], out["sma"], out["rsi"], out["macd"]]
+    if getattr(hp, "use_atr", False):
+        cols.append(out["atr"])
 
     if use_vortex:
         vp, vn = indicators.vortex(highs, lows, closes)

@@ -83,3 +83,24 @@ def ichimoku(high: np.ndarray, low: np.ndarray):
         span_a.to_numpy(dtype=float),
         span_b.to_numpy(dtype=float),
     )
+
+
+def atr(
+    high: np.ndarray,
+    low: np.ndarray,
+    close: np.ndarray,
+    period: int = 14,
+) -> np.ndarray:
+    """Return Average True Range with trailing windows."""
+
+    high = np.asarray(high, dtype=float)
+    low = np.asarray(low, dtype=float)
+    close = np.asarray(close, dtype=float)
+
+    prev_close = np.concatenate(([np.nan], close[:-1]))
+    tr = np.maximum(
+        high - low,
+        np.maximum(np.abs(high - prev_close), np.abs(low - prev_close)),
+    )
+
+    return pd.Series(tr).rolling(period, min_periods=1).mean().to_numpy(dtype=float)
