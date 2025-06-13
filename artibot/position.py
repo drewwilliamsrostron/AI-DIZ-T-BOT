@@ -29,10 +29,20 @@ def open_position(
     side: str,
     amount: float,
     price: float,
-    stop_loss: float,
-    take_profit: float,
+    stop_loss: float | None,
+    take_profit: float | None,
 ) -> Position:
     """Place an order via ``connector`` and return a ``Position``."""
+
+    if stop_loss is None or take_profit is None:
+        sl_m = G.global_SL_multiplier
+        tp_m = G.global_TP_multiplier
+        if side == "long":
+            stop_loss = price - sl_m
+            take_profit = price + tp_m
+        else:
+            stop_loss = price + sl_m
+            take_profit = price - tp_m
 
     connector.create_order(
         side,
