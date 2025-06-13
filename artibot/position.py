@@ -34,7 +34,14 @@ def open_position(
 ) -> Position:
     """Place an order via ``connector`` and return a ``Position``."""
 
-    connector.create_order(side, amount, price, order_type="market")
+    connector.create_order(
+        side,
+        amount,
+        price,
+        order_type="market",
+        stop_loss=stop_loss,
+        take_profit=take_profit,
+    )
     with G.state_lock:
         G.live_trade_count += 1
     return Position(
