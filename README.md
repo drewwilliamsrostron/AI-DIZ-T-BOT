@@ -108,6 +108,13 @@ Answer `n` at the startup prompt or set `LIVE_TRADING` to `false` in the config
 to route orders to the Phemex sandbox while still running the full trading
 cycle. Respond `y` for real trades on the live exchange.
 
+### Dashboard
+
+The Tkinter GUI displays several live metrics. The **Attention Weights** tab
+shows a 3D surface highlighting how the Transformer focuses on previous price
+bars. Higher peaks indicate the timesteps receiving the most attention and the
+surface updates live as training progresses.
+
 ## Testing
 
 Run the linters and unit tests before committing:
