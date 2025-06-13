@@ -20,9 +20,18 @@ import math
 ACTION_SPACE = {
     "lr": (-3e-4, 3e-4),
     "wd": (-3e-5, 3e-5),
+    "toggle_sma": (0, 1),
+    "toggle_rsi": (0, 1),
+    "toggle_macd": (0, 1),
     "toggle_atr": (0, 1),
     "toggle_vortex": (0, 1),
     "toggle_cmf": (0, 1),
+    "toggle_ichimoku": (0, 1),
+    "d_sma_period": (-4, 4),
+    "d_rsi_period": (-4, 4),
+    "d_macd_fast": (-2, 2),
+    "d_macd_slow": (-2, 2),
+    "d_macd_signal": (-2, 2),
     "d_atr_period": (-4, 4),
     "d_vortex_period": (-4, 4),
     "d_cmf_period": (-4, 4),
@@ -182,12 +191,37 @@ class MetaTransformerRL:
     ) -> None:
         """Mutate ``hp`` and ``indicator_hp`` in-place based on ``act``."""
 
+        if act.get("toggle_sma"):
+            indicator_hp.use_sma = not indicator_hp.use_sma
+        if act.get("toggle_rsi"):
+            indicator_hp.use_rsi = not indicator_hp.use_rsi
+        if act.get("toggle_macd"):
+            indicator_hp.use_macd = not indicator_hp.use_macd
         if act.get("toggle_atr"):
             indicator_hp.use_atr = not indicator_hp.use_atr
         if act.get("toggle_vortex"):
             indicator_hp.use_vortex = not indicator_hp.use_vortex
         if act.get("toggle_cmf"):
             indicator_hp.use_cmf = not indicator_hp.use_cmf
+        if act.get("toggle_ichimoku"):
+            hp.use_ichimoku = not hp.use_ichimoku
+
+        indicator_hp.sma_period = max(
+            2, indicator_hp.sma_period + int(act.get("d_sma_period", 0))
+        )
+        indicator_hp.rsi_period = max(
+            2, indicator_hp.rsi_period + int(act.get("d_rsi_period", 0))
+        )
+        indicator_hp.macd_fast = max(
+            2, indicator_hp.macd_fast + int(act.get("d_macd_fast", 0))
+        )
+        indicator_hp.macd_slow = max(
+            indicator_hp.macd_fast + 1,
+            indicator_hp.macd_slow + int(act.get("d_macd_slow", 0)),
+        )
+        indicator_hp.macd_signal = max(
+            1, indicator_hp.macd_signal + int(act.get("d_macd_signal", 0))
+        )
 
         indicator_hp.atr_period = max(
             4, indicator_hp.atr_period + int(act.get("d_atr_period", 0))
