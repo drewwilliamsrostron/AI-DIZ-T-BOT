@@ -66,10 +66,16 @@ def ichimoku(high: np.ndarray, low: np.ndarray):
     high_s = pd.Series(high)
     low_s = pd.Series(low)
 
-    tenkan = (high_s.rolling(9, min_periods=1).max() + low_s.rolling(9, min_periods=1).min()) / 2
-    kijun = (high_s.rolling(26, min_periods=1).max() + low_s.rolling(26, min_periods=1).min()) / 2
+    tenkan = (
+        high_s.rolling(9, min_periods=1).max() + low_s.rolling(9, min_periods=1).min()
+    ) / 2
+    kijun = (
+        high_s.rolling(26, min_periods=1).max() + low_s.rolling(26, min_periods=1).min()
+    ) / 2
     span_a = (tenkan + kijun) / 2
-    span_b = (high_s.rolling(52, min_periods=1).max() + low_s.rolling(52, min_periods=1).min()) / 2
+    span_b = (
+        high_s.rolling(52, min_periods=1).max() + low_s.rolling(52, min_periods=1).min()
+    ) / 2
 
     return (
         tenkan.to_numpy(dtype=float),
@@ -77,4 +83,3 @@ def ichimoku(high: np.ndarray, low: np.ndarray):
         span_a.to_numpy(dtype=float),
         span_b.to_numpy(dtype=float),
     )
-
