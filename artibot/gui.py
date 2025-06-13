@@ -165,9 +165,7 @@ class TradingGUI:
 
         self.frame_details = ttk.Frame(self.notebook)
         self.notebook.add(self.frame_details, text="Attention Weights")
-        self.fig_details, self.ax_details = plt.subplots(
-            figsize=(5, 3), subplot_kw={"projection": "3d"}
-        )
+        self.fig_details, self.ax_details = plt.subplots(figsize=(5, 3))
         self.canvas_details = FigureCanvasTkAgg(
             self.fig_details, master=self.frame_details
         )
@@ -605,15 +603,8 @@ class TradingGUI:
         self.canvas_backtest.draw()
 
         self.ax_details.clear()
-        self.ax_details.set_title("Live Attention Weights")
-        if G.global_last_attention is not None:
-            data = np.array(G.global_last_attention)
-            avg = data.mean(axis=0)
-            x_ = np.arange(avg.shape[0])
-            y_ = np.arange(avg.shape[1])
-            X, Y = np.meshgrid(x_, y_)
-            self.ax_details.plot_surface(X, Y, avg, cmap="viridis")
-        elif G.global_attention_weights_history:
+        self.ax_details.set_title("Avg Attention Weights (placeholder)")
+        if G.global_attention_weights_history:
             x_ = list(range(1, len(G.global_attention_weights_history) + 1))
             self.ax_details.plot(
                 x_, G.global_attention_weights_history, marker="o", color="purple"
