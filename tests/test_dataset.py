@@ -6,6 +6,7 @@ from importlib.machinery import ModuleSpec
 
 # ruff: noqa: E402
 import numpy as np
+import pytest
 
 ROOT = os.path.dirname(os.path.dirname(__file__))
 if ROOT not in sys.path:
@@ -104,3 +105,40 @@ def test_hourlydataset_basic(monkeypatch):
     assert sample.shape == (3, 8)
     assert label.shape == ()
     assert label.item() == 2
+
+
+@pytest.mark.parametrize(
+    "hp_kwargs,vortex,cmf,ichimoku,expected",
+    [
+        ({}, False, False, False, 8),
+        (
+            {"use_sma": False, "use_rsi": False, "use_macd": False},
+            False,
+            False,
+            False,
+            5,
+        ),
+        ({"use_rsi": False}, False, False, False, 7),
+        ({"use_atr": True}, True, True, True, 16),
+    ],
+)
+def test_hourlydataset_feature_counts(hp_kwargs, vortex, cmf, ichimoku, expected):
+    data = [
+        [0, 1.0, 1.01, 0.99, 1.005, 0.0],
+        [1, 1.005, 1.015, 1.0, 1.01, 0.0],
+        [2, 1.01, 1.02, 1.005, 1.015, 0.0],
+        [3, 1.015, 1.025, 1.01, 1.02, 0.0],
+        [4, 1.02, 1.03, 1.015, 1.025, 0.0],
+    ]
+
+    hp = dataset.IndicatorHyperparams(sma_period=1, **hp_kwargs)
+    ds = dataset.HourlyDataset(
+        data,
+        seq_len=3,
+        indicator_hparams=hp,
+        use_vortex=vortex,
+        use_cmf=cmf,
+        use_ichimoku=ichimoku,
+    )
+    sample, _ = ds[0]
+    assert sample.shape[1] == expected
