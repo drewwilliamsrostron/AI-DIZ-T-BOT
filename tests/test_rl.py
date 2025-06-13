@@ -119,7 +119,13 @@ def test_apply_action_custom_space():
     class DummyEnsemble:
         def __init__(self) -> None:
             self.optimizers = [DummyOpt()]
-            self.indicator_hparams = rl.IndicatorHyperparams(14, 10, 12, 26, 9)
+            self.indicator_hparams = rl.IndicatorHyperparams(
+                rsi_period=14,
+                sma_period=10,
+                macd_fast=12,
+                macd_slow=26,
+                macd_signal=9,
+            )
 
     ensemble = DummyEnsemble()
     agent = rl.MetaTransformerRL(ensemble)
@@ -145,7 +151,13 @@ def test_apply_action_custom_space():
     pg = ensemble.optimizers[0].param_groups[0]
     assert pg["lr"] == pytest.approx(0.011)
     assert pg["weight_decay"] == pytest.approx(0.0012)
-    assert ensemble.indicator_hparams == rl.IndicatorHyperparams(15, 12, 15, 30, 14)
+    assert ensemble.indicator_hparams == rl.IndicatorHyperparams(
+        rsi_period=15,
+        sma_period=12,
+        macd_fast=15,
+        macd_slow=30,
+        macd_signal=14,
+    )
 
 
 def test_update_nan_protection():

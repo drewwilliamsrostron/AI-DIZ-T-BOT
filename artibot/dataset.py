@@ -4,6 +4,7 @@
 import os
 import random
 from typing import NamedTuple
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -28,14 +29,24 @@ class TradeParams(NamedTuple):
 
 
 ###############################################################################
-# NamedTuple for global indicator hyperparams
+# Dataclass for global indicator hyperparams
 ###############################################################################
-class IndicatorHyperparams(NamedTuple):
-    rsi_period: int
-    sma_period: int
-    macd_fast: int
-    macd_slow: int
-    macd_signal: int
+
+
+@dataclass
+class IndicatorHyperparams:
+    """Periods and toggles for optional indicators."""
+
+    use_sma: bool = True
+    sma_period: int = 10
+    use_rsi: bool = True
+    rsi_period: int = 14
+    use_macd: bool = True
+    macd_fast: int = 12
+    macd_slow: int = 26
+    macd_signal: int = 9
+    use_atr: bool = False
+    atr_period: int = 50
 
 
 ###############################################################################
@@ -128,23 +139,23 @@ class HourlyDataset(Dataset):
     def __init__(
         self,
         data,
-        seq_len=24,
-        threshold=G.GLOBAL_THRESHOLD,
-        sma_period=10,
-        atr_period: int = 50,
-        atr_threshold_k: float = 1.5,
-        train_mode=True,
-        rebalance=True,
+        seq_len: int = 24,
+        threshold: float = G.GLOBAL_THRESHOLD,
         *,
+        indicator_hparams: IndicatorHyperparams = IndicatorHyperparams(),
+        atr_threshold_k: float = 1.5,
+        train_mode: bool = True,
+        rebalance: bool = True,
         use_vortex: bool = False,
         use_cmf: bool = False,
         use_ichimoku: bool = False,
-    ):
+    ) -> None:
         self.data = data
         self.seq_len = seq_len
         self.threshold = threshold
-        self.sma_period = sma_period
-        self.atr_period = atr_period
+        self.hp = indicator_hparams
+        self.sma_period = indicator_hparams.sma_period
+        self.atr_period = indicator_hparams.atr_period
         self.atr_threshold_k = atr_threshold_k
         self.train_mode = train_mode
         self.rebalance = rebalance
@@ -156,19 +167,33 @@ class HourlyDataset(Dataset):
     def preprocess(self):
         data_np = np.array(self.data, dtype=np.float32)
         closes = data_np[:, 4].astype(np.float64)
-        sma = trailing_sma(closes, self.sma_period)
-        try:
-            rsi = talib.RSI(closes, timeperiod=14)
-        except Exception:
-            rsi = None
-        if rsi is None:
-            rsi = np.zeros_like(closes, dtype=np.float64)
-        try:
-            macd, _, _ = talib.MACD(closes)
-        except Exception:
-            macd = None
-        if macd is None:
-            macd = np.zeros_like(closes, dtype=np.float64)
+
+        sma = None
+        if self.hp.use_sma:
+            sma = trailing_sma(closes, self.hp.sma_period)
+
+        rsi = None
+        if self.hp.use_rsi:
+            try:
+                rsi = talib.RSI(closes, timeperiod=self.hp.rsi_period)
+            except Exception:
+                rsi = None
+            if rsi is None:
+                rsi = np.zeros_like(closes, dtype=np.float64)
+
+        macd = None
+        if self.hp.use_macd:
+            try:
+                macd, _, _ = talib.MACD(
+                    closes,
+                    fastperiod=self.hp.macd_fast,
+                    slowperiod=self.hp.macd_slow,
+                    signalperiod=self.hp.macd_signal,
+                )
+            except Exception:
+                macd = None
+            if macd is None:
+                macd = np.zeros_like(closes, dtype=np.float64)
 
         highs = data_np[:, 2].astype(np.float64)
         lows = data_np[:, 3].astype(np.float64)
@@ -176,14 +201,17 @@ class HourlyDataset(Dataset):
 
         from .indicators import atr
 
-        atr_vals = atr(highs, lows, closes, period=self.atr_period)
+        atr_vals = atr(highs, lows, closes, period=self.hp.atr_period)
 
-        cols = [
-            data_np[:, 1:6],
-            sma.astype(np.float32),
-            rsi.astype(np.float32),
-            macd.astype(np.float32),
-        ]
+        cols = [data_np[:, 1:6]]
+        if sma is not None:
+            cols.append(sma.astype(np.float32))
+        if rsi is not None:
+            cols.append(rsi.astype(np.float32))
+        if macd is not None:
+            cols.append(macd.astype(np.float32))
+        if self.hp.use_atr:
+            cols.append(atr_vals.astype(np.float32))
 
         if self.use_vortex:
             from .indicators import vortex

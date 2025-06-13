@@ -33,7 +33,13 @@ class DummyEnsemble:
 
     def __init__(self) -> None:
         self.device = torch.device("cpu")
-        self.indicator_hparams = IndicatorHyperparams(14, 10, 12, 26, 9)
+        self.indicator_hparams = IndicatorHyperparams(
+            rsi_period=14,
+            sma_period=10,
+            macd_fast=12,
+            macd_slow=26,
+            macd_signal=9,
+        )
 
     def vectorized_predict(self, windows_t, batch_size: int = 512):
         preds = torch.zeros(len(windows_t), dtype=torch.long)

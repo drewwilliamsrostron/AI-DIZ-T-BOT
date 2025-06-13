@@ -92,7 +92,11 @@ def test_hourlydataset_basic(monkeypatch):
         [4, 1.02, 1.03, 1.015, 1.025, 0.0],
     ]
 
-    ds = dataset.HourlyDataset(data, seq_len=3, sma_period=1)
+    ds = dataset.HourlyDataset(
+        data,
+        seq_len=3,
+        indicator_hparams=dataset.IndicatorHyperparams(sma_period=1),
+    )
     assert len(ds) == 2
 
     random.seed(0)

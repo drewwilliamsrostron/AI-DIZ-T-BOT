@@ -143,7 +143,13 @@ def test_meta_mutation_logging(monkeypatch, caplog):
     class DummyEnsemble:
         def __init__(self):
             self.optimizers = [DummyOpt()]
-            self.indicator_hparams = IndicatorHyperparams(14, 10, 12, 26, 9)
+            self.indicator_hparams = IndicatorHyperparams(
+                rsi_period=14,
+                sma_period=10,
+                macd_fast=12,
+                macd_slow=26,
+                macd_signal=9,
+            )
 
     ens = DummyEnsemble()
     agent = MetaTransformerRL(ens)
