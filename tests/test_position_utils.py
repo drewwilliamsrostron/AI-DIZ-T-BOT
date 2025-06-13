@@ -1,18 +1,30 @@
-import types
 from artibot.position import open_position, Position
+
 
 class DummyConn:
     def __init__(self):
         self.calls = []
-    def create_order(self, side, amount, price, order_type="market", *, stop_loss=None, take_profit=None):
-        self.calls.append({
-            "side": side,
-            "amount": amount,
-            "price": price,
-            "stop_loss": stop_loss,
-            "take_profit": take_profit,
-            "order_type": order_type,
-        })
+
+    def create_order(
+        self,
+        side,
+        amount,
+        price,
+        order_type="market",
+        *,
+        stop_loss=None,
+        take_profit=None
+    ):
+        self.calls.append(
+            {
+                "side": side,
+                "amount": amount,
+                "price": price,
+                "stop_loss": stop_loss,
+                "take_profit": take_profit,
+                "order_type": order_type,
+            }
+        )
         return {"ok": True}
 
 

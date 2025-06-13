@@ -98,7 +98,8 @@ class MetaTransformerRL:
         # need to reach into the model attribute. Without this the
         # ``pick_action`` method fails with ``AttributeError``.
         self.action_space = self._model.action_space
-        self.opt = optim.Adam(self._model.parameters(), lr=lr)
+        self.opt = optim.AdamW(self._model.parameters(), lr=lr)
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.opt, T_max=100)
         self.gamma = 0.95
         self.ensemble = ensemble
         self.value_range = value_range
@@ -187,6 +188,7 @@ class MetaTransformerRL:
                     p.grad = torch.zeros_like(p)
         torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
         self.opt.step()
+        self.scheduler.step()
         if reward > 0:
             self.last_improvement = 0
         else:
