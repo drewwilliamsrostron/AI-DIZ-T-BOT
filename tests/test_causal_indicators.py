@@ -6,7 +6,9 @@ def manual_vortex(high: np.ndarray, low: np.ndarray, close: np.ndarray, period: 
     prev_close = np.concatenate(([np.nan], close[:-1]))
     prev_low = np.concatenate(([np.nan], low[:-1]))
     prev_high = np.concatenate(([np.nan], high[:-1]))
-    tr = np.maximum(high - low, np.maximum(np.abs(high - prev_close), np.abs(low - prev_close)))
+    tr = np.maximum(
+        high - low, np.maximum(np.abs(high - prev_close), np.abs(low - prev_close))
+    )
     vm_plus = np.abs(high - prev_low)
     vm_minus = np.abs(low - prev_high)
     vp = np.empty_like(high, dtype=float)
@@ -28,16 +30,18 @@ def manual_vortex(high: np.ndarray, low: np.ndarray, close: np.ndarray, period: 
     return vp, vn
 
 
-def manual_cmf(high: np.ndarray, low: np.ndarray, close: np.ndarray, vol: np.ndarray, period: int):
+def manual_cmf(
+    high: np.ndarray, low: np.ndarray, close: np.ndarray, vol: np.ndarray, period: int
+):
     res = np.empty_like(high, dtype=float)
     for t in range(len(high)):
         start = max(0, t - period + 1)
         h = high[start : t + 1]
-        l = low[start : t + 1]
+        low_slice = low[start : t + 1]
         c = close[start : t + 1]
         v = vol[start : t + 1]
-        hl_diff = np.where(h - l == 0, 1e-9, h - l)
-        mfm = ((c - l) - (h - c)) / hl_diff
+        hl_diff = np.where(h - low_slice == 0, 1e-9, h - low_slice)
+        mfm = ((c - low_slice) - (h - c)) / hl_diff
         mfv_sum = (mfm * v).sum()
         vol_sum = v.sum() if v.sum() != 0 else 1e-9
         res[t] = mfv_sum / vol_sum
@@ -51,10 +55,16 @@ def manual_ichimoku(high: np.ndarray, low: np.ndarray):
     span_a = np.empty(n, dtype=float)
     span_b = np.empty(n, dtype=float)
     for t in range(n):
-        tenkan[t] = (high[max(0, t - 8) : t + 1].max() + low[max(0, t - 8) : t + 1].min()) / 2
-        kijun[t] = (high[max(0, t - 25) : t + 1].max() + low[max(0, t - 25) : t + 1].min()) / 2
+        tenkan[t] = (
+            high[max(0, t - 8) : t + 1].max() + low[max(0, t - 8) : t + 1].min()
+        ) / 2
+        kijun[t] = (
+            high[max(0, t - 25) : t + 1].max() + low[max(0, t - 25) : t + 1].min()
+        ) / 2
         span_a[t] = (tenkan[t] + kijun[t]) / 2
-        span_b[t] = (high[max(0, t - 51) : t + 1].max() + low[max(0, t - 51) : t + 1].min()) / 2
+        span_b[t] = (
+            high[max(0, t - 51) : t + 1].max() + low[max(0, t - 51) : t + 1].min()
+        ) / 2
     return tenkan, kijun, span_a, span_b
 
 
