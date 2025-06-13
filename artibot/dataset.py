@@ -106,6 +106,21 @@ def load_csv_hourly(csv_path: str) -> list[list[float]]:
     return arr[np.argsort(arr[:, 0])].tolist()
 
 
+def trailing_sma(arr: np.ndarray, window: int) -> np.ndarray:
+    """Trailing (causal) SMA: value at t uses [t-window+1 … t].
+
+    Pads the first ``window-1`` positions with ``np.nan`` so the returned array
+    matches the input length.
+    """
+
+    if window < 1:
+        raise ValueError("window must be ≥1")
+
+    valid = np.convolve(arr, np.ones(window) / window, mode="valid")
+    padded = np.concatenate([np.full(window - 1, np.nan, dtype=float), valid])
+    return np.nan_to_num(padded)
+
+
 ###############################################################################
 # HourlyDataset
 ###############################################################################
@@ -130,9 +145,7 @@ class HourlyDataset(Dataset):
     def preprocess(self):
         data_np = np.array(self.data, dtype=np.float32)
         closes = data_np[:, 4].astype(np.float64)
-        sma = np.convolve(
-            closes, np.ones(self.sma_period) / self.sma_period, mode="same"
-        )
+        sma = trailing_sma(closes, self.sma_period)
         try:
             rsi = talib.RSI(closes, timeperiod=14)
         except Exception:

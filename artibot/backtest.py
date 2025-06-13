@@ -10,6 +10,7 @@ import talib
 import torch
 
 from .utils import rolling_zscore
+from .dataset import trailing_sma
 
 import artibot.globals as G
 from .execution import submit_order
@@ -38,7 +39,7 @@ def compute_indicators(data_full, hp, *, with_scaled: bool = False):
     slow_macd = max(fast_macd + 1, min(hp.macd_slow, 200))
     sig_macd = max(1, min(hp.macd_signal, 50))
 
-    sma = np.convolve(closes, np.ones(sma_period) / sma_period, mode="same")
+    sma = trailing_sma(closes, sma_period)
     rsi = talib.RSI(closes, timeperiod=rsi_period)
     macd_, _sig, _hist = talib.MACD(
         closes, fastperiod=fast_macd, slowperiod=slow_macd, signalperiod=sig_macd
