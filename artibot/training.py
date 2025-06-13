@@ -7,7 +7,7 @@ import logging
 import datetime
 import time
 
-from .dataset import HourlyDataset
+from .dataset import HourlyDataset, trailing_sma
 from .ensemble import reject_if_risky
 from .backtest import robust_backtest, compute_indicators
 
@@ -242,7 +242,7 @@ def csv_training_thread(
             if len(train_data) >= 24:
                 tail = np.array(train_data[-24:], dtype=np.float64)
                 closes = tail[:, 4]
-                sma = np.convolve(closes, np.ones(10) / 10, mode="same")
+                sma = trailing_sma(closes, 10)
                 rsi = talib.RSI(closes, timeperiod=14)
                 macd, _, _ = talib.MACD(closes)
                 ext = []
