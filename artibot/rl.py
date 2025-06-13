@@ -231,6 +231,20 @@ class MetaTransformerRL:
         # If you want the dataset to re-init => we would do self.ensemble.dynamic_threshold = new_threshold
         # But for demonstration, we won't forcibly re-load the dataset now.
 
+        logging.info(
+            "META_MUTATION",
+            extra={
+                "lr": new_lr,
+                "wd": new_wd,
+                "rsi": new_rsi,
+                "sma": new_sma,
+                "macd_fast": new_mf,
+                "macd_slow": new_ms,
+                "macd_sig": new_sig,
+                "threshold": new_threshold,
+            },
+        )
+
         return (
             new_lr,
             new_wd,

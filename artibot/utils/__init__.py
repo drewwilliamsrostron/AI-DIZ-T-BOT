@@ -42,12 +42,18 @@ def setup_logging() -> None:
     file_handler = RotatingFileHandler("bot.log", maxBytes=5_000_000, backupCount=3)
     file_handler.setFormatter(JsonFormatter())
 
+    debug_handler = RotatingFileHandler(
+        "training_debug.log", maxBytes=5_000_000, backupCount=3
+    )
+    debug_handler.setFormatter(JsonFormatter())
+
     root = logging.getLogger()
     for h in list(root.handlers):
         if isinstance(h, (logging.StreamHandler, RotatingFileHandler)):
             root.removeHandler(h)
     root.addHandler(stream_handler)
     root.addHandler(file_handler)
+    root.addHandler(debug_handler)
 
 
 def attention_entropy(tensor: torch.Tensor) -> float:
