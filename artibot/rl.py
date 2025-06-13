@@ -5,6 +5,8 @@
 import artibot.globals as G
 from .model import PositionalEncoding
 from .dataset import IndicatorHyperparams
+from .hyperparams import HyperParams
+from dataclasses import replace
 
 import itertools
 import random
@@ -239,6 +241,53 @@ class MetaTransformerRL:
             new_sig,
             new_threshold,
         )
+
+    def random_mutate_hp(self, hp: HyperParams) -> HyperParams:
+        """Return ``hp`` with random tweaks applied."""
+        hp = replace(hp)
+
+        if random.random() < 0.5:
+            old = hp.sl
+            hp.sl = max(0.1, hp.sl + random.uniform(-1.0, 1.0))
+            logging.info("HP_MUTATION sl %.4f -> %.4f", old, hp.sl)
+
+        if random.random() < 0.5:
+            old = hp.tp
+            hp.tp = max(0.1, hp.tp + random.uniform(-1.0, 1.0))
+            logging.info("HP_MUTATION tp %.4f -> %.4f", old, hp.tp)
+
+        if random.random() < 0.5:
+            old = hp.atr_period
+            hp.atr_period = max(5, int(hp.atr_period + random.randint(-5, 5)))
+            logging.info("HP_MUTATION atr_period %d -> %d", old, hp.atr_period)
+
+        if random.random() < 0.5:
+            old = hp.conf_threshold
+            hp.conf_threshold = max(
+                0.0, hp.conf_threshold + random.uniform(-1e-4, 1e-4)
+            )
+            logging.info(
+                "HP_MUTATION conf_threshold %.6f -> %.6f",
+                old,
+                hp.conf_threshold,
+            )
+
+        if random.random() < 0.3:
+            old = hp.use_ichimoku
+            hp.use_ichimoku = not hp.use_ichimoku
+            logging.info("HP_MUTATION use_ichimoku %s -> %s", old, hp.use_ichimoku)
+
+        if random.random() < 0.3:
+            old = hp.use_vortex
+            hp.use_vortex = not hp.use_vortex
+            logging.info("HP_MUTATION use_vortex %s -> %s", old, hp.use_vortex)
+
+        if random.random() < 0.3:
+            old = hp.use_cmf
+            hp.use_cmf = not hp.use_cmf
+            logging.info("HP_MUTATION use_cmf %s -> %s", old, hp.use_cmf)
+
+        return hp
 
 
 ###############################################################################
