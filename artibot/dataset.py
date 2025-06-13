@@ -133,6 +133,10 @@ class HourlyDataset(Dataset):
         sma_period=10,
         train_mode=True,
         rebalance=True,
+        *,
+        use_vortex: bool = False,
+        use_cmf: bool = False,
+        use_ichimoku: bool = False,
     ):
         self.data = data
         self.seq_len = seq_len
@@ -140,6 +144,9 @@ class HourlyDataset(Dataset):
         self.sma_period = sma_period
         self.train_mode = train_mode
         self.rebalance = rebalance
+        self.use_vortex = use_vortex
+        self.use_cmf = use_cmf
+        self.use_ichimoku = use_ichimoku
         self.samples, self.labels = self.preprocess()
 
     def preprocess(self):
@@ -159,14 +166,43 @@ class HourlyDataset(Dataset):
         if macd is None:
             macd = np.zeros_like(closes, dtype=np.float64)
 
-        feats = np.column_stack(
-            [
-                data_np[:, 1:6],
-                sma.astype(np.float32),
-                rsi.astype(np.float32),
-                macd.astype(np.float32),
-            ]
-        )
+        highs = data_np[:, 2].astype(np.float64)
+        lows = data_np[:, 3].astype(np.float64)
+        volume = data_np[:, 5].astype(np.float64)
+
+        cols = [
+            data_np[:, 1:6],
+            sma.astype(np.float32),
+            rsi.astype(np.float32),
+            macd.astype(np.float32),
+        ]
+
+        if self.use_vortex:
+            from .indicators import vortex
+
+            vp, vn = vortex(highs, lows, closes)
+            cols.extend([vp.astype(np.float32), vn.astype(np.float32)])
+
+        if self.use_cmf:
+            from .indicators import cmf
+
+            cmf_v = cmf(highs, lows, closes, volume)
+            cols.append(cmf_v.astype(np.float32))
+
+        if self.use_ichimoku:
+            from .indicators import ichimoku
+
+            tenkan, kijun, span_a, span_b = ichimoku(highs, lows)
+            cols.extend(
+                [
+                    tenkan.astype(np.float32),
+                    kijun.astype(np.float32),
+                    span_a.astype(np.float32),
+                    span_b.astype(np.float32),
+                ]
+            )
+
+        feats = np.column_stack(cols)
 
         # ``ta-lib`` leaves the first few rows as NaN which would otherwise
         # propagate through scaling and ultimately make the training loss

@@ -11,6 +11,7 @@ import torch
 
 from .utils import rolling_zscore
 from .dataset import trailing_sma
+from . import indicators
 
 import artibot.globals as G
 from .execution import submit_order
@@ -22,7 +23,15 @@ from .metrics import (
 )
 
 
-def compute_indicators(data_full, hp, *, with_scaled: bool = False):
+def compute_indicators(
+    data_full,
+    hp,
+    *,
+    with_scaled: bool = False,
+    use_vortex: bool = False,
+    use_cmf: bool = False,
+    use_ichimoku: bool = False,
+):
     """Return indicator arrays for ``data_full``.
 
     When ``with_scaled`` is ``True`` the returned dictionary also contains a
@@ -32,6 +41,9 @@ def compute_indicators(data_full, hp, *, with_scaled: bool = False):
 
     raw = np.array(data_full, dtype=np.float64)
     closes = raw[:, 4]
+    highs = raw[:, 2]
+    lows = raw[:, 3]
+    volume = raw[:, 5] if raw.shape[1] > 5 else np.zeros_like(closes)
 
     rsi_period = max(2, min(hp.rsi_period, 50))
     sma_period = max(2, min(hp.sma_period, 100))
@@ -51,15 +63,29 @@ def compute_indicators(data_full, hp, *, with_scaled: bool = False):
         "macd": macd_.astype(np.float32),
     }
 
+    cols = [raw[:, 1:6], out["sma"], out["rsi"], out["macd"]]
+
+    if use_vortex:
+        vp, vn = indicators.vortex(highs, lows, closes)
+        out["vortex_p"] = vp.astype(np.float32)
+        out["vortex_m"] = vn.astype(np.float32)
+        cols.extend([out["vortex_p"], out["vortex_m"]])
+
+    if use_cmf:
+        cmf_v = indicators.cmf(highs, lows, closes, volume)
+        out["cmf"] = cmf_v.astype(np.float32)
+        cols.append(out["cmf"])
+
+    if use_ichimoku:
+        tenkan, kijun, span_a, span_b = indicators.ichimoku(highs, lows)
+        out["tenkan"] = tenkan.astype(np.float32)
+        out["kijun"] = kijun.astype(np.float32)
+        out["span_a"] = span_a.astype(np.float32)
+        out["span_b"] = span_b.astype(np.float32)
+        cols.extend([out["tenkan"], out["kijun"], out["span_a"], out["span_b"]])
+
     if with_scaled:
-        feats = np.column_stack(
-            [
-                raw[:, 1:6],
-                out["sma"],
-                out["rsi"],
-                out["macd"],
-            ]
-        )
+        feats = np.column_stack(cols)
         feats = np.nan_to_num(feats)
         out["scaled"] = rolling_zscore(feats, window=50)
 
