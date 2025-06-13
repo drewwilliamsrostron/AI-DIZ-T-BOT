@@ -508,6 +508,47 @@ class TradingGUI:
         self.label_entry = ttk.Label(self.pos_frame, text="0.0 USDT")
         self.label_entry.grid(row=2, column=1, sticky=tk.W)
 
+        self.comp_frame = ttk.LabelFrame(self.info_frame, text="Composite Terms")
+        self.comp_frame.grid(
+            row=24, column=0, columnspan=2, sticky="ew", padx=5, pady=5
+        )
+        self.use_net_var = tk.BooleanVar(value=G.use_net_term)
+        self.use_sharpe_var = tk.BooleanVar(value=G.use_sharpe_term)
+        self.use_dd_var = tk.BooleanVar(value=G.use_drawdown_term)
+        self.use_trade_var = tk.BooleanVar(value=G.use_trade_term)
+        self.use_days_var = tk.BooleanVar(value=G.use_profit_days_term)
+        ttk.Checkbutton(
+            self.comp_frame,
+            text="Net%",
+            variable=self.use_net_var,
+            command=self.update_composite_flags,
+        ).grid(row=0, column=0, sticky=tk.W)
+        ttk.Checkbutton(
+            self.comp_frame,
+            text="Sharpe",
+            variable=self.use_sharpe_var,
+            command=self.update_composite_flags,
+        ).grid(row=0, column=1, sticky=tk.W)
+        ttk.Checkbutton(
+            self.comp_frame,
+            text="Drawdown",
+            variable=self.use_dd_var,
+            command=self.update_composite_flags,
+        ).grid(row=1, column=0, sticky=tk.W)
+        ttk.Checkbutton(
+            self.comp_frame,
+            text="Trades",
+            variable=self.use_trade_var,
+            command=self.update_composite_flags,
+        ).grid(row=1, column=1, sticky=tk.W)
+        ttk.Checkbutton(
+            self.comp_frame,
+            text="Profit Days",
+            variable=self.use_days_var,
+            command=self.update_composite_flags,
+        ).grid(row=2, column=0, sticky=tk.W)
+        self.update_composite_flags()
+
         # Use sidebar as container to avoid mixing pack/grid on the root
         self.frame_ai = ttk.Frame(self.sidebar)
         self.frame_ai.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -714,6 +755,7 @@ class TradingGUI:
             f" RSI(p={ind.rsi_period}) [{'✓' if ind.use_rsi else '✗'}]\n"
             f" SMA(p={ind.sma_period}) [{'✓' if ind.use_sma else '✗'}]\n"
             f" MACD({ind.macd_fast}/{ind.macd_slow}/{ind.macd_signal}) [{'✓' if ind.use_macd else '✗'}]\n"
+            f" ICHIMOKU [{'✓' if hp.use_ichimoku else '✗'}]\n"
             f" SL Mult: {hp.sl}\n"
             f" TP Mult: {hp.tp}"
         )
@@ -967,6 +1009,14 @@ class TradingGUI:
     def on_toggle_force_nk(self) -> None:
         """Update ``G.nuke_armed`` from the checkbox state."""
         G.nuke_armed = bool(self.force_nk_var.get())
+
+    def update_composite_flags(self) -> None:
+        """Sync composite term toggles with ``artibot.globals``."""
+        G.use_net_term = bool(self.use_net_var.get())
+        G.use_sharpe_term = bool(self.use_sharpe_var.get())
+        G.use_drawdown_term = bool(self.use_dd_var.get())
+        G.use_trade_term = bool(self.use_trade_var.get())
+        G.use_profit_days_term = bool(self.use_days_var.get())
 
     def manual_validate(self) -> None:
         """Run validation in a worker thread and update UI."""

@@ -452,13 +452,17 @@ def robust_backtest(ensemble, data_full, indicators=None):
     # final composite
     # composite_reward= (alpha* net_score + beta* shr_score - gamma* dd_pen + trade_term)
     # composite_reward-= tot_inact_pen
-    composite_reward = (
-        alpha * net_score
-        + beta * shr_score * 2  # Sharper reward for risk-adjusted returns
-        + gamma * (1 - abs(mdd))  # Better drawdown handling
-        + trade_term * 3  # Stronger incentive for reasonable trade frequency
-        + (days_in_pf / 365) * 1000  # Strong bonus for consistent profitability
-    )
+    composite_reward = 0.0
+    if G.use_net_term:
+        composite_reward += alpha * net_score
+    if G.use_sharpe_term:
+        composite_reward += beta * shr_score * 2
+    if G.use_drawdown_term:
+        composite_reward += gamma * (1 - abs(mdd))
+    if G.use_trade_term:
+        composite_reward += trade_term * 3
+    if G.use_profit_days_term:
+        composite_reward += (days_in_pf / 365) * 1000
     return {
         "net_pct": net_pct,
         "trades": trade_count,
