@@ -38,6 +38,9 @@ class HyperParams:
     atr_threshold_k: float = float(_CONFIG.get("ATR_THRESHOLD_K", 1.5))
     conf_threshold: float = float(_CONFIG.get("CONF_THRESHOLD", 5e-5))
 
+    long_frac: float = 0.0  # fraction of equity in LONG contracts
+    short_frac: float = 0.0  # fraction in SHORT contracts
+
     indicator_hp: "IndicatorHyperparams" = None
 
     use_sma: bool = bool(_CONFIG.get("USE_SMA", True))
@@ -51,6 +54,8 @@ class HyperParams:
     def __post_init__(self) -> None:
         if self.indicator_hp is None:
             self.indicator_hp = IndicatorHyperparams()
+        self.long_frac = max(0.0, min(self.long_frac, G.MAX_SIDE_EXPOSURE_PCT))
+        self.short_frac = max(0.0, min(self.short_frac, G.MAX_SIDE_EXPOSURE_PCT))
         G.sync_globals(self, self.indicator_hp)
 
     @property

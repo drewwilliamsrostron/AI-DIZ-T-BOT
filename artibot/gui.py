@@ -507,6 +507,16 @@ class TradingGUI:
         ttk.Label(self.pos_frame, text="Entry:").grid(row=2, column=0, sticky=tk.W)
         self.label_entry = ttk.Label(self.pos_frame, text="0.0 USDT")
         self.label_entry.grid(row=2, column=1, sticky=tk.W)
+        ttk.Label(self.pos_frame, text="Long Exposure:").grid(
+            row=3, column=0, sticky=tk.W
+        )
+        self.label_long = ttk.Label(self.pos_frame, text="0 USD")
+        self.label_long.grid(row=3, column=1, sticky=tk.W)
+        ttk.Label(self.pos_frame, text="Short Exposure:").grid(
+            row=4, column=0, sticky=tk.W
+        )
+        self.label_short = ttk.Label(self.pos_frame, text="0 USD")
+        self.label_short.grid(row=4, column=1, sticky=tk.W)
 
         # Use sidebar as container to avoid mixing pack/grid on the root
         self.frame_ai = ttk.Frame(self.sidebar)
@@ -696,6 +706,8 @@ class TradingGUI:
         self.epoch_label.config(text=f"Training Steps: {steps}")
         bal = G.global_account_stats.get("total", {}).get("USDT", 0.0)
         self.balance_label.config(text=f"USDT Balance: {bal:.2f}")
+        self.label_long["text"] = f"{G.gross_long_usd:.0f}"
+        self.label_short["text"] = f"{G.gross_short_usd:.0f}"
         if G.global_position_side:
             pos = f"{G.global_position_side} {G.global_position_size:.4f}"
         else:
@@ -715,7 +727,9 @@ class TradingGUI:
             f" SMA(p={ind.sma_period}) [{'✓' if ind.use_sma else '✗'}]\n"
             f" MACD({ind.macd_fast}/{ind.macd_slow}/{ind.macd_signal}) [{'✓' if ind.use_macd else '✗'}]\n"
             f" SL Mult: {hp.sl}\n"
-            f" TP Mult: {hp.tp}"
+            f" TP Mult: {hp.tp}\n"
+            f" Long %:  {hp.long_frac * 100:.1f}\n"
+            f" Short %: {hp.short_frac * 100:.1f}"
         )
         self.indicator_label.config(text=info)
         self.best_lr_label.config(

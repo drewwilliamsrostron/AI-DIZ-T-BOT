@@ -1,4 +1,4 @@
-"""Utilities for tracking and executing trading positions."""
+"""Trade leg and hedging helpers."""
 
 from __future__ import annotations
 
@@ -13,15 +13,71 @@ if TYPE_CHECKING:  # pragma: no cover - hints only
 
 
 @dataclass
-class Position:
-    """Represents an open trade."""
+class TradeLeg:
+    """Represents one side of a hedged position."""
 
-    side: Optional[str] = None
-    size: float = 0.0
-    entry_price: float = 0.0
+    side: str
+    size: float
+    entry_price: float
     stop_loss: float = 0.0
     take_profit: float = 0.0
-    entry_time: Optional[float] = None
+    entry_time: float | None = None
+
+
+@dataclass
+class HedgeBook:
+    """Tracks independent long and short legs."""
+
+    long_leg: TradeLeg | None = None
+    short_leg: TradeLeg | None = None
+
+    @staticmethod
+    def _usd_to_contracts(usd: float, price: float) -> int:
+        """Convert USD exposure to contract quantity."""
+        if price <= 0:
+            return 0
+        return int(usd / price)
+
+    def open_long(self, connector: "PhemexConnector", price: float, hp) -> None:
+        usd = hp.long_frac * G.live_equity
+        contracts = self._usd_to_contracts(usd, price)
+        if contracts > 0:
+            connector.create_order("buy", contracts, price)
+        self.long_leg = TradeLeg(
+            side="long",
+            size=contracts,
+            entry_price=price,
+            entry_time=time.time(),
+        )
+
+    def open_short(self, connector: "PhemexConnector", price: float, hp) -> None:
+        usd = hp.short_frac * G.live_equity
+        contracts = self._usd_to_contracts(usd, price)
+        if contracts > 0:
+            connector.create_order("sell", contracts, price)
+        self.short_leg = TradeLeg(
+            side="short",
+            size=contracts,
+            entry_price=price,
+            entry_time=time.time(),
+        )
+
+    def close_long(self, connector: "PhemexConnector", price: float) -> None:
+        if not self.long_leg:
+            return
+        connector.create_order("sell", self.long_leg.size, price)
+        self.long_leg = None
+
+    def close_short(self, connector: "PhemexConnector", price: float) -> None:
+        if not self.short_leg:
+            return
+        connector.create_order("buy", self.short_leg.size, price)
+        self.short_leg = None
+
+
+# ---------------------------------------------------------------------------
+# Backwards compatibility wrappers matching the previous API
+# ---------------------------------------------------------------------------
 
 
 def open_position(
@@ -29,11 +85,9 @@ def open_position(
     side: str,
     amount: float,
     price: float,
-    stop_loss: float | None,
-    take_profit: float | None,
-) -> Position:
-    """Place an order via ``connector`` and return a ``Position``."""
-
+    stop_loss: Optional[float],
+    take_profit: Optional[float],
+) -> TradeLeg:
     if stop_loss is None or take_profit is None:
         sl_m = G.global_SL_multiplier
         tp_m = G.global_TP_multiplier
@@ -54,9 +108,9 @@ def open_position(
     )
     with G.state_lock:
         G.live_trade_count += 1
-    return Position(
+    return TradeLeg(
         side=side,
-        size=amount if side == "long" else -amount,
+        size=amount,
         entry_price=price,
         stop_loss=stop_loss,
         take_profit=take_profit,
@@ -64,17 +118,6 @@ def open_position(
     )
 
 
-def close_position(connector: "PhemexConnector", pos: Position, price: float) -> None:
-    """Submit an exit order and reset ``pos`` in place."""
-
-    exit_side = "sell" if pos.side == "long" else "buy"
-    connector.create_order(exit_side, abs(pos.size), price, order_type="market")
-    try:
-        stats = connector.get_account_stats()
-        equity = stats.get("total", {}).get("USDT", 0.0)
-    except Exception:
-        equity = G.live_equity
-    with G.state_lock:
-        G.live_equity = equity
-    pos.side = None
-    pos.size = 0.0
+def close_position(connector: "PhemexConnector", leg: TradeLeg, price: float) -> None:
+    exit_side = "sell" if leg.side == "long" else "buy"
+    connector.create_order(exit_side, leg.size, price, order_type="market")
