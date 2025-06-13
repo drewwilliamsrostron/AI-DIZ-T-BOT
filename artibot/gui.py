@@ -224,6 +224,10 @@ class TradingGUI:
             self.info_frame, text="AI Prediction: N/A", font=("Helvetica", 12)
         )
         self.pred_label.grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        self.price_label = ttk.Label(
+            self.info_frame, text="Live Price: N/A", font=("Helvetica", 12)
+        )
+        self.price_label.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
         self.conf_label = ttk.Label(
             self.info_frame, text="Confidence: N/A", font=("Helvetica", 12)
         )
@@ -268,6 +272,10 @@ class TradingGUI:
             font=("Helvetica", 12),
         )
         self.tp_label.grid(row=8, column=0, sticky=tk.W, padx=5, pady=5)
+        self.indicator_label = ttk.Label(
+            self.info_frame, text="Indicators: RSI,SMA,MACD", font=("Helvetica", 12)
+        )
+        self.indicator_label.grid(row=8, column=1, sticky=tk.W, padx=5, pady=5)
 
         self.best_hyper_label = ttk.Label(
             self.info_frame,
@@ -484,6 +492,7 @@ class TradingGUI:
             command=self.on_toggle_force_nk,
         )
         self.force_nk_chk.pack(side=tk.LEFT, padx=5)
+        self.on_toggle_force_nk()
 
         self.validation_label = ttk.Label(
             self.info_frame, text="Validation: N/A", font=("Helvetica", 12)
@@ -647,7 +656,17 @@ class TradingGUI:
         pred_str = G.global_current_prediction if G.global_current_prediction else "N/A"
         conf = G.global_ai_confidence if G.global_ai_confidence else 0.0
         steps = G.epoch_count
-        self.pred_label.config(text=f"AI Prediction: {pred_str}")
+
+        color_map = {"BUY": "green", "SELL": "red", "HOLD": "black"}
+        pred_color = color_map.get(pred_str.upper(), "black")
+        if G.global_sharpe > 2 or G.global_max_drawdown < -0.20:
+            pred_color = "purple"
+        self.pred_label.config(text=f"AI Prediction: {pred_str}", foreground=pred_color)
+
+        price = 0.0
+        if G.global_phemex_data and len(G.global_phemex_data[-1]) >= 5:
+            price = float(G.global_phemex_data[-1][4])
+        self.price_label.config(text=f"Live Price: {price:.2f}")
         self.conf_label.config(text=f"Confidence: {conf:.2f}")
         self.epoch_label.config(text=f"Training Steps: {steps}")
         bal = G.global_account_stats.get("total", {}).get("USDT", 0.0)
@@ -663,6 +682,18 @@ class TradingGUI:
         self.atr_label.config(text=f"ATR: {G.global_ATR_period}")
         self.sl_label.config(text=f"SL: {G.global_SL_multiplier}")
         self.tp_label.config(text=f"TP: {G.global_TP_multiplier}")
+        flags = ["RSI", "SMA", "MACD", "ATR"]
+        optional = [
+            ("use_vortex", "VORTEX"),
+            ("use_cmf", "CMF"),
+            ("use_ichimoku", "ICHIMOKU"),
+            ("use_momentum", "MOM"),
+            ("use_bbw", "BBW"),
+        ]
+        for attr, name in optional:
+            if getattr(self.ensemble.indicator_hparams, attr, False):
+                flags.append(name)
+        self.indicator_label.config(text=f"Indicators: {','.join(flags)}")
         self.best_lr_label.config(
             text=f"Best LR: {G.global_best_lr if G.global_best_lr else 'N/A'}"
         )
