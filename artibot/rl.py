@@ -3,6 +3,7 @@
 # ruff: noqa: F403, F405
 
 import artibot.globals as G
+from .dataset import IndicatorHyperparams  # noqa: F401
 from .model import PositionalEncoding
 from .hyperparams import HyperParams
 from dataclasses import replace
