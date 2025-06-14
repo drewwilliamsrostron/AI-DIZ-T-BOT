@@ -143,10 +143,11 @@ class TradingGUI:
 
         self.frame_train = ttk.Frame(self.notebook)
         self.notebook.add(self.frame_train, text="Training vs. Validation")
-        self.fig_train = plt.figure(figsize=(5, 8))
-        self.ax_loss = self.fig_train.add_subplot(3, 1, 1)
-        self.ax_attention = self.fig_train.add_subplot(3, 1, 2, projection="3d")
-        self.ax_equity_train = self.fig_train.add_subplot(3, 1, 3)
+        self.fig_train = plt.figure(figsize=(5, 10))
+        self.ax_loss = self.fig_train.add_subplot(4, 1, 1)
+        self.ax_attention = self.fig_train.add_subplot(4, 1, 2, projection="3d")
+        self.ax_equity_train = self.fig_train.add_subplot(4, 1, 3)
+        self.ax_trades_time = self.fig_train.add_subplot(4, 1, 4)
         self.canvas_train = FigureCanvasTkAgg(self.fig_train, master=self.frame_train)
         self.canvas_train.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         self.loss_comment_label = ttk.Label(
@@ -693,6 +694,21 @@ class TradingGUI:
             handles, labels = self.ax_equity_train.get_legend_handles_labels()
             if handles and any(labels):
                 self.ax_equity_train.legend(handles, labels)
+        except Exception:
+            pass
+
+        # --------------------------------------------------------------
+        # plot cumulative trades over time
+        # --------------------------------------------------------------
+        self.ax_trades_time.clear()
+        self.ax_trades_time.set_title("Trades Over Time")
+        try:
+            if G.global_trade_details:
+                ts = [t.get("entry_time", 0) for t in G.global_trade_details]
+                ts = [t // 1000 if t > 1_000_000_000_000 else t for t in ts]
+                ts_dt = [datetime.datetime.fromtimestamp(t) for t in ts]
+                counts = list(range(1, len(ts_dt) + 1))
+                self.ax_trades_time.step(ts_dt, counts, where="post")
         except Exception:
             pass
         self.canvas_train.draw()
