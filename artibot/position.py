@@ -44,6 +44,9 @@ class HedgeBook:
         return int(usd / price)
 
     def open_long(self, connector: "PhemexConnector", price: float, hp) -> None:
+        if hp.long_frac == 0:
+            self.close_long(connector, price)
+            return
         usd = hp.long_frac * G.live_equity
         contracts = self._usd_to_contracts(usd, price)
         if contracts > 0:
@@ -56,6 +59,9 @@ class HedgeBook:
         )
 
     def open_short(self, connector: "PhemexConnector", price: float, hp) -> None:
+        if hp.short_frac == 0:
+            self.close_short(connector, price)
+            return
         usd = hp.short_frac * G.live_equity
         contracts = self._usd_to_contracts(usd, price)
         if contracts > 0:
