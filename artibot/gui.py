@@ -117,6 +117,11 @@ class TradingGUI:
         self.connector = connector
         self.close_requested = False
         self.root.title("Complex AI Trading w/ Robust Backtest + Live Phemex")
+        style = ttk.Style()
+        try:
+            style.theme_use("clam")
+        except Exception:
+            pass
 
         # ------------------------------------------------------------------
         # overall layout
@@ -139,7 +144,7 @@ class TradingGUI:
         # notebook with charts
         # ------------------------------------------------------------------
         self.notebook = ttk.Notebook(self.main_frame)
-        self.notebook.pack(fill=tk.BOTH, expand=True)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         self.frame_train = ttk.Frame(self.notebook)
         self.notebook.add(self.frame_train, text="MAIN - TRAINING VS VALIDATION")
@@ -158,13 +163,15 @@ class TradingGUI:
                 scrollregion=self.train_canvas.bbox("all")
             ),
         )
-        self.fig_train = plt.figure(figsize=(5, 10))
+        self.fig_train = plt.figure(figsize=(6, 8))
         self.ax_loss = self.fig_train.add_subplot(4, 1, 1)
         self.ax_attention = self.fig_train.add_subplot(4, 1, 2, projection="3d")
         self.ax_equity_train = self.fig_train.add_subplot(4, 1, 3)
         self.ax_trades_time = self.fig_train.add_subplot(4, 1, 4)
         self.canvas_train = FigureCanvasTkAgg(self.fig_train, master=self.train_inner)
-        self.canvas_train.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.canvas_train.get_tk_widget().pack(
+            fill=tk.BOTH, expand=True, padx=10, pady=10
+        )
         self.loss_comment_label = ttk.Label(
             self.train_inner,
             text="",
@@ -520,6 +527,12 @@ class TradingGUI:
             command=self.manual_validate,
         )
         self.validate_button.pack(side=tk.LEFT, padx=5)
+        self.run_button = ttk.Button(
+            self.controls_frame,
+            text="Pause Bot",
+            command=self.toggle_bot,
+        )
+        self.run_button.pack(side=tk.LEFT, padx=5)
         self.force_nk_var = tk.BooleanVar(value=False)
         self.force_nk_chk = ttk.Checkbutton(
             self.controls_frame,
@@ -1168,3 +1181,10 @@ class TradingGUI:
                 self.root.after(0, lambda: self.validate_button.config(state="normal"))
 
         threading.Thread(target=_run, daemon=True).start()
+
+    def toggle_bot(self) -> None:
+        """Pause or resume all worker threads."""
+        running = G.is_bot_running()
+        G.set_bot_running(not running)
+        new_text = "Pause Bot" if not running else "Resume Bot"
+        self.run_button.config(text=new_text)

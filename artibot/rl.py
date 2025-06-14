@@ -15,6 +15,7 @@ import torch.optim as optim
 import traceback
 import logging
 import math
+import time
 
 
 ACTION_SPACE = {
@@ -380,6 +381,9 @@ def meta_control_loop(
 
     cycle_count = 0
     while True:
+        if not G.is_bot_running():
+            time.sleep(1.0)
+            continue
         try:
             if G.epoch_count < 1:
 
