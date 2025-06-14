@@ -59,12 +59,18 @@ ACTION_KEYS = list(ACTION_SPACE.keys())
 # NEW: A bigger action space that includes adjusting RSI, SMA, MACD + threshold
 ###############################################################################
 class TransformerMetaAgent(nn.Module):
+    """Transformer policy used by :class:`MetaTransformerRL`."""
+
     def __init__(self) -> None:
         super().__init__()
 
-        self.action_keys = ACTION_KEYS
-        self.action_low = np.array([low for low, _ in ACTION_SPACE.values()])
-        self.action_high = np.array([high for _, high in ACTION_SPACE.values()])
+        self.toggle_keys = [k for k in ACTION_KEYS if k.startswith("toggle_")]
+        self.gauss_keys = ["d_long_frac", "d_short_frac"]
+        self.discrete_keys = [
+            k
+            for k in ACTION_KEYS
+            if k not in self.toggle_keys and k not in self.gauss_keys
+        ]
 
         self.state_dim = 6
 
@@ -78,41 +84,35 @@ class TransformerMetaAgent(nn.Module):
             batch_first=True,
         )
         self.transformer_enc = nn.TransformerEncoder(enc_layer, num_layers=2)
-        self.policy_head = nn.Linear(d_model, len(self.action_keys))
+        self.policy_head = nn.Linear(d_model, len(self.discrete_keys))
+        self.bandit_head = nn.Linear(d_model, len(self.toggle_keys))
+        self.gauss_head = nn.Linear(d_model, len(self.gauss_keys))
+        self.log_std = nn.Parameter(torch.zeros(len(self.gauss_keys)))
         self.value_head = nn.Linear(d_model, 1)
 
     def sample_action(self) -> dict[str, float]:
-        return {
-            k: (
-                _random.uniform(low, high)
-                if isinstance(low, float)
-                else _random.randint(low, high)
-            )
-            for k, (low, high) in ACTION_SPACE.items()
-        }
+        """Return a random action within ``ACTION_SPACE``."""
 
-        # (6) bigger or the same
-        d_model = 32
-        self.embed = nn.Linear(self.state_dim, d_model)
-        self.pos_enc = PositionalEncoding(d_model)
-        enc_layer = nn.TransformerEncoderLayer(
-            d_model=d_model,
-            nhead=1,
-            dim_feedforward=64,
-            batch_first=True,
-        )
-        self.transformer_enc = nn.TransformerEncoder(enc_layer, num_layers=2)
-        self.policy_head = nn.Linear(d_model, self.n_actions)
-        self.value_head = nn.Linear(d_model, 1)
+        act: dict[str, float] = {}
+        for k, (low, high) in ACTION_SPACE.items():
+            if isinstance(low, int) and isinstance(high, int):
+                act[k] = _random.randint(low, high)
+            else:
+                act[k] = _random.uniform(low, high)
+        return act
 
     def forward(self, x):
+        """Return policy components and value for state ``x``."""
+
         x_emb = self.embed(x).unsqueeze(1)
         x_pe = self.pos_enc(x_emb)
         x_enc = self.transformer_enc(x_pe)
         rep = x_enc.squeeze(1)
-        pol = self.policy_head(rep)
-        val = self.value_head(rep).squeeze(1)
-        return pol, val
+        pol_logits = self.policy_head(rep)
+        bandit_logits = self.bandit_head(rep)
+        gauss_mean = self.gauss_head(rep)
+        value = self.value_head(rep).squeeze(1)
+        return pol_logits, bandit_logits, gauss_mean, value
 
 
 class MetaTransformerRL:
@@ -127,6 +127,9 @@ class MetaTransformerRL:
         self._model = TransformerMetaAgent()
         self.state_dim = self._model.state_dim
         self.action_keys = ACTION_KEYS
+        self.discrete_keys = self._model.discrete_keys
+        self.toggle_keys = self._model.toggle_keys
+        self.gauss_keys = self._model.gauss_keys
         self.opt = optim.AdamW(self._model.parameters(), lr=lr)
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.opt, T_max=100)
         self.gamma = 0.95
@@ -160,11 +163,17 @@ class MetaTransformerRL:
             self._model.state_dim = self.state_dim
 
     def pick_action(self, state_np):
-        """Return an action dictionary using an epsilon-greedy policy."""
+        """Return an action dictionary with PPO-compatible log probability."""
 
         state = torch.tensor(state_np, dtype=torch.float32).unsqueeze(0)
         with torch.no_grad():
-            logits, val = self.model(state)
+            out = self.model(state)
+            if len(out) == 4:
+                p_logits, b_logits, g_mean, value = out
+            else:
+                p_logits, value = out
+                b_logits = torch.zeros((1, len(self.toggle_keys)))
+                g_mean = torch.zeros((1, len(self.gauss_keys)))
 
         eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * (
             self.eps_decay**self.steps
@@ -174,28 +183,83 @@ class MetaTransformerRL:
         if _random.random() < eps_threshold:
             act = self.model.sample_action()
             logp = torch.tensor(0.0)
-            return act, logp, val
+            self.prev_logits = (p_logits, b_logits, g_mean)
+            self.prev_logprob = logp
+            self.prev_action_idx = None
+            self.last_bandit_probs = {}
+            return act, logp, value
 
-        dist = torch.distributions.Categorical(logits=logits)
+        # discrete action
+        dist = torch.distributions.Categorical(logits=p_logits)
         action_idx = dist.sample()
         logp = dist.log_prob(action_idx)
-        key = self.action_keys[action_idx.item()]
+        key = self.discrete_keys[action_idx.item()]
         low, high = ACTION_SPACE[key]
         if isinstance(low, int) and isinstance(high, int):
-            value = _random.randint(low, high)
+            value_v = _random.randint(low, high)
         else:
-            value = _random.uniform(low, high)
-        act = {key: value}
-        return act, logp, val
+            value_v = _random.uniform(low, high)
+        act: dict[str, float] = {key: value_v}
+
+        # bandit toggles via gumbel-sigmoid
+        probs = torch.sigmoid(b_logits).squeeze(0)
+        self.last_bandit_probs = {
+            k: float(probs[i].item()) for i, k in enumerate(self.toggle_keys)
+        }
+        u = torch.rand_like(probs)
+        gumbel = -torch.log(-torch.log(u + 1e-8) + 1e-8)
+        bandit_sample = torch.sigmoid((b_logits.squeeze(0) + gumbel) / 1.0)
+        toggles = (bandit_sample > 0.5).int().tolist()
+        for k, val_t in zip(self.toggle_keys, toggles):
+            act[k] = int(val_t)
+            logp = logp + (
+                F.logsigmoid(b_logits.squeeze(0)[self.toggle_keys.index(k)])
+                if val_t
+                else F.logsigmoid(-b_logits.squeeze(0)[self.toggle_keys.index(k)])
+            )
+
+        # gaussian long/short fraction deltas
+        mu = torch.tanh(g_mean.squeeze(0))
+        std = self.model.log_std.exp()
+        eps = torch.randn_like(mu)
+        sample = torch.tanh(mu + std * eps)
+        for i, k in enumerate(self.gauss_keys):
+            low, high = ACTION_SPACE[k]
+            scale = (high - low) / 2.0
+            act[k] = float(sample[i].item() * scale)
+            log_prob_gauss = -0.5 * ((sample[i] - mu[i]) ** 2) / (
+                std[i] ** 2
+            ) - torch.log(std[i] * math.sqrt(2 * math.pi))
+            logp = logp + log_prob_gauss
+
+        self.prev_logits = (p_logits, b_logits, g_mean)
+        self.prev_logprob = logp.detach()
+        self.prev_action_idx = action_idx
+        return act, logp.detach(), value
 
     def update(self, state_np, action_idx, reward, next_state_np, logprob, value):
+        """Update the meta policy using PPO."""
+
         s = torch.tensor(state_np, dtype=torch.float32).unsqueeze(0)
         ns = torch.tensor(next_state_np, dtype=torch.float32).unsqueeze(0)
-        pol_s, val_s = self.model(s)
-        dist = torch.distributions.Categorical(logits=pol_s)
-        lp_s = dist.log_prob(torch.tensor([action_idx]))
+        out = self.model(s)
+        if len(out) == 4:
+            p_logits, _, _, val_s = out
+        else:
+            p_logits, val_s = out
+        dist = torch.distributions.Categorical(logits=p_logits)
+        a = torch.tensor([action_idx]) if action_idx is not None else dist.sample()
+        lp_s = dist.log_prob(a)
+        if not hasattr(self, "prev_logits"):
+            self.prev_logits = (
+                p_logits.detach(),
+                torch.zeros_like(p_logits),
+                torch.zeros_like(p_logits),
+            )
+            logprob = torch.tensor(0.0)
         with torch.no_grad():
-            _, val_ns = self.model(ns)
+            out_ns = self.model(ns)
+            val_ns = out_ns[-1]
         # Reward shaping using EMA of absolute reward changes
         self.reward_ema = (1 - self.tau_inv) * self.reward_ema + self.tau_inv * abs(
             reward
@@ -209,7 +273,18 @@ class MetaTransformerRL:
             target = float(np.clip(target, self.target_range[0], self.target_range[1]))
         val_s = val_s.clamp(min=self.value_range[0], max=self.value_range[1])
         advantage = (target - val_s).detach()
-        loss_p = -lp_s * advantage
+
+        ratio = torch.exp(lp_s - logprob)
+        clipped = torch.clamp(ratio, 1 - 0.2, 1 + 0.2)
+        pg_loss = -torch.min(ratio * advantage, clipped * advantage)
+
+        old_p_logits, _, _ = self.prev_logits
+        old_dist = torch.distributions.Categorical(logits=old_p_logits)
+        new_dist = torch.distributions.Categorical(logits=p_logits)
+        kl = torch.distributions.kl_divergence(old_dist, new_dist).mean()
+        entropy = new_dist.entropy().mean()
+
+        loss_p = pg_loss + kl + (-1e-3 * entropy)
         loss_v = F.mse_loss(val_s, torch.tensor([target], device=val_s.device))
         loss = loss_p + 0.5 * loss_v
         self.opt.zero_grad()
@@ -234,6 +309,9 @@ class MetaTransformerRL:
         act: dict[str, float],
     ) -> None:
         """Mutate ``hp`` and ``indicator_hp`` in-place based on ``act``."""
+
+        for k, prob in getattr(self, "last_bandit_probs", {}).items():
+            logging.info("FEATURE_IMPORTANCE %s %.3f", k, prob)
 
         if act.get("toggle_sma"):
             indicator_hp.use_sma = not indicator_hp.use_sma
