@@ -34,3 +34,20 @@ def test_apply_action_syncs_globals():
     assert hp.short_frac == 0
     assert G.global_long_frac == hp.long_frac
     assert G.global_short_frac == hp.short_frac
+
+
+def test_toggle_ema_period_updates_globals():
+    hp = HyperParams()
+    ind_hp = IndicatorHyperparams()
+    agent = MetaTransformerRL(ensemble=None)
+
+    act = {k: 0 for k in ACTION_KEYS}
+    act.update({"toggle_ema": 1, "d_ema_period": 3})
+
+    prev_use = ind_hp.use_ema
+    prev_period = ind_hp.ema_period
+    agent.apply_action(hp, ind_hp, act)
+
+    assert ind_hp.use_ema == (not prev_use)
+    assert ind_hp.ema_period == prev_period + 3 if prev_period + 3 >= 2 else 2
+    assert G.global_EMA_period == ind_hp.ema_period

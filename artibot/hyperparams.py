@@ -86,6 +86,16 @@ class IndicatorHyperparams:
     vortex_period: int = 14
     use_cmf: bool = True
     cmf_period: int = 20
+    use_ema: bool = True
+    ema_period: int = 20
+    use_donchian: bool = False
+    donchian_period: int = 20
+    use_kijun: bool = False
+    kijun_period: int = 26
+    use_tenkan: bool = False
+    tenkan_period: int = 9
+    use_displacement: bool = False
+    displacement: int = 26
 
     def __post_init__(self) -> None:
         mapping = {
@@ -103,6 +113,16 @@ class IndicatorHyperparams:
             "vortex_period": "VORTEX_PERIOD",
             "use_cmf": "USE_CMF",
             "cmf_period": "CMF_PERIOD",
+            "use_ema": "USE_EMA",
+            "ema_period": "EMA_PERIOD",
+            "use_donchian": "USE_DONCHIAN",
+            "donchian_period": "DONCHIAN_PERIOD",
+            "use_kijun": "USE_KIJUN",
+            "kijun_period": "KIJUN_PERIOD",
+            "use_tenkan": "USE_TENKAN",
+            "tenkan_period": "TENKAN_PERIOD",
+            "use_displacement": "USE_DISPLACEMENT",
+            "displacement": "DISPLACEMENT",
         }
         for attr, key in mapping.items():
             if key in _CONFIG:

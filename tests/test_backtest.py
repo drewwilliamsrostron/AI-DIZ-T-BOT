@@ -20,6 +20,7 @@ sys.modules["talib"] = types.SimpleNamespace(
         np.zeros_like(arr),
         np.zeros_like(arr),
     ),
+    EMA=lambda arr, timeperiod=20: np.zeros_like(arr),
 )
 
 from artibot.backtest import robust_backtest

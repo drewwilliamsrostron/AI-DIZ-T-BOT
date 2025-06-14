@@ -37,6 +37,7 @@ talib.MACD = lambda arr, fastperiod=12, slowperiod=26, signalperiod=9: (
     np.zeros_like(arr, dtype=np.float64),
     np.zeros_like(arr, dtype=np.float64),
 )
+talib.EMA = lambda arr, timeperiod=20: np.zeros_like(arr, dtype=np.float64)
 talib.__spec__ = ModuleSpec("talib", loader=None)
 sys.modules.setdefault("talib", talib)
 
@@ -103,7 +104,7 @@ def test_hourlydataset_basic(monkeypatch):
 
     random.seed(0)
     sample, label = ds[0]
-    assert sample.shape == (3, 12)
+    assert sample.shape == (3, 13)
     assert label.shape == ()
     assert label.item() == 2
 
@@ -111,14 +112,14 @@ def test_hourlydataset_basic(monkeypatch):
 @pytest.mark.parametrize(
     "hp_kwargs,ichimoku,expected",
     [
-        ({}, False, 12),
+        ({}, False, 13),
         (
             {"use_sma": False, "use_rsi": False, "use_macd": False},
             False,
-            9,
+            10,
         ),
-        ({"use_rsi": False}, False, 11),
-        ({"use_atr": True, "use_vortex": True, "use_cmf": True}, True, 16),
+        ({"use_rsi": False}, False, 12),
+        ({"use_atr": True, "use_vortex": True, "use_cmf": True}, True, 17),
     ],
 )
 def test_hourlydataset_feature_counts(hp_kwargs, ichimoku, expected):

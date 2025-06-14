@@ -46,9 +46,19 @@ global_SMA_period = 10
 global_MACD_fast = 12
 global_MACD_slow = 26
 global_MACD_signal = 9
+global_EMA_period = 20
+global_DONCHIAN_period = 20
+global_KIJUN_period = 26
+global_TENKAN_period = 9
+global_DISPLACEMENT = 26
 global_use_RSI = True
 global_use_SMA = True
 global_use_MACD = True
+global_use_EMA = True
+global_use_DONCHIAN = False
+global_use_KIJUN = False
+global_use_TENKAN = False
+global_use_DISPLACEMENT = False
 risk_fraction = 0.03
 GLOBAL_THRESHOLD = 5e-5
 global_min_hold_seconds = 1800
@@ -314,8 +324,12 @@ def sync_globals(hp, ind_hp) -> None:
     global global_ATR_period, global_VORTEX_period, global_CMF_period
     global global_RSI_period, global_SMA_period
     global global_MACD_fast, global_MACD_slow, global_MACD_signal
+    global global_EMA_period, global_DONCHIAN_period
+    global global_KIJUN_period, global_TENKAN_period, global_DISPLACEMENT
     global global_use_ATR, global_use_VORTEX, global_use_CMF
     global global_use_RSI, global_use_SMA, global_use_MACD
+    global global_use_EMA, global_use_DONCHIAN
+    global global_use_KIJUN, global_use_TENKAN, global_use_DISPLACEMENT
     global global_long_frac, global_short_frac
     global gross_long_usd, gross_short_usd
     with state_lock:
@@ -324,6 +338,11 @@ def sync_globals(hp, ind_hp) -> None:
         global_ATR_period = ind_hp.atr_period
         global_VORTEX_period = ind_hp.vortex_period
         global_CMF_period = ind_hp.cmf_period
+        global_EMA_period = ind_hp.ema_period
+        global_DONCHIAN_period = ind_hp.donchian_period
+        global_KIJUN_period = ind_hp.kijun_period
+        global_TENKAN_period = ind_hp.tenkan_period
+        global_DISPLACEMENT = ind_hp.displacement
         global_RSI_period = ind_hp.rsi_period
         global_SMA_period = ind_hp.sma_period
         global_MACD_fast = ind_hp.macd_fast
@@ -335,6 +354,11 @@ def sync_globals(hp, ind_hp) -> None:
         global_use_RSI = ind_hp.use_rsi
         global_use_SMA = ind_hp.use_sma
         global_use_MACD = ind_hp.use_macd
+        global_use_EMA = ind_hp.use_ema
+        global_use_DONCHIAN = ind_hp.use_donchian
+        global_use_KIJUN = ind_hp.use_kijun
+        global_use_TENKAN = ind_hp.use_tenkan
+        global_use_DISPLACEMENT = ind_hp.use_displacement
         global_long_frac = hp.long_frac
         global_short_frac = hp.short_frac
         gross_long_usd = global_long_frac * live_equity
