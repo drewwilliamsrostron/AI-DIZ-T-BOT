@@ -6,7 +6,7 @@ import artibot.globals as G
 from .hyperparams import HyperParams, IndicatorHyperparams
 from .model import PositionalEncoding
 
-import random
+import random as _random
 import numpy as np
 import torch
 import torch.nn as nn
@@ -83,9 +83,9 @@ class TransformerMetaAgent(nn.Module):
     def sample_action(self) -> dict[str, float]:
         return {
             k: (
-                random.uniform(low, high)
+                _random.uniform(low, high)
                 if isinstance(low, float)
-                else random.randint(low, high)
+                else _random.randint(low, high)
             )
             for k, (low, high) in ACTION_SPACE.items()
         }
@@ -133,9 +133,9 @@ class MetaTransformerRL:
         self.value_range = value_range
         self.target_range = target_range
 
-        # Running reward baseline to stabilise updates
-        self.reward_baseline = 0.0
-        self.baseline_alpha = 0.1
+        # Reward shaping baseline (EMA of |Δreward|)
+        self.reward_ema = 1.0
+        self.tau_inv = 1.0 / 50.0
 
         # (7) Scheduled exploration
         # Change epsilon parameters for longer exploration
@@ -170,7 +170,7 @@ class MetaTransformerRL:
         )
         self.steps += 1
 
-        if random.random() < eps_threshold:
+        if _random.random() < eps_threshold:
             act = self.model.sample_action()
             logp = torch.tensor(0.0)
             return act, logp, val
@@ -181,9 +181,9 @@ class MetaTransformerRL:
         key = self.action_keys[action_idx.item()]
         low, high = ACTION_SPACE[key]
         if isinstance(low, int) and isinstance(high, int):
-            value = random.randint(low, high)
+            value = _random.randint(low, high)
         else:
-            value = random.uniform(low, high)
+            value = _random.uniform(low, high)
         act = {key: value}
         return act, logp, val
 
@@ -195,23 +195,22 @@ class MetaTransformerRL:
         lp_s = dist.log_prob(torch.tensor([action_idx]))
         with torch.no_grad():
             _, val_ns = self.model(ns)
-        # Normalise reward by subtracting a running baseline to emphasise
-        # improvements over time
-        self.reward_baseline = (
-            1 - self.baseline_alpha
-        ) * self.reward_baseline + self.baseline_alpha * reward
-        norm_reward = reward - self.reward_baseline
-        target = norm_reward + self.gamma * val_ns.item()
+        # Reward shaping using EMA of absolute reward changes
+        self.reward_ema = (1 - self.tau_inv) * self.reward_ema + self.tau_inv * abs(
+            reward
+        )
+        shaped = reward / max(self.reward_ema, 1e-8)
+        target = shaped + self.gamma * val_ns.item()
         if not math.isfinite(target):
             logging.warning("Non-finite target: %s", target)
             target = self.target_range[1] if target > 0 else self.target_range[0]
         else:
             target = float(np.clip(target, self.target_range[0], self.target_range[1]))
         val_s = val_s.clamp(min=self.value_range[0], max=self.value_range[1])
-        advantage = target - val_s.item()
+        advantage = (target - val_s).detach()
         loss_p = -lp_s * advantage
         loss_v = F.mse_loss(val_s, torch.tensor([target], device=val_s.device))
-        loss = loss_p + loss_v
+        loss = loss_p + 0.5 * loss_v
         self.opt.zero_grad()
         if loss.requires_grad:
             loss.backward()
