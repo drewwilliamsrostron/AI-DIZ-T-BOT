@@ -25,6 +25,11 @@ class TradeLeg:
 
 
 @dataclass
+class Position(TradeLeg):
+    """Backward compatible position alias."""
+
+
+@dataclass
 class HedgeBook:
     """Tracks independent long and short legs."""
 
@@ -108,7 +113,7 @@ def open_position(
     )
     with G.state_lock:
         G.live_trade_count += 1
-    return TradeLeg(
+    return Position(
         side=side,
         size=amount,
         entry_price=price,
