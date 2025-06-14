@@ -12,6 +12,7 @@ import time
 import threading
 import queue
 import collections
+import numpy as np
 import matplotlib
 
 matplotlib.use("TkAgg")
@@ -98,6 +99,12 @@ global_days_without_trading = None
 global_trade_details = []
 global_holdout_sharpe = 0.0
 global_holdout_max_drawdown = 0.0
+
+# timeline ring buffer (keep last 300 bars ≈ 12.5 days on 1-h data)
+timeline_depth = 300
+timeline_index = 0
+timeline_ind_on = np.zeros((timeline_depth, 6), dtype=np.uint8)
+timeline_trades = np.zeros(timeline_depth, dtype=np.uint8)  # 1 = in market
 
 # Global best performance stats:
 global_best_equity_curve = []
