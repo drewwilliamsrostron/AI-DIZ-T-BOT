@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import talib
 
 
 def vortex(high: np.ndarray, low: np.ndarray, close: np.ndarray, period: int = 14):
@@ -104,3 +105,35 @@ def atr(
     )
 
     return pd.Series(tr).rolling(period, min_periods=1).mean().to_numpy(dtype=float)
+
+
+def ema(closes: np.ndarray, period: int = 20) -> np.ndarray:
+    """Return exponential moving average for ``closes``."""
+
+    closes = np.asarray(closes, dtype=float)
+    return talib.EMA(closes, timeperiod=period)
+
+
+def donchian(highs: np.ndarray, lows: np.ndarray, period: int = 20):
+    """Return Donchian channel ``(upper, lower, middle)``."""
+
+    highs_s = pd.Series(np.asarray(highs, dtype=float))
+    lows_s = pd.Series(np.asarray(lows, dtype=float))
+    upper = highs_s.rolling(period, min_periods=1).max().to_numpy()
+    lower = lows_s.rolling(period, min_periods=1).min().to_numpy()
+    middle = (upper + lower) / 2
+    return upper, lower, middle
+
+
+def kijun(highs: np.ndarray, lows: np.ndarray, period: int = 26) -> np.ndarray:
+    """Return Ichimoku Kijun-sen line."""
+
+    _tenkan, kijun_, _span_a, _span_b = ichimoku(highs, lows)
+    return kijun_
+
+
+def tenkan(highs: np.ndarray, lows: np.ndarray, period: int = 9) -> np.ndarray:
+    """Return Ichimoku Tenkan-sen line."""
+
+    tenkan_, _kijun, _span_a, _span_b = ichimoku(highs, lows)
+    return tenkan_

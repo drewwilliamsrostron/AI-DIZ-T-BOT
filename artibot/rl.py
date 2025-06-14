@@ -27,6 +27,11 @@ ACTION_SPACE = {
     "toggle_vortex": (0, 1),
     "toggle_cmf": (0, 1),
     "toggle_ichimoku": (0, 1),
+    "toggle_ema": (0, 1),
+    "toggle_donchian": (0, 1),
+    "toggle_kijun": (0, 1),
+    "toggle_tenkan": (0, 1),
+    "toggle_disp": (0, 1),
     "d_sma_period": (-4, 4),
     "d_rsi_period": (-4, 4),
     "d_macd_fast": (-2, 2),
@@ -35,6 +40,11 @@ ACTION_SPACE = {
     "d_atr_period": (-4, 4),
     "d_vortex_period": (-4, 4),
     "d_cmf_period": (-4, 4),
+    "d_ema_period": (-4, 4),
+    "d_donchian_period": (-4, 4),
+    "d_kijun_period": (-4, 4),
+    "d_tenkan_period": (-4, 4),
+    "d_displacement": (-4, 4),
     "d_sl": (-2.0, 2.0),
     "d_tp": (-2.0, 2.0),
     "d_long_frac": (-0.04, 0.04),
@@ -207,6 +217,16 @@ class MetaTransformerRL:
             indicator_hp.use_cmf = not indicator_hp.use_cmf
         if act.get("toggle_ichimoku"):
             hp.use_ichimoku = not hp.use_ichimoku
+        if act.get("toggle_ema"):
+            indicator_hp.use_ema = not indicator_hp.use_ema
+        if act.get("toggle_donchian"):
+            indicator_hp.use_donchian = not indicator_hp.use_donchian
+        if act.get("toggle_kijun"):
+            indicator_hp.use_kijun = not indicator_hp.use_kijun
+        if act.get("toggle_tenkan"):
+            indicator_hp.use_tenkan = not indicator_hp.use_tenkan
+        if act.get("toggle_disp"):
+            indicator_hp.use_displacement = not indicator_hp.use_displacement
 
         indicator_hp.sma_period = max(
             2, indicator_hp.sma_period + int(act.get("d_sma_period", 0))
@@ -234,6 +254,21 @@ class MetaTransformerRL:
         indicator_hp.cmf_period = max(
             4, indicator_hp.cmf_period + int(act.get("d_cmf_period", 0))
         )
+        indicator_hp.ema_period = max(
+            2, indicator_hp.ema_period + int(act.get("d_ema_period", 0))
+        )
+        indicator_hp.donchian_period = max(
+            5, indicator_hp.donchian_period + int(act.get("d_donchian_period", 0))
+        )
+        indicator_hp.kijun_period = max(
+            5, indicator_hp.kijun_period + int(act.get("d_kijun_period", 0))
+        )
+        indicator_hp.tenkan_period = max(
+            5, indicator_hp.tenkan_period + int(act.get("d_tenkan_period", 0))
+        )
+        indicator_hp.displacement = max(
+            1, indicator_hp.displacement + int(act.get("d_displacement", 0))
+        )
 
         hp.sl = max(0.5, hp.sl + float(act.get("d_sl", 0.0)))
         hp.tp = max(0.5, hp.tp + float(act.get("d_tp", 0.0)))
@@ -257,13 +292,18 @@ class MetaTransformerRL:
             for k, v in act.items()
         )
         logging.info(
-            "META_MUTATION %s sl=%.2f tp=%.2f atr=%d vortex=%d cmf=%d, long%%=%.3f, short%%=%.3f",
+            "META_MUTATION %s sl=%.2f tp=%.2f atr=%d vortex=%d cmf=%d, ema=%d, don=%d, kij=%d, ten=%d, disp=%d, long%%=%.3f, short%%=%.3f",
             act_str,
             hp.sl,
             hp.tp,
             indicator_hp.atr_period,
             indicator_hp.vortex_period,
             indicator_hp.cmf_period,
+            indicator_hp.ema_period,
+            indicator_hp.donchian_period,
+            indicator_hp.kijun_period,
+            indicator_hp.tenkan_period,
+            indicator_hp.displacement,
             hp.long_frac,
             hp.short_frac,
         )
@@ -342,7 +382,12 @@ def meta_control_loop(
                 f"{k}={v:+.2f}" if isinstance(v, float) else f"{k}={v}"
                 for k, v in act.items()
             )
-            summary = f"META_MUTATION {act_str} sl={hp.sl:.2f} tp={hp.tp:.2f}"
+            summary = (
+                f"META_MUTATION {act_str} sl={hp.sl:.2f} tp={hp.tp:.2f}"
+                f" ema={indicator_hp.ema_period} don={indicator_hp.donchian_period}"
+                f" kij={indicator_hp.kijun_period} ten={indicator_hp.tenkan_period}"
+                f" disp={indicator_hp.displacement}"
+            )
             G.global_ai_adjustments_log += "\n" + summary
             G.global_ai_adjustments = summary
 

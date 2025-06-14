@@ -80,6 +80,11 @@ def compute_indicators(
         out["macd"] = macd_.astype(np.float32)
         cols.append(out["macd"])
 
+    if getattr(indicator_hp, "use_ema", False):
+        ema_v = indicators.ema(closes, period=getattr(indicator_hp, "ema_period", 20))
+        out["ema"] = ema_v.astype(np.float32)
+        cols.append(out["ema"])
+
     atr_vals = indicators.atr(highs, lows, closes, period=atr_period)
     out["atr"] = atr_vals.astype(np.float32)
     if getattr(indicator_hp, "use_atr", True):
@@ -99,6 +104,35 @@ def compute_indicators(
         )
         out["cmf"] = cmf_v.astype(np.float32)
         cols.append(out["cmf"])
+
+    if getattr(indicator_hp, "use_donchian", False):
+        up, lo, mid = indicators.donchian(
+            highs, lows, period=getattr(indicator_hp, "donchian_period", 20)
+        )
+        out["don_up"] = up.astype(np.float32)
+        out["don_lo"] = lo.astype(np.float32)
+        out["don_mid"] = mid.astype(np.float32)
+        cols.extend([out["don_up"], out["don_lo"], out["don_mid"]])
+
+    if getattr(indicator_hp, "use_kijun", False):
+        kij = indicators.kijun(
+            highs, lows, period=getattr(indicator_hp, "kijun_period", 26)
+        )
+        out["kijun"] = kij.astype(np.float32)
+        cols.append(out["kijun"])
+
+    if getattr(indicator_hp, "use_tenkan", False):
+        ten = indicators.tenkan(
+            highs, lows, period=getattr(indicator_hp, "tenkan_period", 9)
+        )
+        out["tenkan"] = ten.astype(np.float32)
+        cols.append(out["tenkan"])
+
+    if getattr(indicator_hp, "use_displacement", False):
+        disp = np.roll(closes, getattr(indicator_hp, "displacement", 26))
+        disp[: getattr(indicator_hp, "displacement", 26)] = np.nan
+        out["disp"] = disp.astype(np.float32)
+        cols.append(out["disp"])
 
     if use_ichimoku:
         tenkan, kijun, span_a, span_b = indicators.ichimoku(highs, lows)

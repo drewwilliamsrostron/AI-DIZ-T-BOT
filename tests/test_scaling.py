@@ -21,6 +21,7 @@ talib.MACD = lambda arr, fastperiod=12, slowperiod=26, signalperiod=9: (
     np.zeros_like(arr, dtype=np.float64),
     np.zeros_like(arr, dtype=np.float64),
 )
+talib.EMA = lambda arr, timeperiod=20: np.zeros_like(arr, dtype=np.float64)
 talib.__spec__ = ModuleSpec("talib", loader=None)
 sys.modules.setdefault("talib", talib)
 

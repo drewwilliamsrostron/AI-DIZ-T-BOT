@@ -10,3 +10,7 @@ def RSI(arr, timeperiod=14):
 def MACD(arr, fastperiod=12, slowperiod=26, signalperiod=9):
     zeros = np.zeros_like(arr)
     return zeros, zeros, zeros
+
+
+def EMA(arr, timeperiod=20):
+    return np.zeros_like(arr)

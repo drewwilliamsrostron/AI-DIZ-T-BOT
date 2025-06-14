@@ -194,6 +194,11 @@ class HourlyDataset(Dataset):
             cols.append(rsi.astype(np.float32))
         if macd is not None:
             cols.append(macd.astype(np.float32))
+        if self.hp.use_ema:
+            from .indicators import ema
+
+            ema_v = ema(closes, period=self.hp.ema_period)
+            cols.append(ema_v.astype(np.float32))
         if self.hp.use_atr:
             cols.append(atr_vals.astype(np.float32))
 
@@ -208,6 +213,35 @@ class HourlyDataset(Dataset):
 
             cmf_v = cmf(highs, lows, closes, volume, period=self.cmf_period)
             cols.append(cmf_v.astype(np.float32))
+
+        if self.hp.use_donchian:
+            from .indicators import donchian
+
+            up, lo, mid = donchian(highs, lows, period=self.hp.donchian_period)
+            cols.extend(
+                [
+                    up.astype(np.float32),
+                    lo.astype(np.float32),
+                    mid.astype(np.float32),
+                ]
+            )
+
+        if self.hp.use_kijun:
+            from .indicators import kijun
+
+            kj = kijun(highs, lows, period=self.hp.kijun_period)
+            cols.append(kj.astype(np.float32))
+
+        if self.hp.use_tenkan:
+            from .indicators import tenkan
+
+            tn = tenkan(highs, lows, period=self.hp.tenkan_period)
+            cols.append(tn.astype(np.float32))
+
+        if self.hp.use_displacement:
+            disp = np.roll(closes, self.hp.displacement)
+            disp[: self.hp.displacement] = np.nan
+            cols.append(disp.astype(np.float32))
 
         if self.use_ichimoku:
             from .indicators import ichimoku
