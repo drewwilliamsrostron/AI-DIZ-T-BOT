@@ -190,6 +190,9 @@ live_trade_count: int = 0
 # Flag toggled by training thread when new live weights are ready
 live_weights_updated: bool = False
 
+# When ``False`` worker threads pause their main loops
+bot_running: bool = True
+
 # Singleton hedge book managing open long/short legs
 hedge_book = None
 
@@ -262,6 +265,19 @@ def pop_live_weights_updated() -> bool:
         val = live_weights_updated
         live_weights_updated = False
     return val
+
+
+def set_bot_running(state: bool) -> None:
+    """Toggle the global run flag used by worker threads."""
+    global bot_running
+    with state_lock:
+        bot_running = state
+
+
+def is_bot_running() -> bool:
+    """Return ``True`` when the bot is not paused."""
+    with state_lock:
+        return bot_running
 
 
 ###############################################################################

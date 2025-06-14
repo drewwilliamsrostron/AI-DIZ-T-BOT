@@ -139,6 +139,9 @@ def csv_training_thread(
         best_reward = float("-inf")
         no_gain = 0
         while not stop_event.is_set():
+            if not G.is_bot_running():
+                time.sleep(1.0)
+                continue
             if max_epochs is not None and epochs >= max_epochs:
                 break
             ensemble.train_steps += 1
@@ -381,6 +384,9 @@ def phemex_live_thread(
     import traceback
 
     while not stop_event.is_set():
+        if not G.is_bot_running():
+            time.sleep(1.0)
+            continue
         try:
 
             bars = connector.fetch_latest_bars(limit=100)
