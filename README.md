@@ -10,6 +10,12 @@ OHLCV data, backtests every epoch and can trade live on the Phemex exchange.
 A Tkinter dashboard visualises the training progress while a small
 reinforcement learning agent tweaks hyper‑parameters over time.
 
+Recent updates added a policy‑gradient RL loop, optional technical indicators
+(SMA, RSI, MACD, ATR, Vortex, CMF, EMA, Donchian, Kijun, Tenkan) and a
+`HyperParams` dataclass loaded from ``master_config.json``.  The bot can now
+hedge long/short exposure and dynamically enable or disable indicators during
+training.
+
 ## Architecture
 
 ```
@@ -34,18 +40,21 @@ run_artibot.py ──> bot_app.run_bot ─────────────�
 python -m venv .venv && source .venv/bin/activate
 # either let the auto installer run on first launch …
 python run_artibot.py
+# Windows users can double‑click ``run_artibot.bat`` instead
 # …or install requirements yourself
 pip install torch openai ccxt pandas numpy matplotlib scikit-learn TA-Lib pytest
 ```
 
 The environment sets `NUMEXPR_MAX_THREADS` to the CPU count when the variable is
-not defined and loads a small NumPy 2.x compatibility shim. Set
+not defined, downgrades NumPy to the latest 1.x release for legacy packages and
+chooses the correct CPU or CUDA build of PyTorch automatically.  Set
 `ARTIBOT_SKIP_INSTALL=1` to disable the automatic installer.
 
 ## Configuration
 
 Create `master_config.json` with your credentials. The bot currently trades
-`BTCUSD` only so the symbol option was removed. Important keys:
+`BTCUSD` only so the symbol option was removed. Important keys include the new
+stop‑loss/take‑profit parameters and ATR threshold:
 
 ```json
 {
@@ -69,6 +78,9 @@ Create `master_config.json` with your credentials. The bot currently trades
   "MAX_DRAWDOWN": -0.3,
   "MIN_ENTROPY": 1.0,
   "MIN_PROFIT_FACTOR": 1.0,
+  "SL": 5.0,
+  "TP": 5.0,
+  "ATR_THRESHOLD_K": 1.5,
   "SHOW_WEIGHT_SELECTOR": false,
   "USE_PREV_WEIGHTS": true,
   "WEIGHTS_DIR": "weights",
@@ -113,7 +125,9 @@ cycle. Respond `y` for real trades on the live exchange.
 The Tkinter GUI displays several live metrics. The **Attention Weights** tab
 shows a 3D surface highlighting how the Transformer focuses on previous price
 bars. Higher peaks indicate the timesteps receiving the most attention and the
-surface updates live as training progresses.
+surface updates live as training progresses.  Current hyper‑parameters and
+indicator toggles are shown in real time so the RL agent's decisions are easy to
+track.
 
 ## Testing
 

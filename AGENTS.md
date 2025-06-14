@@ -3,9 +3,10 @@
 ## Project Overview
 
 Artibot trains a small Transformer on hourly market data and places orders on
-Phemex.  Training, live polling, the meta reinforcement agent and the Tkinter
+Phemex.  Training, live polling, the policy‑gradient meta agent and the Tkinter
 GUI all run in separate threads.  Dependencies are installed lazily on the first
-launch via `environment.ensure_dependencies()`.
+launch via `environment.ensure_dependencies()`.  Optional indicators can be
+enabled on the fly and the bot now supports hedging long/short exposure.
 
 ## Repository Structure
 
@@ -23,6 +24,9 @@ artibot/                      - production code
 │  ensemble.py               - ensemble controller
 │  training.py               - background training threads
 │  rl.py                     - meta-reinforcement agent
+│  hyperparams.py            - dataclasses for tuning values
+│  indicators.py             - optional technical indicators
+│  utils/                    - helper utilities (account, logging)
 │  backtest.py               - evaluation utilities
 │  metrics.py                - performance statistics
 │  validation.py             - monthly walk-forward checks
@@ -40,11 +44,13 @@ artibot/                      - production code
 | Name / path | Role | Parameters / config | Example |
 |-------------|------|--------------------|---------|
 | **run_artibot.py** | Command line entry for live trading. Prompts for live vs testnet and launches the GUI automatically. Trading stays disabled until backtest metrics enable the nuclear key. | reads `master_config.json` | `python run_artibot.py` |
+| **run_artibot.bat** | Windows helper that calls ``python run_artibot.py``. | none | double‑click in Explorer |
 | **run_bot** (`artibot.bot_app`) | Start training loop, live polling and GUI. | `max_epochs=None` | `import artibot; artibot.run_bot()` |
 | **csv_training_thread** (`artibot.training`) | Train on CSV data in a worker thread. | `ensemble`, `data`, `stop_event`, `config`, `max_epochs` | used inside `run_bot` |
 | **phemex_live_thread** (`artibot.training`) | Fetch recent bars from Phemex. | `connector`, `stop_event`, `poll_interval` | used inside `run_bot` |
 | **EnsembleModel** (`artibot.ensemble`) | Container for Transformer models. | `device`, `n_models=2`, `lr=3e-4`, `weight_decay=1e-4` | `ens = EnsembleModel(device)` |
-| **MetaTransformerRL** (`artibot.rl`) | Reinforcement learner that tweaks LR, WD and indicator periods. | `ensemble`, `lr=1e-3` | `agent = MetaTransformerRL(ens)` |
+| **HyperParams** (`artibot.hyperparams`) | Dataclass with tunable values loaded from `master_config.json`. | none | `hp = HyperParams()` |
+| **MetaTransformerRL** (`artibot.rl`) | Policy‑gradient agent that adjusts LR, WD and toggles indicators. | `ensemble`, `lr=1e-3` | `agent = MetaTransformerRL(ens)` |
 | **validate_and_gate** (`artibot.validation`) | Walk‑forward analysis and nuclear‑key gating. | `csv_path`, `config` | `validate_and_gate('data.csv', CONFIG)` |
 | **update_auto_pause** (`artibot.live_risk`) | Pause trading when metrics fall below limits. | `sharpe`, `drawdown`, `ts=None` | `update_auto_pause(1.2, -0.05)` |
 | **scripts/smoke.py** | Ten‑epoch smoke test. | `--summary` writes key metrics | `python scripts/smoke.py --summary` |
