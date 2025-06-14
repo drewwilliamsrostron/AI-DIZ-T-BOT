@@ -143,11 +143,31 @@ class TradingGUI:
 
         self.frame_train = ttk.Frame(self.notebook)
         self.notebook.add(self.frame_train, text="Training vs. Validation")
-        self.fig_train, (self.ax_loss, self.ax_equity_train) = plt.subplots(
-            2, 1, figsize=(5, 6)
-        )
+        self.fig_train = plt.figure(figsize=(5, 8))
+        self.ax_loss = self.fig_train.add_subplot(3, 1, 1)
+        self.ax_attention = self.fig_train.add_subplot(3, 1, 2, projection="3d")
+        self.ax_equity_train = self.fig_train.add_subplot(3, 1, 3)
         self.canvas_train = FigureCanvasTkAgg(self.fig_train, master=self.frame_train)
         self.canvas_train.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.loss_comment_label = ttk.Label(
+            self.frame_train,
+            text="",
+            font=("Helvetica", 9),
+            justify=tk.LEFT,
+            wraplength=400,
+        )
+        self.loss_comment_label.pack(fill=tk.X, padx=5, pady=5)
+        self.attention_info = ttk.Label(
+            self.frame_train,
+            text=(
+                "This 3D surface shows which past price bars the model focuses on.\n"
+                "Higher peaks mean more attention. Updated live."
+            ),
+            font=("Helvetica", 9),
+            justify=tk.LEFT,
+            wraplength=400,
+        )
+        self.attention_info.pack(fill=tk.X, padx=5, pady=5)
 
         self.frame_live = ttk.Frame(self.notebook)
         self.notebook.add(self.frame_live, text="Phemex Live Price")
@@ -163,26 +183,6 @@ class TradingGUI:
         )
         self.canvas_backtest.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-        self.frame_details = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_details, text="Attention Weights")
-        self.fig_details, self.ax_details = plt.subplots(
-            figsize=(5, 3), subplot_kw={"projection": "3d"}
-        )
-        self.canvas_details = FigureCanvasTkAgg(
-            self.fig_details, master=self.frame_details
-        )
-        self.canvas_details.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        self.attention_info = ttk.Label(
-            self.frame_details,
-            text=(
-                "This 3D surface shows which past price bars the model focuses on.\n"
-                "Higher peaks mean more attention. Updated live."
-            ),
-            font=("Helvetica", 9),
-            justify=tk.LEFT,
-            wraplength=400,
-        )
-        self.attention_info.pack(fill=tk.X, padx=5, pady=5)
         # previous attention weights for smooth animations
         self._last_attention: np.ndarray | None = None
         self._surf = None
@@ -610,14 +610,35 @@ class TradingGUI:
                 try:
                     self._surf.remove()
                 except NotImplementedError:
-                    # Some Matplotlib versions do not support removing 3D
-                    # surfaces.  Fall back to clearing the axis so we don't
-                    # accumulate artists.
-                    self.ax_details.cla()
-            self._surf = self.ax_details.plot_surface(X, Y, current, cmap="viridis")
-            self.canvas_details.draw()
-            self.canvas_details.flush_events()
+                    self.ax_attention.cla()
+            self._surf = self.ax_attention.plot_surface(X, Y, current, cmap="viridis")
+            self.canvas_train.draw()
+            self.canvas_train.flush_events()
         self._last_attention = new_data.copy()
+
+    def _loss_comment(self) -> str:
+        """Return a simple English description of training vs validation loss."""
+        train = list(G.global_training_loss)
+        val = [v for v in G.global_validation_loss if v is not None]
+        if not train or not val:
+            return "Waiting for validation data..."
+        comment = []
+        if val[-1] > train[-1]:
+            comment.append(
+                "orange above blue - validation loss higher, possible overfitting"
+            )
+        else:
+            comment.append(
+                "blue above orange - training loss higher, model still learning"
+            )
+        if len(train) >= 2 and len(val) >= 2:
+            down_train = train[-1] < train[-2]
+            down_val = val[-1] < val[-2]
+            if down_train and down_val:
+                comment.append("both lines going down - good")
+            elif not down_train and not down_val:
+                comment.append("both lines going up - might need tuning")
+        return ". ".join(comment)
 
     def update_dashboard(self):
         """Refresh all dashboard widgets from shared state."""
@@ -634,6 +655,7 @@ class TradingGUI:
             xv, yv = zip(*val_filtered)
             self.ax_loss.plot(xv, yv, color="orange", marker="x", label="Val")
         self.ax_loss.legend()
+        self.loss_comment_label.config(text=self._loss_comment())
 
         self.ax_equity_train.clear()
         self.ax_equity_train.set_title("Equity: Current (red) vs Best (green)")
@@ -693,8 +715,8 @@ class TradingGUI:
             )
         self.canvas_backtest.draw()
 
-        self.ax_details.clear()
-        self.ax_details.set_title("Live Attention Weights")
+        self.ax_attention.clear()
+        self.ax_attention.set_title("Live Attention Weights")
         if G.global_last_attention is not None:
             data = np.array(G.global_last_attention)
             avg = data.mean(axis=0) if data.ndim == 3 else data
@@ -705,15 +727,15 @@ class TradingGUI:
                 self._animate_attention(X, Y, avg)
             else:
                 x_ = np.arange(len(avg))
-                self.ax_details.plot(x_, avg, marker="o", color="purple")
+                self.ax_attention.plot(x_, avg, marker="o", color="purple")
                 self._last_attention = None
         elif G.global_attention_weights_history:
             x_ = list(range(1, len(G.global_attention_weights_history) + 1))
-            self.ax_details.plot(
+            self.ax_attention.plot(
                 x_, G.global_attention_weights_history, marker="o", color="purple"
             )
             self._last_attention = None
-        self.canvas_details.draw()
+        self.canvas_train.draw()
 
         for row in self.trade_tree.get_children():
             self.trade_tree.delete(row)
