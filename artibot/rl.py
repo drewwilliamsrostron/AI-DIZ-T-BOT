@@ -248,16 +248,17 @@ class MetaTransformerRL:
             indicator_hp.use_cmf = not indicator_hp.use_cmf
         if act.get("toggle_ichimoku"):
             hp.use_ichimoku = not hp.use_ichimoku
-        if act.get("toggle_ema"):
-            indicator_hp.use_ema = not indicator_hp.use_ema
-        if act.get("toggle_donchian"):
-            indicator_hp.use_donchian = not indicator_hp.use_donchian
-        if act.get("toggle_kijun"):
-            indicator_hp.use_kijun = not indicator_hp.use_kijun
-        if act.get("toggle_tenkan"):
-            indicator_hp.use_tenkan = not indicator_hp.use_tenkan
-        if act.get("toggle_disp"):
-            indicator_hp.use_displacement = not indicator_hp.use_displacement
+
+        for key, flag in [
+            ("toggle_ema", "use_ema"),
+            ("toggle_donchian", "use_donchian"),
+            ("toggle_kijun", "use_kijun"),
+            ("toggle_tenkan", "use_tenkan"),
+            ("toggle_disp", "use_displacement"),
+        ]:
+            if act.get(key):
+                cur = getattr(indicator_hp, flag)
+                setattr(indicator_hp, flag, not cur)
 
         indicator_hp.sma_period = max(
             2, indicator_hp.sma_period + int(act.get("d_sma_period", 0))
@@ -318,12 +319,19 @@ class MetaTransformerRL:
             )
         )
 
+        gross = hp.long_frac + hp.short_frac
+        max_gross = getattr(G, "MAX_GROSS_PCT", 1.0)
+        if gross > max_gross:
+            scale = max_gross / gross
+            hp.long_frac *= scale
+            hp.short_frac *= scale
+
         act_str = ", ".join(
             f"{k}={v:+.2f}" if isinstance(v, float) else f"{k}={v}"
             for k, v in act.items()
         )
         logging.info(
-            "META_MUTATION %s sl=%.2f tp=%.2f atr=%d vortex=%d cmf=%d, ema=%d, don=%d, kij=%d, ten=%d, disp=%d, long%%=%.3f, short%%=%.3f",
+            "META_MUTATION %s sl=%.2f tp=%.2f atr=%d vortex=%d cmf=%d, ema=%d, don=%d, kij=%d, ten=%d, disp=%d, long=%.3f short=%.3f",
             act_str,
             hp.sl,
             hp.tp,
@@ -360,6 +368,7 @@ def meta_control_loop(
     # old initial state was just 2 dims. Now we add (sharpe, dd, trades, days_in_profit)
     prev_r = G.global_composite_reward if G.global_composite_reward else 0.0
     best_r = G.global_best_composite_reward if G.global_best_composite_reward else 0.0
+    prev_reward = prev_r
     st_sharpe = G.global_sharpe
     st_dd = G.global_max_drawdown
     st_trades = G.global_num_trades
@@ -400,8 +409,12 @@ def meta_control_loop(
             G.status_sleep("Meta agent sleeping", "", interval)
 
             curr2 = G.global_composite_reward if G.global_composite_reward else 0.0
-            rew_delta = curr2 - curr_r
-            agent.update(state, 0, rew_delta, new_state, logp, val_s)
+            reward_raw = curr2 - prev_reward
+            agent.reward_ema = 0.95 * agent.reward_ema + 0.05 * abs(reward_raw)
+            shaped_r = reward_raw / (agent.reward_ema + 1e-8)
+            agent.update(state, 0, shaped_r, new_state, logp, val_s)
+            prev_reward = curr2
+            rew_delta = shaped_r
 
             G.set_status(
                 "Meta agent",

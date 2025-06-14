@@ -27,12 +27,32 @@ run_artibot.py ──> bot_app.run_bot ─────────────�
                            │
                            └─ meta_control_loop (RL)
                                  │
-                                 ▼
-                              EnsembleModel
-                                   │
-                                   ▼
-                                TradingGUI
+                                ▼
+                             EnsembleModel
+                                  │
+                                  ▼
+                               TradingGUI
 ```
+
+## Trading Logic
+
+Long and short exposure are controlled by `long_frac` and `short_frac` in
+`HyperParams`. The meta agent adjusts them between 0–10 % of account equity.
+Gross exposure is capped at 12 % so the bot never risks more capital than
+configured.
+
+Indicator usage can be toggled on a per‑bar basis. New flags include `USE_EMA`,
+`USE_DONCHIAN`, `USE_KIJUN`, `USE_TENKAN` and `USE_DISPLACEMENT` with matching
+period settings. All fields live in `IndicatorHyperparams` and can be changed
+during training.
+
+| Flag | Period field |
+|------|--------------|
+| `USE_EMA` | `EMA_PERIOD` |
+| `USE_DONCHIAN` | `DONCHIAN_PERIOD` |
+| `USE_KIJUN` | `KIJUN_PERIOD` |
+| `USE_TENKAN` | `TENKAN_PERIOD` |
+| `USE_DISPLACEMENT` | `DISPLACEMENT` |
 
 ## Installation
 

@@ -38,8 +38,9 @@ class HyperParams:
     atr_threshold_k: float = float(_CONFIG.get("ATR_THRESHOLD_K", 1.5))
     conf_threshold: float = float(_CONFIG.get("CONF_THRESHOLD", 5e-5))
 
-    long_frac: float = 0.0  # fraction of equity in LONG contracts
-    short_frac: float = 0.0  # fraction in SHORT contracts
+    # desired exposure fractions for each side (0–10 % of equity)
+    long_frac: float = 0.00
+    short_frac: float = 0.00
 
     indicator_hp: "IndicatorHyperparams" = None
 

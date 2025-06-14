@@ -63,8 +63,9 @@ risk_fraction = 0.03
 GLOBAL_THRESHOLD = 5e-5
 global_min_hold_seconds = 1800
 
-# Maximum exposure per side as a fraction of equity
+# Maximum exposure per side and total gross exposure
 MAX_SIDE_EXPOSURE_PCT = 0.10
+MAX_GROSS_PCT = 0.12
 
 # Desired long/short fractions controlled by the meta agent
 global_long_frac = 0.0
