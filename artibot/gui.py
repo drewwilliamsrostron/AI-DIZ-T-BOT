@@ -659,6 +659,13 @@ class TradingGUI:
 
         self.ax_equity_train.clear()
         self.ax_equity_train.set_title("Equity: Current (red) vs Best (green)")
+        # draw baseline at 0% for quick reference
+        self.ax_equity_train.axhline(
+            0.0,
+            color="black",
+            linestyle="-",
+            linewidth=1,
+        )
         try:
             valid_eq = [
                 (t, b)
