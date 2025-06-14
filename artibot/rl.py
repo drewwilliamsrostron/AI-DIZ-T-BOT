@@ -133,6 +133,10 @@ class MetaTransformerRL:
         self.value_range = value_range
         self.target_range = target_range
 
+        # Running reward baseline to stabilise updates
+        self.reward_baseline = 0.0
+        self.baseline_alpha = 0.1
+
         # (7) Scheduled exploration
         # Change epsilon parameters for longer exploration
         self.eps_start = 0.5  # Increased from 0.3
@@ -168,8 +172,13 @@ class MetaTransformerRL:
         lp_s = dist.log_prob(torch.tensor([action_idx]))
         with torch.no_grad():
             _, val_ns = self.model(ns)
-
-        target = reward + self.gamma * val_ns.item()
+        # Normalise reward by subtracting a running baseline to emphasise
+        # improvements over time
+        self.reward_baseline = (
+            1 - self.baseline_alpha
+        ) * self.reward_baseline + self.baseline_alpha * reward
+        norm_reward = reward - self.reward_baseline
+        target = norm_reward + self.gamma * val_ns.item()
         if not math.isfinite(target):
             logging.warning("Non-finite target: %s", target)
             target = self.target_range[1] if target > 0 else self.target_range[0]
