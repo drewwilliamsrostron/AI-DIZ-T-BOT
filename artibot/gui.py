@@ -251,6 +251,12 @@ class TradingGUI:
         self.monthly_perf_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         monthly_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
+        self.frame_timeline = ttk.Frame(self.notebook)
+        self.notebook.add(self.frame_timeline, text="Activity Timeline")
+        self.fig_tl, self.ax_tl = plt.subplots(figsize=(5, 3))
+        self.canvas_tl = FigureCanvasTkAgg(self.fig_tl, master=self.frame_timeline)
+        self.canvas_tl.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
         self.info_frame = ttk.LabelFrame(self.sidebar, text="Performance")
         self.info_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         disclaimer_text = "NOT INVESTMENT ADVICE! Demo only."
@@ -785,6 +791,25 @@ class TradingGUI:
                 x2, G.global_backtest_profit, marker="o", color="green"
             )
         self.canvas_backtest.draw()
+
+        # ---------- Activity Timeline ----------
+        self.ax_tl.clear()
+        depth = G.timeline_depth
+        idx = G.timeline_index
+        xs = np.arange(depth)
+        inds = np.roll(G.timeline_ind_on, -idx, axis=0)
+        trade = np.roll(G.timeline_trades, -idx)
+        names = ["EMA", "SMA", "RSI", "KIJ", "TEN", "DISP"]
+        for k in range(inds.shape[1]):
+            self.ax_tl.plot(xs, k + inds[:, k] * 0.8, lw=0.8, label=names[k])
+        self.ax_tl.plot(xs, 6 + trade * 0.8, lw=1.1, c="black", label="Trade ON")
+        self.ax_tl.set_ylim(-0.5, 7.5)
+        self.ax_tl.set_yticks([])
+        self.ax_tl.set_xlabel("Bars")
+        self.ax_tl.set_title("Indicators ON/OFF & Trade State")
+        if idx > 0:
+            self.ax_tl.legend(ncol=4, fontsize=6, framealpha=0.3)
+        self.canvas_tl.draw()
 
         self.ax_attention.clear()
         self.ax_attention.set_title("Live Attention Weights")

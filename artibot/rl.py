@@ -350,6 +350,22 @@ class MetaTransformerRL:
 
         G.sync_globals(hp, indicator_hp)
 
+        ind = indicator_hp
+        i = G.timeline_index % G.timeline_depth
+        G.timeline_ind_on[i] = np.array(
+            [
+                ind.use_ema,
+                ind.use_sma,
+                ind.use_rsi,
+                ind.use_kijun,
+                ind.use_tenkan,
+                ind.use_displacement,
+            ],
+            dtype=np.uint8,
+        )
+        G.timeline_trades[i] = 1 if (hp.long_frac > 0 or hp.short_frac > 0) else 0
+        G.timeline_index += 1
+
 
 ###############################################################################
 # meta_control_loop

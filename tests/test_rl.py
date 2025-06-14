@@ -51,6 +51,10 @@ def load_rl_module():
     stub.global_days_in_profit = 0
     stub.global_status_primary = ""
     stub.global_status_secondary = ""
+    stub.timeline_depth = 300
+    stub.timeline_index = 0
+    stub.timeline_ind_on = np.zeros((stub.timeline_depth, 6), dtype=np.uint8)
+    stub.timeline_trades = np.zeros(stub.timeline_depth, dtype=np.uint8)
     sys.modules["artibot.globals"] = stub
 
     base = Path(__file__).resolve().parent.parent / "artibot"
