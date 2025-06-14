@@ -142,16 +142,31 @@ class TradingGUI:
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
         self.frame_train = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_train, text="Training vs. Validation")
+        self.notebook.add(self.frame_train, text="MAIN - TRAINING VS VALIDATION")
+        self.train_canvas = tk.Canvas(self.frame_train)
+        train_scroll = ttk.Scrollbar(
+            self.frame_train, orient="vertical", command=self.train_canvas.yview
+        )
+        self.train_canvas.configure(yscrollcommand=train_scroll.set)
+        self.train_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        train_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.train_inner = ttk.Frame(self.train_canvas)
+        self.train_canvas.create_window((0, 0), window=self.train_inner, anchor="nw")
+        self.train_inner.bind(
+            "<Configure>",
+            lambda e: self.train_canvas.configure(
+                scrollregion=self.train_canvas.bbox("all")
+            ),
+        )
         self.fig_train = plt.figure(figsize=(5, 10))
         self.ax_loss = self.fig_train.add_subplot(4, 1, 1)
         self.ax_attention = self.fig_train.add_subplot(4, 1, 2, projection="3d")
         self.ax_equity_train = self.fig_train.add_subplot(4, 1, 3)
         self.ax_trades_time = self.fig_train.add_subplot(4, 1, 4)
-        self.canvas_train = FigureCanvasTkAgg(self.fig_train, master=self.frame_train)
+        self.canvas_train = FigureCanvasTkAgg(self.fig_train, master=self.train_inner)
         self.canvas_train.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         self.loss_comment_label = ttk.Label(
-            self.frame_train,
+            self.train_inner,
             text="",
             font=("Helvetica", 9),
             justify=tk.LEFT,
@@ -159,7 +174,7 @@ class TradingGUI:
         )
         self.loss_comment_label.pack(fill=tk.X, padx=5, pady=5)
         self.attention_info = ttk.Label(
-            self.frame_train,
+            self.train_inner,
             text=(
                 "This 3D surface shows which past price bars the model focuses on.\n"
                 "Higher peaks mean more attention. Updated live."
@@ -208,12 +223,26 @@ class TradingGUI:
         self.frame_yearly_perf = ttk.Frame(self.notebook)
         self.notebook.add(self.frame_yearly_perf, text="Best Strategy Yearly Perf")
         self.yearly_perf_text = tk.Text(self.frame_yearly_perf, width=50, height=20)
-        self.yearly_perf_text.pack(fill=tk.BOTH, expand=True)
+        yearly_scroll = ttk.Scrollbar(
+            self.frame_yearly_perf,
+            orient="vertical",
+            command=self.yearly_perf_text.yview,
+        )
+        self.yearly_perf_text.configure(yscrollcommand=yearly_scroll.set)
+        self.yearly_perf_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        yearly_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.frame_monthly_perf = ttk.Frame(self.notebook)
         self.notebook.add(self.frame_monthly_perf, text="Best Strategy Monthly Results")
         self.monthly_perf_text = tk.Text(self.frame_monthly_perf, width=50, height=20)
-        self.monthly_perf_text.pack(fill=tk.BOTH, expand=True)
+        monthly_scroll = ttk.Scrollbar(
+            self.frame_monthly_perf,
+            orient="vertical",
+            command=self.monthly_perf_text.yview,
+        )
+        self.monthly_perf_text.configure(yscrollcommand=monthly_scroll.set)
+        self.monthly_perf_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        monthly_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.info_frame = ttk.LabelFrame(self.sidebar, text="Performance")
         self.info_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -579,7 +608,12 @@ class TradingGUI:
         )
         self.ai_output_label.pack(anchor="n")
         self.ai_output_text = tk.Text(self.frame_ai, width=40, height=10, wrap="word")
-        self.ai_output_text.pack(fill=tk.BOTH, expand=True)
+        ai_scroll = ttk.Scrollbar(
+            self.frame_ai, orient="vertical", command=self.ai_output_text.yview
+        )
+        self.ai_output_text.configure(yscrollcommand=ai_scroll.set)
+        self.ai_output_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        ai_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.frame_ai_log = ttk.Frame(self.sidebar)
         self.frame_ai_log.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -643,6 +677,7 @@ class TradingGUI:
 
     def update_dashboard(self):
         """Refresh all dashboard widgets from shared state."""
+        tpos = self.train_canvas.yview()
         self.ax_loss.clear()
         self.ax_loss.set_title("Training vs. Validation Loss")
         x1 = range(1, len(G.global_training_loss) + 1)
@@ -779,17 +814,21 @@ class TradingGUI:
         else:
             self.trade_tree.insert("", tk.END, values=("No data", "", "", "", "", ""))
 
+        ypos = self.yearly_perf_text.yview()
         self.yearly_perf_text.delete("1.0", tk.END)
         if G.global_best_yearly_stats_table:
             self.yearly_perf_text.insert(tk.END, G.global_best_yearly_stats_table)
         else:
             self.yearly_perf_text.insert(tk.END, "No yearly data")
+        self.yearly_perf_text.yview_moveto(ypos[0])
 
+        mpos = self.monthly_perf_text.yview()
         self.monthly_perf_text.delete("1.0", tk.END)
         if G.global_best_monthly_stats_table:
             self.monthly_perf_text.insert(tk.END, G.global_best_monthly_stats_table)
         else:
             self.monthly_perf_text.insert(tk.END, "No monthly data")
+        self.monthly_perf_text.yview_moveto(mpos[0])
 
         pred_str = G.global_current_prediction if G.global_current_prediction else "N/A"
         conf = G.global_ai_confidence if G.global_ai_confidence else 0.0
@@ -916,8 +955,10 @@ class TradingGUI:
             text=f"Best Avg Loss: {G.global_best_avg_loss:.3f}"
         )
 
+        aipos = self.ai_output_text.yview()
         self.ai_output_text.delete("1.0", tk.END)
         self.ai_output_text.insert(tk.END, G.global_ai_adjustments)
+        self.ai_output_text.yview_moveto(aipos[0])
 
         log_lines = G.global_ai_adjustments_log.strip().splitlines()
         if len(log_lines) > self._log_lines:
@@ -973,6 +1014,8 @@ class TradingGUI:
             self.nuclear_button.config(state=tk.DISABLED)
 
         update_auto_pause(G.global_sharpe, G.global_max_drawdown)
+
+        self.train_canvas.yview_moveto(tpos[0])
 
         self.root.after(self.update_interval, self.update_dashboard)
 
