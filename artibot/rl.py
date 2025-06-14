@@ -241,14 +241,14 @@ class MetaTransformerRL:
             np.clip(
                 hp.long_frac + float(act.get("d_long_frac", 0.0)),
                 0.0,
-                G.MAX_SIDE_EXPOSURE_PCT,
+                getattr(G, "MAX_SIDE_EXPOSURE_PCT", 1.0),
             )
         )
         hp.short_frac = float(
             np.clip(
                 hp.short_frac + float(act.get("d_short_frac", 0.0)),
                 0.0,
-                G.MAX_SIDE_EXPOSURE_PCT,
+                getattr(G, "MAX_SIDE_EXPOSURE_PCT", 1.0),
             )
         )
 

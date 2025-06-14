@@ -607,7 +607,13 @@ class TradingGUI:
         for _ in range(self.anim_steps):
             current += diff
             if self._surf is not None:
-                self._surf.remove()
+                try:
+                    self._surf.remove()
+                except NotImplementedError:
+                    # Some Matplotlib versions do not support removing 3D
+                    # surfaces.  Fall back to clearing the axis so we don't
+                    # accumulate artists.
+                    self.ax_details.cla()
             self._surf = self.ax_details.plot_surface(X, Y, current, cmap="viridis")
             self.canvas_details.draw()
             self.canvas_details.flush_events()
