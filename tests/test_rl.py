@@ -75,9 +75,25 @@ def test_pick_action_returns_dict():
     agent = rl.MetaTransformerRL(ensemble=None)
     act, logp, val = agent.pick_action(np.zeros(agent.model.state_dim))
     assert isinstance(act, dict)
-    assert set(act.keys()) == set(rl.ACTION_KEYS)
+    assert set(act.keys()).issubset(set(rl.ACTION_KEYS))
     assert torch.is_tensor(logp)
     assert torch.is_tensor(val)
+
+
+def test_pick_action_deterministic_without_exploration():
+    rl = load_rl_module()
+    agent = rl.MetaTransformerRL(ensemble=None)
+    agent.eps_start = 0.0
+    agent.eps_end = 0.0
+    rl.torch.manual_seed(0)
+    rl._random.seed(0)
+    state = rl.np.zeros(agent.model.state_dim)
+    act1, _, _ = agent.pick_action(state)
+    rl.torch.manual_seed(0)
+    rl._random.seed(0)
+    agent.steps = 0
+    act2, _, _ = agent.pick_action(state)
+    assert act1 == act2
 
 
 def test_apply_action_custom_space():

@@ -159,9 +159,32 @@ class MetaTransformerRL:
             self._model.state_dim = self.state_dim
 
     def pick_action(self, state_np):
-        act = self.model.sample_action()
-        logp = torch.tensor(0.0)
-        val = torch.tensor([0.0])
+        """Return an action dictionary using an epsilon-greedy policy."""
+
+        state = torch.tensor(state_np, dtype=torch.float32).unsqueeze(0)
+        with torch.no_grad():
+            logits, val = self.model(state)
+
+        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * (
+            self.eps_decay**self.steps
+        )
+        self.steps += 1
+
+        if random.random() < eps_threshold:
+            act = self.model.sample_action()
+            logp = torch.tensor(0.0)
+            return act, logp, val
+
+        dist = torch.distributions.Categorical(logits=logits)
+        action_idx = dist.sample()
+        logp = dist.log_prob(action_idx)
+        key = self.action_keys[action_idx.item()]
+        low, high = ACTION_SPACE[key]
+        if isinstance(low, int) and isinstance(high, int):
+            value = random.randint(low, high)
+        else:
+            value = random.uniform(low, high)
+        act = {key: value}
         return act, logp, val
 
     def update(self, state_np, action_idx, reward, next_state_np, logprob, value):
