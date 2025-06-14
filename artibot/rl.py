@@ -133,6 +133,10 @@ class MetaTransformerRL:
         self.value_range = value_range
         self.target_range = target_range
 
+        # Running reward baseline to stabilise updates
+        self.reward_baseline = 0.0
+        self.baseline_alpha = 0.1
+
         # (7) Scheduled exploration
         # Change epsilon parameters for longer exploration
         self.eps_start = 0.5  # Increased from 0.3
@@ -155,9 +159,32 @@ class MetaTransformerRL:
             self._model.state_dim = self.state_dim
 
     def pick_action(self, state_np):
-        act = self.model.sample_action()
-        logp = torch.tensor(0.0)
-        val = torch.tensor([0.0])
+        """Return an action dictionary using an epsilon-greedy policy."""
+
+        state = torch.tensor(state_np, dtype=torch.float32).unsqueeze(0)
+        with torch.no_grad():
+            logits, val = self.model(state)
+
+        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * (
+            self.eps_decay**self.steps
+        )
+        self.steps += 1
+
+        if random.random() < eps_threshold:
+            act = self.model.sample_action()
+            logp = torch.tensor(0.0)
+            return act, logp, val
+
+        dist = torch.distributions.Categorical(logits=logits)
+        action_idx = dist.sample()
+        logp = dist.log_prob(action_idx)
+        key = self.action_keys[action_idx.item()]
+        low, high = ACTION_SPACE[key]
+        if isinstance(low, int) and isinstance(high, int):
+            value = random.randint(low, high)
+        else:
+            value = random.uniform(low, high)
+        act = {key: value}
         return act, logp, val
 
     def update(self, state_np, action_idx, reward, next_state_np, logprob, value):
@@ -168,8 +195,13 @@ class MetaTransformerRL:
         lp_s = dist.log_prob(torch.tensor([action_idx]))
         with torch.no_grad():
             _, val_ns = self.model(ns)
-
-        target = reward + self.gamma * val_ns.item()
+        # Normalise reward by subtracting a running baseline to emphasise
+        # improvements over time
+        self.reward_baseline = (
+            1 - self.baseline_alpha
+        ) * self.reward_baseline + self.baseline_alpha * reward
+        norm_reward = reward - self.reward_baseline
+        target = norm_reward + self.gamma * val_ns.item()
         if not math.isfinite(target):
             logging.warning("Non-finite target: %s", target)
             target = self.target_range[1] if target > 0 else self.target_range[0]
