@@ -13,6 +13,12 @@ import hashlib
 import os
 import shutil
 import numpy as np
+import sys
+import importlib.machinery as _machinery
+
+if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) is None:
+    sys.modules["openai"].__spec__ = _machinery.ModuleSpec("openai", None)
+
 import torch
 import torch.nn as nn
 import torch.optim as optim

@@ -1,5 +1,7 @@
 """Background worker that writes contextual features to DuckDB every 15 min."""
 
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import logging
@@ -10,13 +12,16 @@ from typing import List
 import numpy as np
 import requests
 
-try:  # schedule may be missing on first run
-    import schedule
-except ModuleNotFoundError:  # pragma: no cover - installer path
-    from artibot.auto_install import install as _auto
+from .environment import ensure_dependencies
+import importlib.machinery as _machinery
+import sys
 
-    _auto("schedule")
-    import schedule
+ensure_dependencies()
+
+if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) is None:
+    sys.modules["openai"].__spec__ = _machinery.ModuleSpec("openai", None)
+
+import schedule
 import yfinance as yf
 from transformers import (
     AutoTokenizer,

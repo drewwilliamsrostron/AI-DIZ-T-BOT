@@ -8,6 +8,12 @@ from typing import NamedTuple
 import numpy as np
 import pandas as pd
 import talib
+import sys
+import importlib.machinery as _machinery
+
+if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) is None:
+    sys.modules["openai"].__spec__ = _machinery.ModuleSpec("openai", None)
+
 import torch
 
 from .utils import rolling_zscore
