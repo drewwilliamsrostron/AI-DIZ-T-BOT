@@ -22,36 +22,35 @@ import numpy as np
 _DB_PATH = os.path.join(os.path.dirname(__file__), "_features.duckdb")
 _con = duckdb.connect(_DB_PATH, read_only=False)
 
-# create-if-missing
-_con.execute(
-    """
-CREATE TABLE IF NOT EXISTS news_sentiment  (
-    ts TIMESTAMP PRIMARY KEY,
-    score DOUBLE
-);
-"""
-)
-_con.execute(
-    """
-CREATE TABLE IF NOT EXISTS macro_surprise (
-    ts TIMESTAMP PRIMARY KEY,
-    surprise_z DOUBLE
-);
-"""
-)
-_con.execute(
-    """
-CREATE TABLE IF NOT EXISTS realised_vol (
-    ts TIMESTAMP PRIMARY KEY,
-    rvol DOUBLE
-);
-"""
-)
+# ---------------------------------------------------------------------------
+# table creation + idempotent migrations
+# ---------------------------------------------------------------------------
+_DDL = {
+    "news_sentiment": ("score", "DOUBLE"),
+    "macro_surprise": ("surprise_z", "DOUBLE"),
+    "realised_vol": ("rvol", "DOUBLE"),
+}
 
-# migrate-if-old (adds missing columns without raising if they already exist)
-_con.execute("ALTER TABLE news_sentiment  ADD COLUMN IF NOT EXISTS score      DOUBLE;")
-_con.execute("ALTER TABLE macro_surprise ADD COLUMN IF NOT EXISTS surprise_z DOUBLE;")
-_con.execute("ALTER TABLE realised_vol  ADD COLUMN IF NOT EXISTS rvol        DOUBLE;")
+
+def _ensure_tables() -> None:
+    """Create tables and add missing columns if necessary."""
+
+    _con.execute(
+        """CREATE TABLE IF NOT EXISTS news_sentiment (ts TIMESTAMP PRIMARY KEY);"""
+    )
+    _con.execute(
+        """CREATE TABLE IF NOT EXISTS macro_surprise (ts TIMESTAMP PRIMARY KEY);"""
+    )
+    _con.execute(
+        """CREATE TABLE IF NOT EXISTS realised_vol (ts TIMESTAMP PRIMARY KEY);"""
+    )
+
+    for tbl, (col, typ) in _DDL.items():
+        _con.execute(f"ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS {col} {typ};")
+
+
+_ensure_tables()
+
 
 ###############################################################################
 #  ingestion helpers
@@ -76,20 +75,23 @@ def upsert_rvol(ts: int, rvol: float) -> None:
         (_dt.datetime.fromtimestamp(ts), float(rvol)),
     )
 
+
 ###############################################################################
 #  retrieval helpers (hourly resolution, last-known-value)
 ###############################################################################
 def _fetch_scalar(column: str, table: str, ts: int) -> float:
-    """Return the most recent value <= *ts* from *table.column* (or 0.0)."""
-    res = _con.execute(
-        f"""SELECT {column}
-              FROM {table}
-             WHERE ts <= ?
-         ORDER BY ts DESC
-            LIMIT 1""",
-        (_dt.datetime.fromtimestamp(ts),),
-    ).fetchone()
-    return float(res[0]) if res else 0.0
+    """Return the most recent value <= *ts* from *table.column* (or ``0.0``)."""
+
+    sql = f"SELECT {column} FROM {table} WHERE ts<=? ORDER BY ts DESC LIMIT 1"
+    try:
+        res = _con.execute(sql, (_dt.datetime.fromtimestamp(ts),)).fetchone()
+        return float(res[0]) if res else 0.0
+    except (duckdb.InvalidInputException, duckdb.BinderException) as exc:
+        if "column" in str(exc).lower():
+            _ensure_tables()
+            res = _con.execute(sql, (_dt.datetime.fromtimestamp(ts),)).fetchone()
+            return float(res[0]) if res else 0.0
+        raise
 
 
 def news_sentiment(ts: int) -> np.float32:
@@ -102,3 +104,26 @@ def macro_surprise(ts: int) -> np.float32:
 
 def realised_vol(ts: int) -> np.float32:
     return np.float32(_fetch_scalar("rvol", "realised_vol", ts))
+
+
+# ---------------------------------------------------------------------------
+# CLI helper:  python -m artibot.feature_store --repair
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    import sys
+    import json
+
+    if "--repair" in sys.argv:
+        _ensure_tables()
+        print("feature_store: schema verified / repaired ✅")
+        sys.exit(0)
+
+    if "--info" in sys.argv:
+        info = {
+            "tables": _con.execute(
+                "SELECT table_name, column_name, column_type "
+                "FROM duckdb_columns WHERE table_schema='main'"
+            ).fetchall()
+        }
+        print(json.dumps(info, indent=2))
+        sys.exit(0)
