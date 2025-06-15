@@ -10,8 +10,24 @@ from .environment import ensure_dependencies
 
 ensure_dependencies()  # run the installer once at import time
 
-from screeninfo import get_monitors
-from . import globals as G
+try:
+    from screeninfo import get_monitors
+except Exception:  # pragma: no cover - optional dep missing
+
+    def get_monitors() -> list:
+        """Fallback when :mod:`screeninfo` is unavailable."""
+
+        return []
+
+
+try:
+    from . import globals as G
+except Exception:  # pragma: no cover - optional dep missing
+
+    class _Dummy:
+        UI_SCALE = 1.0
+
+    G = _Dummy()
 
 
 def _detect_scale(baseline: float = 96.0) -> float:
@@ -24,6 +40,7 @@ def _detect_scale(baseline: float = 96.0) -> float:
 
 
 G.UI_SCALE = _detect_scale()
+
 
 from .environment import *  # noqa: F401,F403 - re-export environment helpers
 

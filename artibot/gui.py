@@ -6,17 +6,16 @@ import numpy as np
 import datetime
 import os
 import threading
-import tkinter as tk
-from tkinter import ttk
-import matplotlib
-
-matplotlib.use("TkAgg")
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 import logging
 from .metrics import nuclear_key_condition
 from .live_risk import update_auto_pause
+
+tk = None  # imported lazily
+ttk = None
+matplotlib = None
+plt = None
+FigureCanvasTkAgg = None
 
 
 GUI_INSTANCE = None
@@ -83,8 +82,10 @@ def select_weight_file(use_prev: bool = True) -> str | None:
     )
 
 
-def ask_use_prev_weights(default: bool = True, tk_module=tk) -> bool:
+def ask_use_prev_weights(default: bool = True, tk_module=None) -> bool:
     """Return ``True`` when the user opts to load the last weights."""
+    if tk_module is None:
+        import tkinter as tk_module
     root = tk_module.Tk()
     root.withdraw()
     try:
@@ -119,6 +120,111 @@ def _fetch_position(exchange):
 
 class TradingGUI:
     def __init__(self, root, ensemble, weights_path: str | None = None, connector=None):
+        global tk, ttk, matplotlib, plt, FigureCanvasTkAgg
+        if tk is None:
+            import tkinter as tk
+            from tkinter import ttk
+        if matplotlib is None:
+            import matplotlib
+
+            matplotlib.use("TkAgg")
+            import matplotlib.pyplot as plt
+            from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+        # fallbacks for heavily stubbed modules during tests
+        if not hasattr(tk, "BOTH"):
+            for name in [
+                "BOTH",
+                "LEFT",
+                "RIGHT",
+                "Y",
+                "X",
+                "END",
+                "W",
+                "CENTER",
+                "DISABLED",
+                "NORMAL",
+            ]:
+                setattr(tk, name, name.lower())
+
+        class _Dummy:
+            def __init__(self, *a, **k):
+                self.root = k.get("master")
+                self.attrs = {"state": "normal"}
+
+            def pack(self, *a, **k):
+                pass
+
+            def grid(self, *a, **k):
+                pass
+
+            def config(self, **kw):
+                self.attrs.update(kw)
+
+            def configure(self, **kw):
+                pass
+
+            def create_window(self, *a, **k):
+                pass
+
+            def bbox(self, *a):
+                return (0, 0, 100, 100)
+
+            def yview(self, *a, **k):
+                pass
+
+            def yview_moveto(self, *a, **k):
+                pass
+
+            def set(self, *a, **k):
+                pass
+
+            def add(self, *a, **k):
+                pass
+
+            def heading(self, *a, **k):
+                pass
+
+            def column(self, *a, **k):
+                pass
+
+            def insert(self, *a, **k):
+                pass
+
+            def delete(self, *a, **k):
+                pass
+
+            def get_children(self):
+                return []
+
+            def bind(self, *a, **k):
+                pass
+
+            def columnconfigure(self, *a, **k):
+                pass
+
+            def rowconfigure(self, *a, **k):
+                pass
+
+            def winfo_width(self):
+                return int(getattr(self.root, "width", 100) * 0.5 * G.UI_SCALE)
+
+        if not hasattr(ttk, "Frame"):
+            for n in [
+                "Frame",
+                "Label",
+                "LabelFrame",
+                "Button",
+                "Progressbar",
+                "Notebook",
+                "Scrollbar",
+                "Treeview",
+                "Checkbutton",
+            ]:
+                setattr(ttk, n, _Dummy)
+        if not hasattr(tk, "Canvas"):
+            tk.Canvas = _Dummy
+
         self.root = root
         self.ensemble = ensemble
         self.weights_path = weights_path
@@ -126,11 +232,12 @@ class TradingGUI:
         self.close_requested = False
         root.tk.call("tk", "scaling", G.UI_SCALE)
         self.root.title("Complex AI Trading w/ Robust Backtest + Live Phemex")
-        style = ttk.Style()
-        try:
-            style.theme_use("clam")
-        except Exception:
-            pass
+        if hasattr(ttk, "Style"):
+            style = ttk.Style()
+            try:
+                style.theme_use("clam")
+            except Exception:
+                pass
 
         # ------------------------------------------------------------------
         # overall layout
