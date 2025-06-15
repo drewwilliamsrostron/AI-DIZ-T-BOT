@@ -772,7 +772,7 @@ class TradingGUI:
         self, X: np.ndarray, Y: np.ndarray, new_data: np.ndarray
     ) -> None:
         """Animate the attention surface from the previous values."""
-        if G.global_last_attention is None or G.global_last_attention.size == 0:
+        if G.global_last_attention is None or len(G.global_last_attention) == 0:
             self.ax_attention.text(0.5, 0.5, "No attention data", ha="center")
             return
         if self._last_attention is None or self._last_attention.shape != new_data.shape:
