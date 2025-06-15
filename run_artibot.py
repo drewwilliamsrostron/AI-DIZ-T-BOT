@@ -16,7 +16,6 @@ import json
 import logging
 import os
 import threading
-import torch
 
 from artibot.utils import setup_logging, get_device
 from artibot.ensemble import EnsembleModel
@@ -40,8 +39,7 @@ def main() -> None:
     """Prompt for live mode and run the trading bot."""
 
     setup_logging()
-    torch.set_num_threads(os.cpu_count() or 1)
-    torch.set_num_interop_threads(os.cpu_count() or 1)
+    G.set_cpu_limit(CONFIG.get("CPU_LIMIT", os.cpu_count() or 1))
     G.start_equity = 0.0
     G.live_equity = 0.0
     G.live_trade_count = 0
