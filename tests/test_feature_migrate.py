@@ -12,9 +12,9 @@ def test_auto_migrate(tmp_path, monkeypatch):
     con.execute("CREATE TABLE macro_surprise (ts TIMESTAMP PRIMARY KEY)")
     con.execute("CREATE TABLE realised_vol (ts TIMESTAMP PRIMARY KEY)")
 
-    old_con = fs._con
+    old_con = fs._con()
     old_con.close()
-    monkeypatch.setattr(fs, "_con", con, raising=False)
+    monkeypatch.setattr(fs, "_con", lambda: con, raising=False)
     monkeypatch.setattr(fs, "_DB_PATH", str(db), raising=False)
 
     ts = int(time.time())
@@ -34,7 +34,7 @@ def test_auto_migrate(tmp_path, monkeypatch):
 
 
 def test_repair_cli():
-    fs._con.close()
+    fs._con().close()
     result = subprocess.run(
         [sys.executable, "-m", "artibot.feature_store", "--repair"],
         capture_output=True,
