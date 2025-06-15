@@ -6,6 +6,7 @@ import artibot.globals as G
 import logging
 import datetime
 import time
+import threading
 
 from .dataset import HourlyDataset, trailing_sma
 from .ensemble import reject_if_risky
@@ -59,6 +60,7 @@ def csv_training_thread(
     weights_path: str = "best.pt",
     *,
     debug_anomaly: bool = False,
+    init_event: threading.Event | None = None,
 ):
     """Train on CSV data in a background thread.
 
@@ -79,6 +81,8 @@ def csv_training_thread(
     # training history lists live on the globals module
 
     try:
+        if init_event is not None:
+            init_event.wait()
         G.epoch_count = 0
         holdout_len = max(1, int(len(data) * 0.1))
         train_data = data[:-holdout_len] if len(data) > holdout_len else data
