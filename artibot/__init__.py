@@ -10,6 +10,21 @@ from .environment import ensure_dependencies
 
 ensure_dependencies()  # run the installer once at import time
 
+from screeninfo import get_monitors
+from . import globals as G
+
+
+def _detect_scale(baseline: float = 96.0) -> float:
+    try:
+        mon = get_monitors()[0]
+        dpi = mon.width * 25.4 / mon.width_mm
+    except Exception:
+        dpi = baseline
+    return max(0.9, min(2.0, dpi / baseline))
+
+
+G.UI_SCALE = _detect_scale()
+
 from .environment import *  # noqa: F401,F403 - re-export environment helpers
 
 
