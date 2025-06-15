@@ -1,5 +1,14 @@
-"""Local feature store backed by DuckDB + Feast for sentiment, macro surprises,
-   realised volatility.  All functions return *np.float32* scalars."""
+"""
+Local feature store backed by DuckDB.
+
+Tables
+------
+news_sentiment(ts TIMESTAMP PRIMARY KEY, score DOUBLE)
+macro_surprise(ts TIMESTAMP PRIMARY KEY, surprise_z DOUBLE)
+realised_vol(ts TIMESTAMP PRIMARY KEY, rvol DOUBLE)
+
+All getters return np.float32.
+"""
 
 from __future__ import annotations
 import datetime as _dt
@@ -7,14 +16,17 @@ import os
 import duckdb
 import numpy as np
 
+###############################################################################
+#  initialise / migrate
+###############################################################################
 _DB_PATH = os.path.join(os.path.dirname(__file__), "_features.duckdb")
 _con = duckdb.connect(_DB_PATH, read_only=False)
 
-# ensure tables exist
+# create-if-missing
 _con.execute(
     """
 CREATE TABLE IF NOT EXISTS news_sentiment  (
-    ts  TIMESTAMP PRIMARY KEY,
+    ts TIMESTAMP PRIMARY KEY,
     score DOUBLE
 );
 """
@@ -22,7 +34,7 @@ CREATE TABLE IF NOT EXISTS news_sentiment  (
 _con.execute(
     """
 CREATE TABLE IF NOT EXISTS macro_surprise (
-    ts  TIMESTAMP PRIMARY KEY,
+    ts TIMESTAMP PRIMARY KEY,
     surprise_z DOUBLE
 );
 """
@@ -30,14 +42,20 @@ CREATE TABLE IF NOT EXISTS macro_surprise (
 _con.execute(
     """
 CREATE TABLE IF NOT EXISTS realised_vol (
-    ts  TIMESTAMP PRIMARY KEY,
+    ts TIMESTAMP PRIMARY KEY,
     rvol DOUBLE
 );
 """
 )
 
+# migrate-if-old (adds missing columns without raising if they already exist)
+_con.execute("ALTER TABLE news_sentiment  ADD COLUMN IF NOT EXISTS score      DOUBLE;")
+_con.execute("ALTER TABLE macro_surprise ADD COLUMN IF NOT EXISTS surprise_z DOUBLE;")
+_con.execute("ALTER TABLE realised_vol  ADD COLUMN IF NOT EXISTS rvol        DOUBLE;")
 
-# ---------- ingestion helpers ----------
+###############################################################################
+#  ingestion helpers
+###############################################################################
 def upsert_news(ts: int, score: float) -> None:
     _con.execute(
         "INSERT OR REPLACE INTO news_sentiment VALUES (?, ?)",
@@ -58,11 +76,17 @@ def upsert_rvol(ts: int, rvol: float) -> None:
         (_dt.datetime.fromtimestamp(ts), float(rvol)),
     )
 
-
-# ---------- retrieval API (hourly resolution) ----------
-def _fetch_scalar(col: str, table: str, ts: int) -> float:
+###############################################################################
+#  retrieval helpers (hourly resolution, last-known-value)
+###############################################################################
+def _fetch_scalar(column: str, table: str, ts: int) -> float:
+    """Return the most recent value <= *ts* from *table.column* (or 0.0)."""
     res = _con.execute(
-        f"SELECT {col} FROM {table} WHERE ts <= ? ORDER BY ts DESC LIMIT 1",
+        f"""SELECT {column}
+              FROM {table}
+             WHERE ts <= ?
+         ORDER BY ts DESC
+            LIMIT 1""",
         (_dt.datetime.fromtimestamp(ts),),
     ).fetchone()
     return float(res[0]) if res else 0.0
