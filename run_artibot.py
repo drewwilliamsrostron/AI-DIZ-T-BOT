@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import threading
+import tkinter as tk
 
 from artibot.utils import setup_logging, get_device
 from artibot.ensemble import EnsembleModel
@@ -32,6 +33,19 @@ import artibot.globals as G
 from artibot.bot_app import load_master_config
 
 
+def _launch_loading(root: tk.Tk, text_var: tk.StringVar) -> tk.Toplevel:
+    from tkinter import ttk
+
+    win = tk.Toplevel(root)
+    win.title("Loading…")
+    ttk.Label(win, textvariable=text_var, font=("Helvetica", 12)).pack(padx=10, pady=10)
+    pb = ttk.Progressbar(win, mode="indeterminate", length=200)
+    pb.pack(padx=10, pady=5)
+    pb.start(20)
+    win.grab_set()
+    return win
+
+
 CONFIG = load_master_config()
 
 
@@ -39,6 +53,10 @@ def main() -> None:
     """Prompt for live mode and run the trading bot."""
 
     setup_logging()
+    root = tk.Tk()
+    loading_msg = tk.StringVar(value="Initialising…")
+    loading_win = _launch_loading(root, loading_msg)
+
     G.set_cpu_limit(CONFIG.get("CPU_LIMIT", os.cpu_count() or 1))
     G.start_equity = 0.0
     G.live_equity = 0.0
@@ -85,6 +103,7 @@ def main() -> None:
         return
 
     stop_event = threading.Event()
+    init_done = threading.Event()
     train_th = threading.Thread(
         target=csv_training_thread,
         args=(
@@ -96,7 +115,7 @@ def main() -> None:
             None,
             weights_path,
         ),
-        kwargs={"debug_anomaly": __debug__},
+        kwargs={"debug_anomaly": __debug__, "init_event": init_done},
         daemon=True,
     )
     train_th.start()
@@ -148,9 +167,18 @@ def main() -> None:
     ingest_th = threading.Thread(target=_fi.start_worker, daemon=True)
     ingest_th.start()
 
-    import tkinter as tk
+    def _bg_init() -> None:
+        loading_msg.set("Downloading historical sentiment + macro data…")
+        try:
+            import tools.backfill_gdelt as _bf
 
-    root = tk.Tk()
+            _bf.main()
+        finally:
+            init_done.set()
+            root.after(0, lambda: loading_win.destroy())
+
+    threading.Thread(target=_bg_init, daemon=True).start()
+
     gui = TradingGUI(root, ensemble, weights_path, connector)  # noqa: F841
 
     logging.info("Tkinter dashboard starting on main thread…")

@@ -1,5 +1,4 @@
 import threading
-import time
 
 import numpy as np
 
@@ -22,4 +21,3 @@ def test_thread_safety():
     t1.join()
     t2.join()
     assert all(v == np.float32(0.42) for v in vals1 + vals2)
-

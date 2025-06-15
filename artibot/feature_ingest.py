@@ -9,7 +9,14 @@ from typing import List
 
 import numpy as np
 import requests
-import schedule
+
+try:  # schedule may be missing on first run
+    import schedule
+except ModuleNotFoundError:  # pragma: no cover - installer path
+    from artibot.auto_install import install as _auto
+
+    _auto("schedule")
+    import schedule
 import yfinance as yf
 from transformers import (
     AutoTokenizer,
