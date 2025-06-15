@@ -539,6 +539,12 @@ class TradingGUI:
             command=self.toggle_bot,
         )
         self.run_button.pack(side=tk.LEFT, padx=5)
+        self.cpu_button = ttk.Button(
+            self.controls_frame,
+            text="CPU Limit",
+            command=self.adjust_cpu_limit,
+        )
+        self.cpu_button.pack(side=tk.LEFT, padx=5)
         self.force_nk_var = tk.BooleanVar(value=False)
         self.force_nk_chk = ttk.Checkbutton(
             self.controls_frame,
@@ -1166,6 +1172,30 @@ class TradingGUI:
 
         ttk.Button(win, text="Apply", command=apply).grid(
             row=2, column=0, columnspan=2, pady=5
+        )
+
+    def adjust_cpu_limit(self) -> None:
+        """Popup dialog to change the number of CPU threads."""
+
+        logging.info("BUTTON CPU Limit clicked")
+        win = tk.Toplevel(self.root)
+        win.title("CPU Limit")
+        ttk.Label(win, text="Threads:").grid(row=0, column=0, padx=5, pady=5)
+        cpu_var = tk.IntVar(value=G.cpu_limit)
+        ttk.Spinbox(
+            win,
+            from_=1,
+            to=os.cpu_count() or 1,
+            textvariable=cpu_var,
+            width=5,
+        ).grid(row=0, column=1, padx=5, pady=5)
+
+        def apply() -> None:
+            G.set_cpu_limit(cpu_var.get())
+            win.destroy()
+
+        ttk.Button(win, text="Apply", command=apply).grid(
+            row=1, column=0, columnspan=2, pady=5
         )
 
     def on_toggle_force_nk(self) -> None:

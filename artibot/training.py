@@ -12,18 +12,13 @@ from .ensemble import reject_if_risky
 from .backtest import robust_backtest, compute_indicators
 
 import sys
-import os
 import json
 import torch
 import multiprocessing
 import gc
 
-# leave two cores free for the GUI / system
-CPU_LIMIT = max(1, multiprocessing.cpu_count() - 2)
-
-# make Torch & OpenMP respect the same limit
-torch.set_num_threads(CPU_LIMIT)
-os.environ["OMP_NUM_THREADS"] = str(CPU_LIMIT)
+# initialise CPU limit from globals
+G.set_cpu_limit(max(1, multiprocessing.cpu_count() - 2))
 
 
 def rebuild_loader(
@@ -118,7 +113,7 @@ def csv_training_thread(
             else None
         )
 
-        workers = int(config.get("NUM_WORKERS", max(1, os.cpu_count() - 2)))
+        workers = int(config.get("NUM_WORKERS", G.cpu_limit))
         logging.info(
             "DATALOADER", extra={"workers": workers, "device": ensemble.device.type}
         )

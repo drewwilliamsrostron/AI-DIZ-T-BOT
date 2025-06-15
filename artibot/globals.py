@@ -14,6 +14,8 @@ import queue
 import collections
 import numpy as np
 import matplotlib
+import os
+import torch
 
 matplotlib.use("TkAgg")
 
@@ -67,6 +69,9 @@ global_min_hold_seconds = 1800
 # Maximum exposure per side and total gross exposure
 MAX_SIDE_EXPOSURE_PCT = 0.10
 MAX_GROSS_PCT = 0.12
+
+# Number of CPU threads reserved for PyTorch and DataLoader workers
+cpu_limit = max(1, os.cpu_count() - 2)
 
 # Desired long/short fractions controlled by the meta agent
 global_long_frac = 0.0
@@ -208,6 +213,18 @@ hedge_book = None
 state_lock = threading.Lock()
 # New: lock used when mutating model parameters
 model_lock = threading.Lock()
+
+
+def set_cpu_limit(n: int) -> None:
+    """Update ``cpu_limit`` and adjust Torch and OpenMP threads."""
+
+    n = max(1, int(n))
+    global cpu_limit
+    with state_lock:
+        cpu_limit = n
+    torch.set_num_threads(n)
+    torch.set_num_interop_threads(n)
+    os.environ["OMP_NUM_THREADS"] = str(n)
 
 
 def set_status(msg: str, secondary: str | None = None) -> None:
