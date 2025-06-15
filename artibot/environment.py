@@ -149,6 +149,7 @@ def install_dependencies() -> None:
         "sklearn": "scikit-learn",
         "TA-Lib": "TA-Lib",  # imported as `talib`
         "screeninfo": "screeninfo",  # monitor DPI detection
+        "duckdb": "duckdb",  # feature store backend
         # pytest is required to run the bundled tests
         "pytest": "pytest",
     }
