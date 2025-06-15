@@ -140,6 +140,8 @@ class MetaTransformerRL:
         # Reward shaping baseline (EMA of |Δreward|)
         self.reward_ema = 1.0
         self.tau_inv = 1.0 / 50.0
+        self.entropy_beta = 1e-3
+        self.low_kl_count = 0
 
         # (7) Scheduled exploration
         # Change epsilon parameters for longer exploration
@@ -284,7 +286,14 @@ class MetaTransformerRL:
         kl = torch.distributions.kl_divergence(old_dist, new_dist).mean()
         entropy = new_dist.entropy().mean()
 
-        loss_p = pg_loss + kl + (-1e-3 * entropy)
+        if kl.item() < 0.02:
+            self.low_kl_count += 1
+            if self.low_kl_count >= 3 and self.entropy_beta > 3e-4:
+                self.entropy_beta = 3e-4
+        else:
+            self.low_kl_count = 0
+
+        loss_p = pg_loss + kl + (-self.entropy_beta * entropy)
         loss_v = F.mse_loss(val_s, torch.tensor([target], device=val_s.device))
         loss = loss_p + 0.5 * loss_v
         self.opt.zero_grad()
@@ -507,8 +516,11 @@ def meta_control_loop(
             G.status_sleep("Meta agent sleeping", "", interval)
 
             curr2 = G.global_composite_reward if G.global_composite_reward else 0.0
-            reward_raw = curr2 - prev_reward
-            agent.reward_ema = 0.95 * agent.reward_ema + 0.05 * abs(reward_raw)
+            trade_pen = 0.0003 * abs(new_state[4] - state[4])
+            reward_raw = curr2 - prev_reward - trade_pen
+            agent.reward_ema = (
+                1 - agent.tau_inv
+            ) * agent.reward_ema + agent.tau_inv * abs(reward_raw)
             shaped_r = reward_raw / (agent.reward_ema + 1e-8)
             agent.update(state, 0, shaped_r, new_state, logp, val_s)
             prev_reward = curr2
