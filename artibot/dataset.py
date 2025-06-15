@@ -188,6 +188,18 @@ class HourlyDataset(Dataset):
         atr_vals = atr(highs, lows, closes, period=self.hp.atr_period)
 
         cols = [data_np[:, 1:6]]
+        import artibot.feature_store as _fs
+
+        sent = np.array(
+            [_fs.news_sentiment(int(t)) for t in data_np[:, 0]], dtype=np.float32
+        )
+        macro = np.array(
+            [_fs.macro_surprise(int(t)) for t in data_np[:, 0]], dtype=np.float32
+        )
+        rvol = np.array(
+            [_fs.realised_vol(int(t)) for t in data_np[:, 0]], dtype=np.float32
+        )
+        cols.extend([sent, macro, rvol])
         if sma is not None:
             cols.append(sma.astype(np.float32))
         if rsi is not None:

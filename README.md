@@ -54,6 +54,20 @@ during training.
 | `USE_TENKAN` | `TENKAN_PERIOD` |
 | `USE_DISPLACEMENT` | `DISPLACEMENT` |
 
+## Trading Logic - Feature Set
+
+In addition to price-based indicators the agent now ingests **three contextual
+features** on every hourly bar:
+
+| Feature | Source | Purpose |
+|---------|--------|---------|
+| `sent_24h` | 24-hour mean FinBERT score of BTC headlines | Captures crowd sentiment |
+| `macro_z`  | Z-score of latest macro surprise (CPI, NFP …) | Detects macro regime shifts |
+| `rvol_7d`  | 7-day realised volatility | Allows position sizing relative to risk |
+
+These vectors are appended to the model’s input and are automatically
+populated by `artibot/feature_store.py`.
+
 ## Installation
 
 ```bash

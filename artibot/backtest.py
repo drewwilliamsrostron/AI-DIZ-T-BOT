@@ -60,6 +60,21 @@ def compute_indicators(
     out = {}
     cols = [raw[:, 1:6]]
 
+    # === NEW FEATURE BLOCK (sentiment / macro / rvol) =======================
+    import artibot.feature_store as _fs
+
+    sent_vec = np.array(
+        [_fs.news_sentiment(int(t)) for t in raw[:, 0]], dtype=np.float32
+    )
+    macro_vec = np.array(
+        [_fs.macro_surprise(int(t)) for t in raw[:, 0]], dtype=np.float32
+    )
+    rvol_vec = np.array([_fs.realised_vol(int(t)) for t in raw[:, 0]], dtype=np.float32)
+    out["sent_24h"] = sent_vec
+    out["macro_z"] = macro_vec
+    out["rvol_7d"] = rvol_vec
+    cols.extend([sent_vec, macro_vec, rvol_vec])
+
     if getattr(indicator_hp, "use_sma", True):
         sma = trailing_sma(closes, sma_period)
         out["sma"] = sma.astype(np.float32)
