@@ -39,7 +39,9 @@ def _detect_scale(baseline: float = 96.0) -> float:
     return max(0.9, min(2.0, dpi / baseline))
 
 
+
 G.UI_SCALE = _detect_scale()
+
 
 
 from .environment import *  # noqa: F401,F403 - re-export environment helpers
