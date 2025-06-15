@@ -24,7 +24,7 @@ _LOG = logging.getLogger("feature_ingest")
 _FINBERT_TOKENIZER = AutoTokenizer.from_pretrained("ProsusAI/finbert")
 _FINBERT_MODEL = AutoModelForSequenceClassification.from_pretrained("ProsusAI/finbert")
 
-_NEWS_KEY = "demo"  # 🔒 replace with real CryptoPanic key in master_config.json
+_DOC_URL = "https://api.gdeltproject.org/api/v2/doc/docsearch"
 _MACRO_SRC = (
     "https://api.tradingeconomics.com/calendar/country/united states?c=guest:guest"
 )
@@ -38,15 +38,17 @@ def _ts_hour() -> int:
 
 # ---- News sentiment ---------------------------------------------------------
 def load_headlines() -> List[str]:
-    """Return latest crypto headlines."""
+    """Return latest crypto headlines from GDELT."""
 
-    url = f"https://cryptopanic.com/api/v1/posts/?auth_token={_NEWS_KEY}&public=true"
     try:
-        resp = requests.get(url, timeout=5)
-        resp.raise_for_status()
-        return [p["title"] for p in resp.json().get("results", [])]
+        js = requests.get(
+            _DOC_URL,
+            params={"query": "bitcoin OR crypto", "maxrecords": 250, "format": "json"},
+            timeout=8,
+        ).json()
+        return [a["title"] for a in js.get("articles", [])]
     except Exception as exc:  # pragma: no cover - network
-        _LOG.warning("headline fetch failed: %s", exc)
+        _LOG.warning("GDELT DOC fetch failed: %s", exc)
         return []
 
 
