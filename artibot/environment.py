@@ -152,6 +152,9 @@ def install_dependencies() -> None:
         "duckdb": "duckdb",  # feature store backend
         # pytest is required to run the bundled tests
         "pytest": "pytest",
+        "yfinance": "yfinance",  # finance data download
+        "transformers": "transformers",  # FinBERT sentiment model
+        "schedule": "schedule",  # cron-like job scheduler
     }
     for import_name, pip_name in pkgs.items():
         try:
