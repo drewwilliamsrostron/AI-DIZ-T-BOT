@@ -19,6 +19,14 @@ from .metrics import nuclear_key_condition
 from .live_risk import update_auto_pause
 
 
+GUI_INSTANCE = None
+
+
+def redraw_everything() -> None:
+    if GUI_INSTANCE is not None:
+        GUI_INSTANCE.update_dashboard()
+
+
 ###############################################################################
 # Tkinter GUI
 ###############################################################################
@@ -116,6 +124,7 @@ class TradingGUI:
         self.weights_path = weights_path
         self.connector = connector
         self.close_requested = False
+        root.tk.call("tk", "scaling", G.UI_SCALE)
         self.root.title("Complex AI Trading w/ Robust Backtest + Live Phemex")
         style = ttk.Style()
         try:
@@ -649,6 +658,19 @@ class TradingGUI:
         self.update_interval = 2000
         self.root.after(self.update_interval, self.update_dashboard)
         self.root.after(10000, self.refresh_stats)
+
+        global GUI_INSTANCE
+        GUI_INSTANCE = self
+
+        def _on_resize(event) -> None:
+            w, h = event.width, event.height
+            new_scale = max(0.9, min(2.0, min(w / 1280, h / 720)))
+            if abs(new_scale - G.UI_SCALE) > 0.05:
+                G.UI_SCALE = new_scale
+                self.root.tk.call("tk", "scaling", G.UI_SCALE)
+                redraw_everything()
+
+        self.root.bind("<Configure>", _on_resize)
 
     def _animate_attention(
         self, X: np.ndarray, Y: np.ndarray, new_data: np.ndarray

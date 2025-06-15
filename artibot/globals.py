@@ -31,6 +31,9 @@ logging.basicConfig(
 )
 client = openai  # alias
 
+# GUI scale factor, updated on startup
+UI_SCALE = 1.0
+
 ###############################################################################
 # Global Hyperparameters and Starting Values
 ###############################################################################
