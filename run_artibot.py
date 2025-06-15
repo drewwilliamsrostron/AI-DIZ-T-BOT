@@ -142,6 +142,12 @@ def main() -> None:
     )
     validate_th.start()
 
+    # ---------------------- start feature-ingest thread ---------------------
+    import artibot.feature_ingest as _fi
+
+    ingest_th = threading.Thread(target=_fi.start_worker, daemon=True)
+    ingest_th.start()
+
     import tkinter as tk
 
     root = tk.Tk()

@@ -4,3 +4,4 @@ __pycache__/
 # Ignore Visual Studio files
 .vs/
 *.vsidx
+artibot/_features.duckdb
