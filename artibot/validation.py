@@ -47,7 +47,7 @@ def monte_carlo_sharpe(returns: Iterable[float], runs: int = 1000) -> list[float
 
 
 def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
-    """Train and evaluate on rolling 5-year windows."""
+    """Train on 6 months, test the next month then roll forward."""
     data = load_csv_hourly(csv_path)
     if not data:
         return []
@@ -60,12 +60,12 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
     else:
         logging.info("Skipping torch.compile on Python 3.12+")
     results = []
-    one_year = YEAR_HOURS
-    six_years = 6 * one_year
-    for start in range(0, len(data) - six_years + 1, one_year):
-        train = data[start : start + 5 * one_year]
-        test = data[start + 5 * one_year : start + six_years]
-        if len(test) < one_year:
+    one_month = YEAR_HOURS // 12
+    seven_months = 7 * one_month
+    for start in range(0, len(data) - seven_months + 1, one_month):
+        train = data[start : start + 6 * one_month]
+        test = data[start + 6 * one_month : start + seven_months]
+        if len(test) < one_month:
             break
         stop_event = threading.Event()
         csv_training_thread(
