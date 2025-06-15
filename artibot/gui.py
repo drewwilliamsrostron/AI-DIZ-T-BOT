@@ -85,13 +85,15 @@ def select_weight_file(use_prev: bool = True) -> str | None:
 def ask_use_prev_weights(default: bool = True, tk_module=None) -> bool:
     """Return ``True`` when the user opts to load the last weights."""
     if tk_module is None:
-        import tkinter as tk_module
+        import tkinter as tk_module  # lazy import for tests
+        from tkinter import messagebox
+    else:
+        messagebox = tk_module.messagebox
+
     root = tk_module.Tk()
     root.withdraw()
     try:
-        result = tk_module.messagebox.askyesno(
-            "Load Weights", "Use previous best weights?"
-        )
+        result = messagebox.askyesno("Load Weights", "Use previous best weights?")
     finally:
         root.destroy()
     if result is None:
