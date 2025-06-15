@@ -86,6 +86,9 @@ class DummyTk(DummyWidget):
     def after(self, *a, **k):
         pass
 
+    def after_idle(self, cb, *a, **k):
+        pass
+
     def title(self, t):
         pass
 
@@ -102,6 +105,9 @@ class DummyTk(DummyWidget):
         if self._cb:
             e = types.SimpleNamespace(width=self.width, height=self.height)
             self._cb(e)
+
+    def winfo_fpixels(self, val):
+        return 96.0
 
 
 TkMod = types.ModuleType("tkinter")
@@ -173,11 +179,15 @@ matplotlib.__spec__ = ModuleSpec("matplotlib", loader=None)
 sys.modules["matplotlib"] = matplotlib
 plt = types.ModuleType("matplotlib.pyplot")
 plt.__spec__ = ModuleSpec("matplotlib.pyplot", loader=None)
-plt.figure = lambda *a, **k: types.SimpleNamespace(add_subplot=lambda *a, **k: object())
+plt.figure = lambda *a, **k: types.SimpleNamespace(
+    add_subplot=lambda *a, **k: object(),
+    tight_layout=lambda *a, **k: None,
+)
 plt.subplots = lambda *a, **k: (
     types.SimpleNamespace(add_subplot=lambda *a, **k: object()),
     object(),
 )
+plt.ioff = lambda: None
 sys.modules["matplotlib.pyplot"] = plt
 backend = types.ModuleType("matplotlib.backends.backend_tkagg")
 backend.FigureCanvasTkAgg = lambda *a, master=None, **k: types.SimpleNamespace(
@@ -200,8 +210,9 @@ def test_gui_resizes_smaller():
     )
     gui = TradingGUI(root, ens)
     root.update_idletasks()
+    scale = G.UI_SCALE
     w0 = gui.canvas_train.get_tk_widget().winfo_width()
     root.geometry("800x600")
     root.update_idletasks()
-    assert G.UI_SCALE >= 0.9
+    assert G.UI_SCALE == scale
     assert gui.canvas_train.get_tk_widget().winfo_width() < w0
