@@ -4,6 +4,7 @@
 import artibot.globals as G
 import numpy as np
 import datetime
+import time
 import os
 import threading
 import tkinter as tk
@@ -333,6 +334,14 @@ class TradingGUI:
         )
         self.indicator_label.grid(
             row=6, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5
+        )
+
+        # --- NEW contextual row --------------------------------------------
+        self.context_row = ttk.Label(
+            self.info_frame, text="Context: N/A", font=("Helvetica", 11, "italic")
+        )
+        self.context_row.grid(
+            row=7, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2
         )
 
         self.best_hyper_label = ttk.Label(
@@ -940,6 +949,19 @@ class TradingGUI:
             f" Short %: {hp.short_frac * 100:.1f}"
         )
         self.indicator_label.config(text=info)
+
+        # show latest contextual features
+        try:
+            import artibot.feature_store as _fs
+
+            ts = int(time.time()) // 3600 * 3600
+            sent = _fs.news_sentiment(ts)
+            macro = _fs.macro_surprise(ts)
+            rvol = _fs.realised_vol(ts)
+            ctx = f"Sent:{sent:+.2f}  Macro:{macro:+.2f}  RV:{rvol:.3f}"
+            self.context_row.config(text=f"Context: {ctx}")
+        except Exception:  # pragma: no cover - UI update best effort
+            pass
         self.best_lr_label.config(
             text=f"Best LR: {G.global_best_lr if G.global_best_lr else 'N/A'}"
         )

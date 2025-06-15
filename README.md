@@ -68,6 +68,14 @@ features** on every hourly bar:
 These vectors are appended to the model’s input and are automatically
 populated by `artibot/feature_store.py`.
 
+These vectors are appended to the model’s input **and are updated live** by
+`artibot/feature_ingest.py`, which runs automatically when you start
+`run_artibot.py`.  The job fetches:
+
+* CryptoPanic headlines → FinBERT sentiment (+1 = bullish, -1 = bearish)  
+* Economic-surprise numbers (e.g. CPI) → Z-scores  
+* BTC 7-day realised volatility via **yfinance**
+
 ## Installation
 
 ```bash
