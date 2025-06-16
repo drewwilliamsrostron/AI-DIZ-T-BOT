@@ -110,7 +110,7 @@ def sentiment_series() -> pd.Series:
 ###############################################################################
 # 4. Merge & write
 ###############################################################################
-def main() -> None:
+def main(progress_cb=lambda pct, msg: None) -> None:
     LOG.info("Fetching realised volatility")
     rvol = realised_vol_series()
 
@@ -132,13 +132,17 @@ def main() -> None:
 
     LOG.info("Writing to DuckDB (%d rows)", len(df))
     batch: list[tuple[int, float, float, float]] = []
-    for ts, row in tqdm(df.iterrows(), total=len(df)):
+    total = len(df)
+    for i, (ts, row) in enumerate(df.iterrows(), 1):
         batch.append((ts, row.sent, row.macro, row.rvol))
+        if i % 1000 == 0:
+            progress_cb(i / total * 100.0, f"Ingested {i}")
         if len(batch) >= 5000:
             _flush(batch)
             batch.clear()
     if batch:
         _flush(batch)
+    progress_cb(100.0, "Done")
 
 
 def _flush(batch: list[tuple[int, float, float, float]]) -> None:

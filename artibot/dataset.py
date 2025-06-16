@@ -158,6 +158,11 @@ class HourlyDataset(Dataset):
         data_np = np.array(self.data, dtype=np.float32)
         closes = data_np[:, 4].astype(np.float64)
 
+        if self.use_ichimoku:
+            self.hp.use_sma = False
+            self.hp.use_ema = False
+            self.hp.use_atr = False
+
         sma = None
         if self.hp.use_sma:
             sma = trailing_sma(closes, self.hp.sma_period)

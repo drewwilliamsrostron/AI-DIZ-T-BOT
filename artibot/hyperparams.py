@@ -83,9 +83,9 @@ class IndicatorHyperparams:
     macd_signal: int = 9
     use_atr: bool = True
     atr_period: int = 14
-    use_vortex: bool = True
+    use_vortex: bool = False
     vortex_period: int = 14
-    use_cmf: bool = True
+    use_cmf: bool = False
     cmf_period: int = 20
     use_ema: bool = True
     ema_period: int = 20
