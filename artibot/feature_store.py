@@ -36,7 +36,20 @@ def _get_con() -> duckdb.DuckDBPyConnection:
         conn = duckdb.connect(_DB_PATH, read_only=False)
         _tls.db = conn
         _ensure_tables(conn)
+    else:
+        try:
+            conn.execute("SELECT 1")
+        except duckdb.Error:
+            conn = duckdb.connect(_DB_PATH, read_only=False)
+            _tls.db = conn
+            _ensure_tables(conn)
     return conn
+
+
+def _con() -> duckdb.DuckDBPyConnection:
+    """Backward compatible alias used in tests."""
+
+    return _get_con()
 
 
 # ---------------------------------------------------------------------------

@@ -10,14 +10,13 @@ import io
 import logging
 import math
 import time
-from datetime import timedelta
 from typing import Iterator
 
 import numpy as np
 import pandas as pd
 import requests
 import os
-import yfinance as yf
+import ccxt
 from tqdm import tqdm
 
 import artibot.feature_store as fs
@@ -34,40 +33,82 @@ TE_CAL = "https://api.tradingeconomics.com/calendar"
 NO_HEAVY = os.environ.get("NO_HEAVY") == "1"
 
 
-def _download_btc_hourly(progress_cb=None) -> pd.DataFrame:
-    """Return BTC prices via yfinance in chunks."""
+def _fetch_phemex_bars(exchange, since: int, limit: int):
+    """Return raw OHLCV bars or ``None`` on fatal error."""
 
-    if NO_HEAVY:
+    try:
+        return exchange.fetch_ohlcv(
+            "BTC/USD",
+            timeframe="1h",
+            since=since,
+            limit=limit,
+        )
+    except ccxt.RateLimitExceeded:  # pragma: no cover - rate limit
+        time.sleep(exchange.rateLimit / 1000.0)
+        return []
+    except ValueError:  # limit too high
+        raise
+    except Exception as exc:  # pragma: no cover - network
+        LOG.warning("Phemex fetch failed: %s", exc)
+        return None
+
+
+def _download_btc_hourly(progress_cb=None) -> pd.DataFrame:
+    """Return BTC prices read from CSV plus live Phemex extension."""
+
+    csv_path = os.path.join(os.path.dirname(__file__), "..", "Gemini_BTCUSD_1h.csv")
+    if not os.path.isfile(csv_path):
+        LOG.warning("BTC CSV not found: %s", csv_path)
         return pd.DataFrame()
 
-    step = timedelta(days=700)
-    frames = []
-    total = int((END - START) / step) + 1
-    s = START
-    idx = 0
-    last = 0.0
-    while s < END:
-        idx += 1
-        e = min(s + step, END)
-        LOG.info("YF %s→%s", s.date(), e.date())
-        interval = "1h" if (END - e).days <= 730 else "1d"
-        try:
-            df = yf.download(
-                "BTC-USD",
-                start=s,
-                end=e,
-                interval=interval,
-                progress=False,
-            )
-            frames.append(df)
-        except Exception as exc:  # pragma: no cover - network
-            LOG.warning("YF chunk failed: %s", exc)
-        s = e
-        pct = idx / total * 100.0
-        if progress_cb and pct - last >= 5:
-            progress_cb(pct, f"YF slice {idx}/{total} downloaded")
-            last = pct
-    return pd.concat(frames).sort_index() if frames else pd.DataFrame()
+    with open(csv_path, "r", newline="") as fh:
+        comment = fh.readline().strip()
+    df = pd.read_csv(csv_path, skiprows=1, dtype={"unix": "int64"})
+    df = df.sort_values("unix").drop_duplicates("unix", keep="last")
+
+    if NO_HEAVY:
+        df.rename(columns={"close": "Close"}, inplace=True)
+        return df
+
+    exchange = ccxt.phemex({"enableRateLimit": True})
+    last_unix = int(df["unix"].iloc[-1]) if not df.empty else 0
+    since = last_unix
+    live: list[list[int | float]] = []
+
+    while True:
+        chunk = None
+        for lim in (2000, 1500, 1000, 500):
+            try:
+                chunk = _fetch_phemex_bars(exchange, since, lim)
+                if chunk is not None:
+                    break
+            except ValueError:
+                continue
+        if not chunk:
+            break
+        live.extend(chunk)
+        since = chunk[-1][0]
+        if len(chunk) < lim:
+            break
+
+    if live:
+        cols = df.columns.tolist()
+        live_df = pd.DataFrame(live, columns=["unix", "open", "high", "low", "close", "Volume BTC"])  # type: ignore[list-item]
+        live_df["date"] = pd.to_datetime(live_df["unix"], unit="ms")
+        live_df["symbol"] = "BTC/USD"
+        live_df["Volume USD"] = live_df["close"] * live_df["Volume BTC"]
+        live_df = live_df[cols]
+        df = pd.concat([df, live_df], ignore_index=True)
+        before = len(df)
+        df = df.sort_values("unix").drop_duplicates("unix", keep="last")
+        if len(df) > before:
+            csv_data = df.to_csv(index=False, float_format="%.8f")
+            with open(csv_path, "w", newline="") as fh:
+                fh.write(comment + "\n")
+                fh.write(csv_data)
+
+    df.rename(columns={"close": "Close"}, inplace=True)
+    return df
 
 
 def fetch_docs(query: str, progress_cb=None) -> list[dict]:
