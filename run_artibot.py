@@ -36,7 +36,7 @@ from artibot.bot_app import load_master_config
 
 
 def _launch_loading(
-    root: tk.Tk, queue: "queue.Queue[tuple[float, str]]"
+    root: tk.Tk, msg_queue: "queue.Queue[tuple[float, str]]"
 ) -> tuple[tk.Toplevel, tk.StringVar, object]:
     from tkinter import ttk
 
@@ -51,7 +51,7 @@ def _launch_loading(
 
     def _poll() -> None:
         try:
-            pct, msg = queue.get_nowait()
+            pct, msg = msg_queue.get_nowait()
             if pct == "DONE":
                 win.destroy()
                 root.deiconify()
