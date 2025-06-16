@@ -58,20 +58,27 @@ class PositionalEncoding(nn.Module):
 # (6) Increase model capacity & dropout. For instance:
 # hidden_size=128, dropout=0.4, nhead=4, num_layers=4
 class TradingModel(nn.Module):
-    def __init__(self, input_size=13, hidden_size=128, num_classes=3, dropout=0.4):
+    def __init__(
+        self,
+        n_features: int = 13,
+        hidden_size: int = 128,
+        num_classes: int = 3,
+        dropout: float = 0.4,
+    ) -> None:
         super().__init__()
         self.hidden_size = hidden_size
-        self.input_dim = input_size
-        self.pos_encoder = PositionalEncoding(d_model=input_size)
+        self.d_model = n_features
+        self.input_dim = n_features
+        self.pos_encoder = PositionalEncoding(d_model=self.d_model)
         enc_layer = nn.TransformerEncoderLayer(
-            d_model=input_size,
+            d_model=self.d_model,
             nhead=1,
             dim_feedforward=256,
             dropout=dropout,
             batch_first=True,
         )
         self.transformer_encoder = nn.TransformerEncoder(enc_layer, num_layers=4)
-        self.fc_proj = nn.Linear(input_size, hidden_size)
+        self.fc_proj = nn.Linear(self.d_model, hidden_size)
         self.layernorm = nn.LayerNorm(hidden_size)
         self.dropout = nn.Dropout(dropout)
         self.fc = nn.Linear(hidden_size, num_classes + 4)

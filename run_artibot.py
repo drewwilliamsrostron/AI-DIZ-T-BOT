@@ -101,11 +101,11 @@ def _maybe_relaunch_for_threads() -> None:
                 env["MKL_NUM_THREADS"] = str(n_threads)
                 env["ARTIBOT_RERUN"] = "1"
                 cmd = [sys.executable, os.path.abspath(__file__)]
-                print(f"\u21AA Restarting with {n_threads} CPU threads …")
+                print(f"\u21aa Restarting with {n_threads} CPU threads …")
                 subprocess.Popen(cmd, env=env)
                 sys.exit(0)
         else:
-            print("\u21AA Keeping current CPU-thread setting …")
+            print("\u21aa Keeping current CPU-thread setting …")
     finally:
         root.destroy()
 
@@ -154,6 +154,7 @@ def main() -> None:
     from artibot.utils import setup_logging, get_device
     from artibot.ensemble import EnsembleModel
     from artibot.dataset import HourlyDataset, load_csv_hourly
+    from artibot.hyperparams import HyperParams, IndicatorHyperparams
     from artibot.training import (
         PhemexConnector,
         csv_training_thread,
@@ -195,7 +196,38 @@ def main() -> None:
         logging.error("Balance fetch failed: %s", exc)
 
     device = get_device()
-    ensemble = EnsembleModel(device=device, n_models=2, lr=3e-4, weight_decay=1e-4)
+
+    csv_path = CONFIG["CSV_PATH"]
+    if not os.path.isabs(csv_path):
+        here = os.path.dirname(os.path.abspath(__file__))
+        csv_path = os.path.join(here, csv_path)
+
+    indicator_hp = IndicatorHyperparams(
+        rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
+    )
+    data = load_csv_hourly(csv_path)
+    if not data:
+        logging.error("No usable CSV data found")
+        return
+
+    temp_ds = HourlyDataset(
+        data,
+        seq_len=24,
+        indicator_hparams=indicator_hp,
+        atr_threshold_k=getattr(indicator_hp, "atr_threshold_k", 1.5),
+        train_mode=False,
+    )
+    n_features = temp_ds[0][0].shape[1]
+
+    ensemble = EnsembleModel(
+        device=device,
+        n_models=2,
+        lr=3e-4,
+        weight_decay=1e-4,
+        n_features=n_features,
+    )
+    ensemble.indicator_hparams = indicator_hp
+    ensemble.hp = HyperParams(indicator_hp=indicator_hp)
     weights_dir = os.path.abspath(
         os.path.expanduser(CONFIG.get("WEIGHTS_DIR", "weights"))
     )
@@ -204,15 +236,6 @@ def main() -> None:
     use_prev_weights = ask_use_prev_weights(CONFIG.get("USE_PREV_WEIGHTS", True))
     if os.path.isfile(weights_path) and use_prev_weights:
         ensemble.load_best_weights(weights_path)
-
-    csv_path = CONFIG["CSV_PATH"]
-    if not os.path.isabs(csv_path):
-        here = os.path.dirname(os.path.abspath(__file__))
-        csv_path = os.path.join(here, csv_path)
-    data = load_csv_hourly(csv_path)
-    if not data:
-        logging.error("No usable CSV data found")
-        return
 
     stop_event = threading.Event()
     init_done = threading.Event()

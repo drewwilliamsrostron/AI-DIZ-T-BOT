@@ -12,8 +12,9 @@ import torch
 
 
 from artibot.environment import ensure_dependencies
-from artibot.dataset import load_csv_hourly
+from artibot.dataset import load_csv_hourly, HourlyDataset
 from artibot.ensemble import EnsembleModel, reject_if_risky
+from artibot.hyperparams import HyperParams, IndicatorHyperparams
 from artibot.training import csv_training_thread
 from artibot.backtest import robust_backtest
 from artibot.utils import get_device, setup_logging
@@ -23,13 +24,30 @@ def main() -> None:
     setup_logging()
     ensure_dependencies()
     data = load_csv_hourly("Gemini_BTCUSD_1h.csv")[-720:]
+    indicator_hp = IndicatorHyperparams(
+        rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
+    )
+    ds_tmp = HourlyDataset(
+        data,
+        seq_len=24,
+        indicator_hparams=indicator_hp,
+        atr_threshold_k=getattr(indicator_hp, "atr_threshold_k", 1.5),
+        train_mode=False,
+    )
+    n_features = ds_tmp[0][0].shape[1]
     lrs = [1e-4, 5e-5, 1e-5]
     mults = [1.5, 2.0, 2.5]
     rows = []
     for lr, sl_m, tp_m in itertools.product(lrs, mults, mults):
         ensemble = EnsembleModel(
-            device=get_device(), n_models=1, lr=lr, weight_decay=1e-4
+            device=get_device(),
+            n_models=1,
+            lr=lr,
+            weight_decay=1e-4,
+            n_features=n_features,
         )
+        ensemble.indicator_hparams = indicator_hp
+        ensemble.hp = HyperParams(indicator_hp=indicator_hp)
         if hasattr(torch, "set_float32_matmul_precision"):
             torch.set_float32_matmul_precision("high")
         if hasattr(torch, "compile"):

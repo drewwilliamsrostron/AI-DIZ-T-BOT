@@ -129,7 +129,9 @@ def csv_training_thread(
         )
 
         adapt_live = bool(config.get("ADAPT_TO_LIVE", False))
-        dummy_input = torch.randn(1, 24, 8, device=ensemble.device)
+        dummy_input = torch.randn(
+            1, 24, ensemble.models[0].input_dim, device=ensemble.device
+        )
         ensemble.optimize_models(dummy_input)
 
         import talib
