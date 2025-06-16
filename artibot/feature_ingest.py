@@ -34,7 +34,6 @@ import artibot.feature_store as fs
 _LOG = logging.getLogger("feature_ingest")
 
 
-_DOC_URL = "https://api.gdeltproject.org/api/v2/doc/docsearch"
 _MACRO_SRC = (
     "https://api.tradingeconomics.com/calendar/country/united states?c=guest:guest"
 )
@@ -51,12 +50,10 @@ def load_headlines() -> List[str]:
     """Return latest crypto headlines from GDELT."""
 
     try:
-        js = requests.get(
-            _DOC_URL,
-            params={"query": "bitcoin OR crypto", "maxrecords": 250, "format": "json"},
-            timeout=8,
-        ).json()
-        return [a["title"] for a in js.get("articles", [])]
+        from tools.backfill_gdelt import fetch_docs
+
+        arts = fetch_docs("bitcoin OR crypto")
+        return [a["title"] for a in arts]
     except Exception as exc:  # pragma: no cover - network
         _LOG.warning("GDELT DOC fetch failed: %s", exc)
         return []

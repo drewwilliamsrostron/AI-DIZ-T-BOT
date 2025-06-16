@@ -153,7 +153,7 @@ def install_dependencies() -> None:
         # pytest is required to run the bundled tests
         "pytest": "pytest",
         "yfinance": "yfinance",  # finance data download
-        "transformers": "transformers",  # FinBERT sentiment model
+        "transformers": "transformers==4.52.4",  # FinBERT sentiment model
         "schedule": "schedule",  # cron-like job scheduler
     }
     for import_name, pip_name in pkgs.items():

@@ -35,7 +35,7 @@ NO_HEAVY = os.environ.get("NO_HEAVY") == "1"
 
 
 def _download_btc_hourly(progress_cb=None) -> pd.DataFrame:
-    """Return hourly BTC prices via yfinance in chunks."""
+    """Return BTC prices via yfinance in chunks."""
 
     if NO_HEAVY:
         return pd.DataFrame()
@@ -50,12 +50,13 @@ def _download_btc_hourly(progress_cb=None) -> pd.DataFrame:
         idx += 1
         e = min(s + step, END)
         LOG.info("YF %s→%s", s.date(), e.date())
+        interval = "1h" if (END - e).days <= 730 else "1d"
         try:
             df = yf.download(
                 "BTC-USD",
                 start=s,
                 end=e,
-                interval="1h",
+                interval=interval,
                 progress=False,
             )
             frames.append(df)
@@ -69,8 +70,8 @@ def _download_btc_hourly(progress_cb=None) -> pd.DataFrame:
     return pd.concat(frames).sort_index() if frames else pd.DataFrame()
 
 
-def _fetch_gdelt(query: str, progress_cb=None) -> list[dict]:
-    """Return paged DOC results with retry and an overall 60s timeout."""
+def fetch_docs(query: str, progress_cb=None) -> list[dict]:
+    """Return paged DOC results with retry and a 60s overall timeout."""
 
     if NO_HEAVY:
         return []
@@ -80,29 +81,30 @@ def _fetch_gdelt(query: str, progress_cb=None) -> list[dict]:
     page = 1
     last = time.time()
     start = time.time()
+    attempt = 0
     while True:
         if time.time() - start > 60:
-            raise requests.RequestException("GDELT timeout")
+            LOG.warning("GDELT DOC fetch failed: timeout")
+            return []
         params = {
             "query": query,
             "maxrecords": 250,
             "format": "json",
             "page": page,
         }
-        for attempt in range(5):
-            try:
-                r = requests.get(base, params=params, timeout=(3, 8))
-                r.raise_for_status()
-                break
-            except requests.RequestException as exc:  # pragma: no cover - network
-                delay = 2**attempt
-                LOG.debug("GDELT page %s failed: %s", page, exc)
-                if time.time() - start + delay >= 60:
-                    raise
-                time.sleep(delay)
-        else:
-            break
+        try:
+            r = requests.get(base, params=params, timeout=(8, 30))
+            r.raise_for_status()
+        except requests.RequestException as exc:  # pragma: no cover - network
+            delay = min(2**attempt, 60)
+            attempt += 1
+            if time.time() - start + delay >= 60:
+                LOG.warning("GDELT DOC fetch failed: %s", exc)
+                return []
+            time.sleep(delay)
+            continue
 
+        attempt = 0
         arts = r.json().get("articles", [])
         if not arts:
             break
@@ -191,7 +193,7 @@ def sentiment_series() -> pd.Series:
     if NO_HEAVY:
         return pd.Series(dtype=float)
     try:
-        _fetch_gdelt("bitcoin")
+        fetch_docs("bitcoin")
     except requests.RequestException:
         LOG.warning("[WARN] GDELT unavailable – continuing without news sentiment")
         return pd.Series(dtype=float)
