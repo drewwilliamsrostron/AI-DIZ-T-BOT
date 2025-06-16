@@ -38,7 +38,7 @@ def _fetch_phemex_bars(exchange, since: int, limit: int):
 
     try:
         return exchange.fetch_ohlcv(
-            "BTC/USD",
+            "BTCUSD",
             timeframe="1h",
             since=since,
             limit=limit,
