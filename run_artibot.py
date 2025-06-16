@@ -34,6 +34,46 @@ from artibot.training import (
 from artibot.rl import MetaTransformerRL, meta_control_loop
 from artibot.validation import validate_and_gate
 from artibot.gui import TradingGUI, ask_use_prev_weights
+
+SKIP_SENTIMENT = False
+
+
+def ask_skip_sentiment(default: bool = False, tk_module=None) -> bool:
+    """Ask whether to skip the heavy sentiment download."""
+    global SKIP_SENTIMENT
+    try:
+        if tk_module is None:
+            from tkinter import Tk, messagebox
+        else:
+            Tk = tk_module.Tk
+            messagebox = tk_module.messagebox
+    except Exception as exc:  # pragma: no cover - headless env
+        print(f"[WARN] Tk unavailable: {exc}; skipping sentiment download")
+        SKIP_SENTIMENT = True
+        os.environ["NO_HEAVY"] = "1"
+        return True
+
+    root = Tk()
+    root.withdraw()
+    try:
+        result = messagebox.askyesno(
+            "Skip sentiment download?",
+            "GDELT is slow right now. Do you want to skip historical sentiment?",
+        )
+    finally:
+        root.destroy()
+    if result is None:
+        result = default
+    if result:
+        print("↪ Skipping sentiment pull; continuing …")
+        SKIP_SENTIMENT = True
+        os.environ["NO_HEAVY"] = "1"
+    else:
+        SKIP_SENTIMENT = False
+        os.environ.pop("NO_HEAVY", None)
+    return bool(result)
+
+
 import artibot.globals as G
 from artibot.bot_app import load_master_config
 
@@ -77,6 +117,7 @@ def main() -> None:
     """Prompt for live mode and run the trading bot."""
 
     setup_logging()
+    ask_skip_sentiment()
     root = tk.Tk()
     progress_q: Queue[tuple[float, str] | tuple[str, str]] = Queue()
     _launch_loading(root, progress_q)
@@ -192,6 +233,10 @@ def main() -> None:
     ingest_th.start()
 
     def _bg_init() -> None:
+        if SKIP_SENTIMENT:
+            init_done.set()
+            progress_q.put(("DONE", ""))
+            return
         progress_q.put((0.0, "Downloading historical sentiment + macro data…"))
         try:
             import tools.backfill_gdelt as _bf
