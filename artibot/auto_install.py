@@ -7,6 +7,8 @@ import os
 import subprocess
 import sys
 
+os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+
 LOG = logging.getLogger("auto_install")
 
 
@@ -27,3 +29,16 @@ def install(pkg: str, import_as: str | None = None) -> None:
         LOG.error("Pip install failed for %s: %s", pkg, exc)
         raise
     import_module(mod_name)
+
+
+def ensure_pkg(pkg: str) -> None:
+    """Install ``pkg`` if missing (no-op on CI)."""
+
+    try:
+        if importlib.util.find_spec(pkg) is not None:
+            return
+    except ValueError:
+        return
+    if os.environ.get("CI") == "true":
+        return
+    subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
