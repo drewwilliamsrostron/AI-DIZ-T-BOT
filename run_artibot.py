@@ -13,12 +13,16 @@ from artibot.environment import ensure_dependencies
 
 ensure_dependencies()
 
+import os
+
+os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+
 import json
 import logging
-import os
 import threading
 import tkinter as tk
 import queue
+from queue import Empty
 
 from artibot.utils import setup_logging, get_device
 from artibot.ensemble import EnsembleModel
@@ -58,7 +62,7 @@ def _launch_loading(
                 return
             msg_var.set(msg)
             pb["value"] = pct
-        except queue.Empty:
+        except Empty:
             pass
         finally:
             root.after(100, _poll)

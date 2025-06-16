@@ -40,7 +40,13 @@ def pytest_configure(config):
             def parameters(self):
                 return []
 
+            def to(self, *a, **k):
+                return self
+
         class FakeTensor(np.ndarray):
+            def __new__(cls, data):
+                return np.asarray(data).view(cls)
+
             def mean(self, *a, **k):
                 return np.mean(self, *a, **k)
 
@@ -65,14 +71,20 @@ def pytest_configure(config):
                     out = np.minimum(out, max)
                 return out
 
+            def size(self, dim=None):
+                return self.shape if dim is None else self.shape[dim]
+
+            def to(self, *a, **k):
+                return self
+
         def tensor(data, **k):
-            return np.array(data)
+            return FakeTensor(data)
 
         torch_ns = types.SimpleNamespace(
             tensor=tensor,
-            zeros=lambda *s, **k: np.zeros(s if len(s) > 1 else s[0]),
-            zeros_like=lambda x: np.zeros_like(x),
-            randn=lambda *s: np.random.randn(*s),
+            zeros=lambda *s, **k: FakeTensor(np.zeros(s if len(s) > 1 else s[0])),
+            zeros_like=lambda x: FakeTensor(np.zeros_like(x)),
+            randn=lambda *s: FakeTensor(np.random.randn(*s)),
             manual_seed=np.random.seed,
             is_tensor=lambda x: isinstance(x, np.ndarray),
             float32=np.float32,

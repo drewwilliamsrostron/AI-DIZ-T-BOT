@@ -13,28 +13,24 @@ import numpy as np
 import requests
 
 from .environment import ensure_dependencies
+from .auto_install import ensure_pkg
 import importlib.machinery as _machinery
 import sys
 
 ensure_dependencies()
+ensure_pkg("schedule")
 
 if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) is None:
     sys.modules["openai"].__spec__ = _machinery.ModuleSpec("openai", None)
 
 import schedule
 import yfinance as yf
-from transformers import (
-    AutoTokenizer,
-    AutoModelForSequenceClassification,
-)
-import torch
+from .finbert_helper import score as finbert_score
 
 import artibot.feature_store as fs
 
 _LOG = logging.getLogger("feature_ingest")
 
-_FINBERT_TOKENIZER = AutoTokenizer.from_pretrained("ProsusAI/finbert")
-_FINBERT_MODEL = AutoModelForSequenceClassification.from_pretrained("ProsusAI/finbert")
 
 _DOC_URL = "https://api.gdeltproject.org/api/v2/doc/docsearch"
 _MACRO_SRC = (
@@ -70,15 +66,11 @@ def upd_sentiment() -> None:
     headlines = load_headlines()
     if not headlines:
         return
-    inputs = _FINBERT_TOKENIZER(
-        headlines, return_tensors="pt", padding=True, truncation=True
-    )
-    with torch.no_grad():
-        logits = _FINBERT_MODEL(**inputs).logits
-    probs = logits.softmax(dim=-1)
-    # labels: 0=neutral 1=positive 2=negative
-    score = float((probs[:, 1] - probs[:, 2]).mean().item())
-    fs.upsert_news(_ts_hour(), score)
+    scores = []
+    for h in headlines:
+        lbl = finbert_score(h)
+        scores.append({"positive": 1, "negative": -1}.get(lbl, 0))
+    fs.upsert_news(_ts_hour(), float(np.mean(scores)))
 
 
 # ---- Macro surprise ---------------------------------------------------------

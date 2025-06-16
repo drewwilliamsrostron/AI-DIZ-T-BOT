@@ -6,3 +6,6 @@ schedule>=1.2.0              # lightweight job runner
 python-dateutil>=2.8.2
 pandas-ta==0.3.14            # realised-vol helper
 tqdm>=4.66.0
+
+finbert
+schedule>=1.2

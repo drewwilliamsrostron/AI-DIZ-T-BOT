@@ -15,8 +15,8 @@ import numpy as np
 import pandas as pd
 import requests
 import yfinance as yf
-from finbert.sentiment import SentimentAnalyzer
 from tqdm import tqdm
+from artibot.finbert_helper import score as finbert_score
 
 import artibot.feature_store as fs
 
@@ -28,7 +28,6 @@ START = dt.datetime(2015, 2, 1)
 END = dt.datetime.utcnow()
 GDELT_ARCH = "https://data.gdeltproject.org/gdeltv2/{ts}.gkg.csv.zip"
 TE_CAL = "https://api.tradingeconomics.com/calendar"
-FINBERT = SentimentAnalyzer()
 
 
 def hour_ts(d: dt.datetime) -> int:
