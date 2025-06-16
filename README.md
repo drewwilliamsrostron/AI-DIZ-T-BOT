@@ -74,7 +74,7 @@ These vectors are appended to the model’s input **and are updated live** by
 
 * CryptoPanic headlines → FinBERT sentiment (+1 = bullish, -1 = bearish)  
 * Economic-surprise numbers (e.g. CPI) → Z-scores  
-* BTC 7-day realised volatility via **yfinance**
+* BTC 7-day realised volatility via the bundled CSV plus live Phemex data
 
 ## Installation
 
@@ -202,9 +202,9 @@ docs.tradingeconomics.com
 ### Bootstrap & Data Layers
 
 Artibot installs missing wheels the first time you run it. Packages like
-`schedule`, `yfinance` and `finbert-embedding` are fetched on demand unless the
+`schedule` and `finbert-embedding` are fetched on demand unless the
 environment variable `CI` is set. Historical context is loaded via
-``tools/backfill_gdelt.py`` which pages Yahoo Finance hourly data and retrieves
-GDELT articles with retry logic. FinBERT weights download through the
+``tools/backfill_gdelt.py`` which stitches ``Gemini_BTCUSD_1h.csv`` with live
+Phemex bars and retrieves GDELT articles with retry logic. FinBERT weights download through the
 Hugging Face hub and are cached under ``~/.cache/artibot/finbert`` so sentiment
 lookups stay fast offline.
