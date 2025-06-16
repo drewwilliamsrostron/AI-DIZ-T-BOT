@@ -7,6 +7,8 @@ Phemex.  Training, live polling, the policy‑gradient meta agent and the Tkinte
 GUI all run in separate threads.  Dependencies are installed lazily on the first
 launch via `environment.ensure_dependencies()`.  Optional indicators can be
 enabled on the fly and the bot now supports hedging long/short exposure.
+At startup you'll be asked whether to skip the heavy sentiment backfill.
+Answer `yes` or set `NO_HEAVY=1` to avoid long downloads.
 
 ## Repository Structure
 

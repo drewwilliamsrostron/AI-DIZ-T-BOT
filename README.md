@@ -139,7 +139,11 @@ python run_artibot.py
 ```
 The Tkinter dashboard opens automatically. The bot performs a quick
 backtest on startup. A nuclear key gates trading until the mean Sharpe
-and profit factor exceed the configured thresholds.
+and profit factor exceed the configured thresholds.  On recent
+versions you'll also be prompted to **skip the historical sentiment
+pull** if GDELT is slow. Answer `yes` to set the environment variable
+`NO_HEAVY=1` and continue without downloading several gigabytes of
+data.
 
 Run a short training session without the GUI:
 
@@ -208,3 +212,4 @@ environment variable `CI` is set. Historical context is loaded via
 Phemex bars and retrieves GDELT articles with retry logic. FinBERT weights download through the
 Hugging Face hub and are cached under ``~/.cache/artibot/finbert`` so sentiment
 lookups stay fast offline.
+Set ``NO_HEAVY=1`` to skip the bulky GDELT download entirely.

@@ -6,14 +6,16 @@ Advantage Actor–Critic loss with Sharpe ratio based reward shaping.
 
 ## Actions
 
-| key           | description                          |
-|---------------|--------------------------------------|
-| `d_long_frac` | change long exposure fraction        |
-| `d_short_frac`| change short exposure fraction       |
-| `toggle_ema`  | enable/disable EMA indicator         |
-| `toggle_donchian` | toggle Donchian channels         |
-| `toggle_kijun`| toggle Kijun-sen line                |
-| `toggle_tenkan`| toggle Tenkan-sen line              |
-| `toggle_disp` | toggle price displacement            |
+The agent exposes a large action space. Continuous parameters start with
+``d_`` while ``toggle_*`` keys enable or disable indicators.
 
-Other keys adjust learning rate, weight decay and classic indicators.
+### Indicator toggles
+
+``toggle_{sma,rsi,macd,atr,vortex,cmf,ichimoku,ema,donchian,kijun,tenkan,disp}``
+
+### Parameter deltas
+
+``lr, wd, d_sma_period, d_rsi_period, d_macd_fast, d_macd_slow, d_macd_signal,
+d_atr_period, d_vortex_period, d_cmf_period, d_ema_period, d_donchian_period,
+d_kijun_period, d_tenkan_period, d_displacement, d_sl, d_tp, d_long_frac,
+d_short_frac``
