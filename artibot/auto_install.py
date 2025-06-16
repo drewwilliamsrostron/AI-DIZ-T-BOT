@@ -35,10 +35,30 @@ def ensure_pkg(pkg: str) -> None:
     """Install ``pkg`` if missing (no-op on CI)."""
 
     try:
-        if importlib.util.find_spec(pkg) is not None:
-            return
-    except ValueError:
+        __import__(pkg.split("==")[0])
         return
+    except ModuleNotFoundError:
+        pass
     if os.environ.get("CI") == "true":
-        return
+        raise
     subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
+
+
+def require(
+    pkg: str, import_name: str | None = None, min_version: str | None = None
+) -> None:
+    """Import ``import_name`` or install ``pkg`` interactively."""
+
+    mod_name = import_name or pkg.split("==")[0].split("[")[0]
+    try:
+        mod = import_module(mod_name)
+        if min_version:
+            from packaging.version import Version
+
+            if Version(getattr(mod, "__version__", "0")) < Version(min_version):
+                raise ModuleNotFoundError(mod_name)
+        return
+    except ModuleNotFoundError:
+        if os.environ.get("CI") == "true":
+            raise
+        subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])

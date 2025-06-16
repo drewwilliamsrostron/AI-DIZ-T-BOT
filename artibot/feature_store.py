@@ -24,21 +24,19 @@ import numpy as np
 # thread-local connection helper
 # ---------------------------------------------------------------------------
 _DB_PATH = os.path.join(os.path.dirname(__file__), "_features.duckdb")
+
 _tls = threading.local()
 
 
-def _con() -> duckdb.DuckDBPyConnection:  # noqa: N802 (factory style)
-    """Return a per-thread DuckDB connection."""
-    if not hasattr(_tls, "db"):
-        _tls.db = duckdb.connect(_DB_PATH, read_only=False)
-        _ensure_tables(_tls.db)
-    else:
-        try:
-            _tls.db.execute("SELECT 1")
-        except duckdb.Error:
-            _tls.db = duckdb.connect(_DB_PATH, read_only=False)
-            _ensure_tables(_tls.db)
-    return _tls.db
+def _get_con() -> duckdb.DuckDBPyConnection:
+    """Return a thread-local DuckDB connection."""
+
+    conn = getattr(_tls, "db", None)
+    if conn is None:
+        conn = duckdb.connect(_DB_PATH, read_only=False)
+        _tls.db = conn
+        _ensure_tables(conn)
+    return conn
 
 
 # ---------------------------------------------------------------------------
@@ -54,7 +52,7 @@ _DDL = {
 def _ensure_tables(conn: duckdb.DuckDBPyConnection | None = None) -> None:
     """Create tables and add missing columns if necessary."""
 
-    conn = conn or _con()
+    conn = conn or _get_con()
     conn.execute(
         """CREATE TABLE IF NOT EXISTS news_sentiment (ts TIMESTAMP PRIMARY KEY);"""
     )
@@ -73,21 +71,21 @@ def _ensure_tables(conn: duckdb.DuckDBPyConnection | None = None) -> None:
 #  ingestion helpers
 ###############################################################################
 def upsert_news(ts: int, score: float) -> None:
-    _con().execute(
+    _get_con().execute(
         "INSERT OR REPLACE INTO news_sentiment VALUES (?, ?)",
         (_dt.datetime.fromtimestamp(ts), float(score)),
     )
 
 
 def upsert_macro(ts: int, z: float) -> None:
-    _con().execute(
+    _get_con().execute(
         "INSERT OR REPLACE INTO macro_surprise VALUES (?, ?)",
         (_dt.datetime.fromtimestamp(ts), float(z)),
     )
 
 
 def upsert_rvol(ts: int, rvol: float) -> None:
-    _con().execute(
+    _get_con().execute(
         "INSERT OR REPLACE INTO realised_vol VALUES (?, ?)",
         (_dt.datetime.fromtimestamp(ts), float(rvol)),
     )
@@ -99,12 +97,17 @@ def upsert_rvol(ts: int, rvol: float) -> None:
 def _fetch_scalar(column: str, table: str, ts: int) -> float:
     """Return the most recent value <= *ts* from *table.column* (or ``0.0``)."""
 
-    conn = _con()
+    conn = _get_con()
     sql = f"SELECT {column} FROM {table} WHERE ts<=? ORDER BY ts DESC LIMIT 1"
     try:
         res = conn.execute(sql, (_dt.datetime.fromtimestamp(ts),)).fetchone()
         return float(res[0]) if res else 0.0
-    except (duckdb.InvalidInputException, duckdb.BinderException) as exc:
+    except duckdb.InvalidInputException:
+        _tls.db = duckdb.connect(_DB_PATH, read_only=False)
+        _ensure_tables(_tls.db)
+        res = _tls.db.execute(sql, (_dt.datetime.fromtimestamp(ts),)).fetchone()
+        return float(res[0]) if res else 0.0
+    except duckdb.BinderException as exc:
         if "column" in str(exc).lower():
             _ensure_tables(conn)
             res = conn.execute(sql, (_dt.datetime.fromtimestamp(ts),)).fetchone()
@@ -132,13 +135,13 @@ if __name__ == "__main__":
     import json
 
     if "--repair" in sys.argv:
-        _ensure_tables(_con())
+        _ensure_tables(_get_con())
         print("feature_store: schema verified / repaired ✅")
         sys.exit(0)
 
     if "--info" in sys.argv:
         info = {
-            "tables": _con()
+            "tables": _get_con()
             .execute(
                 "SELECT table_name, column_name, column_type "
                 "FROM duckdb_columns WHERE table_schema='main'"

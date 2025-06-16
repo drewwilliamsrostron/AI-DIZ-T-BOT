@@ -9,3 +9,4 @@ tqdm>=4.66.0
 
 finbert
 schedule>=1.2
+finbert-embedding
