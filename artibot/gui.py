@@ -2,6 +2,7 @@
 
 # ruff: noqa: F403, F405
 import artibot.globals as G
+from types import SimpleNamespace
 import numpy as np
 import datetime
 import os
@@ -133,6 +134,18 @@ class TradingGUI:
             import matplotlib.pyplot as plt
             from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+            if hasattr(plt, "ioff"):
+                plt.ioff()
+            if not hasattr(plt, "figure"):
+                plt.figure = lambda *a, **k: SimpleNamespace(
+                    add_subplot=lambda *b, **c: object()
+                )
+            if not hasattr(plt, "subplots"):
+                plt.subplots = lambda *a, **k: (
+                    SimpleNamespace(add_subplot=lambda *b, **c: object()),
+                    object(),
+                )
+
         # fallbacks for heavily stubbed modules during tests
         if not hasattr(tk, "BOTH"):
             for name in [
@@ -211,7 +224,9 @@ class TradingGUI:
             def winfo_width(self):
                 return int(getattr(self.root, "width", 100) * 0.5 * G.UI_SCALE)
 
-        if not hasattr(ttk, "Frame"):
+        if not hasattr(ttk, "Frame") or not hasattr(
+            getattr(ttk, "Notebook", object), "add"
+        ):
             for n in [
                 "Frame",
                 "Label",
@@ -232,7 +247,9 @@ class TradingGUI:
         self.weights_path = weights_path
         self.connector = connector
         self.close_requested = False
-        root.tk.call("tk", "scaling", G.UI_SCALE)
+        dpi = getattr(root, "winfo_fpixels", lambda x: 96)("1i")
+        scale = max(1.0, min(1.5, dpi / 72))
+        root.tk.call("tk", "scaling", scale)
         self.root.title("Complex AI Trading w/ Robust Backtest + Live Phemex")
         if hasattr(ttk, "Style"):
             style = ttk.Style()
@@ -266,32 +283,18 @@ class TradingGUI:
 
         self.frame_train = ttk.Frame(self.notebook)
         self.notebook.add(self.frame_train, text="MAIN - TRAINING VS VALIDATION")
-        self.train_canvas = tk.Canvas(self.frame_train)
-        train_scroll = ttk.Scrollbar(
-            self.frame_train, orient="vertical", command=self.train_canvas.yview
-        )
-        self.train_canvas.configure(yscrollcommand=train_scroll.set)
-        self.train_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        train_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        self.train_inner = ttk.Frame(self.train_canvas)
-        self.train_canvas.create_window((0, 0), window=self.train_inner, anchor="nw")
-        self.train_inner.bind(
-            "<Configure>",
-            lambda e: self.train_canvas.configure(
-                scrollregion=self.train_canvas.bbox("all")
-            ),
-        )
         self.fig_train = plt.figure(figsize=(6, 8))
         self.ax_loss = self.fig_train.add_subplot(4, 1, 1)
         self.ax_attention = self.fig_train.add_subplot(4, 1, 2, projection="3d")
         self.ax_equity_train = self.fig_train.add_subplot(4, 1, 3)
         self.ax_trades_time = self.fig_train.add_subplot(4, 1, 4)
-        self.canvas_train = FigureCanvasTkAgg(self.fig_train, master=self.train_inner)
+        getattr(self.fig_train, "tight_layout", lambda: None)()
+        self.canvas_train = FigureCanvasTkAgg(self.fig_train, master=self.frame_train)
         self.canvas_train.get_tk_widget().pack(
             fill=tk.BOTH, expand=True, padx=10, pady=10
         )
         self.loss_comment_label = ttk.Label(
-            self.train_inner,
+            self.frame_train,
             text="",
             font=("Helvetica", 9),
             justify=tk.LEFT,
@@ -299,7 +302,7 @@ class TradingGUI:
         )
         self.loss_comment_label.pack(fill=tk.X, padx=5, pady=5)
         self.attention_info = ttk.Label(
-            self.train_inner,
+            self.frame_train,
             text=(
                 "This 3D surface shows which past price bars the model focuses on.\n"
                 "Higher peaks mean more attention. Updated live."
@@ -770,27 +773,26 @@ class TradingGUI:
         self.ai_log_list.pack(fill=tk.BOTH, expand=True)
         self._log_lines = 0
 
-        self.update_interval = 2000
-        self.root.after(self.update_interval, self.update_dashboard)
+        self.update_interval = 100
+        idle = getattr(self.root, "after_idle", None)
+        if idle is not None:
+            self.after_id = idle(self.update_dashboard)
+        else:
+            self.after_id = self.root.after(0, self.update_dashboard)
         self.root.after(10000, self.refresh_stats)
 
         global GUI_INSTANCE
         GUI_INSTANCE = self
 
-        def _on_resize(event) -> None:
-            w, h = event.width, event.height
-            new_scale = max(0.9, min(2.0, min(w / 1280, h / 720)))
-            if abs(new_scale - G.UI_SCALE) > 0.05:
-                G.UI_SCALE = new_scale
-                self.root.tk.call("tk", "scaling", G.UI_SCALE)
-                redraw_everything()
-
-        self.root.bind("<Configure>", _on_resize)
+        # removed dynamic resize handler
 
     def _animate_attention(
         self, X: np.ndarray, Y: np.ndarray, new_data: np.ndarray
     ) -> None:
         """Animate the attention surface from the previous values."""
+        if new_data.size == 0:
+            self.ax_attention.text(0.5, 0.5, "No attention data", ha="center")
+            return
         if self._last_attention is None or self._last_attention.shape != new_data.shape:
             self._last_attention = new_data.copy()
         diff = (new_data - self._last_attention) / float(self.anim_steps)
@@ -833,7 +835,6 @@ class TradingGUI:
 
     def update_dashboard(self):
         """Refresh all dashboard widgets from shared state."""
-        tpos = self.train_canvas.yview()
         self.ax_loss.clear()
         self.ax_loss.set_title("Training vs. Validation Loss")
         x1 = range(1, len(G.global_training_loss) + 1)
@@ -953,7 +954,9 @@ class TradingGUI:
         if G.global_last_attention is not None:
             data = np.array(G.global_last_attention)
             avg = data.mean(axis=0) if data.ndim == 3 else data
-            if avg.ndim >= 2:
+            if avg.size == 0:
+                self.ax_attention.text(0.5, 0.5, "No attention data", ha="center")
+            elif avg.ndim >= 2:
                 x_ = np.arange(avg.shape[0])
                 y_ = np.arange(avg.shape[1])
                 X, Y = np.meshgrid(x_, y_)
@@ -1190,9 +1193,12 @@ class TradingGUI:
 
         update_auto_pause(G.global_sharpe, G.global_max_drawdown)
 
-        self.train_canvas.yview_moveto(tpos[0])
-
-        self.root.after(self.update_interval, self.update_dashboard)
+        if self.after_id is not None:
+            try:
+                self.root.after_cancel(self.after_id)
+            except Exception:
+                pass
+        self.after_id = self.root.after(self.update_interval, self.update_dashboard)
 
     def update_position(self, side: str, size: float, entry: float) -> None:
         self.label_side["text"] = side

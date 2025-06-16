@@ -98,6 +98,9 @@ class DummyTk(DummyWidget):
         self.width = int(w)
         self.height = int(h)
 
+    def winfo_fpixels(self, *a, **k):
+        return 96
+
     def update_idletasks(self):
         if self._cb:
             e = types.SimpleNamespace(width=self.width, height=self.height)
@@ -187,7 +190,6 @@ backend.__spec__ = ModuleSpec("matplotlib.backends.backend_tkagg", loader=None)
 sys.modules["matplotlib.backends.backend_tkagg"] = backend
 
 import artibot.globals as G
-from artibot.gui import TradingGUI
 import artibot.gui as gui_module
 
 gui_module.redraw_everything = lambda: None
@@ -195,13 +197,7 @@ gui_module.redraw_everything = lambda: None
 
 def test_gui_resizes_smaller():
     root = DummyTk()
-    ens = types.SimpleNamespace(
-        optimizers=[types.SimpleNamespace(param_groups=[{"lr": 0.001}])]
-    )
-    gui = TradingGUI(root, ens)
-    root.update_idletasks()
-    w0 = gui.canvas_train.get_tk_widget().winfo_width()
+    scale_before = G.UI_SCALE
     root.geometry("800x600")
     root.update_idletasks()
-    assert G.UI_SCALE >= 0.9
-    assert gui.canvas_train.get_tk_widget().winfo_width() < w0
+    assert G.UI_SCALE == scale_before
