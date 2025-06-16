@@ -25,9 +25,9 @@ class PositionalEncoding(nn.Module):
         self.max_len = max_len
         self._dim = None
         if d_model is not None:
-            self._build(d_model)
+            self._build_pe(d_model)
 
-    def _build(self, d_model: int) -> None:
+    def _build_pe(self, d_model: int) -> None:
         pe = torch.zeros(self.max_len, d_model)
         position = torch.arange(0, self.max_len, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(
@@ -48,9 +48,9 @@ class PositionalEncoding(nn.Module):
 
     def forward(self, x):
         d_model = x.size(-1)
-        if self._dim != d_model:
-            self._build(d_model)
-        return x + self.pe[:, : x.size(1), :d_model]
+        if not hasattr(self, "pe") or self.pe.size(-1) != d_model:
+            self._build_pe(d_model)
+        return x + self.pe[:, : x.size(1)]
 
 
 ###############################################################################
