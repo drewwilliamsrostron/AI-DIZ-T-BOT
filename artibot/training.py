@@ -442,6 +442,8 @@ class PhemexConnector:
         api_url_test = api_conf.get("API_URL_TEST", "https://testnet-api.phemex.com")
         self.default_type = api_conf.get("DEFAULT_TYPE", "swap")
 
+        self._last_code = None
+
         import ccxt
 
         try:
@@ -460,6 +462,17 @@ class PhemexConnector:
             sys.exit(1)
 
         self.exchange.load_markets()
+
+    def _handle_err(self, exc: Exception) -> bool:
+        msg = str(exc)
+        if "39998" in msg:
+            if self._last_code != 39998:
+                logging.warning("Exchange maintenance")
+                self._last_code = 39998
+            G.set_status("Exchange maintenance", "")
+            return True
+        self._last_code = None
+        return False
 
     def get_account_stats(self) -> dict:
         """Return account balances including USDT equity."""
@@ -490,6 +503,8 @@ class PhemexConnector:
                 limit=limit,
             )
         except Exception as exc:
+            if self._handle_err(exc):
+                return []
             logging.error(
                 "fetch_ohlcv failed for %s tf=%s limit=%s: %s",
                 self.symbol,
@@ -531,6 +546,8 @@ class PhemexConnector:
                     params,
                 )
             except Exception as exc:
+                if self._handle_err(exc):
+                    return None
                 logging.error("Order error: %s", exc)
                 return None
 

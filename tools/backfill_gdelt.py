@@ -9,14 +9,16 @@ import gzip
 import io
 import logging
 import math
+import time
+from datetime import timedelta
 from typing import Iterator
 
 import numpy as np
 import pandas as pd
 import requests
+import os
 import yfinance as yf
 from tqdm import tqdm
-from artibot.finbert_helper import score as finbert_score
 
 import artibot.feature_store as fs
 
@@ -24,10 +26,83 @@ import artibot.feature_store as fs
 LOG = logging.getLogger("backfill_gdelt")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-START = dt.datetime(2015, 2, 1)
+START = dt.datetime(2015, 1, 1)
 END = dt.datetime.utcnow()
 GDELT_ARCH = "https://data.gdeltproject.org/gdeltv2/{ts}.gkg.csv.zip"
 TE_CAL = "https://api.tradingeconomics.com/calendar"
+
+NO_HEAVY = os.environ.get("NO_HEAVY") == "1"
+
+
+def _download_btc_hourly(progress_cb=None) -> pd.DataFrame:
+    """Return hourly BTC prices via yfinance in chunks."""
+
+    if NO_HEAVY:
+        return pd.DataFrame()
+
+    step = timedelta(days=700)
+    frames = []
+    total = int((END - START) / step) + 1
+    s = START
+    idx = 0
+    last = 0.0
+    while s < END:
+        idx += 1
+        e = min(s + step, END)
+        LOG.info("YF %s→%s", s.date(), e.date())
+        try:
+            df = yf.download(
+                "BTC-USD",
+                start=s,
+                end=e,
+                interval="1h",
+                progress=False,
+            )
+            frames.append(df)
+        except Exception as exc:  # pragma: no cover - network
+            LOG.warning("YF chunk failed: %s", exc)
+        s = e
+        pct = idx / total * 100.0
+        if progress_cb and pct - last >= 5:
+            progress_cb(pct, f"YF slice {idx}/{total} downloaded")
+            last = pct
+    return pd.concat(frames).sort_index() if frames else pd.DataFrame()
+
+
+def _fetch_gdelt(query: str, progress_cb=None) -> list[dict]:
+    """Return paged docsearch results with retry and backoff."""
+    if NO_HEAVY:
+        return []
+    base = "https://api.gdeltproject.org/api/v2/doc/docsearch"
+    out: list[dict] = []
+    page = 1
+    last = time.time()
+    while True:
+        params = {"query": query, "maxrecords": 250, "format": "json", "page": page}
+        delay = 1
+        for attempt in range(5):
+            try:
+                r = requests.get(base, params=params, timeout=20)
+                r.raise_for_status()
+                break
+            except requests.RequestException as exc:  # pragma: no cover - network
+                lvl = logging.WARNING if attempt == 0 else logging.DEBUG
+                LOG.log(lvl, "GDELT page %s failed: %s", page, exc)
+                time.sleep(delay)
+                delay *= 2
+        else:
+            break
+
+        arts = r.json().get("articles", [])
+        if not arts:
+            break
+        out.extend(arts)
+        page += 1
+        if progress_cb and time.time() - last > 5:
+            progress_cb(page * 100 / 50.0, f"GDELT page {page}")
+            last = time.time()
+        time.sleep(1.2)
+    return out
 
 
 def hour_ts(d: dt.datetime) -> int:
@@ -37,10 +112,9 @@ def hour_ts(d: dt.datetime) -> int:
 ###############################################################################
 # 1. Realised volatility (BTC)
 ###############################################################################
-def realised_vol_series() -> pd.Series:
-    btc = yf.download("BTC-USD", start=START, end=END, interval="1h", progress=False)[
-        "Close"
-    ]
+def realised_vol_series(progress_cb=None) -> pd.Series:
+    btc_df = _download_btc_hourly(progress_cb)
+    btc = btc_df["Close"]
     logret = np.log(btc).diff()
     rvol = logret.rolling(168).std(ddof=0) * math.sqrt(8760)
     rvol.name = "rvol"
@@ -51,6 +125,8 @@ def realised_vol_series() -> pd.Series:
 # 2. Macro surprise (CPI, NFP)
 ###############################################################################
 def fetch_macro() -> pd.DataFrame:
+    if NO_HEAVY:
+        return pd.DataFrame(columns=["ts", "surprise_z"])
     params = {
         "c": "guest:guest",
         "d1": START.strftime("%Y-%m-%d"),
@@ -76,6 +152,9 @@ def fetch_macro() -> pd.DataFrame:
 def iter_archive_hours() -> Iterator[tuple[dt.datetime, float]]:
     """Yield (ts_hour, tone) pairs from hourly CSV archives."""
 
+    if NO_HEAVY:
+        return iter([])
+
     cur = START
     while cur <= END:
         ts_id = cur.strftime("%Y%m%d%H%M%S")
@@ -99,6 +178,8 @@ def iter_archive_hours() -> Iterator[tuple[dt.datetime, float]]:
 
 
 def sentiment_series() -> pd.Series:
+    if NO_HEAVY:
+        return pd.Series(dtype=float)
     rows: dict[int, list[float]] = {}
     for ts, base_tone in tqdm(iter_archive_hours(), desc="GDELT sentiment"):
         hts = hour_ts(ts)
@@ -110,8 +191,11 @@ def sentiment_series() -> pd.Series:
 # 4. Merge & write
 ###############################################################################
 def main(progress_cb=lambda pct, msg: None) -> None:
+    if NO_HEAVY:
+        progress_cb(100.0, "Done")
+        return
     LOG.info("Fetching realised volatility")
-    rvol = realised_vol_series()
+    rvol = realised_vol_series(progress_cb)
 
     LOG.info("Fetching macro surprises")
     macro = fetch_macro().set_index("ts")["surprise_z"]

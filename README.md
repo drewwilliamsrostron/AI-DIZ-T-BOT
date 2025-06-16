@@ -193,8 +193,18 @@ one row per hour so back-tests from 2015 onward see realistic context data.
 
 Live sentiment now comes from the GDELT DOC 2.0 API (15-minute latency).
 
-[1] GDELT hourly CSVs update every 15-minutes 
+[1] GDELT hourly CSVs update every 15-minutes
 gdeltproject.org
 
-[2] TradingEconomics guest API provides actual vs consensus values 
+[2] TradingEconomics guest API provides actual vs consensus values
 docs.tradingeconomics.com
+
+### Bootstrap & Data Layers
+
+Artibot installs missing wheels the first time you run it. Packages like
+`schedule`, `yfinance` and `finbert-embedding` are fetched on demand unless the
+environment variable `CI` is set. Historical context is loaded via
+``tools/backfill_gdelt.py`` which pages Yahoo Finance hourly data and retrieves
+GDELT articles with retry logic. FinBERT weights download through the
+Hugging Face hub and are cached under ``~/.cache/artibot/finbert`` so sentiment
+lookups stay fast offline.

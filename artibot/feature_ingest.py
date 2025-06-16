@@ -13,17 +13,19 @@ import numpy as np
 import requests
 
 from .environment import ensure_dependencies
-from .auto_install import ensure_pkg
+from .auto_install import require
 import importlib.machinery as _machinery
 import sys
 
 ensure_dependencies()
-ensure_pkg("schedule")
+require("schedule")
 
 if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) is None:
     sys.modules["openai"].__spec__ = _machinery.ModuleSpec("openai", None)
 
 import schedule
+
+require("yfinance")
 import yfinance as yf
 from .finbert_helper import score as finbert_score
 

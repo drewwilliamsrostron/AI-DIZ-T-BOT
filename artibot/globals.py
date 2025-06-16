@@ -10,7 +10,7 @@ meta-agent updates. Worker threads communicate short messages via
 ###############################################################################
 import time
 import threading
-import queue
+from queue import Queue
 import collections
 import numpy as np
 import matplotlib
@@ -172,7 +172,7 @@ global_last_attention: list[list[float]] | None = None
 global_phemex_data = []
 global_days_in_profit = 0.0
 global_validation_summary = {}
-live_bars_queue = queue.Queue()
+live_bars_queue = Queue()
 live_sharpe_history = collections.deque(maxlen=1000)
 live_drawdown_history = collections.deque(maxlen=1000)
 trading_paused = False

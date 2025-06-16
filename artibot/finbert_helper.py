@@ -1,28 +1,54 @@
-"""Thin wrapper around FinBERT with an optional fallback pipeline."""
+"""FinBERT sentiment with cached fallback."""
 
-from artibot.auto_install import ensure_pkg
+from __future__ import annotations
 
-try:
-    from finbert.sentiment import SentimentAnalyzer
+import os
+from pathlib import Path
 
-    _MODEL = SentimentAnalyzer()
+from artibot.auto_install import require
 
-    def score(text: str) -> str:
-        return _MODEL.predict(text)[0][0]["label"]
 
-except ModuleNotFoundError:
-    ensure_pkg("transformers")
-    try:  # pragma: no cover - optional
-        from transformers import pipeline
+_CACHE = Path.home() / ".cache" / "artibot" / "finbert"
+_CACHE.mkdir(parents=True, exist_ok=True)
 
-        _PIPE = pipeline(
-            "text-classification", model="ProsusAI/finbert", truncation=True
-        )
+NO_HEAVY = os.environ.get("NO_HEAVY") == "1"
 
-        def score(text: str) -> str:
-            return _PIPE(text, max_length=128, truncation=True)[0]["label"]
+
+def _load_pipeline():
+    require("huggingface-hub[hf_xet]", "huggingface_hub")
+    require("transformers")
+    from transformers import pipeline
+
+    return pipeline(
+        "text-classification", model="ProsusAI/finbert", cache_dir=str(_CACHE)
+    )
+
+
+try:  # pragma: no cover - optional network
+    if NO_HEAVY:
+        raise RuntimeError("skip heavy")
+    require("finbert-embedding", "finbert.embedding")
+    from finbert.embedding import FinBertEmbedding
+
+    _FB = FinBertEmbedding()
+
+    def score(text: str) -> float:
+        vec = _FB.sentence_vector(text)
+        return float(vec[0])
+
+except Exception:
+    try:
+        if NO_HEAVY:
+            raise RuntimeError("skip heavy")
+        _PIPE = _load_pipeline()
+
+        def score(text: str) -> float:
+            try:
+                return float(_PIPE(text)[0]["score"])
+            except Exception:
+                return 0.0
 
     except Exception:
 
-        def score(text: str) -> str:
-            return "neutral"
+        def score(text: str) -> float:  # type: ignore
+            return 0.0

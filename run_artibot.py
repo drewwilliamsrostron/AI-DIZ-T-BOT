@@ -21,8 +21,7 @@ import json
 import logging
 import threading
 import tkinter as tk
-import queue
-from queue import Empty
+from queue import Queue, Empty
 
 from artibot.utils import setup_logging, get_device
 from artibot.ensemble import EnsembleModel
@@ -40,7 +39,7 @@ from artibot.bot_app import load_master_config
 
 
 def _launch_loading(
-    root: tk.Tk, msg_queue: "queue.Queue[tuple[float, str]]"
+    root: tk.Tk, msg_queue: "Queue[tuple[float, str] | tuple[str, str]]"
 ) -> tuple[tk.Toplevel, tk.StringVar, object]:
     from tkinter import ttk
 
@@ -79,7 +78,7 @@ def main() -> None:
 
     setup_logging()
     root = tk.Tk()
-    progress_q: queue.Queue[tuple[float, str] | tuple[str, str]] = queue.Queue()
+    progress_q: Queue[tuple[float, str] | tuple[str, str]] = Queue()
     _launch_loading(root, progress_q)
 
     G.set_cpu_limit(CONFIG.get("CPU_LIMIT", os.cpu_count() or 1))
