@@ -14,6 +14,8 @@ from artibot.environment import ensure_dependencies
 ensure_dependencies()
 
 import os
+import sys
+import subprocess
 
 os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 
@@ -23,17 +25,6 @@ import threading
 import tkinter as tk
 from queue import Queue, Empty
 
-from artibot.utils import setup_logging, get_device
-from artibot.ensemble import EnsembleModel
-from artibot.dataset import HourlyDataset, load_csv_hourly
-from artibot.training import (
-    PhemexConnector,
-    csv_training_thread,
-    phemex_live_thread,
-)
-from artibot.rl import MetaTransformerRL, meta_control_loop
-from artibot.validation import validate_and_gate
-from artibot.gui import TradingGUI, ask_use_prev_weights
 
 SKIP_SENTIMENT = False
 
@@ -74,8 +65,49 @@ def ask_skip_sentiment(default: bool = False, tk_module=None) -> bool:
     return bool(result)
 
 
-import artibot.globals as G
-from artibot.bot_app import load_master_config
+def load_master_config(path: str = "master_config.json") -> dict:
+    """Return configuration dictionary from the repo root."""
+    cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), path)
+    try:
+        with open(cfg_path, "r") as fh:
+            return json.load(fh)
+    except FileNotFoundError:
+        return {}
+
+
+def _maybe_relaunch_for_threads() -> None:
+    """Ask for CPU threads and relaunch subprocess if needed."""
+    if os.environ.get("ARTIBOT_RERUN") == "1":
+        return
+
+    from tkinter import simpledialog, messagebox
+
+    root = tk.Tk()
+    root.withdraw()
+    try:
+        if messagebox.askyesno(
+            title="Thread tuning",
+            message="Change CPU thread count before training?",
+        ):
+            n_threads = simpledialog.askinteger(
+                "Threads",
+                "Enter desired # CPU threads:",
+                minvalue=1,
+                maxvalue=os.cpu_count() or 1,
+            )
+            if n_threads:
+                env = os.environ.copy()
+                env["OMP_NUM_THREADS"] = str(n_threads)
+                env["MKL_NUM_THREADS"] = str(n_threads)
+                env["ARTIBOT_RERUN"] = "1"
+                cmd = [sys.executable, os.path.abspath(__file__)]
+                print(f"\u21AA Restarting with {n_threads} CPU threads …")
+                subprocess.Popen(cmd, env=env)
+                sys.exit(0)
+        else:
+            print("\u21AA Keeping current CPU-thread setting …")
+    finally:
+        root.destroy()
 
 
 def _launch_loading(
@@ -116,8 +148,23 @@ CONFIG = load_master_config()
 def main() -> None:
     """Prompt for live mode and run the trading bot."""
 
-    setup_logging()
     ask_skip_sentiment()
+    _maybe_relaunch_for_threads()
+
+    from artibot.utils import setup_logging, get_device
+    from artibot.ensemble import EnsembleModel
+    from artibot.dataset import HourlyDataset, load_csv_hourly
+    from artibot.training import (
+        PhemexConnector,
+        csv_training_thread,
+        phemex_live_thread,
+    )
+    from artibot.rl import MetaTransformerRL, meta_control_loop
+    from artibot.validation import validate_and_gate
+    from artibot.gui import TradingGUI, ask_use_prev_weights
+    import artibot.globals as G
+
+    setup_logging()
     root = tk.Tk()
     progress_q: Queue[tuple[float, str] | tuple[str, str]] = Queue()
     _launch_loading(root, progress_q)
