@@ -70,26 +70,36 @@ def _download_btc_hourly(progress_cb=None) -> pd.DataFrame:
 
 
 def _fetch_gdelt(query: str, progress_cb=None) -> list[dict]:
-    """Return paged docsearch results with retry and backoff."""
+    """Return paged DOC results with retry and an overall 60s timeout."""
+
     if NO_HEAVY:
         return []
+
     base = "https://api.gdeltproject.org/api/v2/doc/docsearch"
     out: list[dict] = []
     page = 1
     last = time.time()
+    start = time.time()
     while True:
-        params = {"query": query, "maxrecords": 250, "format": "json", "page": page}
-        delay = 1
+        if time.time() - start > 60:
+            raise requests.RequestException("GDELT timeout")
+        params = {
+            "query": query,
+            "maxrecords": 250,
+            "format": "json",
+            "page": page,
+        }
         for attempt in range(5):
             try:
-                r = requests.get(base, params=params, timeout=20)
+                r = requests.get(base, params=params, timeout=(3, 8))
                 r.raise_for_status()
                 break
             except requests.RequestException as exc:  # pragma: no cover - network
-                lvl = logging.WARNING if attempt == 0 else logging.DEBUG
-                LOG.log(lvl, "GDELT page %s failed: %s", page, exc)
+                delay = 2**attempt
+                LOG.debug("GDELT page %s failed: %s", page, exc)
+                if time.time() - start + delay >= 60:
+                    raise
                 time.sleep(delay)
-                delay *= 2
         else:
             break
 
@@ -180,6 +190,12 @@ def iter_archive_hours() -> Iterator[tuple[dt.datetime, float]]:
 def sentiment_series() -> pd.Series:
     if NO_HEAVY:
         return pd.Series(dtype=float)
+    try:
+        _fetch_gdelt("bitcoin")
+    except requests.RequestException:
+        LOG.warning("[WARN] GDELT unavailable – continuing without news sentiment")
+        return pd.Series(dtype=float)
+
     rows: dict[int, list[float]] = {}
     for ts, base_tone in tqdm(iter_archive_hours(), desc="GDELT sentiment"):
         hts = hour_ts(ts)

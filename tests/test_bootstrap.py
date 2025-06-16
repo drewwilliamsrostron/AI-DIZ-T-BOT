@@ -3,13 +3,15 @@ import types
 from importlib.machinery import ModuleSpec
 from queue import Queue
 
+
 # tkinter / matplotlib stubs
 class DummyWidget:
-    def __init__(self, master=None):
+    def __init__(self, master=None, **_kw):
         self.master = master
         self.state = "normal"
         self.attrs = {}
         self.root = self
+        self._after_cbs = []
 
     def pack(self, *a, **k):
         pass
@@ -21,7 +23,7 @@ class DummyWidget:
         self.attrs[k] = v
 
     def after(self, ms, cb):
-        cb()
+        self._after_cbs.append(cb)
 
     def withdraw(self):
         self.state = "withdrawn"
@@ -30,15 +32,31 @@ class DummyWidget:
         self.state = "normal"
 
     def update_idletasks(self):
+        pending = self._after_cbs[:]
+        self._after_cbs.clear()
+        for cb in pending:
+            cb()
+
+    def destroy(self):
         pass
+
+    def title(self, _):
+        pass
+
+    def grab_set(self):
+        pass
+
 
 class DummyTk(DummyWidget):
     pass
 
+
 TkMod = types.ModuleType("tkinter")
 TkMod.Tk = DummyTk
 TkMod.Toplevel = DummyTk
-TkMod.StringVar = lambda value="": types.SimpleNamespace(set=lambda x: None, get=lambda: value)
+TkMod.StringVar = lambda value="": types.SimpleNamespace(
+    set=lambda x: None, get=lambda: value
+)
 sys.modules["tkinter"] = TkMod
 TtkMod = types.ModuleType("tkinter.ttk")
 TtkMod.Label = DummyWidget
@@ -57,7 +75,7 @@ backend = types.ModuleType("matplotlib.backends.backend_tkagg")
 backend.FigureCanvasTkAgg = lambda *a, **k: DummyWidget()
 sys.modules["matplotlib.backends.backend_tkagg"] = backend
 
-import run_artibot
+import run_artibot  # noqa: E402
 
 
 def test_splash_handoff():
