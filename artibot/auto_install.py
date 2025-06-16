@@ -3,6 +3,7 @@
 from importlib import import_module
 import importlib.util
 import logging
+import os
 import subprocess
 import sys
 
@@ -14,6 +15,8 @@ def install(pkg: str, import_as: str | None = None) -> None:
     mod_name = import_as or pkg
     if importlib.util.find_spec(mod_name) is not None:
         return
+    if os.environ.get("CI") == "true":
+        raise ModuleNotFoundError(mod_name)
     LOG.warning("Package %s missing – installing…", pkg)
     try:
         subprocess.check_call(

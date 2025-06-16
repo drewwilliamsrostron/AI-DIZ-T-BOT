@@ -18,10 +18,18 @@ logger = logging.getLogger(__name__)
 # PositionalEncoding
 ###############################################################################
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, max_len=5000):
+    """Add positional encoding on the fly for any feature dimension."""
+
+    def __init__(self, d_model: int | None = None, max_len: int = 5000) -> None:
         super().__init__()
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        self.max_len = max_len
+        self._dim = None
+        if d_model is not None:
+            self._build(d_model)
+
+    def _build(self, d_model: int) -> None:
+        pe = torch.zeros(self.max_len, d_model)
+        position = torch.arange(0, self.max_len, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(
             torch.arange(0, d_model, 2).float() * (-np.log(10000.0) / d_model)
         )
@@ -31,10 +39,18 @@ class PositionalEncoding(nn.Module):
         else:
             pe[:, 1::2] = torch.cos(position * div_term)
         pe = pe.unsqueeze(0)
-        self.register_buffer("pe", pe)
+        if hasattr(self, "pe"):
+            self.pe.resize_(pe.size())
+            self.pe.copy_(pe)
+        else:
+            self.register_buffer("pe", pe)
+        self._dim = d_model
 
     def forward(self, x):
-        return x + self.pe[:, : x.size(1)]
+        d_model = x.size(-1)
+        if self._dim != d_model:
+            self._build(d_model)
+        return x + self.pe[:, : x.size(1), :d_model]
 
 
 ###############################################################################

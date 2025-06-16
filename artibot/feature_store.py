@@ -32,6 +32,12 @@ def _con() -> duckdb.DuckDBPyConnection:  # noqa: N802 (factory style)
     if not hasattr(_tls, "db"):
         _tls.db = duckdb.connect(_DB_PATH, read_only=False)
         _ensure_tables(_tls.db)
+    else:
+        try:
+            _tls.db.execute("SELECT 1")
+        except duckdb.Error:
+            _tls.db = duckdb.connect(_DB_PATH, read_only=False)
+            _ensure_tables(_tls.db)
     return _tls.db
 
 
