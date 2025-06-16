@@ -11,8 +11,9 @@ import logging
 
 import artibot.globals as G
 from .backtest import robust_backtest
-from .dataset import load_csv_hourly
+from .dataset import load_csv_hourly, HourlyDataset
 from .ensemble import EnsembleModel
+from .hyperparams import HyperParams, IndicatorHyperparams
 from .training import csv_training_thread
 from .utils import get_device
 
@@ -52,7 +53,28 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
     if not data:
         return []
     device = get_device()
-    ensemble = EnsembleModel(device=device, n_models=1, lr=3e-4, weight_decay=1e-4)
+
+    indicator_hp = IndicatorHyperparams(
+        rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
+    )
+    ds_tmp = HourlyDataset(
+        data,
+        seq_len=24,
+        indicator_hparams=indicator_hp,
+        atr_threshold_k=getattr(indicator_hp, "atr_threshold_k", 1.5),
+        train_mode=False,
+    )
+    n_features = ds_tmp[0][0].shape[1]
+
+    ensemble = EnsembleModel(
+        device=device,
+        n_models=1,
+        lr=3e-4,
+        weight_decay=1e-4,
+        n_features=n_features,
+    )
+    ensemble.indicator_hparams = indicator_hp
+    ensemble.hp = HyperParams(indicator_hp=indicator_hp)
     if hasattr(torch, "set_float32_matmul_precision"):
         torch.set_float32_matmul_precision("high")
     if hasattr(torch, "compile") and sys.version_info < (3, 12):

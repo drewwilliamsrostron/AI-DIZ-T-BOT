@@ -143,16 +143,20 @@ class EnsembleModel:
         self,
         device: torch.device | None = None,
         n_models: int = 2,
-        lr=3e-4,
-        weight_decay=1e-4,
-        weights_path="best.pt",
-    ):
+        lr: float = 3e-4,
+        weight_decay: float = 1e-4,
+        weights_path: str = "best.pt",
+        *,
+        n_features: int = 13,
+    ) -> None:
         device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.device = device
         self.weights_path = weights_path
 
         # (6) We changed TradingModel to bigger capacity above
-        self.models = [TradingModel().to(device) for _ in range(n_models)]
+        self.models = [
+            TradingModel(n_features=n_features).to(device) for _ in range(n_models)
+        ]
         print("[DEBUG] Model moved to device")
         self.optimizers = [
             optim.AdamW(m.parameters(), lr=lr, weight_decay=weight_decay)
@@ -513,6 +517,7 @@ class EnsembleModel:
                         if random.random() < 0.3:
                             self.models = [
                                 TradingModel(
+                                    n_features=self.models[0].input_dim,
                                     hidden_size=np.random.choice([128, 256]),
                                     dropout=np.random.uniform(0.3, 0.6),
                                 ).to(self.device)

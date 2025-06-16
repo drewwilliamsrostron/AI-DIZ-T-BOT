@@ -33,6 +33,7 @@ def load_master_config(path: str = "master_config.json") -> dict:
 
 from .dataset import HourlyDataset, load_csv_hourly
 from .ensemble import EnsembleModel
+from .hyperparams import HyperParams, IndicatorHyperparams
 import artibot.globals as G
 from .gui import TradingGUI, ask_use_prev_weights
 from .rl import MetaTransformerRL, meta_control_loop
@@ -154,7 +155,27 @@ def run_bot(max_epochs: int | None = None) -> None:
         msg += f" ({torch.cuda.get_device_name(0)})"
     logging.info(msg)
 
-    ensemble = EnsembleModel(device=device, n_models=2, lr=3e-4, weight_decay=1e-4)
+    indicator_hp = IndicatorHyperparams(
+        rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
+    )
+    ds_tmp = HourlyDataset(
+        data,
+        seq_len=24,
+        indicator_hparams=indicator_hp,
+        atr_threshold_k=getattr(indicator_hp, "atr_threshold_k", 1.5),
+        train_mode=False,
+    )
+    n_features = ds_tmp[0][0].shape[1]
+
+    ensemble = EnsembleModel(
+        device=device,
+        n_models=2,
+        lr=3e-4,
+        weight_decay=1e-4,
+        n_features=n_features,
+    )
+    ensemble.indicator_hparams = indicator_hp
+    ensemble.hp = HyperParams(indicator_hp=indicator_hp)
     if hasattr(torch, "set_float32_matmul_precision"):
         torch.set_float32_matmul_precision("high")
     if hasattr(torch, "compile") and sys.version_info < (3, 12):
@@ -204,13 +225,7 @@ def run_bot(max_epochs: int | None = None) -> None:
     )
     phemex_th.start()
 
-    ds = HourlyDataset(
-        data,
-        seq_len=24,
-        indicator_hparams=ensemble.indicator_hparams,
-        atr_threshold_k=getattr(ensemble.indicator_hparams, "atr_threshold_k", 1.5),
-        train_mode=False,
-    )
+    ds = ds_tmp
     clamp_min = config.get("CLAMP_MIN", -10.0)
     clamp_max = config.get("CLAMP_MAX", 10.0)
     meta_agent = MetaTransformerRL(
