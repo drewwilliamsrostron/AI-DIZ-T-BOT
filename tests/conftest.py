@@ -85,7 +85,9 @@ def pytest_configure(config):
             return FakeTensor(data)
 
         torch_mod.tensor = tensor
-        torch_mod.zeros = lambda *s, **k: FakeTensor(np.zeros(s if len(s) > 1 else s[0]))
+        torch_mod.zeros = lambda *s, **k: FakeTensor(
+            np.zeros(s if len(s) > 1 else s[0])
+        )
         torch_mod.zeros_like = lambda x: FakeTensor(np.zeros_like(x))
         torch_mod.randn = lambda *s: FakeTensor(np.random.randn(*s))
         torch_mod.manual_seed = np.random.seed
@@ -101,19 +103,28 @@ def pytest_configure(config):
         nn_mod.__spec__ = ModuleSpec("torch.nn", loader=None)
         torch_mod.nn = nn_mod
         optim_mod = types.ModuleType("torch.optim")
-        optim_mod.SGD = lambda *a, **k: types.SimpleNamespace(param_groups=[{"lr": 0.0, "weight_decay": 0.0}])
-        optim_mod.Adam = lambda *a, **k: types.SimpleNamespace(param_groups=[{"lr": 0.0, "weight_decay": 0.0}])
-        optim_mod.AdamW = lambda *a, **k: types.SimpleNamespace(param_groups=[{"lr": 0.0, "weight_decay": 0.0}])
+        optim_mod.SGD = lambda *a, **k: types.SimpleNamespace(
+            param_groups=[{"lr": 0.0, "weight_decay": 0.0}]
+        )
+        optim_mod.Adam = lambda *a, **k: types.SimpleNamespace(
+            param_groups=[{"lr": 0.0, "weight_decay": 0.0}]
+        )
+        optim_mod.AdamW = lambda *a, **k: types.SimpleNamespace(
+            param_groups=[{"lr": 0.0, "weight_decay": 0.0}]
+        )
         optim_mod.__spec__ = ModuleSpec("torch.optim", loader=None)
         lr_sched = types.ModuleType("torch.optim.lr_scheduler")
         lr_sched.__spec__ = ModuleSpec("torch.optim.lr_scheduler", loader=None)
         lr_sched.ReduceLROnPlateau = object
         lr_sched.StepLR = object
         lr_sched.OneCycleLR = object
+        lr_sched.CosineAnnealingLR = object
         optim_mod.lr_scheduler = lr_sched
         torch_mod.optim = optim_mod
         torch_mod.no_grad = contextlib.nullcontext
-        torch_mod.device = lambda *a, **k: None
+        torch_mod.device = type("device", (), {})
+        torch_mod.set_num_threads = lambda n: None
+        torch_mod.set_num_interop_threads = lambda n: None
         torch_mod.Tensor = FakeTensor
         utils_mod = types.ModuleType("torch.utils")
         data_mod = types.ModuleType("torch.utils.data")
@@ -157,7 +168,9 @@ def pytest_configure(config):
 
     if "duckdb" not in sys.modules:
         db = types.ModuleType("duckdb")
-        db.connect = lambda *a, **k: types.SimpleNamespace(execute=lambda *a, **k: types.SimpleNamespace(fetchone=lambda: (0,)))
+        db.connect = lambda *a, **k: types.SimpleNamespace(
+            execute=lambda *a, **k: types.SimpleNamespace(fetchone=lambda: (0,))
+        )
         db.DuckDBPyConnection = object
         db.InvalidInputException = Exception
         db.BinderException = Exception
@@ -169,11 +182,15 @@ def pytest_configure(config):
         matplotlib.__spec__ = ModuleSpec("matplotlib", loader=None)
         plt = types.ModuleType("matplotlib.pyplot")
         plt.__spec__ = ModuleSpec("matplotlib.pyplot", loader=None)
-        plt.figure = lambda *a, **k: types.SimpleNamespace(add_subplot=lambda *a, **k: object())
+        plt.figure = lambda *a, **k: types.SimpleNamespace(
+            add_subplot=lambda *a, **k: object()
+        )
         sys.modules["matplotlib"] = matplotlib
         sys.modules["matplotlib.pyplot"] = plt
         backend = types.ModuleType("matplotlib.backends.backend_tkagg")
-        backend.FigureCanvasTkAgg = lambda *a, **k: types.SimpleNamespace(get_tk_widget=lambda: object())
+        backend.FigureCanvasTkAgg = lambda *a, **k: types.SimpleNamespace(
+            get_tk_widget=lambda: object()
+        )
         sys.modules["matplotlib.backends.backend_tkagg"] = backend
 
     # schedule stub

@@ -12,6 +12,7 @@ class DummyWidget:
         self.attrs = {}
         self.root = self
         self._after_cbs = []
+        self.destroyed = False
 
     def pack(self, *a, **k):
         pass
@@ -38,7 +39,7 @@ class DummyWidget:
             cb()
 
     def destroy(self):
-        pass
+        self.destroyed = True
 
     def title(self, _):
         pass
@@ -82,6 +83,40 @@ def test_splash_handoff():
     root = TkMod.Tk()
     q: Queue[tuple[float, str] | tuple[str, str]] = Queue()
     win, msg, pb = run_artibot._launch_loading(root, q)
-    q.put(("DONE", ""))
-    root.update_idletasks()
+
+    sys.modules.setdefault(
+        "requests",
+        types.SimpleNamespace(
+            RequestException=Exception,
+            get=lambda *a, **k: types.SimpleNamespace(json=lambda: {}),
+        ),
+    )
+    sys.modules.setdefault(
+        "yfinance", types.SimpleNamespace(download=lambda *a, **k: [])
+    )
+    sys.modules.setdefault("tqdm", types.SimpleNamespace(tqdm=lambda x, **k: x))
+
+    def _bg():
+        q.put((0.0, "start"))
+        try:
+            from tools import backfill_gdelt as _bf
+
+            _bf.fetch_docs("btc")  # patched to raise
+        finally:
+            q.put(("DONE", ""))
+
+    import threading
+
+    import tools.backfill_gdelt as _bf
+
+    _orig = _bf.fetch_docs
+    _bf.fetch_docs = lambda *a, **k: (_ for _ in ()).throw(RuntimeError())
+    threading.Thread(target=_bg, daemon=True).start()
+
+    for _ in range(3):
+        root.update_idletasks()
+
+    _bf.fetch_docs = _orig
+
     assert root.state == "normal"
+    assert win.destroyed
