@@ -16,7 +16,7 @@ if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) 
 
 import torch
 
-from .utils import rolling_zscore
+from .utils import rolling_zscore, feature_dim_for
 from torch.utils.data import Dataset
 
 import artibot.globals as G
@@ -280,6 +280,10 @@ class HourlyDataset(Dataset):
             )
 
         feats = np.column_stack(cols)
+        exp_cols = feature_dim_for(self.hp)
+        assert (
+            feats.shape[1] == exp_cols
+        ), f"FeatureIngest built {feats.shape[1]} cols but expected {exp_cols}"
 
         # ``ta-lib`` leaves the first few rows as NaN which would otherwise
         # propagate through scaling and ultimately make the training loss

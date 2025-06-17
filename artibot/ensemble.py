@@ -35,7 +35,7 @@ from torch.utils.data import DataLoader
 
 from .backtest import robust_backtest
 from .hyperparams import HyperParams, IndicatorHyperparams
-from .utils import active_feature_dim
+from .utils import active_feature_dim, feature_dim_for
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
 from .model import TradingModel
@@ -164,7 +164,7 @@ class EnsembleModel:
         self.n_features = feat_dim
 
         self.models = [
-            TradingModel(n_features=feat_dim).to(device) for _ in range(n_models)
+            TradingModel(input_size=feat_dim).to(device) for _ in range(n_models)
         ]
         print("[DEBUG] Model moved to device")
         self.optimizers = [
@@ -220,7 +220,7 @@ class EnsembleModel:
 
         self.n_features = new_dim
         self.models = [
-            TradingModel(n_features=new_dim).to(self.device)
+            TradingModel(input_size=new_dim).to(self.device)
             for _ in range(len(self.models))
         ]
         lr = self.optimizers[0].param_groups[0]["lr"]
@@ -545,7 +545,7 @@ class EnsembleModel:
                         if random.random() < 0.3:
                             self.models = [
                                 TradingModel(
-                                    n_features=self.n_features,
+                                    input_size=self.n_features,
                                     hidden_size=np.random.choice([128, 256]),
                                     dropout=np.random.uniform(0.3, 0.6),
                                 ).to(self.device)
@@ -680,6 +680,14 @@ class EnsembleModel:
         self, windows_tensor: torch.Tensor, batch_size: int = 256
     ) -> Tuple[torch.Tensor, torch.Tensor, dict]:
         """Return predictions for ``windows_tensor`` in mini-batches."""
+        exp_dim = feature_dim_for(self.indicator_hparams)
+        if self.models[0].input_size != exp_dim:
+            logging.warning(
+                "Rebuilding models: feature dim changed from %d \u2794 %d",
+                self.models[0].input_size,
+                exp_dim,
+            )
+            self.rebuild_models(exp_dim)
 
         with torch.no_grad():
             all_probs = []

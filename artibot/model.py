@@ -3,20 +3,15 @@
 # ruff: noqa: F403, F405
 
 import logging
-import os
 import numpy as np
 import torch
 import torch.nn as nn
 
 from .dataset import TradeParams
 import artibot.globals as G
-from .utils import attention_entropy, active_feature_dim
-from .hyperparams import IndicatorHyperparams
+from .utils import attention_entropy
 
 logger = logging.getLogger(__name__)
-
-feat_dim = active_feature_dim(IndicatorHyperparams())
-DEFAULT_INPUT_SIZE = int(os.getenv("ATB_FIXED_INPUT", feat_dim))
 
 
 ###############################################################################
@@ -65,15 +60,16 @@ class PositionalEncoding(nn.Module):
 class TradingModel(nn.Module):
     def __init__(
         self,
-        n_features: int = DEFAULT_INPUT_SIZE,
+        input_size: int,
         hidden_size: int = 128,
         num_classes: int = 3,
         dropout: float = 0.4,
     ) -> None:
         super().__init__()
+        self.input_size = input_size
         self.hidden_size = hidden_size
-        self.d_model = n_features
-        self.input_dim = n_features
+        self.d_model = input_size
+        self.input_dim = input_size
         self.pos_encoder = PositionalEncoding(d_model=self.d_model)
         enc_layer = nn.TransformerEncoderLayer(
             d_model=self.d_model,
