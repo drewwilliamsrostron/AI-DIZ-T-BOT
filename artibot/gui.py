@@ -126,11 +126,28 @@ def select_weight_file(use_prev: bool = True) -> str | None:
 
 def ask_use_prev_weights(default: bool = True, tk_module=None) -> bool:
     """Return ``True`` when the user opts to load the last weights."""
+    # Lazily import tkinter when a module isn’t supplied (e.g. unit-tests)
     if tk_module is None:
-        import tkinter as tk_module  # lazy import for tests
-        from tkinter import messagebox
-    else:
-        messagebox = tk_module.messagebox
+        import tkinter as tk_module  # pragma: no cover
+
+    # Get a working `messagebox` reference across Python versions
+    try:
+        messagebox = tk_module.messagebox          # Py≥3.10
+    except AttributeError:                         # Py≤3.9 fallback
+        from tkinter import messagebox             # pragma: no cover
+
+    # Ask the user and return the answer (or the provided default)
+    root = tk_module.Tk()
+    root.withdraw()
+    try:
+        result = messagebox.askyesno(
+            "Load Weights", "Use previous best weights?"
+        )
+    finally:
+        root.destroy()
+
+    return default if result is None else bool(result)
+
 
     root = tk_module.Tk()
     root.withdraw()
