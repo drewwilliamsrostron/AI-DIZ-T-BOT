@@ -311,7 +311,10 @@ class TradingGUI:
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         self.frame_train = build_scrollable(self.notebook)
-        self.notebook.add(self.frame_train.master, text="MAIN - TRAINING VS VALIDATION")
+        # add the outer scrollable container, not the canvas itself
+        self.notebook.add(
+            self.frame_train.master.master, text="MAIN - TRAINING VS VALIDATION"
+        )
         self.fig_train = plt.figure(figsize=(6, 8))
         self.fig_train.tight_layout()
         self.ax_loss = self.fig_train.add_subplot(4, 1, 1)
@@ -362,13 +365,15 @@ class TradingGUI:
         self.attention_info.pack(fill=tk.X, padx=5, pady=5)
 
         self.frame_live = build_scrollable(self.notebook)
-        self.notebook.add(self.frame_live.master, text="Phemex Live Price")
+        # add the outer scrollable container
+        self.notebook.add(self.frame_live.master.master, text="Phemex Live Price")
         self.fig_live, self.ax_live = plt.subplots(figsize=(5, 3))
         self.canvas_live = FigureCanvasTkAgg(self.fig_live, master=self.frame_live)
         self.canvas_live.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
         self.frame_backtest = build_scrollable(self.notebook)
-        self.notebook.add(self.frame_backtest.master, text="Backtest Results")
+        # add the outer scrollable container
+        self.notebook.add(self.frame_backtest.master.master, text="Backtest Results")
         self.fig_backtest, self.ax_net_profit = plt.subplots(figsize=(5, 3))
         self.canvas_backtest = FigureCanvasTkAgg(
             self.fig_backtest, master=self.frame_backtest
@@ -381,7 +386,8 @@ class TradingGUI:
         self.anim_steps = 10
 
         self.frame_trades = build_scrollable(self.notebook)
-        self.notebook.add(self.frame_trades.master, text="Trade Details")
+        # add the outer scrollable container
+        self.notebook.add(self.frame_trades.master.master, text="Trade Details")
         cols = ("Date", "Side", "Size", "Entry", "Exit", "PnL")
         self.trade_tree = ttk.Treeview(
             self.frame_trades, columns=cols, show="headings", height=10
@@ -397,8 +403,9 @@ class TradingGUI:
         trade_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.frame_yearly_perf = build_scrollable(self.notebook)
+        # add the outer scrollable container
         self.notebook.add(
-            self.frame_yearly_perf.master, text="Best Strategy Yearly Perf"
+            self.frame_yearly_perf.master.master, text="Best Strategy Yearly Perf"
         )
         self.yearly_perf_text = tk.Text(self.frame_yearly_perf, width=50, height=20)
         yearly_scroll = ttk.Scrollbar(
@@ -411,8 +418,9 @@ class TradingGUI:
         yearly_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.frame_monthly_perf = build_scrollable(self.notebook)
+        # add the outer scrollable container
         self.notebook.add(
-            self.frame_monthly_perf.master, text="Best Strategy Monthly Results"
+            self.frame_monthly_perf.master.master, text="Best Strategy Monthly Results"
         )
         self.monthly_perf_text = tk.Text(self.frame_monthly_perf, width=50, height=20)
         monthly_scroll = ttk.Scrollbar(
@@ -425,7 +433,8 @@ class TradingGUI:
         monthly_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.frame_timeline = build_scrollable(self.notebook)
-        self.notebook.add(self.frame_timeline.master, text="Activity Timeline")
+        # add the outer scrollable container
+        self.notebook.add(self.frame_timeline.master.master, text="Activity Timeline")
         self.fig_tl, self.ax_tl = plt.subplots(figsize=(5, 3))
         self.canvas_tl = FigureCanvasTkAgg(self.fig_tl, master=self.frame_timeline)
         self.canvas_tl.get_tk_widget().pack(fill=tk.BOTH, expand=True)
