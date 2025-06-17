@@ -18,7 +18,7 @@ import importlib.machinery as _machinery
 
 if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) is None:
     sys.modules["openai"].__spec__ = _machinery.ModuleSpec("openai", None)
-
+ 
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -680,10 +680,13 @@ class EnsembleModel:
         self, windows_tensor: torch.Tensor, batch_size: int = 256
     ) -> Tuple[torch.Tensor, torch.Tensor, dict]:
         """Return predictions for ``windows_tensor`` in mini-batches."""
+        # Re-calculate the dimension that *should* be coming from the dataloader
         exp_dim = feature_dim_for(self.indicator_hparams)
+
+        # If the live models were built for a different feature count, rebuild
         if self.models[0].input_size != exp_dim:
             logging.warning(
-                "Rebuilding models: feature dim changed from %d \u2794 %d",
+                "Rebuilding models: feature dim changed from %d → %d",
                 self.models[0].input_size,
                 exp_dim,
             )
@@ -701,10 +704,12 @@ class EnsembleModel:
                     batch_probs.append(pr_)
                 avg_probs = torch.mean(torch.stack(batch_probs), dim=0)
                 all_probs.append(avg_probs)
+
             ret_probs = torch.cat(all_probs, dim=0)
             idxs = ret_probs.argmax(dim=1)
             confs = ret_probs.max(dim=1)[0]
-            # dummy param
+
+            # dummy TradeParams-like dict (until RL head predicts real values)
             dummy_t = {
                 "risk_fraction": torch.tensor([0.1]),
                 "sl_multiplier": torch.tensor([5.0]),
