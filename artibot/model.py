@@ -84,6 +84,16 @@ class TradingModel(nn.Module):
         self.fc = nn.Linear(hidden_size, num_classes + 4)
 
     def forward(self, x):
+        if x.size(-1) < self.d_model:
+            pad = self.d_model - x.size(-1)
+            x = torch.cat([x, x.new_zeros(*x.shape[:-1], pad)], dim=-1)
+            if not getattr(self, "_pad_warned", False):
+                logger.warning(
+                    "Input features %d < expected %d, padding",
+                    x.size(-1) - pad,
+                    self.d_model,
+                )
+                self._pad_warned = True
         x = self.pos_encoder(x)
         # inspect attention from the first encoder layer
         # Use a detached tensor so fastpath inference in ``no_grad`` does not mutate ``x``

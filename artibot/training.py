@@ -7,6 +7,7 @@ import logging
 import datetime
 import time
 import threading
+import os
 
 from .dataset import HourlyDataset, trailing_sma
 from .ensemble import reject_if_risky
@@ -18,8 +19,14 @@ import torch
 import multiprocessing
 import gc
 
-# initialise CPU limit from globals
-G.set_cpu_limit(max(1, multiprocessing.cpu_count() - 2))
+from .utils.torch_threads import set_threads
+
+CPU_LIMIT_DEFAULT = max(1, multiprocessing.cpu_count() - 2)
+set_threads(CPU_LIMIT_DEFAULT)
+with G.state_lock:
+    G.cpu_limit = CPU_LIMIT_DEFAULT
+torch.set_num_threads(CPU_LIMIT_DEFAULT)
+os.environ["OMP_NUM_THREADS"] = str(CPU_LIMIT_DEFAULT)
 
 
 def rebuild_loader(

@@ -152,6 +152,7 @@ class EnsembleModel:
         device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.device = device
         self.weights_path = weights_path
+        self.n_features = n_features
 
         # (6) We changed TradingModel to bigger capacity above
         self.models = [
@@ -517,7 +518,7 @@ class EnsembleModel:
                         if random.random() < 0.3:
                             self.models = [
                                 TradingModel(
-                                    n_features=self.models[0].input_dim,
+                                    n_features=self.n_features,
                                     hidden_size=np.random.choice([128, 256]),
                                     dropout=np.random.uniform(0.3, 0.6),
                                 ).to(self.device)

@@ -3,14 +3,13 @@
 # ruff: noqa: F403, F405, E402
 import numpy as np
 import pandas as pd
+import os
 from .environment import ensure_dependencies
-
-ensure_dependencies()
 import talib
 import torch
 
 from .utils import rolling_zscore
-from .dataset import trailing_sma
+from .dataset import trailing_sma, HourlyDataset
 from . import indicators
 
 import artibot.globals as G
@@ -533,15 +532,30 @@ def robust_backtest(ensemble, data_full, indicators=None):
 
 
 if __name__ == "__main__":
-    from .dataset import load_csv_hourly
+    from .utils.torch_threads import set_threads
+    from .dataset import load_csv_hourly, HourlyDataset
     from .ensemble import EnsembleModel
     from .training import csv_training_thread
     from .utils import get_device
+    from .hyperparams import IndicatorHyperparams
     from .bot_app import CONFIG
     import threading
 
+    set_threads(int(os.environ.get("OMP_NUM_THREADS", os.cpu_count() or 1)))
+    ensure_dependencies()
+
     data = load_csv_hourly("Gemini_BTCUSD_1h.csv")
-    ens = EnsembleModel(device=get_device(), n_models=1)
+    ds_tmp = HourlyDataset(
+        data,
+        seq_len=24,
+        indicator_hparams=IndicatorHyperparams(
+            rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
+        ),
+        atr_threshold_k=1.5,
+        train_mode=False,
+    )
+    n_features = ds_tmp[0][0].shape[1]
+    ens = EnsembleModel(device=get_device(), n_models=1, n_features=n_features)
     stop = threading.Event()
     csv_training_thread(
         ens,

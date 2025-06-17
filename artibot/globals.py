@@ -227,7 +227,6 @@ def set_cpu_limit(n: int) -> None:
         cpu_limit = n
     try:
         torch.set_num_threads(n)
-        torch.set_num_interop_threads(n)
     except RuntimeError as exc:  # pragma: no cover - threads already started
         logging.warning("CPU thread update failed: %s", exc)
     os.environ["OMP_NUM_THREADS"] = str(n)
