@@ -16,7 +16,7 @@ if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) 
 
 import torch
 
-from .utils import rolling_zscore
+from .utils import rolling_zscore, feature_dim_for
 from torch.utils.data import Dataset
 
 import artibot.globals as G
@@ -201,16 +201,24 @@ class HourlyDataset(Dataset):
         cols = [data_np[:, 1:6]]
         import artibot.feature_store as _fs
 
-        sent = np.array(
-            [_fs.news_sentiment(int(t)) for t in data_np[:, 0]], dtype=np.float32
-        )
-        macro = np.array(
-            [_fs.macro_surprise(int(t)) for t in data_np[:, 0]], dtype=np.float32
-        )
-        rvol = np.array(
-            [_fs.realised_vol(int(t)) for t in data_np[:, 0]], dtype=np.float32
-        )
-        cols.extend([sent, macro, rvol])
+        if self.hp.use_sentiment:
+            sent = np.array(
+                [_fs.news_sentiment(int(t)) for t in data_np[:, 0]],
+                dtype=np.float32,
+            )
+            cols.append(sent)
+        if self.hp.use_macro:
+            macro = np.array(
+                [_fs.macro_surprise(int(t)) for t in data_np[:, 0]],
+                dtype=np.float32,
+            )
+            cols.append(macro)
+        if self.hp.use_rvol:
+            rvol = np.array(
+                [_fs.realised_vol(int(t)) for t in data_np[:, 0]],
+                dtype=np.float32,
+            )
+            cols.append(rvol)
         if sma is not None:
             cols.append(sma.astype(np.float32))
         if rsi is not None:
@@ -280,6 +288,10 @@ class HourlyDataset(Dataset):
             )
 
         feats = np.column_stack(cols)
+        exp_cols = feature_dim_for(self.hp)
+        assert (
+            feats.shape[1] == exp_cols
+        ), f"FeatureIngest built {feats.shape[1]} cols but expected {exp_cols}"
 
         # ``ta-lib`` leaves the first few rows as NaN which would otherwise
         # propagate through scaling and ultimately make the training loss

@@ -97,6 +97,9 @@ class IndicatorHyperparams:
     tenkan_period: int = 9
     use_displacement: bool = False
     displacement: int = 26
+    use_sentiment: bool = True
+    use_macro: bool = True
+    use_rvol: bool = True
 
     def __post_init__(self) -> None:
         mapping = {
@@ -124,6 +127,9 @@ class IndicatorHyperparams:
             "tenkan_period": "TENKAN_PERIOD",
             "use_displacement": "USE_DISPLACEMENT",
             "displacement": "DISPLACEMENT",
+            "use_sentiment": "USE_SENTIMENT",
+            "use_macro": "USE_MACRO",
+            "use_rvol": "USE_RVOL",
         }
         for attr, key in mapping.items():
             if key in _CONFIG:

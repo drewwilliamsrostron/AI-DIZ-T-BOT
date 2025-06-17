@@ -12,8 +12,9 @@ import torch
 import pandas as pd
 import numpy as np
 
-from .torch_threads import set_threads
 from ..hyperparams import IndicatorHyperparams
+
+CONTEXT_FLAGS = ("use_sentiment", "use_macro", "use_rvol")
 
 
 def get_device() -> torch.device:
@@ -130,11 +131,36 @@ def active_feature_dim(hp: IndicatorHyperparams, *, use_ichimoku: bool = False) 
     return dim
 
 
-__all__ = [
-    "get_device",
-    "setup_logging",
-    "attention_entropy",
-    "rolling_zscore",
-    "set_threads",
-    "active_feature_dim",
-]
+def feature_dim_for(hp: "IndicatorHyperparams") -> int:
+    """Return the feature dimension implied by *hp*.
+
+    • 5 OHLCV bars are always present
+    • +1 for each context flag that is True
+    • +1 for every technical-indicator flag that is True
+    """
+
+    base = 5  # OHLCV
+    for flag in CONTEXT_FLAGS:
+        if getattr(hp, flag):
+            base += 1
+
+    extras = sum(
+        [
+            hp.use_atr,
+            hp.use_vortex,
+            hp.use_cmf,
+            hp.use_rsi,
+            hp.use_sma,
+            hp.use_macd,
+            hp.use_ema,
+            hp.use_donchian,
+            hp.use_kijun,
+            hp.use_tenkan,
+            hp.use_displacement,
+            getattr(hp, "use_ichimoku", False),
+        ]
+    )
+    return base + extras
+
+
+__all__ = ["rolling_zscore", "feature_dim_for"]
