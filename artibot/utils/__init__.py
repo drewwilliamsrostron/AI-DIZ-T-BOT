@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 
 from .torch_threads import set_threads
+from ..hyperparams import IndicatorHyperparams
 
 
 def get_device() -> torch.device:
@@ -98,10 +99,42 @@ def rolling_zscore(arr: np.ndarray, window: int = 50) -> np.ndarray:
     return np.nan_to_num(scaled).astype(np.float32)
 
 
+def active_feature_dim(hp: IndicatorHyperparams, *, use_ichimoku: bool = False) -> int:
+    """Return feature column count for given indicator flags."""
+
+    dim = 8  # ohlcv + sentiment + macro + realised vol
+    if hp.use_sma and not use_ichimoku:
+        dim += 1
+    if hp.use_rsi:
+        dim += 1
+    if hp.use_macd:
+        dim += 1
+    if hp.use_ema and not use_ichimoku:
+        dim += 1
+    if hp.use_atr and not use_ichimoku:
+        dim += 1
+    if hp.use_vortex:
+        dim += 2
+    if hp.use_cmf:
+        dim += 1
+    if getattr(hp, "use_donchian", False):
+        dim += 3
+    if getattr(hp, "use_kijun", False):
+        dim += 1
+    if getattr(hp, "use_tenkan", False):
+        dim += 1
+    if getattr(hp, "use_displacement", False):
+        dim += 1
+    if use_ichimoku:
+        dim += 4
+    return dim
+
+
 __all__ = [
     "get_device",
     "setup_logging",
     "attention_entropy",
     "rolling_zscore",
     "set_threads",
+    "active_feature_dim",
 ]
