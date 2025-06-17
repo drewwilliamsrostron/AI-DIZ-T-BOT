@@ -19,6 +19,8 @@ plt = None
 FigureCanvasTkAgg = None
 
 
+from typing import Callable  # noqa: F401,E402
+
 GUI_INSTANCE = None
 
 
@@ -119,6 +121,35 @@ def _fetch_position(exchange):
     except Exception as e:  # pragma: no cover - network errors
         logging.error("Position fetch failed: %s", e)
     return ("NONE", 0.0, 0.0)
+
+
+class _Scrollable(ttk.Frame):
+    """A reusable scrollable container that exposes `.inner`."""
+
+    def __init__(self, master: tk.Widget, **kw):
+        super().__init__(master, **kw)
+        cv = tk.Canvas(self, highlightthickness=0)
+        self._canvas = cv
+        vsb = ttk.Scrollbar(self, orient="vertical", command=cv.yview)
+        hsb = ttk.Scrollbar(self, orient="horizontal", command=cv.xview)
+        cv.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+
+        vsb.pack(side="right", fill="y")
+        hsb.pack(side="bottom", fill="x")
+        cv.pack(side="left", fill="both", expand=True)
+
+        self.inner = ttk.Frame(cv)
+        self._win = cv.create_window((0, 0), window=self.inner, anchor="nw")
+
+        def _update(_evt=None):
+            cv.configure(scrollregion=cv.bbox("all"))
+
+        self.inner.bind("<Configure>", _update)
+
+        def _on_wheel(evt):
+            cv.yview_scroll(int(-1 * (evt.delta / 120)), "units")
+
+        cv.bind_all("<MouseWheel>", _on_wheel, add="+")
 
 
 class TradingGUI:
@@ -269,8 +300,8 @@ class TradingGUI:
         self.notebook = ttk.Notebook(self.main_frame)
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        self.frame_train = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_train, text="MAIN - TRAINING VS VALIDATION")
+        self.frame_train = _Scrollable(self.notebook).inner
+        self.notebook.add(self.frame_train.master, text="MAIN - TRAINING VS VALIDATION")
         self.fig_train = plt.figure(figsize=(6, 8))
         self.fig_train.tight_layout()
         self.ax_loss = self.fig_train.add_subplot(4, 1, 1)
@@ -289,6 +320,25 @@ class TradingGUI:
             wraplength=400,
         )
         self.loss_comment_label.pack(fill=tk.X, padx=5, pady=5)
+        # persistent help text at bottom-left
+        self.help_box = ttk.Label(
+            self.frame_train,
+            text=(
+                "\N{INFORMATION SOURCE}  Chart legend:\n"
+                "\u2022  BLUE line = training loss\n"
+                "\u2022  ORANGE line = validation loss\n"
+                "   \u25b8  Blue below orange \u2192 model still learning\n"
+                "   \u25b8  Orange sharply below blue \u2192 possible over-fitting\n"
+                "\u2022  Equity chart: red = current run, green = best run\n"
+                "\u2022  Trades-over-time rising steeply \u279c more activity\n"
+                "\u2022  Attention surface peaks show which past bars the model focuses on"
+            ),
+            justify=tk.LEFT,
+            font=("Helvetica", 9),
+            foreground="#444",
+            anchor="w",
+        )
+        self.help_box.pack(side=tk.LEFT, anchor="sw", padx=5, pady=(0, 5))
         self.attention_info = ttk.Label(
             self.frame_train,
             text=(
@@ -301,14 +351,14 @@ class TradingGUI:
         )
         self.attention_info.pack(fill=tk.X, padx=5, pady=5)
 
-        self.frame_live = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_live, text="Phemex Live Price")
+        self.frame_live = _Scrollable(self.notebook).inner
+        self.notebook.add(self.frame_live.master, text="Phemex Live Price")
         self.fig_live, self.ax_live = plt.subplots(figsize=(5, 3))
         self.canvas_live = FigureCanvasTkAgg(self.fig_live, master=self.frame_live)
         self.canvas_live.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-        self.frame_backtest = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_backtest, text="Backtest Results")
+        self.frame_backtest = _Scrollable(self.notebook).inner
+        self.notebook.add(self.frame_backtest.master, text="Backtest Results")
         self.fig_backtest, self.ax_net_profit = plt.subplots(figsize=(5, 3))
         self.canvas_backtest = FigureCanvasTkAgg(
             self.fig_backtest, master=self.frame_backtest
@@ -320,8 +370,8 @@ class TradingGUI:
         self._surf = None
         self.anim_steps = 10
 
-        self.frame_trades = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_trades, text="Trade Details")
+        self.frame_trades = _Scrollable(self.notebook).inner
+        self.notebook.add(self.frame_trades.master, text="Trade Details")
         cols = ("Date", "Side", "Size", "Entry", "Exit", "PnL")
         self.trade_tree = ttk.Treeview(
             self.frame_trades, columns=cols, show="headings", height=10
@@ -336,8 +386,10 @@ class TradingGUI:
         self.trade_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         trade_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
-        self.frame_yearly_perf = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_yearly_perf, text="Best Strategy Yearly Perf")
+        self.frame_yearly_perf = _Scrollable(self.notebook).inner
+        self.notebook.add(
+            self.frame_yearly_perf.master, text="Best Strategy Yearly Perf"
+        )
         self.yearly_perf_text = tk.Text(self.frame_yearly_perf, width=50, height=20)
         yearly_scroll = ttk.Scrollbar(
             self.frame_yearly_perf,
@@ -348,8 +400,10 @@ class TradingGUI:
         self.yearly_perf_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         yearly_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
-        self.frame_monthly_perf = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_monthly_perf, text="Best Strategy Monthly Results")
+        self.frame_monthly_perf = _Scrollable(self.notebook).inner
+        self.notebook.add(
+            self.frame_monthly_perf.master, text="Best Strategy Monthly Results"
+        )
         self.monthly_perf_text = tk.Text(self.frame_monthly_perf, width=50, height=20)
         monthly_scroll = ttk.Scrollbar(
             self.frame_monthly_perf,
@@ -360,8 +414,8 @@ class TradingGUI:
         self.monthly_perf_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         monthly_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
-        self.frame_timeline = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_timeline, text="Activity Timeline")
+        self.frame_timeline = _Scrollable(self.notebook).inner
+        self.notebook.add(self.frame_timeline.master, text="Activity Timeline")
         self.fig_tl, self.ax_tl = plt.subplots(figsize=(5, 3))
         self.canvas_tl = FigureCanvasTkAgg(self.fig_tl, master=self.frame_timeline)
         self.canvas_tl.get_tk_widget().pack(fill=tk.BOTH, expand=True)
@@ -768,6 +822,22 @@ class TradingGUI:
         self.ai_log_list = tk.Listbox(self.frame_ai_log, width=40, height=10)
         self.ai_log_list.pack(fill=tk.BOTH, expand=True)
         self._log_lines = 0
+
+        for fig in (self.fig_train, self.fig_live, self.fig_backtest, self.fig_tl):
+            for ax in fig.axes:
+                for spine in ax.spines.values():
+                    spine.set_visible(True)
+                    spine.set_linewidth(0.8)
+                    spine.set_edgecolor("#999")
+            fig.tight_layout(pad=2.0)
+            fig.subplots_adjust(hspace=0.35)
+
+        for child in self.main_frame.winfo_children():
+            child.columnconfigure(0, weight=1)
+            child.rowconfigure(0, weight=1)
+
+        w, h = root.winfo_screenwidth(), root.winfo_screenheight()
+        root.minsize(int(w * 0.7), int(h * 0.7))
 
         self.update_interval = 100
         self.after_id = None
