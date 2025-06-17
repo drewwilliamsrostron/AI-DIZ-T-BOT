@@ -17,6 +17,12 @@ import pandas as pd
 import requests
 import os
 import ccxt
+import importlib.machinery as _machinery
+import sys
+
+if "tqdm" in sys.modules and getattr(sys.modules["tqdm"], "__spec__", None) is None:
+    sys.modules["tqdm"].__spec__ = _machinery.ModuleSpec("tqdm", None)
+
 from tqdm import tqdm
 
 import artibot.feature_store as fs

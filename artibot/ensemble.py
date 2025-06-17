@@ -35,6 +35,7 @@ from torch.utils.data import DataLoader
 
 from .backtest import robust_backtest
 from .hyperparams import HyperParams, IndicatorHyperparams
+from .utils import active_feature_dim
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
 from .model import TradingModel
@@ -147,16 +148,23 @@ class EnsembleModel:
         weight_decay: float = 1e-4,
         weights_path: str = "best.pt",
         *,
-        n_features: int = 13,
+        n_features: int | None = None,
     ) -> None:
         device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.device = device
         self.weights_path = weights_path
-        self.n_features = n_features
+        self.indicator_hparams = IndicatorHyperparams(
+            rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
+        )
+        self.hp = HyperParams(indicator_hp=self.indicator_hparams)
 
-        # (6) We changed TradingModel to bigger capacity above
+        feat_dim = n_features or active_feature_dim(
+            self.indicator_hparams, use_ichimoku=self.hp.use_ichimoku
+        )
+        self.n_features = feat_dim
+
         self.models = [
-            TradingModel(n_features=n_features).to(device) for _ in range(n_models)
+            TradingModel(n_features=feat_dim).to(device) for _ in range(n_models)
         ]
         print("[DEBUG] Model moved to device")
         self.optimizers = [
@@ -207,11 +215,30 @@ class EnsembleModel:
         self.step_count = 0
         self.base_lrs = [opt.param_groups[0]["lr"] for opt in self.optimizers]
 
-        # store global indicator hyperparams that meta-agent can change
-        self.indicator_hparams = IndicatorHyperparams(
-            rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
-        )
-        self.hp = HyperParams(indicator_hp=self.indicator_hparams)
+    def rebuild_models(self, new_dim: int) -> None:
+        """Reinitialise models and optimisers for a new feature dimension."""
+
+        self.n_features = new_dim
+        self.models = [
+            TradingModel(n_features=new_dim).to(self.device)
+            for _ in range(len(self.models))
+        ]
+        lr = self.optimizers[0].param_groups[0]["lr"]
+        wd = self.optimizers[0].param_groups[0].get("weight_decay", 0.0)
+        self.optimizers = [
+            optim.AdamW(m.parameters(), lr=lr, weight_decay=wd) for m in self.models
+        ]
+        self.schedulers = [
+            ReduceLROnPlateau(opt, mode="min", patience=6, factor=0.8, min_lr=2e-5)
+            for opt in self.optimizers
+        ]
+        self.cosine = [CosineAnnealingLR(o, T_max=100) for o in self.optimizers]
+        amp_on = self.device.type == "cuda"
+        if "device" in inspect.signature(GradScaler).parameters:
+            self.scaler = GradScaler(enabled=amp_on, device=self.device)
+        else:
+            self.scaler = GradScaler(enabled=amp_on)
+        self.base_lrs = [opt.param_groups[0]["lr"] for opt in self.optimizers]
 
     def train_one_epoch(
         self,
