@@ -19,10 +19,7 @@ import torch
 import multiprocessing
 import gc
 
-from .utils.torch_threads import set_threads
-
 CPU_LIMIT_DEFAULT = max(1, multiprocessing.cpu_count() - 2)
-set_threads(CPU_LIMIT_DEFAULT)
 with G.state_lock:
     G.cpu_limit = CPU_LIMIT_DEFAULT
 torch.set_num_threads(CPU_LIMIT_DEFAULT)
