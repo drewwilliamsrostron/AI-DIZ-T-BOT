@@ -37,7 +37,12 @@ class JsonFormatter(logging.Formatter):
 
 
 def setup_logging() -> None:
-    """Configure root logger to emit JSON-formatted messages."""
+    """Configure root logger to emit JSON-formatted messages.
+
+    The console stream handler now mirrors the file handlers so that
+    ``logging.info`` messages are visible both in ``bot.log`` and on
+    ``stdout``.
+    """
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setFormatter(JsonFormatter())
 
@@ -56,6 +61,7 @@ def setup_logging() -> None:
     root.addHandler(stream_handler)
     root.addHandler(file_handler)
     root.addHandler(debug_handler)
+    root.setLevel(logging.INFO)
 
 
 def attention_entropy(tensor: torch.Tensor) -> float:
