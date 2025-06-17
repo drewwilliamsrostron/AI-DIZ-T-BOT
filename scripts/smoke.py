@@ -7,8 +7,10 @@ import logging
 import argparse
 import numpy as np
 import torch
+import os
 
 from artibot.environment import ensure_dependencies
+from artibot.utils.torch_threads import set_threads
 from artibot.dataset import load_csv_hourly, HourlyDataset
 from artibot.ensemble import EnsembleModel
 from artibot.hyperparams import HyperParams, IndicatorHyperparams
@@ -23,6 +25,7 @@ def main() -> None:
     args = parser.parse_args()
 
     setup_logging()
+    set_threads(int(os.environ.get("OMP_NUM_THREADS", os.cpu_count() or 1)))
     ensure_dependencies()
     data = load_csv_hourly("Gemini_BTCUSD_1h.csv")[:500]
     indicator_hp = IndicatorHyperparams(

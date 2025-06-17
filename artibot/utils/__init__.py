@@ -12,6 +12,8 @@ import torch
 import pandas as pd
 import numpy as np
 
+from .torch_threads import set_threads
+
 
 def get_device() -> torch.device:
     """Return a CUDA device when available else CPU."""
@@ -88,3 +90,12 @@ def rolling_zscore(arr: np.ndarray, window: int = 50) -> np.ndarray:
     scaled = ((df - roll_mean) / roll_std).to_numpy(dtype=float)
     scaled = np.clip(scaled, -50.0, 50.0)
     return np.nan_to_num(scaled).astype(np.float32)
+
+
+__all__ = [
+    "get_device",
+    "setup_logging",
+    "attention_entropy",
+    "rolling_zscore",
+    "set_threads",
+]

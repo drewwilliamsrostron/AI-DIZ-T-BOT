@@ -10,8 +10,7 @@ thread so closing the window cleanly shuts down all workers.
 from __future__ import annotations
 
 from artibot.environment import ensure_dependencies
-
-ensure_dependencies()
+from artibot.utils.torch_threads import set_threads
 
 import os
 import sys
@@ -150,6 +149,9 @@ def main() -> None:
 
     ask_skip_sentiment()
     _maybe_relaunch_for_threads()
+
+    set_threads(CONFIG.get("CPU_LIMIT", os.cpu_count() or 1))
+    ensure_dependencies()
 
     from artibot.utils import setup_logging, get_device
     from artibot.ensemble import EnsembleModel
