@@ -99,6 +99,16 @@ class TradingModel(nn.Module):
                     self.d_model,
                 )
                 self._pad_warned = True
+        elif x.size(-1) > self.d_model:
+            orig_dim = x.size(-1)
+            x = x[..., : self.d_model]
+            if not getattr(self, "_crop_warned", False):
+                logger.warning(
+                    "Input features %d > expected %d, cropping",
+                    orig_dim,
+                    self.d_model,
+                )
+                self._crop_warned = True
         x = self.pos_encoder(x)
         # inspect attention from the first encoder layer
         # Use a detached tensor so fastpath inference in ``no_grad`` does not mutate ``x``
