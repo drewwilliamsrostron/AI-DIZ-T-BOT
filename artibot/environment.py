@@ -163,9 +163,7 @@ def install_dependencies() -> None:
         "openai": "openai",
         "ccxt": "ccxt",
         "pandas": "pandas",
-        "numpy": (
-            "numpy>=2.1,<3" if sys.version_info >= (3, 13) else "numpy<2"
-        ),
+        "numpy": ("numpy>=2.1,<3" if sys.version_info >= (3, 13) else "numpy<2"),
         "matplotlib": "matplotlib",
         # 'scikit-learn' installs as 'sklearn'
         "sklearn": "scikit-learn",
