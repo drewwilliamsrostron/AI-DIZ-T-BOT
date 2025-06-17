@@ -1,3 +1,6 @@
+# numpy <2 wheels stop at Python 3.12 (NumPy 2.1 adds Py 3.13 support)
+numpy>=2.1,<3 ; python_version >= "3.13"
+numpy<2       ; python_version <  "3.13"
 duckdb>=0.9.2
 feast>=0.38.0
 yfinance==0.2.38           # for macro data quick-grab

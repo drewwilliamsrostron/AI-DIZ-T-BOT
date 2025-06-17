@@ -7,6 +7,9 @@ Complex AI Trading + Continuous Training + Robust Backtest Each Epoch + Live Phe
 # ruff: noqa: E402
 ###############################################################################
 # NumPy 2.x compatibility shim – restores removed constants for old libraries
+# numpy <2 wheels stop at Python 3.12 (NumPy 2.1 adds Py 3.13 support)
+# numpy>=2.1,<3 ; python_version >= "3.13"
+# numpy<2       ; python_version <  "3.13"
 ###############################################################################
 import sys
 import os
@@ -16,13 +19,29 @@ import importlib.metadata as imd
 
 
 def _ensure_numpy_lt2() -> None:
-    """Downgrade to NumPy <2 once per process tree."""
+    """Install the appropriate NumPy for this Python."""
     if os.environ.get("NUMPY_PIN_DONE"):
         return
     try:
         ver = imd.version("numpy")
+    except Exception:
+        ver = ""
+
+    if sys.version_info >= (3, 13):
+        if not ver or tuple(int(x) for x in ver.split(".")[:2]) < (2, 1):
+            print("[env] Installing NumPy>=2.1 for Python 3.13+")
+            pkg = "numpy>=2.1,<3"
+        else:
+            pkg = None
+    else:
         if not ver.startswith("1."):
             print("[env] Downgrading incompatible NumPy", ver, "→ <2.0")
+            pkg = "numpy<2"
+        else:
+            pkg = None
+
+    if pkg:
+        try:
             subprocess.check_call(
                 [
                     sys.executable,
@@ -32,11 +51,12 @@ def _ensure_numpy_lt2() -> None:
                     "--quiet",
                     "--no-input",
                     "--force-reinstall",
-                    "numpy<2",
+                    pkg,
                 ]
             )
-    except Exception as e:
-        print("[env] NumPy pin failed:", e)
+        except Exception as e:  # pragma: no cover - network errors
+            print("[env] NumPy pin failed:", e)
+
     os.environ["NUMPY_PIN_DONE"] = "1"
 
 
@@ -143,7 +163,9 @@ def install_dependencies() -> None:
         "openai": "openai",
         "ccxt": "ccxt",
         "pandas": "pandas",
-        "numpy": "numpy<2",
+        "numpy": (
+            "numpy>=2.1,<3" if sys.version_info >= (3, 13) else "numpy<2"
+        ),
         "matplotlib": "matplotlib",
         # 'scikit-learn' installs as 'sklearn'
         "sklearn": "scikit-learn",

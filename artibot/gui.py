@@ -23,6 +23,45 @@ from typing import Callable  # noqa: F401,E402
 
 GUI_INSTANCE = None
 
+try:
+    if tk is None:  # noqa: SIM105
+        import tkinter as tk
+        from tkinter import ttk
+except Exception:  # pragma: no cover - headless import may fail
+    pass
+
+
+def build_scrollable(master: "tk.Widget") -> "ttk.Frame":
+    class _Scrollable(ttk.Frame):
+        """A reusable scrollable container that exposes `.inner`."""
+
+        def __init__(self, master: tk.Widget, **kw):
+            super().__init__(master, **kw)
+            cv = tk.Canvas(self, highlightthickness=0)
+            self._canvas = cv
+            vsb = ttk.Scrollbar(self, orient="vertical", command=cv.yview)
+            hsb = ttk.Scrollbar(self, orient="horizontal", command=cv.xview)
+            cv.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+
+            vsb.pack(side="right", fill="y")
+            hsb.pack(side="bottom", fill="x")
+            cv.pack(side="left", fill="both", expand=True)
+
+            self.inner = ttk.Frame(cv)
+            self._win = cv.create_window((0, 0), window=self.inner, anchor="nw")
+
+            def _update(_evt=None):
+                cv.configure(scrollregion=cv.bbox("all"))
+
+            self.inner.bind("<Configure>", _update)
+
+            def _on_wheel(evt):
+                cv.yview_scroll(int(-1 * (evt.delta / 120)), "units")
+
+            cv.bind_all("<MouseWheel>", _on_wheel, add="+")
+
+    return _Scrollable(master).inner
+
 
 def redraw_everything() -> None:
     if GUI_INSTANCE is not None:
@@ -121,35 +160,6 @@ def _fetch_position(exchange):
     except Exception as e:  # pragma: no cover - network errors
         logging.error("Position fetch failed: %s", e)
     return ("NONE", 0.0, 0.0)
-
-
-class _Scrollable(ttk.Frame):
-    """A reusable scrollable container that exposes `.inner`."""
-
-    def __init__(self, master: tk.Widget, **kw):
-        super().__init__(master, **kw)
-        cv = tk.Canvas(self, highlightthickness=0)
-        self._canvas = cv
-        vsb = ttk.Scrollbar(self, orient="vertical", command=cv.yview)
-        hsb = ttk.Scrollbar(self, orient="horizontal", command=cv.xview)
-        cv.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-
-        vsb.pack(side="right", fill="y")
-        hsb.pack(side="bottom", fill="x")
-        cv.pack(side="left", fill="both", expand=True)
-
-        self.inner = ttk.Frame(cv)
-        self._win = cv.create_window((0, 0), window=self.inner, anchor="nw")
-
-        def _update(_evt=None):
-            cv.configure(scrollregion=cv.bbox("all"))
-
-        self.inner.bind("<Configure>", _update)
-
-        def _on_wheel(evt):
-            cv.yview_scroll(int(-1 * (evt.delta / 120)), "units")
-
-        cv.bind_all("<MouseWheel>", _on_wheel, add="+")
 
 
 class TradingGUI:
@@ -300,7 +310,7 @@ class TradingGUI:
         self.notebook = ttk.Notebook(self.main_frame)
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        self.frame_train = _Scrollable(self.notebook).inner
+        self.frame_train = build_scrollable(self.notebook)
         self.notebook.add(self.frame_train.master, text="MAIN - TRAINING VS VALIDATION")
         self.fig_train = plt.figure(figsize=(6, 8))
         self.fig_train.tight_layout()
@@ -351,13 +361,13 @@ class TradingGUI:
         )
         self.attention_info.pack(fill=tk.X, padx=5, pady=5)
 
-        self.frame_live = _Scrollable(self.notebook).inner
+        self.frame_live = build_scrollable(self.notebook)
         self.notebook.add(self.frame_live.master, text="Phemex Live Price")
         self.fig_live, self.ax_live = plt.subplots(figsize=(5, 3))
         self.canvas_live = FigureCanvasTkAgg(self.fig_live, master=self.frame_live)
         self.canvas_live.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-        self.frame_backtest = _Scrollable(self.notebook).inner
+        self.frame_backtest = build_scrollable(self.notebook)
         self.notebook.add(self.frame_backtest.master, text="Backtest Results")
         self.fig_backtest, self.ax_net_profit = plt.subplots(figsize=(5, 3))
         self.canvas_backtest = FigureCanvasTkAgg(
@@ -370,7 +380,7 @@ class TradingGUI:
         self._surf = None
         self.anim_steps = 10
 
-        self.frame_trades = _Scrollable(self.notebook).inner
+        self.frame_trades = build_scrollable(self.notebook)
         self.notebook.add(self.frame_trades.master, text="Trade Details")
         cols = ("Date", "Side", "Size", "Entry", "Exit", "PnL")
         self.trade_tree = ttk.Treeview(
@@ -386,7 +396,7 @@ class TradingGUI:
         self.trade_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         trade_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
-        self.frame_yearly_perf = _Scrollable(self.notebook).inner
+        self.frame_yearly_perf = build_scrollable(self.notebook)
         self.notebook.add(
             self.frame_yearly_perf.master, text="Best Strategy Yearly Perf"
         )
@@ -400,7 +410,7 @@ class TradingGUI:
         self.yearly_perf_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         yearly_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
-        self.frame_monthly_perf = _Scrollable(self.notebook).inner
+        self.frame_monthly_perf = build_scrollable(self.notebook)
         self.notebook.add(
             self.frame_monthly_perf.master, text="Best Strategy Monthly Results"
         )
@@ -414,7 +424,7 @@ class TradingGUI:
         self.monthly_perf_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         monthly_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
-        self.frame_timeline = _Scrollable(self.notebook).inner
+        self.frame_timeline = build_scrollable(self.notebook)
         self.notebook.add(self.frame_timeline.master, text="Activity Timeline")
         self.fig_tl, self.ax_tl = plt.subplots(figsize=(5, 3))
         self.canvas_tl = FigureCanvasTkAgg(self.fig_tl, master=self.frame_timeline)
