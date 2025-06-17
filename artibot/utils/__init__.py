@@ -100,6 +100,31 @@ def rolling_zscore(arr: np.ndarray, window: int = 50) -> np.ndarray:
     return np.nan_to_num(scaled).astype(np.float32)
 
 
+def feature_dim_for(indicators: "IndicatorHyperparams") -> int:
+    """Return the expected feature count for a *specific* flag set.
+
+    This lets the dataloader, the ensemble and the model builder agree
+    on an identical dimension *without* relying on global state.
+    """
+
+    flags = [
+        indicators.use_atr,
+        indicators.use_vortex,
+        indicators.use_cmf,
+        indicators.use_rsi,
+        indicators.use_sma,
+        indicators.use_macd,
+        indicators.use_ema,
+        indicators.use_donchian,
+        indicators.use_kijun,
+        indicators.use_tenkan,
+        indicators.use_displacement,
+        getattr(indicators, "use_ichimoku", False),
+        # ✏️  add any new flags here
+    ]
+    return 4 + sum(flags)  # 4 core OHLC bars + extras
+
+
 def active_feature_dim(hp: IndicatorHyperparams, *, use_ichimoku: bool = False) -> int:
     """Return feature column count for given indicator flags."""
 
@@ -129,6 +154,7 @@ def active_feature_dim(hp: IndicatorHyperparams, *, use_ichimoku: bool = False) 
     if use_ichimoku:
         dim += 4
     return dim
+
 
 
 def feature_dim_for(hp: "IndicatorHyperparams") -> int:
@@ -164,3 +190,4 @@ def feature_dim_for(hp: "IndicatorHyperparams") -> int:
 
 
 __all__ = ["rolling_zscore", "feature_dim_for"]
+

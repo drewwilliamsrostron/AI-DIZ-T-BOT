@@ -66,8 +66,11 @@ class TradingModel(nn.Module):
         dropout: float = 0.4,
     ) -> None:
         super().__init__()
-        self.hidden_size = hidden_size
         self.input_size = input_size
+        self.hidden_size = hidden_size
+
+        self.input_size = input_size
+
         self.d_model = input_size
         self.input_dim = input_size
         self.pos_encoder = PositionalEncoding(d_model=self.d_model)
