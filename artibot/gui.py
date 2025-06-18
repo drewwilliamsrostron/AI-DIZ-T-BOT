@@ -276,6 +276,13 @@ class TradingGUI:
         self.weights_path = weights_path
         self.connector = connector
         self.close_requested = False
+        # Track dataset lengths to detect chart updates
+        self._last_loss_len = len(G.global_training_loss)
+        self._last_val_len = len(G.global_validation_loss)
+        self._last_equity_len = len(G.global_equity_curve)
+        self._last_trade_details_len = len(G.global_trade_details)
+        self._last_price_len = len(G.global_phemex_data)
+        self._last_backtest_len = len(G.global_backtest_profit)
         scale = max(1.0, min(1.5, root.winfo_fpixels("1i") / 72))
         root.tk.call("tk", "scaling", scale)
         G.UI_SCALE = scale
@@ -932,11 +939,54 @@ class TradingGUI:
                 comment.append("both lines going up - might need tuning")
         return ". ".join(comment)
 
+    def _log_chart_updates(self) -> None:
+        """Output a short message whenever chart data changes."""
+        if (
+            len(G.global_training_loss) != self._last_loss_len
+            or len(G.global_validation_loss) != self._last_val_len
+        ):
+            print(
+                f"[GUI] Loss updated at epoch {G.epoch_count}"
+                f" (train={len(G.global_training_loss)}, val={len(G.global_validation_loss)})"
+            )
+            self._last_loss_len = len(G.global_training_loss)
+            self._last_val_len = len(G.global_validation_loss)
+
+        if len(G.global_equity_curve) != self._last_equity_len:
+            start = G.global_equity_curve[0][0] if G.global_equity_curve else 0
+            end = G.global_equity_curve[-1][0] if G.global_equity_curve else 0
+            s_str = datetime.datetime.fromtimestamp(start).strftime("%Y-%m-%d")
+            e_str = datetime.datetime.fromtimestamp(end).strftime("%Y-%m-%d")
+            print(f"[GUI] Equity data updated: start {s_str} end {e_str}")
+            self._last_equity_len = len(G.global_equity_curve)
+
+        if len(G.global_trade_details) != self._last_trade_details_len:
+            print(f"[GUI] Trade details updated: {len(G.global_trade_details)} trades")
+            self._last_trade_details_len = len(G.global_trade_details)
+
+        if len(G.global_phemex_data) != self._last_price_len:
+            start_ms = G.global_phemex_data[0][0] if G.global_phemex_data else 0
+            end_ms = G.global_phemex_data[-1][0] if G.global_phemex_data else 0
+            s_str = datetime.datetime.fromtimestamp(start_ms / 1000).strftime(
+                "%Y-%m-%d"
+            )
+            e_str = datetime.datetime.fromtimestamp(end_ms / 1000).strftime("%Y-%m-%d")
+            print(f"[GUI] Price data updated: start {s_str} end {e_str}")
+            self._last_price_len = len(G.global_phemex_data)
+
+        if len(G.global_backtest_profit) != self._last_backtest_len:
+            print(
+                f"[GUI] Backtest profit updated: {len(G.global_backtest_profit)} points"
+            )
+            self._last_backtest_len = len(G.global_backtest_profit)
+
     def update_dashboard(self):
         """Refresh all dashboard widgets from shared state."""
         if self.after_id is not None:
             self.root.after_cancel(self.after_id)
             self.after_id = None
+        # console output when chart data changes
+        self._log_chart_updates()
         self.ax_loss.clear()
         self.ax_loss.set_title("Training vs. Validation Loss")
         x1 = range(1, len(G.global_training_loss) + 1)
