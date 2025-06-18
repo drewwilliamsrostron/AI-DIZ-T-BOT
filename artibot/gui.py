@@ -881,8 +881,16 @@ class TradingGUI:
             child.columnconfigure(0, weight=1)
             child.rowconfigure(0, weight=1)
 
-        w, h = root.winfo_screenwidth(), root.winfo_screenheight()
-        root.minsize(int(w * 0.7), int(h * 0.7))
+        w_func = getattr(root, "winfo_screenwidth", lambda: 1280)
+        h_func = getattr(root, "winfo_screenheight", lambda: 720)
+        w, h = int(w_func()), int(h_func())
+        w = max(800, int(w * 0.7))
+        h = max(600, int(h * 0.7))
+        root.minsize(w, h)
+        try:  # some stubs lack geometry()
+            root.geometry(f"{w}x{h}")
+        except Exception:  # pragma: no cover - not critical during tests
+            pass
 
         self.update_interval = 100
         self.after_id = None
