@@ -18,7 +18,7 @@ import importlib.machinery as _machinery
 
 if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) is None:
     sys.modules["openai"].__spec__ = _machinery.ModuleSpec("openai", None)
- 
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -248,6 +248,7 @@ class EnsembleModel:
         stop_event: Optional[Event] = None,
         *,
         features: Optional[dict] = None,
+        update_globals: bool = True,
     ) -> Tuple[float, Optional[float]]:
         """Train models for one epoch and return losses.
 
@@ -263,6 +264,9 @@ class EnsembleModel:
             Optional threading event signalling early stop.
         features:
             Optional precomputed indicator arrays for ``data_full``.
+        update_globals:
+            When ``True`` update :mod:`artibot.globals` with metrics from this
+            epoch.
 
         Returns
         -------
@@ -273,40 +277,43 @@ class EnsembleModel:
 
         current_result = robust_backtest(self, data_full, indicators=features)
 
-        G.global_equity_curve = current_result["equity_curve"]
-        G.global_backtest_profit.append(current_result["effective_net_pct"])
-        G.global_inactivity_penalty = current_result["inactivity_penalty"]
-        G.global_composite_reward = current_result["composite_reward"]
-        G.global_days_without_trading = current_result["days_without_trading"]
-        G.global_trade_details = current_result["trade_details"]
-        G.global_days_in_profit = current_result["days_in_profit"]
-        G.global_sharpe = current_result["sharpe"]
-        G.global_max_drawdown = current_result["max_drawdown"]
-        G.global_net_pct = current_result["net_pct"]
-        G.global_num_trades = current_result["trades"]
+        if update_globals:
+            G.global_equity_curve = current_result["equity_curve"]
+            G.global_backtest_profit.append(current_result["effective_net_pct"])
+            G.global_inactivity_penalty = current_result["inactivity_penalty"]
+            G.global_composite_reward = current_result["composite_reward"]
+            G.global_days_without_trading = current_result["days_without_trading"]
+            G.global_trade_details = current_result["trade_details"]
+            G.global_days_in_profit = current_result["days_in_profit"]
+            G.global_sharpe = current_result["sharpe"]
+            G.global_max_drawdown = current_result["max_drawdown"]
+            G.global_net_pct = current_result["net_pct"]
+            G.global_num_trades = current_result["trades"]
 
-        G.global_win_rate = current_result["win_rate"]
-        G.global_profit_factor = current_result["profit_factor"]
-        G.global_avg_trade_duration = current_result["avg_trade_duration"]
-        G.global_avg_win = current_result.get("avg_win", 0.0)
-        G.global_avg_loss = current_result.get("avg_loss", 0.0)
+            G.global_win_rate = current_result["win_rate"]
+            G.global_profit_factor = current_result["profit_factor"]
+            G.global_avg_trade_duration = current_result["avg_trade_duration"]
+            G.global_avg_win = current_result.get("avg_win", 0.0)
+            G.global_avg_loss = current_result.get("avg_loss", 0.0)
 
         dfy, table_str = compute_yearly_stats(
             current_result["equity_curve"],
             current_result["trade_details"],
             initial_balance=100.0,
         )
-        G.global_yearly_stats_table = table_str
+        if update_globals:
+            G.global_yearly_stats_table = table_str
 
         _, monthly_table = compute_monthly_stats(
             current_result["equity_curve"],
             current_result["trade_details"],
             initial_balance=100.0,
         )
-        G.global_monthly_stats_table = monthly_table
+        if update_globals:
+            G.global_monthly_stats_table = monthly_table
 
         # update live weights when Sharpe improves
-        if current_result["sharpe"] > G.global_best_sharpe:
+        if update_globals and current_result["sharpe"] > G.global_best_sharpe:
             G.global_best_sharpe = current_result["sharpe"]
             self.best_state_dicts = [m.state_dict() for m in self.models]
             self.save_best_weights(self.weights_path)
@@ -589,7 +596,7 @@ class EnsembleModel:
                         self.patience_counter = 0
 
         # track best net
-        if current_result["net_pct"] > G.global_best_net_pct:
+        if update_globals and current_result["net_pct"] > G.global_best_net_pct:
             G.global_best_equity_curve = current_result["equity_curve"]
             G.global_best_sharpe = current_result["sharpe"]
             G.global_best_drawdown = current_result["max_drawdown"]

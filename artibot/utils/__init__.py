@@ -156,8 +156,7 @@ def active_feature_dim(hp: IndicatorHyperparams, *, use_ichimoku: bool = False) 
     return dim
 
 
-
-def feature_dim_for(hp: "IndicatorHyperparams") -> int:
+def feature_dim_for(hp: "IndicatorHyperparams") -> int:  # noqa: F811
     """Return the feature dimension implied by *hp*.
 
     • 5 OHLCV bars are always present
@@ -190,4 +189,3 @@ def feature_dim_for(hp: "IndicatorHyperparams") -> int:
 
 
 __all__ = ["rolling_zscore", "feature_dim_for"]
-
