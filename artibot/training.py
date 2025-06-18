@@ -200,7 +200,7 @@ def csv_training_thread(
             last_reward = (
                 G.global_composite_reward if G.global_composite_reward else 0.0
             )
-            lr_now = ensemble.cosine[0].get_last_lr()[0]
+            lr_now = ensemble.cycle[0].get_last_lr()[0]
             attn_mean = (
                 float(np.mean(G.global_attention_weights_history[-100:]))
                 if G.global_attention_weights_history
