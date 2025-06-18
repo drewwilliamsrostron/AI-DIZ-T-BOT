@@ -32,8 +32,8 @@ sys.modules.setdefault("matplotlib.backends.backend_tkagg", backend)
 # ---------------------------------------------------------------------------
 # Actual tests
 # ---------------------------------------------------------------------------
-from artibot.hyperparams import IndicatorHyperparams
-from artibot.utils import feature_dim_for
+from artibot.hyperparams import IndicatorHyperparams  # noqa: E402
+from artibot.utils import feature_dim_for  # noqa: E402
 
 
 def test_base_dim_all_on():

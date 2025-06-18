@@ -97,6 +97,7 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
             config,
             use_prev_weights=False,
             max_epochs=1,
+            update_globals=False,
         )
         results.append(robust_backtest(ensemble, test))
     return results

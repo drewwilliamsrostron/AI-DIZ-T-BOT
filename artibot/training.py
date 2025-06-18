@@ -65,6 +65,7 @@ def csv_training_thread(
     *,
     debug_anomaly: bool = False,
     init_event: threading.Event | None = None,
+    update_globals: bool = True,
 ):
     """Train on CSV data in a background thread.
 
@@ -73,6 +74,7 @@ def csv_training_thread(
 
     TODO: add granular ``set_status`` calls for each major step and
     integrate more gating checks.
+    ``update_globals`` controls whether :mod:`artibot.globals` is mutated.
     """
     import traceback
 
@@ -164,7 +166,12 @@ def csv_training_thread(
 
             logging.debug(json.dumps({"event": "status", "msg": G.get_status()}))
             tl, vl = ensemble.train_one_epoch(
-                dl_train, dl_val, train_data, stop_event, features=train_indicators
+                dl_train,
+                dl_val,
+                train_data,
+                stop_event,
+                features=train_indicators,
+                update_globals=update_globals,
             )
 
             status_msg = (
@@ -352,6 +359,7 @@ def csv_training_thread(
                             train_data,
                             stop_event,
                             features=train_indicators,
+                            update_globals=update_globals,
                         )
 
             equity = G.global_equity_curve[-1][1] if G.global_equity_curve else 0.0
