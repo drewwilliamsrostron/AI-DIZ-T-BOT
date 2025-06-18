@@ -227,6 +227,8 @@ def main() -> None:
         lr=3e-4,
         weight_decay=1e-4,
         n_features=n_features,
+        total_steps=10000,
+        grad_accum_steps=4,
     )
     ensemble.indicator_hparams = indicator_hp
     ensemble.hp = HyperParams(indicator_hp=indicator_hp)
