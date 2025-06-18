@@ -399,6 +399,13 @@ class TradingGUI:
         self._last_attention: np.ndarray | None = None
         self._surf = None
         self.anim_steps = 10
+        # track lengths for console update logs
+        self._last_len_train = 0
+        self._last_len_val = 0
+        self._last_len_equity = 0
+        self._last_len_live = 0
+        self._last_len_backtest = 0
+        self._last_len_trades = 0
 
         self.frame_trades = build_scrollable(self.notebook)
         # add the outer scrollable container
@@ -932,11 +939,41 @@ class TradingGUI:
                 comment.append("both lines going up - might need tuning")
         return ". ".join(comment)
 
+    def _log_chart_updates(self) -> None:
+        """Print to console when chart data has grown."""
+        if len(G.global_training_loss) > self._last_len_train:
+            epoch = len(G.global_training_loss)
+            print(f"[UI] Epoch {epoch} update on loss chart")
+            self._last_len_train = len(G.global_training_loss)
+        if len(G.global_validation_loss) > self._last_len_val:
+            self._last_len_val = len(G.global_validation_loss)
+            print("[UI] Validation loss updated")
+        if len(G.global_equity_curve) > self._last_len_equity:
+            start_year = datetime.datetime.fromtimestamp(
+                G.global_equity_curve[0][0]
+            ).year
+            end_year = datetime.datetime.fromtimestamp(
+                G.global_equity_curve[-1][0]
+            ).year
+            print(f"[UI] Equity data updated {start_year}-{end_year}")
+            self._last_len_equity = len(G.global_equity_curve)
+        if len(G.global_phemex_data) > self._last_len_live:
+            print(f"[UI] Live price chart updated: {len(G.global_phemex_data)} bars")
+            self._last_len_live = len(G.global_phemex_data)
+        if len(G.global_backtest_profit) > self._last_len_backtest:
+            step = len(G.global_backtest_profit)
+            print(f"[UI] Backtest profit updated step {step}")
+            self._last_len_backtest = step
+        if len(G.global_trade_details) > self._last_len_trades:
+            print(f"[UI] Trade details updated ({len(G.global_trade_details)} total)")
+            self._last_len_trades = len(G.global_trade_details)
+
     def update_dashboard(self):
         """Refresh all dashboard widgets from shared state."""
         if self.after_id is not None:
             self.root.after_cancel(self.after_id)
             self.after_id = None
+        self._log_chart_updates()
         self.ax_loss.clear()
         self.ax_loss.set_title("Training vs. Validation Loss")
         x1 = range(1, len(G.global_training_loss) + 1)
