@@ -315,8 +315,7 @@ class TradingGUI:
         self.notebook.add(
             self.frame_train.master.master, text="MAIN - TRAINING VS VALIDATION"
         )
-        self.fig_train = plt.figure(figsize=(6, 8))
-        self.fig_train.tight_layout()
+        self.fig_train = plt.figure(figsize=(8, 6), constrained_layout=True)
         self.ax_loss = self.fig_train.add_subplot(4, 1, 1)
         self.ax_attention = self.fig_train.add_subplot(4, 1, 2, projection="3d")
         self.ax_equity_train = self.fig_train.add_subplot(4, 1, 3)
@@ -324,6 +323,10 @@ class TradingGUI:
         self.canvas_train = FigureCanvasTkAgg(self.fig_train, master=self.frame_train)
         self.canvas_train.get_tk_widget().pack(
             fill=tk.BOTH, expand=True, padx=10, pady=10
+        )
+        self.fig_train.tight_layout(pad=0)
+        self.canvas_train.mpl_connect(
+            "resize_event", lambda _e: self.fig_train.tight_layout(pad=0)
         )
         self.loss_comment_label = ttk.Label(
             self.frame_train,
@@ -367,18 +370,30 @@ class TradingGUI:
         self.frame_live = build_scrollable(self.notebook)
         # add the outer scrollable container
         self.notebook.add(self.frame_live.master.master, text="Phemex Live Price")
-        self.fig_live, self.ax_live = plt.subplots(figsize=(5, 3))
+        self.fig_live, self.ax_live = plt.subplots(
+            figsize=(8, 6), constrained_layout=True
+        )
         self.canvas_live = FigureCanvasTkAgg(self.fig_live, master=self.frame_live)
         self.canvas_live.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.fig_live.tight_layout(pad=0)
+        self.canvas_live.mpl_connect(
+            "resize_event", lambda _e: self.fig_live.tight_layout(pad=0)
+        )
 
         self.frame_backtest = build_scrollable(self.notebook)
         # add the outer scrollable container
         self.notebook.add(self.frame_backtest.master.master, text="Backtest Results")
-        self.fig_backtest, self.ax_net_profit = plt.subplots(figsize=(5, 3))
+        self.fig_backtest, self.ax_net_profit = plt.subplots(
+            figsize=(8, 6), constrained_layout=True
+        )
         self.canvas_backtest = FigureCanvasTkAgg(
             self.fig_backtest, master=self.frame_backtest
         )
         self.canvas_backtest.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.fig_backtest.tight_layout(pad=0)
+        self.canvas_backtest.mpl_connect(
+            "resize_event", lambda _e: self.fig_backtest.tight_layout(pad=0)
+        )
 
         # previous attention weights for smooth animations
         self._last_attention: np.ndarray | None = None
@@ -435,9 +450,13 @@ class TradingGUI:
         self.frame_timeline = build_scrollable(self.notebook)
         # add the outer scrollable container
         self.notebook.add(self.frame_timeline.master.master, text="Activity Timeline")
-        self.fig_tl, self.ax_tl = plt.subplots(figsize=(5, 3))
+        self.fig_tl, self.ax_tl = plt.subplots(figsize=(8, 6), constrained_layout=True)
         self.canvas_tl = FigureCanvasTkAgg(self.fig_tl, master=self.frame_timeline)
         self.canvas_tl.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.fig_tl.tight_layout(pad=0)
+        self.canvas_tl.mpl_connect(
+            "resize_event", lambda _e: self.fig_tl.tight_layout(pad=0)
+        )
 
         self.info_frame = ttk.LabelFrame(self.sidebar, text="Performance")
         self.info_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)

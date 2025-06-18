@@ -18,7 +18,7 @@ import importlib.machinery as _machinery
 
 if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) is None:
     sys.modules["openai"].__spec__ = _machinery.ModuleSpec("openai", None)
- 
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -29,7 +29,7 @@ except Exception:  # pragma: no cover - older versions
     from torch.cuda.amp import GradScaler, autocast
 from torch.optim.lr_scheduler import (
     ReduceLROnPlateau,
-    CosineAnnealingLR,
+    OneCycleLR,
 )
 from torch.utils.data import DataLoader
 
@@ -149,6 +149,8 @@ class EnsembleModel:
         weights_path: str = "best.pt",
         *,
         n_features: int | None = None,
+        total_steps: int = 10000,
+        grad_accum_steps: int = 1,
     ) -> None:
         device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.device = device
@@ -168,7 +170,12 @@ class EnsembleModel:
         ]
         print("[DEBUG] Model moved to device")
         self.optimizers = [
-            optim.AdamW(m.parameters(), lr=lr, weight_decay=weight_decay)
+            optim.AdamW(
+                m.parameters(),
+                lr=lr,
+                weight_decay=weight_decay,
+                betas=(0.9, 0.9999),
+            )
             for m in self.models
         ]
         self.criterion = nn.CrossEntropyLoss(
@@ -209,11 +216,21 @@ class EnsembleModel:
             )
             for opt in self.optimizers
         ]
-        self.cosine = [CosineAnnealingLR(o, T_max=100) for o in self.optimizers]
+        self.cycle = [
+            OneCycleLR(opt, max_lr=lr, total_steps=total_steps)
+            for opt in self.optimizers
+        ]
 
-        self.warmup_steps = 1000
-        self.step_count = 0
-        self.base_lrs = [opt.param_groups[0]["lr"] for opt in self.optimizers]
+        self.grad_accum_steps = grad_accum_steps
+        self.total_steps = total_steps
+
+    def configure_one_cycle(self, total_steps: int) -> None:
+        """Initialise OneCycle schedulers with ``total_steps``."""
+        self.total_steps = total_steps
+        self.cycle = [
+            OneCycleLR(opt, max_lr=opt.param_groups[0]["lr"], total_steps=total_steps)
+            for opt in self.optimizers
+        ]
 
     def rebuild_models(self, new_dim: int) -> None:
         """Reinitialise models and optimisers for a new feature dimension."""
@@ -232,13 +249,15 @@ class EnsembleModel:
             ReduceLROnPlateau(opt, mode="min", patience=6, factor=0.8, min_lr=2e-5)
             for opt in self.optimizers
         ]
-        self.cosine = [CosineAnnealingLR(o, T_max=100) for o in self.optimizers]
+        self.cycle = [
+            OneCycleLR(opt, max_lr=lr, total_steps=self.total_steps)
+            for opt in self.optimizers
+        ]
         amp_on = self.device.type == "cuda"
         if "device" in inspect.signature(GradScaler).parameters:
             self.scaler = GradScaler(enabled=amp_on, device=self.device)
         else:
             self.scaler = GradScaler(enabled=amp_on)
-        self.base_lrs = [opt.param_groups[0]["lr"] for opt in self.optimizers]
 
     def train_one_epoch(
         self,
@@ -348,11 +367,13 @@ class EnsembleModel:
             m.train()
         # Serialise updates with meta-control thread
         with G.model_lock:
+            accum_counter = 0
             for batch_idx, (batch_x, batch_y) in enumerate(dl_train):
+                if accum_counter == 0:
+                    for opt in self.optimizers:
+                        opt.zero_grad()
                 bx = batch_x.to(self.device).contiguous().clone()
                 by = batch_y.to(self.device)
-                for opt in self.optimizers:
-                    opt.zero_grad()
 
                 if "device_type" in inspect.signature(autocast).parameters:
                     ctx = autocast(
@@ -408,38 +429,35 @@ class EnsembleModel:
                 if not losses:
                     continue
 
-                total_batch_loss = torch.stack(losses).sum()
+                total_batch_loss = torch.stack(losses).sum() / self.grad_accum_steps
                 self.scaler.scale(total_batch_loss).backward()
 
-                for idx_m, (model, opt_) in enumerate(
-                    zip(self.models, self.optimizers)
-                ):
-
-                    self.scaler.unscale_(opt_)
-                    torch.nn.utils.clip_grad_norm_(self.models[idx_m].parameters(), 1.0)
-                    try:
-                        self.scaler.step(opt_)
-                    except AssertionError:
-                        opt_.step()
-                        self.scaler = GradScaler(enabled=False)
-                    else:
-                        self.scaler.update()
-                    if self.step_count <= self.warmup_steps:
-                        new_lr = self.base_lrs[idx_m] * (
-                            (self.step_count + 1) / self.warmup_steps
+                accum_counter += 1
+                if accum_counter >= self.grad_accum_steps:
+                    for idx_m, (model, opt_) in enumerate(
+                        zip(self.models, self.optimizers)
+                    ):
+                        self.scaler.unscale_(opt_)
+                        torch.nn.utils.clip_grad_norm_(
+                            self.models[idx_m].parameters(), 1.0
                         )
-                        for pg in opt_.param_groups:
-                            pg["lr"] = new_lr
-                    else:
-                        self.cosine[idx_m].step()
-
-                batch_loss = sum(loss_i.item() for loss_i in losses)
-
-                self.step_count += 1
-                total_loss += (
-                    (batch_loss / len(self.models)) if not np.isnan(batch_loss) else 0.0
-                )
-                nb += 1
+                        try:
+                            self.scaler.step(opt_)
+                        except AssertionError:
+                            opt_.step()
+                            self.scaler = GradScaler(enabled=False)
+                        else:
+                            self.scaler.update()
+                        self.cycle[idx_m].step()
+                        opt_.zero_grad()
+                    batch_loss = sum(loss_i.item() for loss_i in losses)
+                    total_loss += (
+                        (batch_loss / len(self.models))
+                        if not np.isnan(batch_loss)
+                        else 0.0
+                    )
+                    nb += 1
+                    accum_counter = 0
             train_loss = total_loss / nb
 
             val_loss = self.evaluate_val_loss(dl_val) if dl_val else None
@@ -571,8 +589,13 @@ class EnsembleModel:
                                 )
                                 for opt in self.optimizers
                             ]
-                            self.cosine = [
-                                CosineAnnealingLR(o, T_max=100) for o in self.optimizers
+                            self.cycle = [
+                                OneCycleLR(
+                                    o,
+                                    max_lr=lr,
+                                    total_steps=self.total_steps,
+                                )
+                                for o in self.optimizers
                             ]
                             if "device" in inspect.signature(GradScaler).parameters:
                                 self.scaler = GradScaler(
@@ -583,9 +606,6 @@ class EnsembleModel:
                                 self.scaler = GradScaler(
                                     enabled=(self.device.type == "cuda")
                                 )
-                            self.base_lrs = [
-                                opt.param_groups[0]["lr"] for opt in self.optimizers
-                            ]
                         self.patience_counter = 0
 
         # track best net

@@ -131,6 +131,8 @@ def csv_training_thread(
         dl_val = rebuild_loader(
             None, ds_val, batch_size=128, shuffle=False, num_workers=workers
         )
+        total_steps = (len(dl_train) * (max_epochs or 1)) // ensemble.grad_accum_steps
+        ensemble.configure_one_cycle(total_steps)
 
         adapt_live = bool(config.get("ADAPT_TO_LIVE", False))
         dummy_input = torch.randn(
