@@ -141,7 +141,7 @@ class MetaTransformerRL:
         # Reward shaping baseline (EMA of |Δreward|)
         self.reward_ema = 1.0
         self.tau_inv = 1.0 / 50.0
-        self.entropy_beta = 1e-3
+        self.entropy_beta = 0.0
         self.low_kl_count = 0
 
         # (7) Scheduled exploration

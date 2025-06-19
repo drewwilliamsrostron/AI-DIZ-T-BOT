@@ -32,15 +32,15 @@ class HyperParams:
     """
 
     learning_rate: float = float(_CONFIG.get("LEARNING_RATE", 3e-4))
-    weight_decay: float = float(_CONFIG.get("WEIGHT_DECAY", 1e-4))
+    weight_decay: float = float(_CONFIG.get("WEIGHT_DECAY", 0.0))
     sl: float = float(_CONFIG.get("SL", 5.0))
     tp: float = float(_CONFIG.get("TP", 5.0))
     atr_threshold_k: float = float(_CONFIG.get("ATR_THRESHOLD_K", 1.5))
     conf_threshold: float = float(_CONFIG.get("CONF_THRESHOLD", 5e-5))
 
     # desired exposure fractions for each side (0–10 % of equity)
-    long_frac: float = 0.00
-    short_frac: float = 0.00
+    long_frac: float = float(_CONFIG.get("LONG_FRAC", 0.05))
+    short_frac: float = float(_CONFIG.get("SHORT_FRAC", 0.05))
 
     indicator_hp: "IndicatorHyperparams" = None
 
