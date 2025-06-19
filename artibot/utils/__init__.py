@@ -34,6 +34,8 @@ class JsonFormatter(logging.Formatter):
             "attn_entropy": getattr(record, "attn_entropy", None),
             "lr": getattr(record, "lr", None),
             "profit_factor": getattr(record, "profit_factor", None),
+            "loss": getattr(record, "loss", None),
+            "val": getattr(record, "val", None),
         }
         return json.dumps(base)
 
