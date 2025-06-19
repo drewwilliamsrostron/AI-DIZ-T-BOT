@@ -224,8 +224,8 @@ def main() -> None:
     ensemble = EnsembleModel(
         device=device,
         n_models=2,
-        lr=3e-4,
-        weight_decay=1e-4,
+        lr=1e-3,
+        weight_decay=0.0,
         n_features=n_features,
         total_steps=10000,
         grad_accum_steps=4,

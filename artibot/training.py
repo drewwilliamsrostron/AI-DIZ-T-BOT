@@ -66,6 +66,7 @@ def csv_training_thread(
     debug_anomaly: bool = False,
     init_event: threading.Event | None = None,
     update_globals: bool = True,
+    overfit_toy: bool = False,
 ):
     """Train on CSV data in a background thread.
 
@@ -90,6 +91,9 @@ def csv_training_thread(
         if init_event is not None:
             init_event.wait()
         G.epoch_count = 0
+        if overfit_toy:
+            data = data[:100]
+            max_epochs = 50
         holdout_len = max(1, int(len(data) * 0.1))
         train_data = data[:-holdout_len] if len(data) > holdout_len else data
         holdout_data = data[-holdout_len:] if len(data) > holdout_len else []
@@ -147,6 +151,7 @@ def csv_training_thread(
         epochs = 0
         best_reward = float("-inf")
         no_gain = 0
+        final_loss = None
         while not stop_event.is_set():
             if not G.is_bot_running():
                 time.sleep(1.0)
@@ -173,6 +178,7 @@ def csv_training_thread(
                 features=train_indicators,
                 update_globals=update_globals,
             )
+            final_loss = tl
 
             status_msg = (
                 f"Epoch {ensemble.train_steps}/{max_epochs} – loss {tl:.4f}"
@@ -234,7 +240,9 @@ def csv_training_thread(
             sharpe = G.global_sharpe
             max_dd = G.global_max_drawdown
             entropy = attn_entropy
-            if reject_if_risky(sharpe, max_dd, entropy):
+            if overfit_toy:
+                print(f"Toy epoch {epochs} loss {tl:.4f}")
+            if not overfit_toy and reject_if_risky(sharpe, max_dd, entropy):
                 logging.info(
                     "REJECTED",
                     extra={
@@ -253,7 +261,7 @@ def csv_training_thread(
                 no_gain = 0
             else:
                 no_gain += 1
-            if no_gain >= 10:
+            if not overfit_toy and no_gain >= 10:
                 logging.info(
                     "EARLY_STOP",
                     extra={"epoch": ensemble.train_steps},
@@ -379,6 +387,12 @@ def csv_training_thread(
 
             if ensemble.train_steps % 5 == 0 and ensemble.best_state_dicts:
                 ensemble.save_best_weights(weights_path)
+
+        if overfit_toy:
+            if final_loss is None or final_loss >= 0.3:
+                raise AssertionError(
+                    f"Final loss {final_loss:.4f} did not drop below 0.3"
+                )
 
     except Exception as e:
         traceback.print_exc()

@@ -119,7 +119,10 @@ def validate_and_gate(csv_path: str, config: dict) -> dict:
         monte_carlo_sharpe(equity_returns(r.get("equity_curve", []))) for r in results
     ]
     flat = [s for dist in distributions for s in dist]
-    gate_nuclear_key(flat, threshold=float(config.get("MIN_SHARPE", 1.0)))
+    gate_nuclear_key(
+        flat,
+        threshold=float(config.get("RISK_FILTER", config).get("MIN_SHARPE", 1.0)),
+    )
     summary = {
         "windows": len(results),
         "mean_sharpe": float(np.mean(flat)) if flat else 0.0,

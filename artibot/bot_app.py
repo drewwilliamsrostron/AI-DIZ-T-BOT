@@ -81,7 +81,7 @@ def weight_selector_dialog(config: dict, tk_module=tk):
     return bool(result.get("use", use_default)), result.get("path")
 
 
-def run_bot(max_epochs: int | None = None) -> None:
+def run_bot(max_epochs: int | None = None, *, overfit_toy: bool = False) -> None:
     """Launch all threads and the Tkinter GUI."""
 
     torch.backends.cudnn.deterministic = True
@@ -116,6 +116,8 @@ def run_bot(max_epochs: int | None = None) -> None:
     csv_path = os.path.abspath(os.path.expanduser(csv_path))
     logging.info("%s", json.dumps({"event": "load_csv", "path": csv_path}))
     data = load_csv_hourly(csv_path)
+    if overfit_toy:
+        data = data[:100]
 
     if len(data) < 10:
         logging.error("No usable CSV data found")
@@ -170,8 +172,8 @@ def run_bot(max_epochs: int | None = None) -> None:
     ensemble = EnsembleModel(
         device=device,
         n_models=2,
-        lr=3e-4,
-        weight_decay=1e-4,
+        lr=1e-3,
+        weight_decay=0.0,
         n_features=n_features,
     )
     ensemble.indicator_hparams = indicator_hp
@@ -211,7 +213,7 @@ def run_bot(max_epochs: int | None = None) -> None:
             max_epochs,
             weights_path,
         ),
-        kwargs={"debug_anomaly": __debug__},
+        kwargs={"debug_anomaly": __debug__, "overfit_toy": overfit_toy},
         daemon=True,
     )
     train_th.start()
@@ -284,4 +286,14 @@ def run_bot(max_epochs: int | None = None) -> None:
 
 
 if __name__ == "__main__":
-    run_bot()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Run Artibot")
+    parser.add_argument(
+        "--overfit_toy",
+        action="store_true",
+        help="Train on a small subset for debugging",
+    )
+    args = parser.parse_args()
+
+    run_bot(overfit_toy=args.overfit_toy)
