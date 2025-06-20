@@ -16,7 +16,7 @@ if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) 
 
 import torch
 
-from .utils import rolling_zscore, feature_dim_for
+from .utils import rolling_zscore
 from torch.utils.data import Dataset
 
 import artibot.globals as G
@@ -296,8 +296,6 @@ class HourlyDataset(Dataset):
             feats = np.pad(feats, ((0, 0), (0, pad)), constant_values=0.0)
         elif feats.shape[1] > FEATURE_DIM:
             feats = feats[:, :FEATURE_DIM]
-
-        exp_cols = FEATURE_DIM
 
         # ``ta-lib`` leaves the first few rows as NaN which would otherwise
         # propagate through scaling and ultimately make the training loss

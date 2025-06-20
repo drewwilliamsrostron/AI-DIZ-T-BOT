@@ -71,10 +71,20 @@ class TradingModel(nn.Module):
 
         self.input_size = input_size
 
-        self.d_model = input_size
-        self.input_dim = input_size
-        self.pos_encoder = PositionalEncoding(d_model=self.d_model)
         from .hyperparams import TRANSFORMER_HEADS
+
+        self.d_model = (
+            (input_size + TRANSFORMER_HEADS - 1) // TRANSFORMER_HEADS
+        ) * TRANSFORMER_HEADS
+        self.input_dim = input_size
+        if self.d_model != input_size:
+            logger.info(
+                "Adjusting model dim from %d to %d for %d heads",
+                input_size,
+                self.d_model,
+                TRANSFORMER_HEADS,
+            )
+        self.pos_encoder = PositionalEncoding(d_model=self.d_model)
 
         enc_layer = nn.TransformerEncoderLayer(
             d_model=self.d_model,

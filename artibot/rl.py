@@ -75,10 +75,13 @@ class TransformerMetaAgent(nn.Module):
 
         self.state_dim = 6
 
-        d_model = 32
+        from .hyperparams import TRANSFORMER_HEADS
+
+        d_model = (
+            (32 + TRANSFORMER_HEADS - 1) // TRANSFORMER_HEADS
+        ) * TRANSFORMER_HEADS
         self.embed = nn.Linear(self.state_dim, d_model)
         self.pos_enc = PositionalEncoding(d_model)
-        from .hyperparams import TRANSFORMER_HEADS
 
         enc_layer = nn.TransformerEncoderLayer(
             d_model=d_model,

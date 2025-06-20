@@ -713,6 +713,7 @@ class EnsembleModel:
 
         # If the live models were built for a different feature count, rebuild
         if self.models[0].input_size != exp_dim:
+            self.rebuild_models(exp_dim)
 
         with torch.no_grad():
             all_probs = []
