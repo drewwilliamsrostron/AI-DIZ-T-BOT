@@ -220,6 +220,9 @@ class EnsembleModel:
             OneCycleLR(opt, max_lr=lr, total_steps=total_steps)
             for opt in self.optimizers
         ]
+        for sch in self.cycle:
+            sch.step_num = 0
+            sch.total_steps = total_steps
 
         self.grad_accum_steps = grad_accum_steps
         self.total_steps = total_steps
@@ -231,6 +234,9 @@ class EnsembleModel:
             OneCycleLR(opt, max_lr=opt.param_groups[0]["lr"], total_steps=total_steps)
             for opt in self.optimizers
         ]
+        for sch in self.cycle:
+            sch.step_num = 0
+            sch.total_steps = total_steps
 
     def rebuild_models(self, new_dim: int) -> None:
         """Reinitialise models and optimisers for a new feature dimension."""
@@ -253,6 +259,9 @@ class EnsembleModel:
             OneCycleLR(opt, max_lr=lr, total_steps=self.total_steps)
             for opt in self.optimizers
         ]
+        for sch in self.cycle:
+            sch.step_num = 0
+            sch.total_steps = self.total_steps
         amp_on = self.device.type == "cuda"
         if "device" in inspect.signature(GradScaler).parameters:
             self.scaler = GradScaler(enabled=amp_on, device=self.device)
@@ -376,6 +385,7 @@ class EnsembleModel:
         with G.model_lock:
             accum_counter = 0
             for batch_idx, (batch_x, batch_y) in enumerate(dl_train):
+                G.inc_step()
                 if accum_counter == 0:
                     for opt in self.optimizers:
                         opt.zero_grad()
@@ -441,7 +451,12 @@ class EnsembleModel:
 
                 accum_counter += 1
                 for cyc in self.cycle:
-                    cyc.step()
+                    try:
+                        if getattr(cyc, "step_num", 0) < cyc.total_steps:
+                            cyc.step()
+                            cyc.step_num = getattr(cyc, "step_num", 0) + 1
+                    except ValueError as e:
+                        logging.warning("LR scheduler skipped: %s", e)
                 if accum_counter >= self.grad_accum_steps:
                     for idx_m, (model, opt_) in enumerate(
                         zip(self.models, self.optimizers)
@@ -605,6 +620,9 @@ class EnsembleModel:
                                 )
                                 for o in self.optimizers
                             ]
+                            for sch in self.cycle:
+                                sch.step_num = 0
+                                sch.total_steps = self.total_steps
                             if "device" in inspect.signature(GradScaler).parameters:
                                 self.scaler = GradScaler(
                                     enabled=(self.device.type == "cuda"),
