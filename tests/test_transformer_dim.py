@@ -1,4 +1,3 @@
-import torch
 from artibot.model import TradingModel
 from artibot.hyperparams import TRANSFORMER_HEADS
 

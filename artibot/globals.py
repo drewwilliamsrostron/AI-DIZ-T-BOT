@@ -160,6 +160,7 @@ global_ai_adjustments_log = "No adjustments yet"
 global_ai_adjustments = ""
 global_ai_confidence = None
 epoch_count = 0
+global_step = 0
 global_current_prediction = None
 global_training_loss = []
 global_validation_loss = []
@@ -263,6 +264,13 @@ def inc_epoch() -> None:
     global epoch_count
     with state_lock:
         epoch_count += 1
+
+
+def inc_step() -> None:
+    """Increment the global mini-batch counter safely."""
+    global global_step
+    with state_lock:
+        global_step += 1
 
 
 def set_nuclear_key(enabled: bool) -> None:
