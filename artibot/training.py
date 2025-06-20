@@ -117,7 +117,10 @@ def csv_training_thread(
         ds_train, ds_val = random_split(ds_full, [n_tr, n_val])
 
         train_indicators = compute_indicators(
-            train_data, ensemble.indicator_hparams, with_scaled=True
+            train_data,
+            ensemble.indicator_hparams,
+            with_scaled=True,
+            enable_all=True if G.global_step == 0 else False,
         )
         holdout_indicators = (
             compute_indicators(
@@ -241,6 +244,11 @@ def csv_training_thread(
                 extra=log_obj,
             )
 
+            from artibot.hyperparams import RISK_FILTER, WARMUP_STEPS
+
+            if G.global_step >= WARMUP_STEPS and G.global_sharpe > 0:
+                RISK_FILTER["MIN_SHARPE"] = 0.5
+
             sharpe = G.global_sharpe
             max_dd = G.global_max_drawdown
             entropy = attn_entropy
@@ -363,7 +371,10 @@ def csv_training_thread(
                             num_workers=workers,
                         )
                         train_indicators = compute_indicators(
-                            train_data, ensemble.indicator_hparams, with_scaled=True
+                            train_data,
+                            ensemble.indicator_hparams,
+                            with_scaled=True,
+                            enable_all=True if G.global_step == 0 else False,
                         )
                         ensemble.train_one_epoch(
                             dl_train,

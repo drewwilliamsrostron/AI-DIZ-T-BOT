@@ -21,6 +21,8 @@ from .metrics import (
     compute_trade_metrics,
 )
 
+FIXED_FEATURES = None
+
 
 def compute_indicators(
     data_full,
@@ -28,6 +30,7 @@ def compute_indicators(
     *,
     with_scaled: bool = False,
     use_ichimoku: bool = False,
+    enable_all: bool = False,
 ):
     """Return indicator arrays for ``data_full``.
 
@@ -35,6 +38,12 @@ def compute_indicators(
     ``scaled`` key with normalised feature vectors matching the dataset
     preprocessing.
     """
+
+    from artibot.hyperparams import WARMUP_STEPS
+
+    global FIXED_FEATURES
+    if G.global_step < WARMUP_STEPS and FIXED_FEATURES is not None and not enable_all:
+        return FIXED_FEATURES
 
     raw = np.array(data_full, dtype=np.float64)
     closes = raw[:, 4]
@@ -161,6 +170,13 @@ def compute_indicators(
         feats = np.nan_to_num(feats)
         out["scaled"] = rolling_zscore(feats, window=50)
 
+    if G.global_step == 0 and enable_all:
+        FIXED_FEATURES = out
+        return out
+
+    if G.global_step < WARMUP_STEPS and not enable_all and FIXED_FEATURES is not None:
+        return FIXED_FEATURES
+
     return out
 
 
@@ -188,9 +204,9 @@ def robust_backtest(ensemble, data_full, indicators=None):
             "equity_curve": [],
         }
 
-    LEVERAGE = 10
+    LEVERAGE = 2  # reduce draw-down pressure
     min_hold_seconds = G.global_min_hold_seconds
-    commission_rate = 0.0006  # // 0.06 %   (was 0.0001, i.e. 0.01 %)
+    commission_rate = 0.0006  # 0.06 % taker fee (Phemex) ✓
     FUNDING_RATE = 0.0001
     device = ensemble.device
 
