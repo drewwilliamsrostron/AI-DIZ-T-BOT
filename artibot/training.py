@@ -137,8 +137,9 @@ def csv_training_thread(
         dl_val = rebuild_loader(
             None, ds_val, batch_size=128, shuffle=False, num_workers=workers
         )
+        steps_per_epoch = len(dl_train)
         if max_epochs is not None:
-            total_steps = (len(dl_train) * max_epochs) // ensemble.grad_accum_steps
+            total_steps = steps_per_epoch * max_epochs
         else:
             total_steps = ensemble.total_steps
         ensemble.configure_one_cycle(total_steps)

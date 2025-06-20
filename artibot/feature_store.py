@@ -11,6 +11,9 @@ All getters return np.float32.
 """
 
 from __future__ import annotations
+
+# Fixed feature dimension used by training pipelines
+FEATURE_DIM = 17
 import datetime as _dt
 import os
 import duckdb

@@ -23,6 +23,8 @@ def _load_master_config(path: str = "master_config.json") -> dict:
 
 _CONFIG = _load_master_config()
 
+TRANSFORMER_HEADS = int(_CONFIG.get("TRANSFORMER_HEADS", 8))
+
 
 @dataclass
 class HyperParams:

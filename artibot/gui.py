@@ -311,571 +311,9 @@ class TradingGUI:
         self.footer = ttk.Frame(root)
         self.footer.grid(row=1, column=0, columnspan=2, sticky="ew")
 
-        # ------------------------------------------------------------------
-        # notebook with charts
-        # ------------------------------------------------------------------
-        self.notebook = ttk.Notebook(self.main_frame)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
-        self.frame_train = build_scrollable(self.notebook)
-        # add the outer scrollable container, not the canvas itself
-        self.notebook.add(
-            self.frame_train.master.master, text="MAIN - TRAINING VS VALIDATION"
-        )
-        self.fig_train = plt.figure(figsize=(8, 6), constrained_layout=True)
-        self.ax_loss = self.fig_train.add_subplot(4, 1, 1)
-        self.ax_attention = self.fig_train.add_subplot(4, 1, 2, projection="3d")
-        self.ax_equity_train = self.fig_train.add_subplot(4, 1, 3)
-        self.ax_trades_time = self.fig_train.add_subplot(4, 1, 4)
-        self.canvas_train = FigureCanvasTkAgg(self.fig_train, master=self.frame_train)
-        self.canvas_train.get_tk_widget().pack(
-            fill=tk.BOTH, expand=True, padx=10, pady=10
-        )
-        self.fig_train.tight_layout(pad=0)
-        self.canvas_train.mpl_connect(
-            "resize_event", lambda _e: self.fig_train.tight_layout(pad=0)
-        )
-        self.loss_comment_label = ttk.Label(
-            self.frame_train,
-            text="",
-            font=("Helvetica", 9),
-            justify=tk.LEFT,
-            wraplength=400,
-        )
-        self.loss_comment_label.pack(fill=tk.X, padx=5, pady=5)
-        # persistent help text at bottom-left
-        self.help_box = ttk.Label(
-            self.frame_train,
-            text=(
-                "\N{INFORMATION SOURCE}  Chart legend:\n"
-                "\u2022  BLUE line = training loss\n"
-                "\u2022  ORANGE line = validation loss\n"
-                "   \u25b8  Blue below orange \u2192 model still learning\n"
-                "   \u25b8  Orange sharply below blue \u2192 possible over-fitting\n"
-                "\u2022  Equity chart: red = current run, green = best run\n"
-                "\u2022  Trades-over-time rising steeply \u279c more activity\n"
-                "\u2022  Attention surface peaks show which past bars the model focuses on"
-            ),
-            justify=tk.LEFT,
-            font=("Helvetica", 9),
-            foreground="#444",
-            anchor="w",
-        )
-        self.help_box.pack(side=tk.LEFT, anchor="sw", padx=5, pady=(0, 5))
-        self.attention_info = ttk.Label(
-            self.frame_train,
-            text=(
-                "This 3D surface shows which past price bars the model focuses on.\n"
-                "Higher peaks mean more attention. Updated live."
-            ),
-            font=("Helvetica", 9),
-            justify=tk.LEFT,
-            wraplength=400,
-        )
-        self.attention_info.pack(fill=tk.X, padx=5, pady=5)
-
-        self.frame_live = build_scrollable(self.notebook)
-        # add the outer scrollable container
-        self.notebook.add(self.frame_live.master.master, text="Phemex Live Price")
-        self.fig_live, self.ax_live = plt.subplots(
-            figsize=(8, 6), constrained_layout=True
-        )
-        self.canvas_live = FigureCanvasTkAgg(self.fig_live, master=self.frame_live)
-        self.canvas_live.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        self.fig_live.tight_layout(pad=0)
-        self.canvas_live.mpl_connect(
-            "resize_event", lambda _e: self.fig_live.tight_layout(pad=0)
-        )
-
-        self.frame_backtest = build_scrollable(self.notebook)
-        # add the outer scrollable container
-        self.notebook.add(self.frame_backtest.master.master, text="Backtest Results")
-        self.fig_backtest, self.ax_net_profit = plt.subplots(
-            figsize=(8, 6), constrained_layout=True
-        )
-        self.canvas_backtest = FigureCanvasTkAgg(
-            self.fig_backtest, master=self.frame_backtest
-        )
-        self.canvas_backtest.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        self.fig_backtest.tight_layout(pad=0)
-        self.canvas_backtest.mpl_connect(
-            "resize_event", lambda _e: self.fig_backtest.tight_layout(pad=0)
-        )
-
-        # previous attention weights for smooth animations
-        self._last_attention: np.ndarray | None = None
-        self._surf = None
-        self.anim_steps = 10
-
-        self.frame_trades = build_scrollable(self.notebook)
-        # add the outer scrollable container
-        self.notebook.add(self.frame_trades.master.master, text="Trade Details")
-        cols = ("Date", "Side", "Size", "Entry", "Exit", "PnL")
-        self.trade_tree = ttk.Treeview(
-            self.frame_trades, columns=cols, show="headings", height=10
-        )
-        for c in cols:
-            self.trade_tree.heading(c, text=c)
-            self.trade_tree.column(c, anchor=tk.CENTER)
-        trade_scroll = ttk.Scrollbar(
-            self.frame_trades, orient="vertical", command=self.trade_tree.yview
-        )
-        self.trade_tree.configure(yscrollcommand=trade_scroll.set)
-        self.trade_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        trade_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        self.frame_yearly_perf = build_scrollable(self.notebook)
-        # add the outer scrollable container
-        self.notebook.add(
-            self.frame_yearly_perf.master.master, text="Best Strategy Yearly Perf"
-        )
-        self.yearly_perf_text = tk.Text(self.frame_yearly_perf, width=50, height=20)
-        yearly_scroll = ttk.Scrollbar(
-            self.frame_yearly_perf,
-            orient="vertical",
-            command=self.yearly_perf_text.yview,
-        )
-        self.yearly_perf_text.configure(yscrollcommand=yearly_scroll.set)
-        self.yearly_perf_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        yearly_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        self.frame_monthly_perf = build_scrollable(self.notebook)
-        # add the outer scrollable container
-        self.notebook.add(
-            self.frame_monthly_perf.master.master, text="Best Strategy Monthly Results"
-        )
-        self.monthly_perf_text = tk.Text(self.frame_monthly_perf, width=50, height=20)
-        monthly_scroll = ttk.Scrollbar(
-            self.frame_monthly_perf,
-            orient="vertical",
-            command=self.monthly_perf_text.yview,
-        )
-        self.monthly_perf_text.configure(yscrollcommand=monthly_scroll.set)
-        self.monthly_perf_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        monthly_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        self.frame_timeline = build_scrollable(self.notebook)
-        # add the outer scrollable container
-        self.notebook.add(self.frame_timeline.master.master, text="Activity Timeline")
-        self.fig_tl, self.ax_tl = plt.subplots(figsize=(8, 6), constrained_layout=True)
-        self.canvas_tl = FigureCanvasTkAgg(self.fig_tl, master=self.frame_timeline)
-        self.canvas_tl.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        self.fig_tl.tight_layout(pad=0)
-        self.canvas_tl.mpl_connect(
-            "resize_event", lambda _e: self.fig_tl.tight_layout(pad=0)
-        )
-
-        self.info_frame = ttk.LabelFrame(self.sidebar, text="Performance")
-        self.info_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        disclaimer_text = "NOT INVESTMENT ADVICE! Demo only."
-        self.disclaimer_label = ttk.Label(
-            self.footer,
-            text=disclaimer_text,
-            font=("Helvetica", 9, "italic"),
-            foreground="darkred",
-        )
-        self.disclaimer_label.pack(side=tk.LEFT, padx=5)
-
-        self.weights_label = ttk.Label(
-            self.footer,
-            text=f"Weights: {os.path.basename(self.weights_path) if self.weights_path else 'N/A'}",
-            font=("Helvetica", 9, "italic"),
-        )
-        self.weights_label.pack(side=tk.RIGHT, padx=5)
-
-        self.progress = ttk.Progressbar(
-            self.footer, mode="determinate", length=150, maximum=100
-        )
-        self.progress.pack(side=tk.LEFT, padx=5)
-
-        self.pred_label = ttk.Label(
-            self.info_frame, text="AI Prediction: N/A", font=("Helvetica", 12)
-        )
-        self.pred_label.grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
-        self.price_label = ttk.Label(
-            self.info_frame, text="Live Price: N/A", font=("Helvetica", 12)
-        )
-        self.price_label.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
-        self.conf_label = ttk.Label(
-            self.info_frame, text="Confidence: N/A", font=("Helvetica", 12)
-        )
-        self.conf_label.grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
-        self.epoch_label = ttk.Label(
-            self.info_frame, text="Training Steps: 0", font=("Helvetica", 12)
-        )
-        self.epoch_label.grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
-
-        self.balance_label = ttk.Label(
-            self.info_frame, text="USDT Balance: N/A", font=("Helvetica", 12)
-        )
-        self.balance_label.grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
-        self.position_label = ttk.Label(
-            self.info_frame, text="Position: None", font=("Helvetica", 12)
-        )
-        self.position_label.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
-
-        self.current_hyper_label = ttk.Label(
-            self.info_frame,
-            text="Current Hyperparameters:",
-            font=("Helvetica", 12, "underline"),
-        )
-        self.current_hyper_label.grid(row=4, column=0, sticky=tk.W, padx=5, pady=5)
-        self.lr_label = ttk.Label(
-            self.info_frame, text="LR: N/A", font=("Helvetica", 12)
-        )
-        self.lr_label.grid(row=5, column=0, sticky=tk.W, padx=5, pady=5)
-        self.indicator_label = ttk.Label(
-            self.info_frame,
-            text="",
-            font=("Helvetica", 12),
-            justify=tk.LEFT,
-        )
-        self.indicator_label.grid(
-            row=6, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5
-        )
-
-        # --- NEW contextual row --------------------------------------------
-        self.context_row = ttk.Label(
-            self.info_frame, text="Context: N/A", font=("Helvetica", 11, "italic")
-        )
-        self.context_row.grid(
-            row=7, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2
-        )
-
-        self.best_hyper_label = ttk.Label(
-            self.info_frame,
-            text="Best Hyperparameters:",
-            font=("Helvetica", 12, "underline"),
-            foreground="darkgreen",
-        )
-        self.best_hyper_label.grid(row=4, column=1, sticky=tk.W, padx=5, pady=5)
-        self.best_lr_label = ttk.Label(
-            self.info_frame,
-            text="Best LR: N/A",
-            font=("Helvetica", 12),
-            foreground="darkgreen",
-        )
-        self.best_lr_label.grid(row=5, column=1, sticky=tk.W, padx=5, pady=5)
-        self.best_wd_label = ttk.Label(
-            self.info_frame,
-            text="Weight Decay: N/A",
-            font=("Helvetica", 12),
-            foreground="darkgreen",
-        )
-        self.best_wd_label.grid(row=6, column=1, sticky=tk.W, padx=5, pady=5)
-
-        self.current_sharpe_label = ttk.Label(
-            self.info_frame, text="Sharpe: N/A", font=("Helvetica", 12)
-        )
-        self.current_sharpe_label.grid(row=9, column=0, sticky=tk.W, padx=5, pady=5)
-        self.current_drawdown_label = ttk.Label(
-            self.info_frame, text="Max DD: N/A", font=("Helvetica", 12)
-        )
-        self.current_drawdown_label.grid(row=10, column=0, sticky=tk.W, padx=5, pady=5)
-        self.current_netprofit_label = ttk.Label(
-            self.info_frame, text="Net Profit (%): N/A", font=("Helvetica", 12)
-        )
-        self.current_netprofit_label.grid(row=11, column=0, sticky=tk.W, padx=5, pady=5)
-        self.current_trades_label = ttk.Label(
-            self.info_frame, text="Trades: N/A", font=("Helvetica", 12)
-        )
-        self.current_trades_label.grid(row=12, column=0, sticky=tk.W, padx=5, pady=5)
-        self.current_inactivity_label = ttk.Label(
-            self.info_frame, text="Inactivity Penalty: N/A", font=("Helvetica", 12)
-        )
-        self.current_inactivity_label.grid(
-            row=13, column=0, sticky=tk.W, padx=5, pady=5
-        )
-        self.current_composite_label = ttk.Label(
-            self.info_frame, text="Composite: N/A", font=("Helvetica", 12)
-        )
-        self.current_composite_label.grid(row=14, column=0, sticky=tk.W, padx=5, pady=5)
-        self.current_days_profit_label = ttk.Label(
-            self.info_frame, text="Days in Profit: N/A", font=("Helvetica", 12)
-        )
-        self.current_days_profit_label.grid(
-            row=15, column=0, sticky=tk.W, padx=5, pady=5
-        )
-        self.current_winrate_label = ttk.Label(
-            self.info_frame, text="Win Rate: N/A", font=("Helvetica", 12)
-        )
-        self.current_winrate_label.grid(row=16, column=0, sticky=tk.W, padx=5, pady=5)
-        self.current_profit_factor_label = ttk.Label(
-            self.info_frame, text="Profit Factor: N/A", font=("Helvetica", 12)
-        )
-        self.current_profit_factor_label.grid(
-            row=17, column=0, sticky=tk.W, padx=5, pady=5
-        )
-        self.current_avg_win_label = ttk.Label(
-            self.info_frame, text="Avg Win: N/A", font=("Helvetica", 12)
-        )
-        self.current_avg_win_label.grid(row=18, column=0, sticky=tk.W, padx=5, pady=5)
-        self.current_avg_loss_label = ttk.Label(
-            self.info_frame, text="Avg Loss: N/A", font=("Helvetica", 12)
-        )
-        self.current_avg_loss_label.grid(row=19, column=0, sticky=tk.W, padx=5, pady=5)
-
-        self.best_sharpe_label = ttk.Label(
-            self.info_frame,
-            text="Best Sharpe: N/A",
-            font=("Helvetica", 12),
-            foreground="darkgreen",
-        )
-        self.best_sharpe_label.grid(row=9, column=1, sticky=tk.W, padx=5, pady=5)
-        self.best_drawdown_label = ttk.Label(
-            self.info_frame,
-            text="Best Max DD: N/A",
-            font=("Helvetica", 12),
-            foreground="darkgreen",
-        )
-        self.best_drawdown_label.grid(row=10, column=1, sticky=tk.W, padx=5, pady=5)
-        self.best_netprofit_label = ttk.Label(
-            self.info_frame,
-            text="Best Net Pct: N/A",
-            font=("Helvetica", 12),
-            foreground="darkgreen",
-        )
-        self.best_netprofit_label.grid(row=11, column=1, sticky=tk.W, padx=5, pady=5)
-        self.best_trades_label = ttk.Label(
-            self.info_frame,
-            text="Best Trades: N/A",
-            font=("Helvetica", 12),
-            foreground="darkgreen",
-        )
-        self.best_trades_label.grid(row=12, column=1, sticky=tk.W, padx=5, pady=5)
-        self.best_inactivity_label = ttk.Label(
-            self.info_frame,
-            text="Best Inactivity: N/A",
-            font=("Helvetica", 12),
-            foreground="darkgreen",
-        )
-        self.best_inactivity_label.grid(row=13, column=1, sticky=tk.W, padx=5, pady=5)
-        self.best_composite_label = ttk.Label(
-            self.info_frame,
-            text="Best Composite: N/A",
-            font=("Helvetica", 12),
-            foreground="darkgreen",
-        )
-        self.best_composite_label.grid(row=14, column=1, sticky=tk.W, padx=5, pady=5)
-        self.best_days_profit_label = ttk.Label(
-            self.info_frame,
-            text="Best Days in Profit: N/A",
-            font=("Helvetica", 12),
-            foreground="darkgreen",
-        )
-        self.best_days_profit_label.grid(row=15, column=1, sticky=tk.W, padx=5, pady=5)
-        self.best_winrate_label = ttk.Label(
-            self.info_frame,
-            text="Best Win Rate: N/A",
-            font=("Helvetica", 12),
-            foreground="darkgreen",
-        )
-        self.best_winrate_label.grid(row=16, column=1, sticky=tk.W, padx=5, pady=5)
-        self.best_profit_factor_label = ttk.Label(
-            self.info_frame,
-            text="Best Profit Factor: N/A",
-            font=("Helvetica", 12),
-            foreground="darkgreen",
-        )
-        self.best_profit_factor_label.grid(
-            row=17, column=1, sticky=tk.W, padx=5, pady=5
-        )
-        self.best_avg_win_label = ttk.Label(
-            self.info_frame,
-            text="Best Avg Win: N/A",
-            font=("Helvetica", 12),
-            foreground="darkgreen",
-        )
-        self.best_avg_win_label.grid(row=18, column=1, sticky=tk.W, padx=5, pady=5)
-        self.best_avg_loss_label = ttk.Label(
-            self.info_frame,
-            text="Best Avg Loss: N/A",
-            font=("Helvetica", 12),
-            foreground="darkgreen",
-        )
-        self.best_avg_loss_label.grid(row=19, column=1, sticky=tk.W, padx=5, pady=5)
-
-        # status indicator combines primary + secondary messages
-        self.status_var = tk.StringVar()
-        self.status_label = ttk.Label(
-            self.info_frame,
-            textvariable=self.status_var,
-            font=("Helvetica", 10, "italic"),
-            justify=tk.LEFT,
-        )
-        self.status_label.grid(
-            row=20, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
-        )
-
-        # trading control buttons
-        self.controls_frame = ttk.Frame(self.info_frame)
-        self.controls_frame.grid(row=21, column=0, columnspan=2, pady=5)
-        self.nuclear_button = ttk.Button(
-            self.controls_frame,
-            text="Nuclear Key",
-            command=self.enable_live_trading,
-            state=tk.DISABLED,
-        )
-        self.nuclear_button.pack(side=tk.LEFT, padx=5)
-
-        self.btn_buy = ttk.Button(
-            self.controls_frame,
-            text="Test BUY",
-            command=self.on_test_buy,
-        )
-        self.btn_buy.pack(side=tk.LEFT, padx=5)
-        self.btn_sell = ttk.Button(
-            self.controls_frame,
-            text="Test SELL",
-            command=self.on_test_sell,
-        )
-        self.btn_sell.pack(side=tk.LEFT, padx=5)
-        self.btn_close = ttk.Button(
-            self.controls_frame,
-            text="Close Active Trade",
-            command=self.close_trade,
-            state="disabled",
-        )
-        self.btn_close.pack(side=tk.LEFT, padx=5)
-        self.edit_button = ttk.Button(
-            self.controls_frame,
-            text="Edit Trade",
-            command=self.edit_trade,
-        )
-        self.edit_button.pack(side=tk.LEFT, padx=5)
-        self.validate_button = ttk.Button(
-            self.controls_frame,
-            text="Manual Validate",
-            command=self.manual_validate,
-        )
-        self.validate_button.pack(side=tk.LEFT, padx=5)
-        self.run_button = ttk.Button(
-            self.controls_frame,
-            text="Pause Bot",
-            command=self.toggle_bot,
-        )
-        self.run_button.pack(side=tk.LEFT, padx=5)
-        self.cpu_button = ttk.Button(
-            self.controls_frame,
-            text="CPU Limit",
-            command=self.adjust_cpu_limit,
-        )
-        self.cpu_button.pack(side=tk.LEFT, padx=5)
-        self.force_nk_var = tk.BooleanVar(value=False)
-        self.force_nk_chk = ttk.Checkbutton(
-            self.controls_frame,
-            text="Bypass NK",
-            variable=self.force_nk_var,
-            command=self.on_toggle_force_nk,
-        )
-        self.force_nk_chk.pack(side=tk.LEFT, padx=5)
-        self.on_toggle_force_nk()
-
-        self.validation_label = ttk.Label(
-            self.info_frame, text="Validation: N/A", font=("Helvetica", 12)
-        )
-        self.validation_label.grid(
-            row=22, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
-        )
-
-        self.pos_frame = ttk.LabelFrame(self.info_frame, text="Current Position")
-        self.pos_frame.grid(row=23, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
-        ttk.Label(self.pos_frame, text="Side:").grid(row=0, column=0, sticky=tk.W)
-        self.label_side = ttk.Label(self.pos_frame, text="NONE")
-        self.label_side.grid(row=0, column=1, sticky=tk.W)
-        ttk.Label(self.pos_frame, text="Size:").grid(row=1, column=0, sticky=tk.W)
-        self.label_size = ttk.Label(self.pos_frame, text="0")
-        self.label_size.grid(row=1, column=1, sticky=tk.W)
-        ttk.Label(self.pos_frame, text="Entry:").grid(row=2, column=0, sticky=tk.W)
-        self.label_entry = ttk.Label(self.pos_frame, text="0.0 USDT")
-        self.label_entry.grid(row=2, column=1, sticky=tk.W)
-        ttk.Label(self.pos_frame, text="Long Exposure:").grid(
-            row=3, column=0, sticky=tk.W
-        )
-        self.label_long = ttk.Label(self.pos_frame, text="0 USD")
-        self.label_long.grid(row=3, column=1, sticky=tk.W)
-        ttk.Label(self.pos_frame, text="Short Exposure:").grid(
-            row=4, column=0, sticky=tk.W
-        )
-        self.label_short = ttk.Label(self.pos_frame, text="0 USD")
-        self.label_short.grid(row=4, column=1, sticky=tk.W)
-
-        self.comp_frame = ttk.LabelFrame(self.info_frame, text="Composite Terms")
-        self.comp_frame.grid(
-            row=24, column=0, columnspan=2, sticky="ew", padx=5, pady=5
-        )
-        self.use_net_var = tk.BooleanVar(value=G.use_net_term)
-        self.use_sharpe_var = tk.BooleanVar(value=G.use_sharpe_term)
-        self.use_dd_var = tk.BooleanVar(value=G.use_drawdown_term)
-        self.use_trade_var = tk.BooleanVar(value=G.use_trade_term)
-        self.use_days_var = tk.BooleanVar(value=G.use_profit_days_term)
-        ttk.Checkbutton(
-            self.comp_frame,
-            text="Net%",
-            variable=self.use_net_var,
-            command=self.update_composite_flags,
-        ).grid(row=0, column=0, sticky=tk.W)
-        ttk.Checkbutton(
-            self.comp_frame,
-            text="Sharpe",
-            variable=self.use_sharpe_var,
-            command=self.update_composite_flags,
-        ).grid(row=0, column=1, sticky=tk.W)
-        ttk.Checkbutton(
-            self.comp_frame,
-            text="Drawdown",
-            variable=self.use_dd_var,
-            command=self.update_composite_flags,
-        ).grid(row=1, column=0, sticky=tk.W)
-        ttk.Checkbutton(
-            self.comp_frame,
-            text="Trades",
-            variable=self.use_trade_var,
-            command=self.update_composite_flags,
-        ).grid(row=1, column=1, sticky=tk.W)
-        ttk.Checkbutton(
-            self.comp_frame,
-            text="Profit Days",
-            variable=self.use_days_var,
-            command=self.update_composite_flags,
-        ).grid(row=2, column=0, sticky=tk.W)
-        self.update_composite_flags()
-
-        # Use sidebar as container to avoid mixing pack/grid on the root
-        self.frame_ai = ttk.Frame(self.sidebar)
-        self.frame_ai.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.ai_output_label = ttk.Label(
-            self.frame_ai, text="Latest AI Adjustments:", font=("Helvetica", 12, "bold")
-        )
-        self.ai_output_label.pack(anchor="n")
-        self.ai_output_text = tk.Text(self.frame_ai, width=40, height=10, wrap="word")
-        ai_scroll = ttk.Scrollbar(
-            self.frame_ai, orient="vertical", command=self.ai_output_text.yview
-        )
-        self.ai_output_text.configure(yscrollcommand=ai_scroll.set)
-        self.ai_output_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        ai_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        self.frame_ai_log = ttk.Frame(self.sidebar)
-        self.frame_ai_log.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        self.ai_log_label = ttk.Label(
-            self.frame_ai_log,
-            text="AI Adjustments Log:",
-            font=("Helvetica", 12, "bold"),
-        )
-        self.ai_log_label.pack(anchor="n")
-        self.ai_log_list = tk.Listbox(self.frame_ai_log, width=40, height=10)
-        self.ai_log_list.pack(fill=tk.BOTH, expand=True)
-        self._log_lines = 0
-
-        for fig in (self.fig_train, self.fig_live, self.fig_backtest, self.fig_tl):
-            for ax in fig.axes:
-                for spine in ax.spines.values():
-                    spine.set_visible(True)
-                    spine.set_linewidth(0.8)
-                    spine.set_edgecolor("#999")
-            fig.tight_layout(pad=2.0)
-            fig.subplots_adjust(hspace=0.35)
+        self._build_notebook()
+        self._build_sidebar()
+        self._build_footer()
 
         for child in self.main_frame.winfo_children():
             child.columnconfigure(0, weight=1)
@@ -884,6 +322,14 @@ class TradingGUI:
         w_func = getattr(root, "winfo_screenwidth", lambda: 1280)
         h_func = getattr(root, "winfo_screenheight", lambda: 720)
         w, h = int(w_func()), int(h_func())
+        w = max(800, int(w * 0.7))
+        h = max(600, int(h * 0.7))
+        root.minsize(w, h)
+        try:  # some stubs lack geometry()
+            root.geometry(f"{w}x{h}")
+        except Exception:  # pragma: no cover - not critical during tests
+            pass
+
         w = max(800, int(w * 0.7))
         h = max(600, int(h * 0.7))
         root.minsize(w, h)
@@ -997,13 +443,12 @@ class TradingGUI:
         self._log_chart_updates()
         self.ax_loss.clear()
         self.ax_loss.set_title("Training vs. Validation Loss")
-        x1 = range(1, len(G.global_training_loss) + 1)
-        self.ax_loss.plot(
-            x1, G.global_training_loss, color="blue", marker="o", label="Train"
-        )
-        val_filtered = [
-            (i + 1, v) for i, v in enumerate(G.global_validation_loss) if v is not None
-        ]
+        n = min(len(G.global_training_loss), len(G.global_validation_loss))
+        train = G.global_training_loss[:n]
+        val = G.global_validation_loss[:n]
+        x1 = range(1, n + 1)
+        self.ax_loss.plot(x1, train, color="blue", marker="o", label="Train")
+        val_filtered = [(i + 1, v) for i, v in enumerate(val) if v is not None]
         if val_filtered:
             xv, yv = zip(*val_filtered)
             self.ax_loss.plot(xv, yv, color="orange", marker="x", label="Val")
@@ -1546,3 +991,409 @@ class TradingGUI:
         G.set_bot_running(not running)
         new_text = "Pause Bot" if not running else "Resume Bot"
         self.run_button.config(text=new_text)
+
+    def _build_notebook(self) -> None:
+        """Create notebook with all matplotlib figures."""
+        self.notebook = ttk.Notebook(self.main_frame)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        self.frame_train = build_scrollable(self.notebook)
+        self.notebook.add(
+            self.frame_train.master.master, text="MAIN - TRAINING VS VALIDATION"
+        )
+        self.fig_train = plt.figure(figsize=(8, 6), constrained_layout=True)
+        self.fig_train.set_constrained_layout(True)
+        self.ax_loss = self.fig_train.add_subplot(4, 1, 1)
+        self.ax_attention = self.fig_train.add_subplot(4, 1, 2, projection="3d")
+        self.ax_equity_train = self.fig_train.add_subplot(4, 1, 3)
+        self.ax_trades_time = self.fig_train.add_subplot(4, 1, 4)
+        self.canvas_train = FigureCanvasTkAgg(self.fig_train, master=self.frame_train)
+        self.canvas_train.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.loss_comment_label = ttk.Label(
+            self.frame_train,
+            text="",
+            font=("Helvetica", 9),
+            justify=tk.LEFT,
+            wraplength=400,
+        )
+        self.loss_comment_label.pack(fill=tk.X, padx=5, pady=5)
+        self.help_box = ttk.Label(
+            self.frame_train,
+            text=(
+                "\N{INFORMATION SOURCE}  Chart legend:\n"
+                "\u2022  BLUE line = training loss\n"
+                "\u2022  ORANGE line = validation loss\n"
+                "   \u25b8  Blue below orange \u2192 model still learning\n"
+                "   \u25b8  Orange sharply below blue \u2192 possible over-fitting\n"
+                "\u2022  Equity chart: red = current run, green = best run\n"
+                "\u2022  Trades-over-time rising steeply \u279c more activity\n"
+                "\u2022  Attention surface peaks show which past bars the model focuses on"
+            ),
+            justify=tk.LEFT,
+            font=("Helvetica", 9),
+            foreground="#444",
+            anchor="w",
+        )
+        self.help_box.pack(side=tk.LEFT, anchor="sw", padx=5, pady=(0, 5))
+        self.attention_info = ttk.Label(
+            self.frame_train,
+            text=(
+                "This 3D surface shows which past price bars the model focuses on.\n"
+                "Higher peaks mean more attention. Updated live."
+            ),
+            font=("Helvetica", 9),
+            justify=tk.LEFT,
+            wraplength=400,
+        )
+        self.attention_info.pack(fill=tk.X, padx=5, pady=5)
+
+        self.frame_live = build_scrollable(self.notebook)
+        self.notebook.add(self.frame_live.master.master, text="Phemex Live Price")
+        self.fig_live, self.ax_live = plt.subplots(
+            figsize=(8, 6), constrained_layout=True
+        )
+        self.fig_live.set_constrained_layout(True)
+        self.canvas_live = FigureCanvasTkAgg(self.fig_live, master=self.frame_live)
+        self.canvas_live.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+        self.frame_backtest = build_scrollable(self.notebook)
+        self.notebook.add(self.frame_backtest.master.master, text="Backtest Results")
+        self.fig_backtest, self.ax_net_profit = plt.subplots(
+            figsize=(8, 6), constrained_layout=True
+        )
+        self.fig_backtest.set_constrained_layout(True)
+        self.canvas_backtest = FigureCanvasTkAgg(
+            self.fig_backtest, master=self.frame_backtest
+        )
+        self.canvas_backtest.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+        self._last_attention: np.ndarray | None = None
+        self._surf = None
+        self.anim_steps = 10
+
+        self.frame_trades = build_scrollable(self.notebook)
+        self.notebook.add(self.frame_trades.master.master, text="Trade Details")
+        cols = ("Date", "Side", "Size", "Entry", "Exit", "PnL")
+        self.trade_tree = ttk.Treeview(
+            self.frame_trades, columns=cols, show="headings", height=10
+        )
+        for c in cols:
+            self.trade_tree.heading(c, text=c)
+            self.trade_tree.column(c, anchor=tk.CENTER)
+        trade_scroll = ttk.Scrollbar(
+            self.frame_trades, orient="vertical", command=self.trade_tree.yview
+        )
+        self.trade_tree.configure(yscrollcommand=trade_scroll.set)
+        self.trade_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        trade_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.frame_yearly_perf = build_scrollable(self.notebook)
+        self.notebook.add(
+            self.frame_yearly_perf.master.master, text="Best Strategy Yearly Perf"
+        )
+        self.yearly_perf_text = tk.Text(self.frame_yearly_perf, width=50, height=20)
+        yearly_scroll = ttk.Scrollbar(
+            self.frame_yearly_perf,
+            orient="vertical",
+            command=self.yearly_perf_text.yview,
+        )
+        self.yearly_perf_text.configure(yscrollcommand=yearly_scroll.set)
+        self.yearly_perf_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        yearly_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.frame_monthly_perf = build_scrollable(self.notebook)
+        self.notebook.add(
+            self.frame_monthly_perf.master.master, text="Best Strategy Monthly Results"
+        )
+        self.monthly_perf_text = tk.Text(self.frame_monthly_perf, width=50, height=20)
+        monthly_scroll = ttk.Scrollbar(
+            self.frame_monthly_perf,
+            orient="vertical",
+            command=self.monthly_perf_text.yview,
+        )
+        self.monthly_perf_text.configure(yscrollcommand=monthly_scroll.set)
+        self.monthly_perf_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        monthly_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.frame_timeline = build_scrollable(self.notebook)
+        self.notebook.add(self.frame_timeline.master.master, text="Activity Timeline")
+        self.fig_tl, self.ax_tl = plt.subplots(figsize=(8, 6), constrained_layout=True)
+        self.fig_tl.set_constrained_layout(True)
+        self.canvas_tl = FigureCanvasTkAgg(self.fig_tl, master=self.frame_timeline)
+        self.canvas_tl.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+    def _build_sidebar(self) -> None:
+        """Create sidebar widgets and AI log panels."""
+        self.info_frame = ttk.LabelFrame(self.sidebar, text="Performance")
+        self.info_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        self.pred_label = ttk.Label(
+            self.info_frame, text="AI Prediction: N/A", font=("Helvetica", 12)
+        )
+        self.pred_label.grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        self.price_label = ttk.Label(
+            self.info_frame, text="Live Price: N/A", font=("Helvetica", 12)
+        )
+        self.price_label.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
+
+        self.conf_label = ttk.Label(
+            self.info_frame, text="Confidence: N/A", font=("Helvetica", 12)
+        )
+        self.conf_label.grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
+
+        self.epoch_label = ttk.Label(
+            self.info_frame, text="Training Steps: 0", font=("Helvetica", 12)
+        )
+        self.epoch_label.grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
+
+        self.balance_label = ttk.Label(
+            self.info_frame, text="USDT Balance: N/A", font=("Helvetica", 12)
+        )
+        self.balance_label.grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
+        self.position_label = ttk.Label(
+            self.info_frame, text="Position: None", font=("Helvetica", 12)
+        )
+        self.position_label.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
+
+        self.current_hyper_label = ttk.Label(
+            self.info_frame,
+            text="Current Hyperparameters:",
+            font=("Helvetica", 12, "underline"),
+        )
+        self.current_hyper_label.grid(row=4, column=0, sticky=tk.W, padx=5, pady=5)
+        self.lr_label = ttk.Label(
+            self.info_frame, text="LR: N/A", font=("Helvetica", 12)
+        )
+        self.lr_label.grid(row=5, column=0, sticky=tk.W, padx=5, pady=5)
+
+        self.indicator_label = ttk.Label(
+            self.info_frame,
+            text="",
+            font=("Helvetica", 12),
+            justify=tk.LEFT,
+        )
+        self.indicator_label.grid(
+            row=6, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5
+        )
+
+        self.context_row = ttk.Label(
+            self.info_frame, text="Context: N/A", font=("Helvetica", 11, "italic")
+        )
+        self.context_row.grid(
+            row=7, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2
+        )
+
+        self.best_hyper_label = ttk.Label(
+            self.info_frame,
+            text="Best Hyperparameters:",
+            font=("Helvetica", 12, "underline"),
+            foreground="darkgreen",
+        )
+        self.best_hyper_label.grid(row=4, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_lr_label = ttk.Label(
+            self.info_frame,
+            text="Best LR: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_lr_label.grid(row=5, column=1, sticky=tk.W, padx=5, pady=5)
+
+        self.best_wd_label = ttk.Label(
+            self.info_frame,
+            text="Weight Decay: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_wd_label.grid(row=6, column=1, sticky=tk.W, padx=5, pady=5)
+
+        self.status_var = tk.StringVar()
+        self.status_label = ttk.Label(
+            self.info_frame,
+            textvariable=self.status_var,
+            font=("Helvetica", 10, "italic"),
+            justify=tk.LEFT,
+        )
+        self.status_label.grid(
+            row=20, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
+        )
+
+        self.controls_frame = ttk.Frame(self.info_frame)
+        self.controls_frame.grid(row=21, column=0, columnspan=2, pady=5)
+        self.nuclear_button = ttk.Button(
+            self.controls_frame,
+            text="Nuclear Key",
+            command=self.enable_live_trading,
+            state=tk.DISABLED,
+        )
+        self.nuclear_button.pack(side=tk.LEFT, padx=5)
+        self.btn_buy = ttk.Button(
+            self.controls_frame,
+            text="Test BUY",
+            command=self.on_test_buy,
+        )
+        self.btn_buy.pack(side=tk.LEFT, padx=5)
+        self.btn_sell = ttk.Button(
+            self.controls_frame,
+            text="Test SELL",
+            command=self.on_test_sell,
+        )
+        self.btn_sell.pack(side=tk.LEFT, padx=5)
+        self.btn_close = ttk.Button(
+            self.controls_frame,
+            text="Close Active Trade",
+            command=self.close_trade,
+            state="disabled",
+        )
+        self.btn_close.pack(side=tk.LEFT, padx=5)
+        self.edit_button = ttk.Button(
+            self.controls_frame,
+            text="Edit Trade",
+            command=self.edit_trade,
+        )
+        self.edit_button.pack(side=tk.LEFT, padx=5)
+        self.validate_button = ttk.Button(
+            self.controls_frame,
+            text="Manual Validate",
+            command=self.manual_validate,
+        )
+        self.validate_button.pack(side=tk.LEFT, padx=5)
+        self.run_button = ttk.Button(
+            self.controls_frame,
+            text="Pause Bot",
+            command=self.toggle_bot,
+        )
+        self.run_button.pack(side=tk.LEFT, padx=5)
+        self.cpu_button = ttk.Button(
+            self.controls_frame,
+            text="CPU Limit",
+            command=self.adjust_cpu_limit,
+        )
+        self.cpu_button.pack(side=tk.LEFT, padx=5)
+        self.force_nk_var = tk.BooleanVar(value=False)
+        self.force_nk_chk = ttk.Checkbutton(
+            self.controls_frame,
+            text="Bypass NK",
+            variable=self.force_nk_var,
+            command=self.on_toggle_force_nk,
+        )
+        self.force_nk_chk.pack(side=tk.LEFT, padx=5)
+        self.on_toggle_force_nk()
+
+        self.validation_label = ttk.Label(
+            self.info_frame, text="Validation: N/A", font=("Helvetica", 12)
+        )
+        self.validation_label.grid(
+            row=22, column=0, sticky=tk.W, padx=5, pady=5, columnspan=2
+        )
+
+        self.pos_frame = ttk.LabelFrame(self.info_frame, text="Current Position")
+        self.pos_frame.grid(row=23, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
+        ttk.Label(self.pos_frame, text="Side:").grid(row=0, column=0, sticky=tk.W)
+        self.label_side = ttk.Label(self.pos_frame, text="NONE")
+        self.label_side.grid(row=0, column=1, sticky=tk.W)
+        ttk.Label(self.pos_frame, text="Size:").grid(row=1, column=0, sticky=tk.W)
+        self.label_size = ttk.Label(self.pos_frame, text="0")
+        self.label_size.grid(row=1, column=1, sticky=tk.W)
+        ttk.Label(self.pos_frame, text="Entry:").grid(row=2, column=0, sticky=tk.W)
+        self.label_entry = ttk.Label(self.pos_frame, text="0.0 USDT")
+        self.label_entry.grid(row=2, column=1, sticky=tk.W)
+        ttk.Label(self.pos_frame, text="Long Exposure:").grid(
+            row=3, column=0, sticky=tk.W
+        )
+        self.label_long = ttk.Label(self.pos_frame, text="0 USD")
+        self.label_long.grid(row=3, column=1, sticky=tk.W)
+        ttk.Label(self.pos_frame, text="Short Exposure:").grid(
+            row=4, column=0, sticky=tk.W
+        )
+        self.label_short = ttk.Label(self.pos_frame, text="0 USD")
+        self.label_short.grid(row=4, column=1, sticky=tk.W)
+
+        self.comp_frame = ttk.LabelFrame(self.info_frame, text="Composite Terms")
+        self.comp_frame.grid(
+            row=24, column=0, columnspan=2, sticky="ew", padx=5, pady=5
+        )
+        self.use_net_var = tk.BooleanVar(value=G.use_net_term)
+        self.use_sharpe_var = tk.BooleanVar(value=G.use_sharpe_term)
+        self.use_dd_var = tk.BooleanVar(value=G.use_drawdown_term)
+        self.use_trade_var = tk.BooleanVar(value=G.use_trade_term)
+        self.use_days_var = tk.BooleanVar(value=G.use_profit_days_term)
+        ttk.Checkbutton(
+            self.comp_frame,
+            text="Net%",
+            variable=self.use_net_var,
+            command=self.update_composite_flags,
+        ).grid(row=0, column=0, sticky=tk.W)
+        ttk.Checkbutton(
+            self.comp_frame,
+            text="Sharpe",
+            variable=self.use_sharpe_var,
+            command=self.update_composite_flags,
+        ).grid(row=0, column=1, sticky=tk.W)
+        ttk.Checkbutton(
+            self.comp_frame,
+            text="Drawdown",
+            variable=self.use_dd_var,
+            command=self.update_composite_flags,
+        ).grid(row=1, column=0, sticky=tk.W)
+        ttk.Checkbutton(
+            self.comp_frame,
+            text="Trades",
+            variable=self.use_trade_var,
+            command=self.update_composite_flags,
+        ).grid(row=1, column=1, sticky=tk.W)
+        ttk.Checkbutton(
+            self.comp_frame,
+            text="Profit Days",
+            variable=self.use_days_var,
+            command=self.update_composite_flags,
+        ).grid(row=2, column=0, sticky=tk.W)
+        self.update_composite_flags()
+
+        self.frame_ai = ttk.Frame(self.sidebar)
+        self.frame_ai.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.ai_output_label = ttk.Label(
+            self.frame_ai, text="Latest AI Adjustments:", font=("Helvetica", 12, "bold")
+        )
+        self.ai_output_label.pack(anchor="n")
+        self.ai_output_text = tk.Text(self.frame_ai, width=40, height=10, wrap="word")
+        ai_scroll = ttk.Scrollbar(
+            self.frame_ai, orient="vertical", command=self.ai_output_text.yview
+        )
+        self.ai_output_text.configure(yscrollcommand=ai_scroll.set)
+        self.ai_output_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        ai_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.frame_ai_log = ttk.Frame(self.sidebar)
+        self.frame_ai_log.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.ai_log_label = ttk.Label(
+            self.frame_ai_log,
+            text="AI Adjustments Log:",
+            font=("Helvetica", 12, "bold"),
+        )
+        self.ai_log_label.pack(anchor="n")
+        self.ai_log_list = tk.Listbox(self.frame_ai_log, width=40, height=10)
+        self.ai_log_list.pack(fill=tk.BOTH, expand=True)
+        self._log_lines = 0
+
+    def _build_footer(self) -> None:
+        """Create footer widgets like status bar and progress."""
+        disclaimer_text = "NOT INVESTMENT ADVICE! Demo only."
+        self.disclaimer_label = ttk.Label(
+            self.footer,
+            text=disclaimer_text,
+            font=("Helvetica", 9, "italic"),
+            foreground="darkred",
+        )
+        self.disclaimer_label.pack(side=tk.LEFT, padx=5)
+
+        self.weights_label = ttk.Label(
+            self.footer,
+            text=f"Weights: {os.path.basename(self.weights_path) if self.weights_path else 'N/A'}",
+            font=("Helvetica", 9, "italic"),
+        )
+        self.weights_label.pack(side=tk.RIGHT, padx=5)
+
+        self.progress = ttk.Progressbar(
+            self.footer, mode="determinate", length=150, maximum=100
+        )
+        self.progress.pack(side=tk.LEFT, padx=5)
