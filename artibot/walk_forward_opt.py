@@ -1,4 +1,5 @@
 """Walk-forward backtesting with nested hyperparameter optimisation."""
+
 from __future__ import annotations
 
 import logging
@@ -18,8 +19,8 @@ from .backtest import robust_backtest
 # Configuration constants (example values)
 # ---------------------------------------------------------------------------
 TRAIN_SIZE = 24 * 30 * 6  # 6 months of hourly bars
-TEST_SIZE = 24 * 30       # 1 month
-STEP = 24 * 30            # slide by 1 month
+TEST_SIZE = 24 * 30  # 1 month
+STEP = 24 * 30  # slide by 1 month
 INNER_FOLDS = 3
 MAX_EPOCHS = 5
 
@@ -41,7 +42,12 @@ class EnsembleEstimator(BaseEstimator):
 
     def fit(self, X: pd.DataFrame, y: pd.Series | None = None) -> "EnsembleEstimator":
         df = pd.concat([X.reset_index(drop=True), y.reset_index(drop=True)], axis=1)
-        self.model_ = EnsembleModel(n_features=self.n_features, lr=self.lr, weight_decay=self.weight_decay, n_models=1)
+        self.model_ = EnsembleModel(
+            n_features=self.n_features,
+            lr=self.lr,
+            weight_decay=self.weight_decay,
+            n_models=1,
+        )
         stop = threading.Event()
         csv_training_thread(
             self.model_,
@@ -103,7 +109,9 @@ def walk_forward_opt(data: pd.DataFrame) -> List[Dict[str, Any]]:
 
 
 def _example_usage() -> None:
-    df = pd.read_csv("Gemini_BTCUSD_1h.csv")[["unix", "open", "high", "low", "close"]].copy()
+    df = pd.read_csv("Gemini_BTCUSD_1h.csv")[
+        ["unix", "open", "high", "low", "close"]
+    ].copy()
     df["y"] = (df["close"].shift(-1) > df["close"]).astype(int)
     df.dropna(inplace=True)
     summary = walk_forward_opt(df)
