@@ -440,6 +440,8 @@ class EnsembleModel:
                 self.scaler.scale(total_batch_loss).backward()
 
                 accum_counter += 1
+                for cyc in self.cycle:
+                    cyc.step()
                 if accum_counter >= self.grad_accum_steps:
                     for idx_m, (model, opt_) in enumerate(
                         zip(self.models, self.optimizers)
@@ -455,7 +457,6 @@ class EnsembleModel:
                             self.scaler = GradScaler(enabled=False)
                         else:
                             self.scaler.update()
-                        self.cycle[idx_m].step()
                         opt_.zero_grad()
                     batch_loss = sum(loss_i.item() for loss_i in losses)
                     total_loss += (
@@ -712,12 +713,6 @@ class EnsembleModel:
 
         # If the live models were built for a different feature count, rebuild
         if self.models[0].input_size != exp_dim:
-            logging.warning(
-                "Rebuilding models: feature dim changed from %d → %d",
-                self.models[0].input_size,
-                exp_dim,
-            )
-            self.rebuild_models(exp_dim)
 
         with torch.no_grad():
             all_probs = []

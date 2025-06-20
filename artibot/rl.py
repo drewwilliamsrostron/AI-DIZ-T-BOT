@@ -78,9 +78,11 @@ class TransformerMetaAgent(nn.Module):
         d_model = 32
         self.embed = nn.Linear(self.state_dim, d_model)
         self.pos_enc = PositionalEncoding(d_model)
+        from .hyperparams import TRANSFORMER_HEADS
+
         enc_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
-            nhead=1,
+            nhead=TRANSFORMER_HEADS,
             dim_feedforward=64,
             batch_first=True,
         )

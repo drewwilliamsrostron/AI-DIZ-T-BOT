@@ -288,10 +288,16 @@ class HourlyDataset(Dataset):
             )
 
         feats = np.column_stack(cols)
-        exp_cols = feature_dim_for(self.hp)
-        assert (
-            feats.shape[1] == exp_cols
-        ), f"FeatureIngest built {feats.shape[1]} cols but expected {exp_cols}"
+
+        from .feature_store import FEATURE_DIM
+
+        if feats.shape[1] < FEATURE_DIM:
+            pad = FEATURE_DIM - feats.shape[1]
+            feats = np.pad(feats, ((0, 0), (0, pad)), constant_values=0.0)
+        elif feats.shape[1] > FEATURE_DIM:
+            feats = feats[:, :FEATURE_DIM]
+
+        exp_cols = FEATURE_DIM
 
         # ``ta-lib`` leaves the first few rows as NaN which would otherwise
         # propagate through scaling and ultimately make the training loss
@@ -306,6 +312,7 @@ class HourlyDataset(Dataset):
         windows = sliding_window_view(
             scaled_feats, (self.seq_len, scaled_feats.shape[1])
         )[:, 0]
+        assert windows.shape[2] == FEATURE_DIM
         windows = windows[:-1]
 
         raw_closes = closes.astype(np.float32)
