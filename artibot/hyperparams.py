@@ -141,3 +141,15 @@ class IndicatorHyperparams:
                     setattr(self, attr, typ(_CONFIG[key]))
                 except Exception:
                     pass
+
+
+# ---------------------------------------------------------------------------
+# Risk control
+# ---------------------------------------------------------------------------
+RISK_FILTER = {
+    "MIN_SHARPE": -0.5,  # relaxed until model proves itself
+    "MAX_DRAWDOWN": -0.8,
+}
+
+# Number of mini-batches for warm-up period
+WARMUP_STEPS = 1000

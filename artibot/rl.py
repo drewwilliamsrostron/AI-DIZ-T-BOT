@@ -56,6 +56,11 @@ ACTION_SPACE = {
 ACTION_KEYS = list(ACTION_SPACE.keys())
 
 
+def mutate_lr(old_lr: float, delta: float) -> float:
+    """Return learning-rate clamped within [1e-5, 5e-4]."""
+    return max(1e-5, min(5e-4, old_lr + delta))
+
+
 ###############################################################################
 # NEW: A bigger action space that includes adjusting RSI, SMA, MACD + threshold
 ###############################################################################
@@ -138,6 +143,8 @@ class MetaTransformerRL:
         self.gauss_keys = self._model.gauss_keys
         self.opt = optim.AdamW(self._model.parameters(), lr=lr)
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.opt, T_max=100)
+        self.scheduler.step_num = 0
+        self.scheduler.total_steps = 100
         self.gamma = 0.95
         self.ensemble = ensemble
         self.value_range = value_range
@@ -311,7 +318,12 @@ class MetaTransformerRL:
                     p.grad = torch.zeros_like(p)
         torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
         self.opt.step()
-        self.scheduler.step()
+        try:
+            if getattr(self.scheduler, "step_num", 0) < self.scheduler.total_steps:
+                self.scheduler.step()
+                self.scheduler.step_num = getattr(self.scheduler, "step_num", 0) + 1
+        except ValueError as e:
+            logging.warning("LR scheduler skipped: %s", e)
         if reward > 0:
             self.last_improvement = 0
         else:
@@ -324,6 +336,11 @@ class MetaTransformerRL:
         act: dict[str, float],
     ) -> None:
         """Mutate ``hp`` and ``indicator_hp`` in-place based on ``act``."""
+
+        from artibot.hyperparams import WARMUP_STEPS
+
+        if G.global_step < WARMUP_STEPS:
+            act = {k: v for k, v in act.items() if not k.startswith("toggle_")}
 
         for k, prob in getattr(self, "last_bandit_probs", {}).items():
             logging.info("FEATURE_IMPORTANCE %s %.3f", k, prob)
@@ -419,6 +436,11 @@ class MetaTransformerRL:
             scale = max_gross / gross
             hp.long_frac *= scale
             hp.short_frac *= scale
+
+        if "lr" in act and self.ensemble is not None:
+            for opt in self.ensemble.optimizers:
+                pg = opt.param_groups[0]
+                pg["lr"] = mutate_lr(pg["lr"], float(act["lr"]))
 
         act_str = ", ".join(
             f"{k}={v:+.2f}" if isinstance(v, float) else f"{k}={v}"
