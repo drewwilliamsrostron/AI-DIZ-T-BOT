@@ -681,73 +681,105 @@ class TradingGUI:
             text=f"Weight Decay: {G.global_best_wd if G.global_best_wd else 'N/A'}"
         )
 
-        self.current_sharpe_label.config(text=f"Sharpe: {G.global_sharpe:.2f}")
-        self.current_drawdown_label.config(text=f"Max DD: {G.global_max_drawdown:.3f}")
-        self.current_netprofit_label.config(text=f"Net Pct: {G.global_net_pct:.2f}")
-        self.current_trades_label.config(text=f"Trades: {G.global_num_trades}")
-        if G.global_inactivity_penalty is not None:
-            self.current_inactivity_label.config(
-                text=f"Inact: {G.global_inactivity_penalty:.2f}"
+        if hasattr(self, "current_sharpe_label"):
+            self.current_sharpe_label.config(text=f"Sharpe: {G.global_sharpe:.2f}")
+        if hasattr(self, "current_drawdown_label"):
+            self.current_drawdown_label.config(
+                text=f"Max DD: {G.global_max_drawdown:.3f}"
             )
-        else:
-            self.current_inactivity_label.config(text="Inactivity Penalty: N/A")
-        if G.global_composite_reward is not None:
-            self.current_composite_label.config(
-                text=f"Comp: {G.global_composite_reward:.2f}"
+        if hasattr(self, "current_netprofit_label"):
+            self.current_netprofit_label.config(text=f"Net Pct: {G.global_net_pct:.2f}")
+        if hasattr(self, "current_trades_label"):
+            self.current_trades_label.config(text=f"Trades: {G.global_num_trades}")
+        if hasattr(self, "current_inactivity_label"):
+            if G.global_inactivity_penalty is not None:
+                self.current_inactivity_label.config(
+                    text=f"Inact: {G.global_inactivity_penalty:.2f}"
+                )
+            else:
+                self.current_inactivity_label.config(text="Inactivity Penalty: N/A")
+        if hasattr(self, "current_composite_label"):
+            if G.global_composite_reward is not None:
+                self.current_composite_label.config(
+                    text=f"Comp: {G.global_composite_reward:.2f}"
+                )
+            else:
+                self.current_composite_label.config(text="Current Composite: N/A")
+        if hasattr(self, "current_days_profit_label"):
+            if G.global_days_in_profit is not None:
+                self.current_days_profit_label.config(
+                    text=f"Days in Profit: {G.global_days_in_profit:.2f}"
+                )
+            else:
+                self.current_days_profit_label.config(
+                    text="Current Days in Profit: N/A"
+                )
+        if hasattr(self, "current_winrate_label"):
+            self.current_winrate_label.config(text=f"Win Rate: {G.global_win_rate:.2f}")
+        if hasattr(self, "current_profit_factor_label"):
+            self.current_profit_factor_label.config(
+                text=f"Profit Factor: {G.global_profit_factor:.2f}"
             )
-        else:
-            self.current_composite_label.config(text="Current Composite: N/A")
-        if G.global_days_in_profit is not None:
-            self.current_days_profit_label.config(
-                text=f"Days in Profit: {G.global_days_in_profit:.2f}"
+        if hasattr(self, "current_avg_win_label"):
+            self.current_avg_win_label.config(text=f"Avg Win: {G.global_avg_win:.3f}")
+        if hasattr(self, "current_avg_loss_label"):
+            self.current_avg_loss_label.config(
+                text=f"Avg Loss: {G.global_avg_loss:.3f}"
             )
-        else:
-            self.current_days_profit_label.config(text="Current Days in Profit: N/A")
-        self.current_winrate_label.config(text=f"Win Rate: {G.global_win_rate:.2f}")
-        self.current_profit_factor_label.config(
-            text=f"Profit Factor: {G.global_profit_factor:.2f}"
-        )
-        self.current_avg_win_label.config(text=f"Avg Win: {G.global_avg_win:.3f}")
-        self.current_avg_loss_label.config(text=f"Avg Loss: {G.global_avg_loss:.3f}")
 
-        self.best_sharpe_label.config(text=f"Best Sharpe: {G.global_best_sharpe:.2f}")
-        self.best_drawdown_label.config(
-            text=f"Best Max DD: {G.global_best_drawdown:.3f}"
-        )
-        self.best_netprofit_label.config(
-            text=f"Best Net Pct: {G.global_best_net_pct:.2f}"
-        )
-        self.best_trades_label.config(text=f"Best Trades: {G.global_best_num_trades}")
-        if G.global_best_inactivity_penalty is not None:
-            self.best_inactivity_label.config(
-                text=f"Best Inact: {G.global_best_inactivity_penalty:.2f}"
+        if hasattr(self, "best_sharpe_label"):
+            self.best_sharpe_label.config(
+                text=f"Best Sharpe: {G.global_best_sharpe:.2f}"
             )
-        else:
-            self.best_inactivity_label.config(text="Best Inactivity Penalty: N/A")
-        if G.global_best_composite_reward is not None:
-            self.best_composite_label.config(
-                text=f"Best Comp: {G.global_best_composite_reward:.2f}"
+        if hasattr(self, "best_drawdown_label"):
+            self.best_drawdown_label.config(
+                text=f"Best Max DD: {G.global_best_drawdown:.3f}"
             )
-        else:
-            self.best_composite_label.config(text="Best Composite: N/A")
-        if G.global_best_days_in_profit is not None:
-            self.best_days_profit_label.config(
-                text=f"Best Days in Profit: {G.global_best_days_in_profit:.2f}"
+        if hasattr(self, "best_netprofit_label"):
+            self.best_netprofit_label.config(
+                text=f"Best Net Pct: {G.global_best_net_pct:.2f}"
             )
-        else:
-            self.best_days_profit_label.config(text="Best Days in Profit: N/A")
-        self.best_winrate_label.config(
-            text=f"Best Win Rate: {G.global_best_win_rate:.2f}"
-        )
-        self.best_profit_factor_label.config(
-            text=f"Best Profit Factor: {G.global_best_profit_factor:.2f}"
-        )
-        self.best_avg_win_label.config(
-            text=f"Best Avg Win: {G.global_best_avg_win:.3f}"
-        )
-        self.best_avg_loss_label.config(
-            text=f"Best Avg Loss: {G.global_best_avg_loss:.3f}"
-        )
+        if hasattr(self, "best_trades_label"):
+            self.best_trades_label.config(
+                text=f"Best Trades: {G.global_best_num_trades}"
+            )
+        if hasattr(self, "best_inactivity_label"):
+            if G.global_best_inactivity_penalty is not None:
+                self.best_inactivity_label.config(
+                    text=f"Best Inact: {G.global_best_inactivity_penalty:.2f}"
+                )
+            else:
+                self.best_inactivity_label.config(text="Best Inactivity Penalty: N/A")
+        if hasattr(self, "best_composite_label"):
+            if G.global_best_composite_reward is not None:
+                self.best_composite_label.config(
+                    text=f"Best Comp: {G.global_best_composite_reward:.2f}"
+                )
+            else:
+                self.best_composite_label.config(text="Best Composite: N/A")
+        if hasattr(self, "best_days_profit_label"):
+            if G.global_best_days_in_profit is not None:
+                self.best_days_profit_label.config(
+                    text=f"Best Days in Profit: {G.global_best_days_in_profit:.2f}"
+                )
+            else:
+                self.best_days_profit_label.config(text="Best Days in Profit: N/A")
+        if hasattr(self, "best_winrate_label"):
+            self.best_winrate_label.config(
+                text=f"Best Win Rate: {G.global_best_win_rate:.2f}"
+            )
+        if hasattr(self, "best_profit_factor_label"):
+            self.best_profit_factor_label.config(
+                text=f"Best Profit Factor: {G.global_best_profit_factor:.2f}"
+            )
+        if hasattr(self, "best_avg_win_label"):
+            self.best_avg_win_label.config(
+                text=f"Best Avg Win: {G.global_best_avg_win:.3f}"
+            )
+        if hasattr(self, "best_avg_loss_label"):
+            self.best_avg_loss_label.config(
+                text=f"Best Avg Loss: {G.global_best_avg_loss:.3f}"
+            )
 
         aipos = self.ai_output_text.yview()
         self.ai_output_text.delete("1.0", tk.END)
@@ -1008,7 +1040,9 @@ class TradingGUI:
         self.ax_equity_train = self.fig_train.add_subplot(4, 1, 3)
         self.ax_trades_time = self.fig_train.add_subplot(4, 1, 4)
         self.canvas_train = FigureCanvasTkAgg(self.fig_train, master=self.frame_train)
-        self.canvas_train.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.canvas_train.get_tk_widget().pack(
+            fill=tk.BOTH, expand=True, padx=10, pady=10
+        )
         self.loss_comment_label = ttk.Label(
             self.frame_train,
             text="",
