@@ -3,7 +3,7 @@
 # ruff: noqa: F403, F405
 
 import artibot.globals as G
-from .hyperparams import HyperParams, IndicatorHyperparams
+from .hyperparams import HyperParams, IndicatorHyperparams, ALLOWED_META_ACTIONS
 from .model import PositionalEncoding
 from .utils import active_feature_dim
 
@@ -197,6 +197,7 @@ class MetaTransformerRL:
 
         if _random.random() < eps_threshold:
             act = self.model.sample_action()
+            act = {k: v for k, v in act.items() if k in ALLOWED_META_ACTIONS}
             logp = torch.tensor(0.0)
             self.prev_logits = (p_logits, b_logits, g_mean)
             self.prev_logprob = logp
@@ -226,12 +227,13 @@ class MetaTransformerRL:
         bandit_sample = torch.sigmoid((b_logits.squeeze(0) + gumbel) / 1.0)
         toggles = (bandit_sample > 0.5).int().tolist()
         for k, val_t in zip(self.toggle_keys, toggles):
-            act[k] = int(val_t)
-            logp = logp + (
-                F.logsigmoid(b_logits.squeeze(0)[self.toggle_keys.index(k)])
-                if val_t
-                else F.logsigmoid(-b_logits.squeeze(0)[self.toggle_keys.index(k)])
-            )
+            if k in ALLOWED_META_ACTIONS:
+                act[k] = int(val_t)
+                logp = logp + (
+                    F.logsigmoid(b_logits.squeeze(0)[self.toggle_keys.index(k)])
+                    if val_t
+                    else F.logsigmoid(-b_logits.squeeze(0)[self.toggle_keys.index(k)])
+                )
 
         # gaussian long/short fraction deltas
         mu = torch.tanh(g_mean.squeeze(0))
@@ -239,17 +241,19 @@ class MetaTransformerRL:
         eps = torch.randn_like(mu)
         sample = torch.tanh(mu + std * eps)
         for i, k in enumerate(self.gauss_keys):
-            low, high = ACTION_SPACE[k]
-            scale = (high - low) / 2.0
-            act[k] = float(sample[i].item() * scale)
-            log_prob_gauss = -0.5 * ((sample[i] - mu[i]) ** 2) / (
-                std[i] ** 2
-            ) - torch.log(std[i] * math.sqrt(2 * math.pi))
-            logp = logp + log_prob_gauss
+            if k in ALLOWED_META_ACTIONS:
+                low, high = ACTION_SPACE[k]
+                scale = (high - low) / 2.0
+                act[k] = float(sample[i].item() * scale)
+                log_prob_gauss = -0.5 * ((sample[i] - mu[i]) ** 2) / (
+                    std[i] ** 2
+                ) - torch.log(std[i] * math.sqrt(2 * math.pi))
+                logp = logp + log_prob_gauss
 
         self.prev_logits = (p_logits, b_logits, g_mean)
         self.prev_logprob = logp.detach()
         self.prev_action_idx = action_idx
+        act = {k: v for k, v in act.items() if k in ALLOWED_META_ACTIONS}
         return act, logp.detach(), value
 
     def update(self, state_np, action_idx, reward, next_state_np, logprob, value):
@@ -340,10 +344,12 @@ class MetaTransformerRL:
         from artibot.hyperparams import WARMUP_STEPS
 
         if G.global_step < WARMUP_STEPS:
-            act = {k: v for k, v in act.items() if not k.startswith("toggle_")}
+            return  # skip structural mutations during warm-up
 
         for k, prob in getattr(self, "last_bandit_probs", {}).items():
             logging.info("FEATURE_IMPORTANCE %s %.3f", k, prob)
+
+        act = {k: v for k, v in act.items() if k in ALLOWED_META_ACTIONS}
 
         if act.get("toggle_sma"):
             indicator_hp.use_sma = not indicator_hp.use_sma
