@@ -450,13 +450,6 @@ class EnsembleModel:
                 self.scaler.scale(total_batch_loss).backward()
 
                 accum_counter += 1
-                for cyc in self.cycle:
-                    try:
-                        if getattr(cyc, "step_num", 0) < cyc.total_steps:
-                            cyc.step()
-                            cyc.step_num = getattr(cyc, "step_num", 0) + 1
-                    except ValueError as e:
-                        logging.warning("LR scheduler skipped: %s", e)
                 if accum_counter >= self.grad_accum_steps:
                     for idx_m, (model, opt_) in enumerate(
                         zip(self.models, self.optimizers)
@@ -473,6 +466,13 @@ class EnsembleModel:
                         else:
                             self.scaler.update()
                         opt_.zero_grad()
+                    for cyc in self.cycle:
+                        try:
+                            if getattr(cyc, "step_num", 0) < cyc.total_steps:
+                                cyc.step()
+                                cyc.step_num = getattr(cyc, "step_num", 0) + 1
+                        except ValueError as e:
+                            logging.warning("LR scheduler skipped: %s", e)
                     batch_loss = sum(loss_i.item() for loss_i in losses)
                     total_loss += (
                         (batch_loss / len(self.models))
