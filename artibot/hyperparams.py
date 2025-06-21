@@ -147,9 +147,36 @@ class IndicatorHyperparams:
 # Risk control
 # ---------------------------------------------------------------------------
 RISK_FILTER = {
-    "MIN_SHARPE": -0.5,  # relaxed until model proves itself
-    "MAX_DRAWDOWN": -0.8,
+    "MIN_SHARPE": -1.0,
+    "MAX_DRAWDOWN": -0.90,
 }
 
 # Number of mini-batches for warm-up period
 WARMUP_STEPS = 1000
+
+# Allowed actions for the meta agent once indicator toggles are disabled.
+# Keeping this list in ``hyperparams`` lets other modules share the frozen action
+# space without importing :mod:`artibot.rl` during startup.
+ALLOWED_META_ACTIONS = {
+    "lr",
+    "wd",
+    "d_sma_period",
+    "d_rsi_period",
+    "d_macd_fast",
+    "d_macd_slow",
+    "d_macd_signal",
+    "d_atr_period",
+    "d_vortex_period",
+    "d_cmf_period",
+    "d_ema_period",
+    "d_donchian_period",
+    "d_kijun_period",
+    "d_tenkan_period",
+    "d_displacement",
+    "d_sl",
+    "d_tp",
+    "d_long_frac",
+    "d_short_frac",
+    "d_lr",
+    "d_wd",
+}

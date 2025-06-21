@@ -248,6 +248,7 @@ def csv_training_thread(
 
             if G.global_step >= WARMUP_STEPS and G.global_sharpe > 0:
                 RISK_FILTER["MIN_SHARPE"] = 0.5
+                RISK_FILTER["MAX_DRAWDOWN"] = -0.30
 
             sharpe = G.global_sharpe
             max_dd = G.global_max_drawdown
