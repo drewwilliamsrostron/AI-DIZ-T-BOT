@@ -3,7 +3,8 @@
 # ruff: noqa: F403, F405
 
 import artibot.globals as G
-from .hyperparams import HyperParams, IndicatorHyperparams, ALLOWED_META_ACTIONS
+import artibot.hyperparams as hyperparams
+from .hyperparams import HyperParams, IndicatorHyperparams
 from .model import PositionalEncoding
 from .utils import active_feature_dim
 
@@ -54,11 +55,6 @@ ACTION_SPACE = {
 }
 
 ACTION_KEYS = list(ACTION_SPACE.keys())
-
-
-def mutate_lr(old_lr: float, delta: float) -> float:
-    """Return learning-rate clamped within [1e-5, 5e-4]."""
-    return max(1e-5, min(5e-4, old_lr + delta))
 
 
 ###############################################################################
@@ -197,7 +193,9 @@ class MetaTransformerRL:
 
         if _random.random() < eps_threshold:
             act = self.model.sample_action()
-            act = {k: v for k, v in act.items() if k in ALLOWED_META_ACTIONS}
+            act = {
+                k: v for k, v in act.items() if k in hyperparams.ALLOWED_META_ACTIONS
+            }
             logp = torch.tensor(0.0)
             self.prev_logits = (p_logits, b_logits, g_mean)
             self.prev_logprob = logp
@@ -227,7 +225,7 @@ class MetaTransformerRL:
         bandit_sample = torch.sigmoid((b_logits.squeeze(0) + gumbel) / 1.0)
         toggles = (bandit_sample > 0.5).int().tolist()
         for k, val_t in zip(self.toggle_keys, toggles):
-            if k in ALLOWED_META_ACTIONS:
+            if k in hyperparams.ALLOWED_META_ACTIONS:
                 act[k] = int(val_t)
                 logp = logp + (
                     F.logsigmoid(b_logits.squeeze(0)[self.toggle_keys.index(k)])
@@ -241,7 +239,7 @@ class MetaTransformerRL:
         eps = torch.randn_like(mu)
         sample = torch.tanh(mu + std * eps)
         for i, k in enumerate(self.gauss_keys):
-            if k in ALLOWED_META_ACTIONS:
+            if k in hyperparams.ALLOWED_META_ACTIONS:
                 low, high = ACTION_SPACE[k]
                 scale = (high - low) / 2.0
                 act[k] = float(sample[i].item() * scale)
@@ -253,7 +251,12 @@ class MetaTransformerRL:
         self.prev_logits = (p_logits, b_logits, g_mean)
         self.prev_logprob = logp.detach()
         self.prev_action_idx = action_idx
-        act = {k: v for k, v in act.items() if k in ALLOWED_META_ACTIONS}
+        filtered = {}
+        for action_name, val in act.items():
+            if action_name not in hyperparams.ALLOWED_META_ACTIONS:
+                continue  # skip structural toggles until warm-up done
+            filtered[action_name] = val
+        act = filtered
         return act, logp.detach(), value
 
     def update(self, state_np, action_idx, reward, next_state_np, logprob, value):
@@ -349,7 +352,12 @@ class MetaTransformerRL:
         for k, prob in getattr(self, "last_bandit_probs", {}).items():
             logging.info("FEATURE_IMPORTANCE %s %.3f", k, prob)
 
-        act = {k: v for k, v in act.items() if k in ALLOWED_META_ACTIONS}
+        filtered = {}
+        for action_name, val in act.items():
+            if action_name not in hyperparams.ALLOWED_META_ACTIONS:
+                continue  # skip structural toggles until warm-up done
+            filtered[action_name] = val
+        act = filtered
 
         if act.get("toggle_sma"):
             indicator_hp.use_sma = not indicator_hp.use_sma
@@ -447,13 +455,13 @@ class MetaTransformerRL:
             for opt in self.ensemble.optimizers:
                 group = opt.param_groups[0]
                 old = group["lr"]
-                group["lr"] = mutate_lr(old, float(act["lr"]))
+                group["lr"] = hyperparams.mutate_lr(old, float(act["lr"]))
 
         if "wd" in act and self.ensemble is not None:
             for opt in self.ensemble.optimizers:
                 group = opt.param_groups[0]
                 old = group.get("weight_decay", 0.0)
-                group["weight_decay"] = mutate_lr(old, float(act["wd"]))
+                group["weight_decay"] = hyperparams.mutate_lr(old, float(act["wd"]))
 
         act_str = ", ".join(
             f"{k}={v:+.2f}" if isinstance(v, float) else f"{k}={v}"
@@ -551,7 +559,12 @@ def meta_control_loop(
             )
 
             act, logp, val_s = agent.pick_action(state)
-            act = {k: v for k, v in act.items() if k in ALLOWED_META_ACTIONS}
+            filtered = {}
+            for action_name, val in act.items():
+                if action_name not in hyperparams.ALLOWED_META_ACTIONS:
+                    continue  # skip structural toggles until warm-up done
+                filtered[action_name] = val
+            act = filtered
             with G.model_lock:
                 agent.apply_action(hp, indicator_hp, act)
                 new_dim = active_feature_dim(indicator_hp, use_ichimoku=hp.use_ichimoku)
