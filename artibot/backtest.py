@@ -272,6 +272,13 @@ def robust_backtest(ensemble, data_full, indicators=None):
     closes = raw_data[:, 4]
     preds = np.array(preds, dtype=np.int64)
 
+    n = min(len(preds), len(closes))
+    timestamps = timestamps[:n]
+    highs = highs[:n]
+    lows = lows[:n]
+    closes = closes[:n]
+    preds = preds[:n]
+
     prev_close = np.concatenate(([np.nan], closes[:-1]))
     tr = np.maximum(
         highs - lows,

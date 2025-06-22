@@ -16,6 +16,7 @@ import numpy as np
 import matplotlib
 import os
 import torch
+import json
 
 matplotlib.use("TkAgg")
 
@@ -271,6 +272,26 @@ def inc_step() -> None:
     global global_step
     with state_lock:
         global_step += 1
+
+
+def get_warmup_step() -> int:
+    """Return the persisted warm-up counter."""
+    try:
+        with open("warmup.json", "r") as f:
+            return int(json.load(f).get("step", 0))
+    except Exception:
+        return 0
+
+
+def bump_warmup() -> int:
+    """Increment and persist the warm-up counter."""
+    val = get_warmup_step() + 1
+    try:
+        with open("warmup.json", "w") as f:
+            json.dump({"step": val}, f)
+    except Exception:
+        pass
+    return val
 
 
 def set_nuclear_key(enabled: bool) -> None:

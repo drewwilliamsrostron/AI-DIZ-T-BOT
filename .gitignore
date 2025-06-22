@@ -5,3 +5,4 @@ __pycache__/
 .vs/
 *.vsidx
 artibot/_features.duckdb
+warmup.json

@@ -397,6 +397,7 @@ class EnsembleModel:
             accum_counter = 0
             for batch_idx, (batch_x, batch_y) in enumerate(dl_train):
                 G.inc_step()
+                G.bump_warmup()
                 if accum_counter == 0:
                     for opt in self.optimizers:
                         opt.zero_grad()
