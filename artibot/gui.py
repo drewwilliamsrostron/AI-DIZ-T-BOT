@@ -60,6 +60,11 @@ def build_scrollable(master: "tk.Widget") -> "ttk.Frame":
 
             cv.bind_all("<MouseWheel>", _on_wheel, add="+")
 
+            def _resize(event):
+                cv.itemconfig(self._win, width=event.width)
+
+            cv.bind("<Configure>", _resize)
+
     return _Scrollable(master).inner
 
 
@@ -1216,6 +1221,106 @@ class TradingGUI:
         self.context_row.grid(
             row=7, column=0, columnspan=2, sticky=tk.W, padx=5, pady=2
         )
+
+        # Current performance metrics
+        self.current_stats_frame = ttk.LabelFrame(self.info_frame, text="Current Stats")
+        self.current_stats_frame.grid(
+            row=8, column=0, columnspan=2, sticky="ew", padx=5, pady=5
+        )
+        self.current_sharpe_label = ttk.Label(
+            self.current_stats_frame, text="Sharpe: N/A"
+        )
+        self.current_sharpe_label.grid(row=0, column=0, sticky=tk.W)
+        self.current_drawdown_label = ttk.Label(
+            self.current_stats_frame, text="Max DD: N/A"
+        )
+        self.current_drawdown_label.grid(row=0, column=1, sticky=tk.W)
+        self.current_netprofit_label = ttk.Label(
+            self.current_stats_frame, text="Net Pct: N/A"
+        )
+        self.current_netprofit_label.grid(row=1, column=0, sticky=tk.W)
+        self.current_trades_label = ttk.Label(
+            self.current_stats_frame, text="Trades: N/A"
+        )
+        self.current_trades_label.grid(row=1, column=1, sticky=tk.W)
+        self.current_days_profit_label = ttk.Label(
+            self.current_stats_frame, text="Days in Profit: N/A"
+        )
+        self.current_days_profit_label.grid(row=2, column=0, sticky=tk.W)
+        self.current_winrate_label = ttk.Label(
+            self.current_stats_frame, text="Win Rate: N/A"
+        )
+        self.current_winrate_label.grid(row=2, column=1, sticky=tk.W)
+        self.current_profit_factor_label = ttk.Label(
+            self.current_stats_frame, text="Profit Factor: N/A"
+        )
+        self.current_profit_factor_label.grid(row=3, column=0, sticky=tk.W)
+        self.current_avg_win_label = ttk.Label(
+            self.current_stats_frame, text="Avg Win: N/A"
+        )
+        self.current_avg_win_label.grid(row=3, column=1, sticky=tk.W)
+        self.current_avg_loss_label = ttk.Label(
+            self.current_stats_frame, text="Avg Loss: N/A"
+        )
+        self.current_avg_loss_label.grid(row=4, column=0, sticky=tk.W)
+        self.current_inactivity_label = ttk.Label(
+            self.current_stats_frame, text="Inact: N/A"
+        )
+        self.current_inactivity_label.grid(row=4, column=1, sticky=tk.W)
+        self.current_composite_label = ttk.Label(
+            self.current_stats_frame, text="Comp: N/A"
+        )
+        self.current_composite_label.grid(row=5, column=0, columnspan=2, sticky=tk.W)
+
+        # Best performance metrics
+        self.best_stats_frame = ttk.LabelFrame(self.info_frame, text="Best Stats")
+        self.best_stats_frame.grid(
+            row=9, column=0, columnspan=2, sticky="ew", padx=5, pady=5
+        )
+        self.best_sharpe_label = ttk.Label(
+            self.best_stats_frame, text="Best Sharpe: N/A"
+        )
+        self.best_sharpe_label.grid(row=0, column=0, sticky=tk.W)
+        self.best_drawdown_label = ttk.Label(
+            self.best_stats_frame, text="Best Max DD: N/A"
+        )
+        self.best_drawdown_label.grid(row=0, column=1, sticky=tk.W)
+        self.best_netprofit_label = ttk.Label(
+            self.best_stats_frame, text="Best Net Pct: N/A"
+        )
+        self.best_netprofit_label.grid(row=1, column=0, sticky=tk.W)
+        self.best_trades_label = ttk.Label(
+            self.best_stats_frame, text="Best Trades: N/A"
+        )
+        self.best_trades_label.grid(row=1, column=1, sticky=tk.W)
+        self.best_days_profit_label = ttk.Label(
+            self.best_stats_frame, text="Best Days in Profit: N/A"
+        )
+        self.best_days_profit_label.grid(row=2, column=0, sticky=tk.W)
+        self.best_winrate_label = ttk.Label(
+            self.best_stats_frame, text="Best Win Rate: N/A"
+        )
+        self.best_winrate_label.grid(row=2, column=1, sticky=tk.W)
+        self.best_profit_factor_label = ttk.Label(
+            self.best_stats_frame, text="Best Profit Factor: N/A"
+        )
+        self.best_profit_factor_label.grid(row=3, column=0, sticky=tk.W)
+        self.best_avg_win_label = ttk.Label(
+            self.best_stats_frame, text="Best Avg Win: N/A"
+        )
+        self.best_avg_win_label.grid(row=3, column=1, sticky=tk.W)
+        self.best_avg_loss_label = ttk.Label(
+            self.best_stats_frame, text="Best Avg Loss: N/A"
+        )
+        self.best_avg_loss_label.grid(row=4, column=0, sticky=tk.W)
+        self.best_inactivity_label = ttk.Label(
+            self.best_stats_frame, text="Best Inact: N/A"
+        )
+        self.best_inactivity_label.grid(row=4, column=1, sticky=tk.W)
+        self.best_composite_label = ttk.Label(
+            self.best_stats_frame, text="Best Comp: N/A"
+        )
+        self.best_composite_label.grid(row=5, column=0, columnspan=2, sticky=tk.W)
 
         self.best_hyper_label = ttk.Label(
             self.info_frame,
