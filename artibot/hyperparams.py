@@ -180,3 +180,8 @@ ALLOWED_META_ACTIONS = {
     "d_lr",
     "d_wd",
 }
+
+
+def mutate_lr(old_lr: float, delta: float) -> float:
+    """Return learning-rate clamped within [1e-5, 5e-4]."""
+    return max(1e-5, min(5e-4, old_lr + delta))
