@@ -21,6 +21,7 @@ if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) 
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 
 try:
@@ -227,6 +228,16 @@ class EnsembleModel:
         self.grad_accum_steps = grad_accum_steps
         self.total_steps = total_steps
 
+    def _align_features(self, x: torch.Tensor) -> torch.Tensor:
+        """Pad or crop ``x`` to ``self.n_features``."""
+        exp = self.n_features
+        if x.shape[-1] < exp:
+            pad = exp - x.shape[-1]
+            x = F.pad(x, (0, pad))
+        elif x.shape[-1] > exp:
+            x = x[..., :exp]
+        return x
+
     def configure_one_cycle(self, total_steps: int) -> None:
         """Initialise OneCycle schedulers with ``total_steps``."""
         self.total_steps = total_steps
@@ -386,10 +397,11 @@ class EnsembleModel:
             accum_counter = 0
             for batch_idx, (batch_x, batch_y) in enumerate(dl_train):
                 G.inc_step()
+                G.bump_warmup()
                 if accum_counter == 0:
                     for opt in self.optimizers:
                         opt.zero_grad()
-                bx = batch_x.to(self.device).contiguous().clone()
+                bx = self._align_features(batch_x.to(self.device).contiguous())
                 by = batch_y.to(self.device)
 
                 if "device_type" in inspect.signature(autocast).parameters:
@@ -695,7 +707,7 @@ class EnsembleModel:
         losses = []
         with torch.no_grad():
             for bx, by in dl_val:
-                bx = bx.to(self.device)
+                bx = self._align_features(bx.to(self.device))
                 by = by.to(self.device)
                 model_losses = []
                 for mm in self.models:
@@ -712,9 +724,10 @@ class EnsembleModel:
         """Predict a single sample and return ``(index, confidence, None)``."""
 
         with torch.no_grad():
+            x = self._align_features(x.to(self.device))
             outs = []
             for m in self.models:
-                lg, _, _ = m(x.to(self.device))
+                lg, _, _ = m(x)
                 p_ = torch.softmax(lg, dim=1).cpu()
                 outs.append(p_)
             avgp = torch.mean(torch.stack(outs), dim=0)
@@ -737,7 +750,7 @@ class EnsembleModel:
             all_probs = []
             n_ = windows_tensor.shape[0]
             for i in range(0, n_, batch_size):
-                batch = windows_tensor[i : i + batch_size]
+                batch = self._align_features(windows_tensor[i : i + batch_size])
                 batch_probs = []
                 for m in self.models:
                     lg, tpars, _ = m(batch)
