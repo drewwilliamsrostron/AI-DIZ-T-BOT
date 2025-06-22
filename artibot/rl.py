@@ -445,8 +445,15 @@ class MetaTransformerRL:
 
         if "lr" in act and self.ensemble is not None:
             for opt in self.ensemble.optimizers:
-                pg = opt.param_groups[0]
-                pg["lr"] = mutate_lr(pg["lr"], float(act["lr"]))
+                group = opt.param_groups[0]
+                old = group["lr"]
+                group["lr"] = mutate_lr(old, float(act["lr"]))
+
+        if "wd" in act and self.ensemble is not None:
+            for opt in self.ensemble.optimizers:
+                group = opt.param_groups[0]
+                old = group.get("weight_decay", 0.0)
+                group["weight_decay"] = mutate_lr(old, float(act["wd"]))
 
         act_str = ", ".join(
             f"{k}={v:+.2f}" if isinstance(v, float) else f"{k}={v}"
@@ -544,6 +551,7 @@ def meta_control_loop(
             )
 
             act, logp, val_s = agent.pick_action(state)
+            act = {k: v for k, v in act.items() if k in ALLOWED_META_ACTIONS}
             with G.model_lock:
                 agent.apply_action(hp, indicator_hp, act)
                 new_dim = active_feature_dim(indicator_hp, use_ichimoku=hp.use_ichimoku)
