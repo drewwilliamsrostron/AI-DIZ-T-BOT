@@ -55,6 +55,13 @@ def build_scrollable(master: "tk.Widget") -> "ttk.Frame":
 
             self.inner.bind("<Configure>", _update)
 
+            def _resize(evt):
+                """Expand the inner frame when the canvas size changes."""
+                cv.itemconfig(self._win, width=evt.width, height=evt.height)
+                cv.configure(scrollregion=cv.bbox("all"))
+
+            cv.bind("<Configure>", _resize)
+
             def _on_wheel(evt):
                 cv.yview_scroll(int(-1 * (evt.delta / 120)), "units")
 
@@ -1322,6 +1329,7 @@ class TradingGUI:
         )
         self.best_composite_label.grid(row=5, column=0, columnspan=2, sticky=tk.W)
 
+
         self.best_hyper_label = ttk.Label(
             self.info_frame,
             text="Best Hyperparameters:",
@@ -1344,6 +1352,89 @@ class TradingGUI:
             foreground="darkgreen",
         )
         self.best_wd_label.grid(row=6, column=1, sticky=tk.W, padx=5, pady=5)
+
+        # ------------------------------------------------------------------
+        # best strategy metrics
+        # ------------------------------------------------------------------
+        self.best_sharpe_label = ttk.Label(
+            self.info_frame,
+            text="Best Sharpe: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_sharpe_label.grid(row=9, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_drawdown_label = ttk.Label(
+            self.info_frame,
+            text="Best Max DD: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_drawdown_label.grid(row=10, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_netprofit_label = ttk.Label(
+            self.info_frame,
+            text="Best Net Pct: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_netprofit_label.grid(row=11, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_trades_label = ttk.Label(
+            self.info_frame,
+            text="Best Trades: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_trades_label.grid(row=12, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_inactivity_label = ttk.Label(
+            self.info_frame,
+            text="Best Inactivity: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_inactivity_label.grid(row=13, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_composite_label = ttk.Label(
+            self.info_frame,
+            text="Best Composite: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_composite_label.grid(row=14, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_days_profit_label = ttk.Label(
+            self.info_frame,
+            text="Best Days in Profit: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_days_profit_label.grid(row=15, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_winrate_label = ttk.Label(
+            self.info_frame,
+            text="Best Win Rate: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_winrate_label.grid(row=16, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_profit_factor_label = ttk.Label(
+            self.info_frame,
+            text="Best Profit Factor: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_profit_factor_label.grid(
+            row=17, column=1, sticky=tk.W, padx=5, pady=5
+        )
+        self.best_avg_win_label = ttk.Label(
+            self.info_frame,
+            text="Best Avg Win: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_avg_win_label.grid(row=18, column=1, sticky=tk.W, padx=5, pady=5)
+        self.best_avg_loss_label = ttk.Label(
+            self.info_frame,
+            text="Best Avg Loss: N/A",
+            font=("Helvetica", 12),
+            foreground="darkgreen",
+        )
+        self.best_avg_loss_label.grid(row=19, column=1, sticky=tk.W, padx=5, pady=5)
 
         self.status_var = tk.StringVar()
         self.status_label = ttk.Label(
