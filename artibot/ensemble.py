@@ -76,7 +76,7 @@ def reject_if_risky(
     max_drawdown = float(thresholds.get("MAX_DRAWDOWN", -0.30))
 
     # Early-stage models get a looser gate until trade count builds up
-    if G.global_num_trades < 200:
+    if G.global_num_trades < 1000:
         return sharpe <= 0.0 and max_dd <= -0.40
 
     if entropy < min_entropy:

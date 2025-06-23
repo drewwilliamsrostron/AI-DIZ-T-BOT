@@ -252,9 +252,9 @@ class MetaTransformerRL:
         self.prev_logprob = logp.detach()
         self.prev_action_idx = action_idx
         filtered = {}
-        warm = G.get_warmup_step() < hyperparams.WARMUP_STEPS
+        freeze = G.get_warmup_step() >= hyperparams.WARMUP_STEPS
         for action_name, val in act.items():
-            if action_name.startswith("toggle_") and warm:
+            if action_name.startswith("toggle_") and freeze:
                 continue
             if action_name not in hyperparams.ALLOWED_META_ACTIONS:
                 continue
@@ -351,9 +351,9 @@ class MetaTransformerRL:
             logging.info("FEATURE_IMPORTANCE %s %.3f", k, prob)
 
         filtered = {}
-        warm = G.get_warmup_step() < hyperparams.WARMUP_STEPS
+        freeze = G.get_warmup_step() >= hyperparams.WARMUP_STEPS
         for action_name, val in act.items():
-            if action_name.startswith("toggle_") and warm:
+            if action_name.startswith("toggle_") and freeze:
                 continue
             if action_name not in hyperparams.ALLOWED_META_ACTIONS:
                 continue
@@ -569,9 +569,9 @@ def meta_control_loop(
 
             act, logp, val_s = agent.pick_action(state)
             filtered = {}
-            warm = G.get_warmup_step() < hyperparams.WARMUP_STEPS
+            freeze = G.get_warmup_step() >= hyperparams.WARMUP_STEPS
             for action_name, val in act.items():
-                if action_name.startswith("toggle_") and warm:
+                if action_name.startswith("toggle_") and freeze:
                     continue
                 if action_name not in hyperparams.ALLOWED_META_ACTIONS:
                     continue
