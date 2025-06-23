@@ -252,9 +252,12 @@ class MetaTransformerRL:
         self.prev_logprob = logp.detach()
         self.prev_action_idx = action_idx
         filtered = {}
+        warm = G.get_warmup_step() < hyperparams.WARMUP_STEPS
         for action_name, val in act.items():
+            if action_name.startswith("toggle_") and warm:
+                continue
             if action_name not in hyperparams.ALLOWED_META_ACTIONS:
-                continue  # skip structural toggles until warm-up done
+                continue
             filtered[action_name] = val
         act = filtered
         return act, logp.detach(), value
@@ -348,9 +351,12 @@ class MetaTransformerRL:
             logging.info("FEATURE_IMPORTANCE %s %.3f", k, prob)
 
         filtered = {}
+        warm = G.get_warmup_step() < hyperparams.WARMUP_STEPS
         for action_name, val in act.items():
+            if action_name.startswith("toggle_") and warm:
+                continue
             if action_name not in hyperparams.ALLOWED_META_ACTIONS:
-                continue  # skip structural toggles until warm-up done
+                continue
             filtered[action_name] = val
         act = filtered
 
@@ -446,17 +452,25 @@ class MetaTransformerRL:
             hp.long_frac *= scale
             hp.short_frac *= scale
 
-        if "lr" in act and self.ensemble is not None:
+        if self.ensemble is not None:
             for opt in self.ensemble.optimizers:
                 group = opt.param_groups[0]
-                old = group["lr"]
-                group["lr"] = hyperparams.mutate_lr(old, float(act["lr"]))
-
-        if "wd" in act and self.ensemble is not None:
-            for opt in self.ensemble.optimizers:
-                group = opt.param_groups[0]
-                old = group.get("weight_decay", 0.0)
-                group["weight_decay"] = hyperparams.mutate_lr(old, float(act["wd"]))
+                if "lr" in act:
+                    old = group["lr"]
+                    group["lr"] = hyperparams.mutate_lr(old, float(act["lr"]))
+                if "d_lr" in act:
+                    old = group["lr"]
+                    group["lr"] = hyperparams.mutate_lr(old, float(act["d_lr"]))
+                if "wd" in act:
+                    old_wd = group.get("weight_decay", 0.0)
+                    group["weight_decay"] = hyperparams.mutate_lr(
+                        old_wd, float(act["wd"])
+                    )
+                if "d_wd" in act:
+                    old_wd = group.get("weight_decay", 0.0)
+                    group["weight_decay"] = hyperparams.mutate_lr(
+                        old_wd, float(act["d_wd"])
+                    )
 
         act_str = ", ".join(
             f"{k}={v:+.2f}" if isinstance(v, float) else f"{k}={v}"
@@ -555,9 +569,12 @@ def meta_control_loop(
 
             act, logp, val_s = agent.pick_action(state)
             filtered = {}
+            warm = G.get_warmup_step() < hyperparams.WARMUP_STEPS
             for action_name, val in act.items():
+                if action_name.startswith("toggle_") and warm:
+                    continue
                 if action_name not in hyperparams.ALLOWED_META_ACTIONS:
-                    continue  # skip structural toggles until warm-up done
+                    continue
                 filtered[action_name] = val
             act = filtered
             with G.model_lock:
