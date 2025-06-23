@@ -152,7 +152,7 @@ RISK_FILTER = {
 }
 
 # floor for optimiser learning-rate (can be overridden via ``master_config.json``)
-LR_MIN = float(_CONFIG.get("LR_MIN", 1e-6))
+LR_MIN = float(_CONFIG.get("LR_MIN", 1e-5))
 # optional upper clamp when meta-agent mutates LR
 LR_MAX = float(_CONFIG.get("LR_MAX", 5e-4))
 
@@ -188,6 +188,10 @@ ALLOWED_META_ACTIONS = {
 
 
 def mutate_lr(old_lr: float, delta: float) -> float:
-    """Return a learning-rate within ``[LR_MIN, LR_MAX]``."""
+    """Return a learning-rate within ``[LR_MIN, LR_MAX]`` with ±20% cap."""
 
-    return max(LR_MIN, min(LR_MAX, old_lr + delta))
+    new_lr = old_lr + delta
+    rel_min = old_lr * 0.8
+    rel_max = old_lr * 1.2
+    clamped = max(rel_min, min(rel_max, new_lr))
+    return max(LR_MIN, min(LR_MAX, clamped))
