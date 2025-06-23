@@ -78,8 +78,11 @@ def latest_cpi_surprise() -> float:
 
     try:
         rows = requests.get(_MACRO_SRC, timeout=10).json()[:1]
-        actual = float(rows[0]["Actual"])
-        survey = float(rows[0]["Consensus"])
+        try:
+            actual = float(rows[0]["Actual"])
+            survey = float(rows[0]["Consensus"])
+        except KeyError:
+            return 0.0
         return actual - survey
     except Exception as exc:  # pragma: no cover - network
         _LOG.warning("macro fetch failed: %s", exc)

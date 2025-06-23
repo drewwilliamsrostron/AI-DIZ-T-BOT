@@ -6,7 +6,7 @@ import artibot.globals as G
 import artibot.hyperparams as hyperparams
 from .hyperparams import HyperParams, IndicatorHyperparams
 from .model import PositionalEncoding
-from .utils import active_feature_dim
+from .feature_store import FEATURE_DIM
 
 import random as _random
 import numpy as np
@@ -579,9 +579,9 @@ def meta_control_loop(
             act = filtered
             with G.model_lock:
                 agent.apply_action(hp, indicator_hp, act)
-                new_dim = active_feature_dim(indicator_hp, use_ichimoku=hp.use_ichimoku)
-                if new_dim != ensemble.models[0].input_dim:
-                    ensemble.rebuild_models(new_dim)
+                # models stay fixed at FEATURE_DIM; missing indicators are padded
+                if ensemble.models[0].input_dim != FEATURE_DIM:
+                    ensemble.rebuild_models(FEATURE_DIM)
 
             G.status_sleep("Meta agent sleeping", "", interval)
 
