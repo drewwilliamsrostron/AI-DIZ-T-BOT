@@ -35,7 +35,7 @@ from torch.optim.lr_scheduler import (
 from torch.utils.data import DataLoader
 
 from .backtest import robust_backtest
-from .hyperparams import HyperParams, IndicatorHyperparams, LR_MIN
+from .hyperparams import HyperParams, IndicatorHyperparams
 from .utils import active_feature_dim, feature_dim_for
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
@@ -175,6 +175,9 @@ class EnsembleModel:
             TradingModel(input_size=feat_dim).to(device) for _ in range(n_models)
         ]
         print("[DEBUG] Model moved to device")
+        from . import hyperparams as _hp
+
+        lr = max(lr, _hp.LR_MIN)
         self.optimizers = [
             optim.AdamW(
                 m.parameters(),
@@ -482,8 +485,13 @@ class EnsembleModel:
                             self.scaler = GradScaler(enabled=False)
                         else:
                             self.scaler.update()
+                        from . import hyperparams as _hp
+
                         for pg in opt_.param_groups:
-                            pg["lr"] = max(pg["lr"], LR_MIN)
+                            pg["lr"] = _hp.mutate_lr(pg["lr"], 0.0)
+                            pg["weight_decay"] = _hp.mutate_lr(
+                                pg.get("weight_decay", 0.0), 0.0
+                            )
                         opt_.zero_grad()
                         for cyc in self.cycle:
                             try:
@@ -492,8 +500,13 @@ class EnsembleModel:
                                     cyc.step_num = getattr(cyc, "step_num", 0) + 1
                             except ValueError as e:
                                 logging.warning("LR scheduler skipped: %s", e)
+                        from . import hyperparams as _hp
+
                         for pg in opt_.param_groups:
-                            pg["lr"] = max(pg["lr"], LR_MIN)
+                            pg["lr"] = _hp.mutate_lr(pg["lr"], 0.0)
+                            pg["weight_decay"] = _hp.mutate_lr(
+                                pg.get("weight_decay", 0.0), 0.0
+                            )
                     batch_loss = sum(loss_i.item() for loss_i in losses)
                     total_loss += (
                         (batch_loss / len(self.models))
@@ -514,9 +527,14 @@ class EnsembleModel:
                 else:
                     self.patience += 1
                 if self.patience >= 12:
+                    from . import hyperparams as _hp
+
                     for opt in self.optimizers:
                         for pg in opt.param_groups:
-                            pg["lr"] = max(pg["lr"] * 0.1, LR_MIN)
+                            pg["lr"] = _hp.mutate_lr(pg["lr"], pg["lr"] * -0.9)
+                            pg["weight_decay"] = _hp.mutate_lr(
+                                pg.get("weight_decay", 0.0), 0.0
+                            )
                     self.patience = 0
 
             # (2) Adjust Reward Penalties => less harsh for zero trades/ negative net

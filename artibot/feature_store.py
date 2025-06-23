@@ -20,6 +20,17 @@ import numpy as np
 
 # Fixed feature dimension used by training pipelines
 FEATURE_DIM = 17
+_FROZEN_DIM = None
+
+
+def freeze_feature_dim(dim: int) -> None:
+    """Persist ``dim`` as the global feature dimension once warm-up ends."""
+
+    global FEATURE_DIM, _FROZEN_DIM
+    if _FROZEN_DIM is None:
+        _FROZEN_DIM = dim
+        FEATURE_DIM = dim
+
 
 ###############################################################################
 #  initialise / migrate
