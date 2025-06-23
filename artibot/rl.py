@@ -344,11 +344,6 @@ class MetaTransformerRL:
     ) -> None:
         """Mutate ``hp`` and ``indicator_hp`` in-place based on ``act``."""
 
-        from artibot.hyperparams import WARMUP_STEPS
-
-        if G.global_step < WARMUP_STEPS:
-            return  # skip structural mutations during warm-up
-
         for k, prob in getattr(self, "last_bandit_probs", {}).items():
             logging.info("FEATURE_IMPORTANCE %s %.3f", k, prob)
 

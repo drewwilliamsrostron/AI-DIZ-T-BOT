@@ -246,7 +246,7 @@ def csv_training_thread(
 
             from artibot.hyperparams import RISK_FILTER, WARMUP_STEPS
 
-            if G.get_warmup_step() >= WARMUP_STEPS and G.global_sharpe > 0:
+            if G.get_warmup_step() >= WARMUP_STEPS:
                 RISK_FILTER["MIN_SHARPE"] = 0.5
                 RISK_FILTER["MAX_DRAWDOWN"] = -0.30
 
