@@ -252,9 +252,13 @@ class MetaTransformerRL:
         self.prev_logprob = logp.detach()
         self.prev_action_idx = action_idx
         filtered = {}
-        freeze = G.get_warmup_step() >= hyperparams.WARMUP_STEPS
+        freeze = hyperparams.should_freeze_features(G.get_warmup_step())
         for action_name, val in act.items():
-            if action_name.startswith("toggle_") and freeze:
+            if freeze and (
+                action_name.startswith("toggle_")
+                or action_name.endswith("_period")
+                or action_name.endswith("_frac")
+            ):
                 continue
             if action_name not in hyperparams.ALLOWED_META_ACTIONS:
                 continue
@@ -351,9 +355,13 @@ class MetaTransformerRL:
             logging.info("FEATURE_IMPORTANCE %s %.3f", k, prob)
 
         filtered = {}
-        freeze = G.get_warmup_step() >= hyperparams.WARMUP_STEPS
+        freeze = hyperparams.should_freeze_features(G.get_warmup_step())
         for action_name, val in act.items():
-            if action_name.startswith("toggle_") and freeze:
+            if freeze and (
+                action_name.startswith("toggle_")
+                or action_name.endswith("_period")
+                or action_name.endswith("_frac")
+            ):
                 continue
             if action_name not in hyperparams.ALLOWED_META_ACTIONS:
                 continue
@@ -569,9 +577,13 @@ def meta_control_loop(
 
             act, logp, val_s = agent.pick_action(state)
             filtered = {}
-            freeze = G.get_warmup_step() >= hyperparams.WARMUP_STEPS
+            freeze = hyperparams.should_freeze_features(G.get_warmup_step())
             for action_name, val in act.items():
-                if action_name.startswith("toggle_") and freeze:
+                if freeze and (
+                    action_name.startswith("toggle_")
+                    or action_name.endswith("_period")
+                    or action_name.endswith("_frac")
+                ):
                     continue
                 if action_name not in hyperparams.ALLOWED_META_ACTIONS:
                     continue

@@ -1,26 +1,18 @@
-import types
+import torch
+import artibot.hyperparams as hp
 import artibot.globals as G
-from artibot.hyperparams import HyperParams, IndicatorHyperparams, WARMUP_STEPS
 from artibot.rl import MetaTransformerRL
+from artibot.ensemble import EnsembleModel
 
 
-def test_toggles_ignored_after_warmup(monkeypatch):
-    monkeypatch.setattr(G, "get_warmup_step", lambda: WARMUP_STEPS)
-
-    class DummyOpt:
-        def __init__(self) -> None:
-            self.param_groups = [{"lr": 0.01, "weight_decay": 0.0}]
-
-    class DummyEnsemble:
-        def __init__(self) -> None:
-            self.optimizers = [DummyOpt()]
-            self.indicator_hparams = IndicatorHyperparams()
-
-    ens = DummyEnsemble()
+def test_actions_filtered_after_warmup(monkeypatch):
+    ens = EnsembleModel(device=torch.device("cpu"), n_models=1)
     agent = MetaTransformerRL(ens)
-    hp = HyperParams(indicator_hp=ens.indicator_hparams)
-    before = ens.indicator_hparams.use_rsi
-
-    agent.apply_action(hp, ens.indicator_hparams, {"toggle_rsi": 1})
-
-    assert ens.indicator_hparams.use_rsi == before
+    hp_inst = hp.HyperParams()
+    ihp = hp_inst.indicator_hp
+    sma_flag = ihp.use_sma
+    period = ihp.sma_period
+    monkeypatch.setattr(G, "get_warmup_step", lambda: hp.WARMUP_STEPS)
+    agent.apply_action(hp_inst, ihp, {"toggle_sma": 1, "d_sma_period": 5})
+    assert ihp.use_sma == sma_flag
+    assert ihp.sma_period == period

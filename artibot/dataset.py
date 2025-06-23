@@ -289,7 +289,12 @@ class HourlyDataset(Dataset):
 
         feats = np.column_stack(cols)
 
-        from .feature_store import FEATURE_DIM
+        from .feature_store import FEATURE_DIM, freeze_feature_dim
+        from . import hyperparams as _hp
+        import artibot.globals as _g
+
+        if _hp.should_freeze_features(_g.get_warmup_step()):
+            freeze_feature_dim(feats.shape[1])
 
         if feats.shape[1] < FEATURE_DIM:
             pad = FEATURE_DIM - feats.shape[1]
