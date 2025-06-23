@@ -35,7 +35,7 @@ from torch.optim.lr_scheduler import (
 from torch.utils.data import DataLoader
 
 from .backtest import robust_backtest
-from .hyperparams import HyperParams, IndicatorHyperparams
+from .hyperparams import HyperParams, IndicatorHyperparams, LR_MIN
 from .utils import active_feature_dim, feature_dim_for
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
@@ -74,6 +74,11 @@ def reject_if_risky(
     min_entropy = float(thresholds.get("MIN_ENTROPY", 1.0))
     min_sharpe = float(thresholds.get("MIN_SHARPE", 1.0))
     max_drawdown = float(thresholds.get("MAX_DRAWDOWN", -0.30))
+
+    # Early-stage models get a looser gate until trade count builds up
+    if G.global_num_trades < 200:
+        return sharpe <= 0.0 and max_dd <= -0.40
+
     if entropy < min_entropy:
         return True  # reject collapsed runs
     return max_dd < max_drawdown or sharpe < min_sharpe
@@ -477,14 +482,18 @@ class EnsembleModel:
                             self.scaler = GradScaler(enabled=False)
                         else:
                             self.scaler.update()
+                        for pg in opt_.param_groups:
+                            pg["lr"] = max(pg["lr"], LR_MIN)
                         opt_.zero_grad()
-                    for cyc in self.cycle:
-                        try:
-                            if getattr(cyc, "step_num", 0) < cyc.total_steps:
-                                cyc.step()
-                                cyc.step_num = getattr(cyc, "step_num", 0) + 1
-                        except ValueError as e:
-                            logging.warning("LR scheduler skipped: %s", e)
+                        for cyc in self.cycle:
+                            try:
+                                if getattr(cyc, "step_num", 0) < cyc.total_steps:
+                                    cyc.step()
+                                    cyc.step_num = getattr(cyc, "step_num", 0) + 1
+                            except ValueError as e:
+                                logging.warning("LR scheduler skipped: %s", e)
+                        for pg in opt_.param_groups:
+                            pg["lr"] = max(pg["lr"], LR_MIN)
                     batch_loss = sum(loss_i.item() for loss_i in losses)
                     total_loss += (
                         (batch_loss / len(self.models))
@@ -507,7 +516,7 @@ class EnsembleModel:
                 if self.patience >= 12:
                     for opt in self.optimizers:
                         for pg in opt.param_groups:
-                            pg["lr"] = max(pg["lr"] * 0.1, 2e-6)
+                            pg["lr"] = max(pg["lr"] * 0.1, LR_MIN)
                     self.patience = 0
 
             # (2) Adjust Reward Penalties => less harsh for zero trades/ negative net
