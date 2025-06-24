@@ -155,7 +155,7 @@ def main() -> None:
 
     from artibot.utils import setup_logging, get_device
     from artibot.ensemble import EnsembleModel
-    from artibot.dataset import HourlyDataset, load_csv_hourly
+    from artibot.dataset import FEATURE_DIMENSION, HourlyDataset, load_csv_hourly
     from artibot.hyperparams import HyperParams, IndicatorHyperparams
     from artibot.training import (
         PhemexConnector,

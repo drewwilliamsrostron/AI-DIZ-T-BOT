@@ -20,6 +20,8 @@ import numpy as np
 import json
 import pathlib
 
+from artibot.dataset import FEATURE_DIMENSION
+
 _STORE = pathlib.Path(".feature_dim.json")
 
 
@@ -34,7 +36,7 @@ def safe_divide(a, b, default=0.0):
 
 
 # Fixed feature dimension used by training pipelines
-FEATURE_DIM = 17
+FEATURE_DIM = FEATURE_DIMENSION
 _FROZEN_DIM = None
 
 

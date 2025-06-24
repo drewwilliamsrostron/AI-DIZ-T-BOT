@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from .dataset import TradeParams
+from .dataset import FEATURE_DIMENSION, TradeParams
 import artibot.globals as G
 from .utils import attention_entropy
 
@@ -66,12 +66,12 @@ class TradingModel(nn.Module):
         dropout: float = 0.4,
     ) -> None:
         super().__init__()
-        if input_size != 16:
+        if input_size != FEATURE_DIMENSION:
             raise ValueError("Feature dimension mismatch")
         self.input_size = input_size
         self.hidden_size = hidden_size
 
-        self.d_model = 16
+        self.d_model = FEATURE_DIMENSION
         self.input_dim = input_size
         self.pos_encoder = PositionalEncoding(d_model=self.d_model)
 
