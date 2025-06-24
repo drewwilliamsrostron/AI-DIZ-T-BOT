@@ -6,6 +6,7 @@ import inspect
 from contextlib import nullcontext
 from typing import Iterable, Optional, Tuple
 from threading import Event
+import threading
 import logging
 import random
 import hashlib
@@ -175,7 +176,8 @@ class EnsembleModel(nn.Module):
         self.models = [
             TradingModel(input_size=fixed_dim).to(device) for _ in range(n_models)
         ]
-        self.register_buffer("feature_mask", torch.ones(fixed_dim))
+        self._mask_lock = threading.Lock()
+        self.register_buffer("feature_mask", torch.ones(1, fixed_dim, device=device))
         print("[DEBUG] Model moved to device")
         from . import hyperparams as _hp
 
@@ -238,6 +240,24 @@ class EnsembleModel(nn.Module):
         self.grad_accum_steps = grad_accum_steps
         self.total_steps = total_steps
 
+    def _ensure_mask_dim(self, target_dim: int, device):
+        """Grow or shrink self.feature_mask so its last dimension equals target_dim.
+        Pads with 1.0 when widening, slices when shrinking. Keeps tensor on device.
+        Thread-safe so multiple worker threads may call it simultaneously."""
+        with self._mask_lock:
+            if self.feature_mask.shape[-1] < target_dim:
+                pad = torch.ones(
+                    *self.feature_mask.shape[:-1],
+                    target_dim - self.feature_mask.shape[-1],
+                    device=device,
+                    dtype=self.feature_mask.dtype,
+                )
+                self.feature_mask = torch.cat(
+                    [self.feature_mask.to(device), pad], dim=-1
+                )
+            elif self.feature_mask.shape[-1] > target_dim:
+                self.feature_mask = self.feature_mask[..., :target_dim].to(device)
+
     def _align_features(self, x: torch.Tensor) -> torch.Tensor:
         """Pad or crop ``x`` to ``self.n_features``."""
         exp = self.n_features
@@ -246,7 +266,9 @@ class EnsembleModel(nn.Module):
             x = F.pad(x, (0, pad))
         elif x.shape[-1] > exp:
             x = x[..., :exp]
-        return x * self.feature_mask
+        self._ensure_mask_dim(x.shape[-1], x.device)
+        x = x * self.feature_mask.to(x.device)
+        return x
 
     def forward(self, x: torch.Tensor):
         x = self._align_features(x.to(self.device))
@@ -272,6 +294,7 @@ class EnsembleModel(nn.Module):
             TradingModel(input_size=new_dim).to(self.device)
             for _ in range(len(self.models))
         ]
+        self._ensure_mask_dim(new_dim, self.device)
         lr = self.optimizers[0].param_groups[0]["lr"]
         wd = self.optimizers[0].param_groups[0].get("weight_decay", 0.0)
         self.optimizers = [
