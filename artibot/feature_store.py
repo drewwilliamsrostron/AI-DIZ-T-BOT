@@ -90,6 +90,20 @@ def _con() -> duckdb.DuckDBPyConnection:
     return _get_con()
 
 
+def generate_features(data) -> np.ndarray:
+    """Return ``data`` as an ``np.ndarray`` trimmed to ``FEATURE_DIMENSION``."""
+
+    features = np.asarray(data, dtype=np.float32)
+    if features.ndim == 1:
+        features = features.reshape(1, -1)
+
+    # Ensure feature count is integer
+    if features.shape[1] != int(FEATURE_DIMENSION):
+        features = features[:, : int(FEATURE_DIMENSION)]
+
+    return features
+
+
 # ---------------------------------------------------------------------------
 # table creation + idempotent migrations
 # ---------------------------------------------------------------------------

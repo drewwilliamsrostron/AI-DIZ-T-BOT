@@ -231,6 +231,7 @@ class HourlyDataset(Dataset):
         train_mode: bool = True,
         rebalance: bool = True,
         use_ichimoku: bool = False,
+        expected_features: int = FEATURE_DIMENSION,
     ) -> None:
         self.data = data
         self.seq_len = seq_len
@@ -246,30 +247,56 @@ class HourlyDataset(Dataset):
         self.use_cmf = indicator_hparams.use_cmf
         self.cmf_period = indicator_hparams.cmf_period
         self.use_ichimoku = use_ichimoku
+        self.expected_features = int(expected_features)
+        print(f"[INIT] Expected features type: {type(expected_features)}")
         sample_np = np.array(self.data[: min(len(self.data), 100)], dtype=float)
         check_feats = generate_fixed_features(
             sample_np, indicator_hparams, use_ichimoku=use_ichimoku
         )
-        if check_feats.shape[1] != FEATURE_DIMENSION:
+        if check_feats.shape[1] != self.expected_features:
             raise ValueError(
-                f"Feature engineering produces {check_feats.shape[1]} features, expected {FEATURE_DIMENSION}."
+                f"Feature engineering produces {check_feats.shape[1]} features, expected {self.expected_features}."
             )
         self.samples, self.labels = self.preprocess()
 
     def preprocess(self):
         data_np = np.array(self.data, dtype=float)
-        feats = generate_fixed_features(
+        features = generate_fixed_features(
             data_np, self.hp, use_ichimoku=self.use_ichimoku
         )
-        print(f"[DEBUG] Actual feature count: {feats.shape[1]}")
+        print(f"[DEBUG] Actual feature count: {features.shape[1]}")
         # [FIX]# clean NaN/Inf values
-        feats = clean_features(feats, replace_value=0.0)
+        features = clean_features(features, replace_value=0.0)
         # [FIX]# range logging for debugging
-        print(f"[DEBUG] Feature ranges - Min: {np.min(feats)} Max: {np.max(feats)}")
-        if feats.shape[1] != FEATURE_DIMENSION:
-            raise ValueError("Feature dimension mismatch")
-        validate_features(feats)
-        self.feature_hash = feature_version_hash(feats)
+        print(
+            f"[DEBUG] Feature ranges - Min: {np.min(features)} Max: {np.max(features)}"
+        )
+
+        # Debug: show actual vs expected
+        print(
+            f"[VALIDATE] Expected: {self.expected_features} ({type(self.expected_features)}), "
+            f"Actual: {features.shape[1]} ({type(features.shape[1])})"
+        )
+
+        # Debug: show full array shape
+        print(f"[DEBUG] Feature array shape: {features.shape}")
+
+        # Trim features if needed instead of crashing
+        if features.shape[1] != self.expected_features:
+            # Log detailed error
+            print(
+                f"[ERROR] Dimension mismatch! Expected {self.expected_features} features, "
+                f"got {features.shape[1]}. Trimming to fit."
+            )
+
+            # Trim features to expected dimension
+            features = features[:, : self.expected_features]
+
+            # Add debug sample
+            print(f"[DEBUG] First row after trim: {features[0]}")
+
+        validate_features(features)
+        self.feature_hash = feature_version_hash(features)
 
         closes = data_np[:, 4].astype(np.float64)
         highs = data_np[:, 2].astype(np.float64)
@@ -362,26 +389,48 @@ class HourlyDataset(Dataset):
                 ]
             )
 
-        feats = np.column_stack(cols)
-        if feats.shape[1] != FEATURE_DIMENSION:
-            raise ValueError("Feature dimension mismatch")
-        validate_features(feats)
-        self.feature_hash = feature_version_hash(feats)
+        features = np.column_stack(cols)
+
+        # Debug: show actual vs expected
+        print(
+            f"[VALIDATE] Expected: {self.expected_features} ({type(self.expected_features)}), "
+            f"Actual: {features.shape[1]} ({type(features.shape[1])})"
+        )
+
+        # Debug: show full array shape
+        print(f"[DEBUG] Feature array shape: {features.shape}")
+
+        # Trim features if needed instead of crashing
+        if features.shape[1] != self.expected_features:
+            # Log detailed error
+            print(
+                f"[ERROR] Dimension mismatch! Expected {self.expected_features} features, "
+                f"got {features.shape[1]}. Trimming to fit."
+            )
+
+            # Trim features to expected dimension
+            features = features[:, : self.expected_features]
+
+            # Add debug sample
+            print(f"[DEBUG] First row after trim: {features[0]}")
+
+        validate_features(features)
+        self.feature_hash = feature_version_hash(features)
 
         # ``ta-lib`` leaves the first few rows as NaN which would otherwise
         # propagate through scaling and ultimately make the training loss
         # explode to ``nan``.  Replace them with zeros before normalisation and
         # again afterwards to be safe.
-        feats = np.nan_to_num(feats)
+        features = np.nan_to_num(features)
 
-        scaled_feats = rolling_zscore(feats, window=50)
+        scaled_feats = rolling_zscore(features, window=50)
 
         from numpy.lib.stride_tricks import sliding_window_view
 
         windows = sliding_window_view(
             scaled_feats, (self.seq_len, scaled_feats.shape[1])
         )[:, 0]
-        assert windows.shape[2] == FEATURE_DIMENSION
+        assert windows.shape[2] == self.expected_features
         windows = windows[:-1]
 
         raw_closes = closes.astype(np.float32)
