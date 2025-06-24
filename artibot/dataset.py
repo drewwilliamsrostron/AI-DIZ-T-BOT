@@ -122,6 +122,83 @@ def trailing_sma(arr: np.ndarray, window: int) -> np.ndarray:
     return np.nan_to_num(padded)
 
 
+def generate_fixed_features(
+    data_np: np.ndarray,
+    hp: IndicatorHyperparams,
+    *,
+    use_ichimoku: bool = False,
+) -> np.ndarray:
+    """Return a feature matrix with exactly 16 columns."""
+
+    closes = data_np[:, 4].astype(np.float64)
+    highs = data_np[:, 2].astype(np.float64)
+    lows = data_np[:, 3].astype(np.float64)
+    volume = data_np[:, 5].astype(np.float64)
+    opens = data_np[:, 1].astype(np.float64)
+
+    def zeros():
+        return np.zeros_like(closes, dtype=np.float64)
+
+    from .indicators import ema, atr, vortex, cmf, donchian, ichimoku
+
+    sma = trailing_sma(closes, hp.sma_period) if hp.use_sma else zeros()
+    rsi = talib.RSI(closes, timeperiod=hp.rsi_period) if hp.use_rsi else zeros()
+    macd, _, _ = (
+        talib.MACD(
+            closes,
+            fastperiod=hp.macd_fast,
+            slowperiod=hp.macd_slow,
+            signalperiod=hp.macd_signal,
+        )
+        if hp.use_macd
+        else (zeros(), zeros(), zeros())
+    )
+    ema20 = ema(closes, period=hp.ema_period) if hp.use_ema else zeros()
+    ema50 = ema(closes, period=50)
+    atr_vals = atr(highs, lows, closes, period=hp.atr_period) if hp.use_atr else zeros()
+    if hp.use_vortex:
+        vp, vn = vortex(highs, lows, closes, period=hp.vortex_period)
+    else:
+        vp, vn = zeros(), zeros()
+    cmf_v = (
+        cmf(highs, lows, closes, volume, period=hp.cmf_period)
+        if hp.use_cmf
+        else zeros()
+    )
+    don_mid = (
+        donchian(highs, lows, period=hp.donchian_period)[2]
+        if hp.use_donchian
+        else zeros()
+    )
+    ichi_tenkan = ichimoku(highs, lows)[0] if use_ichimoku else zeros()
+
+    feats = np.column_stack(
+        [
+            opens,
+            highs,
+            lows,
+            closes,
+            volume,
+            sma,
+            rsi,
+            macd,
+            ema20,
+            ema50,
+            atr_vals,
+            vp,
+            vn,
+            cmf_v,
+            don_mid,
+            ichi_tenkan,
+        ]
+    )
+
+    if feats.shape[1] != 16:
+        raise ValueError(f"Generated {feats.shape[1]} features, expected 16")
+
+    return feats.astype(np.float32)
+
+
 ###############################################################################
 # HourlyDataset
 ###############################################################################
@@ -152,146 +229,33 @@ class HourlyDataset(Dataset):
         self.use_cmf = indicator_hparams.use_cmf
         self.cmf_period = indicator_hparams.cmf_period
         self.use_ichimoku = use_ichimoku
+        sample_np = np.array(self.data[: min(len(self.data), 100)], dtype=float)
+        check_feats = generate_fixed_features(
+            sample_np, indicator_hparams, use_ichimoku=use_ichimoku
+        )
+        if check_feats.shape[1] != 16:
+            raise ValueError(
+                f"Feature engineering produces {check_feats.shape[1]} features, expected 16."
+            )
         self.samples, self.labels = self.preprocess()
 
     def preprocess(self):
-        data_np = np.array(self.data, dtype=np.float32)
-        closes = data_np[:, 4].astype(np.float64)
-
-        if self.use_ichimoku:
-            self.hp.use_sma = False
-            self.hp.use_ema = False
-            self.hp.use_atr = False
-
-        sma = None
-        if self.hp.use_sma:
-            sma = trailing_sma(closes, self.hp.sma_period)
-
-        rsi = None
-        if self.hp.use_rsi:
-            try:
-                rsi = talib.RSI(closes, timeperiod=self.hp.rsi_period)
-            except Exception:
-                rsi = None
-            if rsi is None:
-                rsi = np.zeros_like(closes, dtype=np.float64)
-
-        macd = None
-        if self.hp.use_macd:
-            try:
-                macd, _, _ = talib.MACD(
-                    closes,
-                    fastperiod=self.hp.macd_fast,
-                    slowperiod=self.hp.macd_slow,
-                    signalperiod=self.hp.macd_signal,
-                )
-            except Exception:
-                macd = None
-            if macd is None:
-                macd = np.zeros_like(closes, dtype=np.float64)
-
-        highs = data_np[:, 2].astype(np.float64)
-        lows = data_np[:, 3].astype(np.float64)
-        volume = data_np[:, 5].astype(np.float64)
-
-        from .indicators import atr
-
-        atr_vals = atr(highs, lows, closes, period=self.hp.atr_period)
-
-        cols = [data_np[:, 1:6]]
-        import artibot.feature_store as _fs
-
-        if self.hp.use_sentiment:
-            sent = np.array(
-                [_fs.news_sentiment(int(t)) for t in data_np[:, 0]],
-                dtype=np.float32,
-            )
-            cols.append(sent)
-        if self.hp.use_macro:
-            macro = np.array(
-                [_fs.macro_surprise(int(t)) for t in data_np[:, 0]],
-                dtype=np.float32,
-            )
-            cols.append(macro)
-        if self.hp.use_rvol:
-            rvol = np.array(
-                [_fs.realised_vol(int(t)) for t in data_np[:, 0]],
-                dtype=np.float32,
-            )
-            cols.append(rvol)
-        if sma is not None:
-            cols.append(sma.astype(np.float32))
-        if rsi is not None:
-            cols.append(rsi.astype(np.float32))
-        if macd is not None:
-            cols.append(macd.astype(np.float32))
-        if self.hp.use_ema:
-            from .indicators import ema
-
-            ema_v = ema(closes, period=self.hp.ema_period)
-            cols.append(ema_v.astype(np.float32))
-        if self.hp.use_atr:
-            cols.append(atr_vals.astype(np.float32))
-
-        if self.use_vortex:
-            from .indicators import vortex
-
-            vp, vn = vortex(highs, lows, closes, period=self.vortex_period)
-            cols.extend([vp.astype(np.float32), vn.astype(np.float32)])
-
-        if self.use_cmf:
-            from .indicators import cmf
-
-            cmf_v = cmf(highs, lows, closes, volume, period=self.cmf_period)
-            cols.append(cmf_v.astype(np.float32))
-
-        if self.hp.use_donchian:
-            from .indicators import donchian
-
-            up, lo, mid = donchian(highs, lows, period=self.hp.donchian_period)
-            cols.extend(
-                [
-                    up.astype(np.float32),
-                    lo.astype(np.float32),
-                    mid.astype(np.float32),
-                ]
-            )
-
-        if self.hp.use_kijun:
-            from .indicators import kijun
-
-            kj = kijun(highs, lows, period=self.hp.kijun_period)
-            cols.append(kj.astype(np.float32))
-
-        if self.hp.use_tenkan:
-            from .indicators import tenkan
-
-            tn = tenkan(highs, lows, period=self.hp.tenkan_period)
-            cols.append(tn.astype(np.float32))
-
-        if self.hp.use_displacement:
-            disp = np.roll(closes, self.hp.displacement)
-            disp[: self.hp.displacement] = np.nan
-            cols.append(disp.astype(np.float32))
-
-        if self.use_ichimoku:
-            from .indicators import ichimoku
-
-            tenkan, kijun, span_a, span_b = ichimoku(highs, lows)
-            cols.extend(
-                [
-                    tenkan.astype(np.float32),
-                    kijun.astype(np.float32),
-                    span_a.astype(np.float32),
-                    span_b.astype(np.float32),
-                ]
-            )
-
-        feats = np.column_stack(cols)
+        data_np = np.array(self.data, dtype=float)
+        feats = generate_fixed_features(
+            data_np, self.hp, use_ichimoku=self.use_ichimoku
+        )
+        print(f"[DEBUG] Actual feature count: {feats.shape[1]}")
         if feats.shape[1] != 16:
             raise ValueError("Feature dimension mismatch")
         validate_features(feats)
         self.feature_hash = feature_version_hash(feats)
+
+        closes = data_np[:, 4].astype(np.float64)
+        highs = data_np[:, 2].astype(np.float64)
+        lows = data_np[:, 3].astype(np.float64)
+        from .indicators import atr
+
+        atr_vals = atr(highs, lows, closes, period=self.hp.atr_period)
 
         # ``ta-lib`` leaves the first few rows as NaN which would otherwise
         # propagate through scaling and ultimately make the training loss
