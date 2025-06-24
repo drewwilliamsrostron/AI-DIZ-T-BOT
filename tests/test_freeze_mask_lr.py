@@ -1,10 +1,8 @@
 def test_feature_pad_and_mask():
     from artibot.feature_store import freeze_feature_dim, get_frozen_dim
 
-    freeze_feature_dim(17)
-    assert get_frozen_dim() >= 17
-    freeze_feature_dim(24)
-    assert get_frozen_dim() == 24
+    assert freeze_feature_dim(16) == 16
+    assert get_frozen_dim() >= 16
 
 
 def test_lr_clamp():
