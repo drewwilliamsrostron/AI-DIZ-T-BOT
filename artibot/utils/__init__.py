@@ -9,8 +9,10 @@ import json
 
 import math
 import torch
+from .hardware import device as _device
 import pandas as pd
 import numpy as np
+import hashlib
 
 from ..hyperparams import IndicatorHyperparams
 
@@ -18,8 +20,8 @@ CONTEXT_FLAGS = ("use_sentiment", "use_macro", "use_rvol")
 
 
 def get_device() -> torch.device:
-    """Return a CUDA device when available else CPU."""
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    """Return detected hardware device."""
+    return torch.device(_device)
 
 
 class JsonFormatter(logging.Formatter):
@@ -190,4 +192,23 @@ def feature_dim_for(hp: "IndicatorHyperparams") -> int:  # noqa: F811
     return base + extras
 
 
-__all__ = ["rolling_zscore", "feature_dim_for"]
+def feature_version_hash(arr: np.ndarray) -> str:
+    """Return md5 hash of the given feature array."""
+
+    return hashlib.md5(
+        np.ascontiguousarray(arr, dtype=np.float32).tobytes()
+    ).hexdigest()
+
+
+def validate_features(features: np.ndarray) -> None:
+    assert features.shape[1] == 16, "Invalid feature dimension"
+    if not np.all(np.isfinite(features)):
+        raise ValueError("NaN or inf in features")
+
+
+__all__ = [
+    "rolling_zscore",
+    "feature_dim_for",
+    "feature_version_hash",
+    "validate_features",
+]

@@ -66,29 +66,18 @@ class TradingModel(nn.Module):
         dropout: float = 0.4,
     ) -> None:
         super().__init__()
+        if input_size != 16:
+            raise ValueError("Feature dimension mismatch")
         self.input_size = input_size
         self.hidden_size = hidden_size
 
-        self.input_size = input_size
-
-        from .hyperparams import TRANSFORMER_HEADS
-
-        self.d_model = (
-            (input_size + TRANSFORMER_HEADS - 1) // TRANSFORMER_HEADS
-        ) * TRANSFORMER_HEADS
+        self.d_model = 16
         self.input_dim = input_size
-        if self.d_model != input_size:
-            logger.info(
-                "Adjusting model dim from %d to %d for %d heads",
-                input_size,
-                self.d_model,
-                TRANSFORMER_HEADS,
-            )
         self.pos_encoder = PositionalEncoding(d_model=self.d_model)
 
         enc_layer = nn.TransformerEncoderLayer(
             d_model=self.d_model,
-            nhead=TRANSFORMER_HEADS,
+            nhead=8,
             dim_feedforward=256,
             dropout=dropout,
             batch_first=True,
@@ -100,26 +89,8 @@ class TradingModel(nn.Module):
         self.fc = nn.Linear(hidden_size, num_classes + 4)
 
     def forward(self, x):
-        if x.size(-1) < self.d_model:
-            pad = self.d_model - x.size(-1)
-            x = torch.cat([x, x.new_zeros(*x.shape[:-1], pad)], dim=-1)
-            if not getattr(self, "_pad_warned", False):
-                logger.warning(
-                    "Input features %d < expected %d, padding",
-                    x.size(-1) - pad,
-                    self.d_model,
-                )
-                self._pad_warned = True
-        elif x.size(-1) > self.d_model:
-            orig_dim = x.size(-1)
-            x = x[..., : self.d_model]
-            if not getattr(self, "_crop_warned", False):
-                logger.warning(
-                    "Input features %d > expected %d, cropping",
-                    orig_dim,
-                    self.d_model,
-                )
-                self._crop_warned = True
+        if x.size(-1) != self.d_model:
+            raise ValueError("Feature dimension mismatch")
         x = self.pos_encoder(x)
         # inspect attention from the first encoder layer
         # Use a detached tensor so fastpath inference in ``no_grad`` does not mutate ``x``
