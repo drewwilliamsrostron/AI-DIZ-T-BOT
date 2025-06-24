@@ -22,7 +22,6 @@ if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) 
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 
 try:
@@ -38,6 +37,7 @@ from torch.utils.data import DataLoader
 from .backtest import robust_backtest
 from .hyperparams import HyperParams, IndicatorHyperparams
 from .utils import feature_dim_for
+from .utils.hardware import device as hw_device
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
 from .model import TradingModel
@@ -160,7 +160,7 @@ class EnsembleModel(nn.Module):
         grad_accum_steps: int = 1,
     ) -> None:
         super().__init__()
-        device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device(device if device is not None else hw_device)
         self.device = device
         self.weights_path = weights_path
         self.indicator_hparams = IndicatorHyperparams(
@@ -168,9 +168,7 @@ class EnsembleModel(nn.Module):
         )
         self.hp = HyperParams(indicator_hp=self.indicator_hparams)
 
-        from artibot.feature_store import get_frozen_dim
-
-        fixed_dim = get_frozen_dim()
+        fixed_dim = 16
         self.n_features = fixed_dim
 
         self.models = [
@@ -240,35 +238,11 @@ class EnsembleModel(nn.Module):
         self.grad_accum_steps = grad_accum_steps
         self.total_steps = total_steps
 
-    def _ensure_mask_dim(self, target_dim: int, device):
-        """Grow or shrink self.feature_mask so its last dimension equals target_dim.
-        Pads with 1.0 when widening, slices when shrinking. Keeps tensor on device.
-        Thread-safe so multiple worker threads may call it simultaneously."""
-        with self._mask_lock:
-            if self.feature_mask.shape[-1] < target_dim:
-                pad = torch.ones(
-                    *self.feature_mask.shape[:-1],
-                    target_dim - self.feature_mask.shape[-1],
-                    device=device,
-                    dtype=self.feature_mask.dtype,
-                )
-                self.feature_mask = torch.cat(
-                    [self.feature_mask.to(device), pad], dim=-1
-                )
-            elif self.feature_mask.shape[-1] > target_dim:
-                self.feature_mask = self.feature_mask[..., :target_dim].to(device)
-
     def _align_features(self, x: torch.Tensor) -> torch.Tensor:
-        """Pad or crop ``x`` to ``self.n_features``."""
-        exp = self.n_features
-        if x.shape[-1] < exp:
-            pad = exp - x.shape[-1]
-            x = F.pad(x, (0, pad))
-        elif x.shape[-1] > exp:
-            x = x[..., :exp]
-        self._ensure_mask_dim(x.shape[-1], x.device)
-        x = x * self.feature_mask.to(x.device)
-        return x
+        """Validate feature dimension."""
+        if x.shape[-1] != self.n_features:
+            raise ValueError("Feature dimension mismatch")
+        return x * self.feature_mask.to(x.device)
 
     def forward(self, x: torch.Tensor):
         x = self._align_features(x.to(self.device))
@@ -287,35 +261,9 @@ class EnsembleModel(nn.Module):
             sch.total_steps = total_steps
 
     def rebuild_models(self, new_dim: int) -> None:
-        """Reinitialise models and optimisers for a new feature dimension."""
-
-        self.n_features = new_dim
-        self.models = [
-            TradingModel(input_size=new_dim).to(self.device)
-            for _ in range(len(self.models))
-        ]
-        self._ensure_mask_dim(new_dim, self.device)
-        lr = self.optimizers[0].param_groups[0]["lr"]
-        wd = self.optimizers[0].param_groups[0].get("weight_decay", 0.0)
-        self.optimizers = [
-            optim.AdamW(m.parameters(), lr=lr, weight_decay=wd) for m in self.models
-        ]
-        self.schedulers = [
-            ReduceLROnPlateau(opt, mode="min", patience=6, factor=0.8, min_lr=2e-5)
-            for opt in self.optimizers
-        ]
-        self.cycle = [
-            OneCycleLR(opt, max_lr=lr, total_steps=self.total_steps)
-            for opt in self.optimizers
-        ]
-        for sch in self.cycle:
-            sch.step_num = 0
-            sch.total_steps = self.total_steps
-        amp_on = self.device.type == "cuda"
-        if "device" in inspect.signature(GradScaler).parameters:
-            self.scaler = GradScaler(enabled=amp_on, device=self.device)
-        else:
-            self.scaler = GradScaler(enabled=amp_on)
+        """Validate that the requested dimension matches the frozen setting."""
+        if new_dim != self.n_features:
+            raise ValueError("Feature dimension mismatch")
 
     def train_one_epoch(
         self,
@@ -798,10 +746,8 @@ class EnsembleModel(nn.Module):
         """Return predictions for ``windows_tensor`` in mini-batches."""
         # Re-calculate the dimension that *should* be coming from the dataloader
         exp_dim = feature_dim_for(self.indicator_hparams)
-
-        # If the live models were built for a different feature count, rebuild
-        if self.models[0].input_size != exp_dim:
-            self.rebuild_models(exp_dim)
+        if exp_dim != self.n_features:
+            raise ValueError("Feature dimension mismatch")
 
         with torch.no_grad():
             all_probs = []

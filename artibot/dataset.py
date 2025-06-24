@@ -16,7 +16,7 @@ if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) 
 
 import torch
 
-from .utils import rolling_zscore
+from .utils import rolling_zscore, feature_version_hash, validate_features
 from torch.utils.data import Dataset
 
 import artibot.globals as G
@@ -288,15 +288,10 @@ class HourlyDataset(Dataset):
             )
 
         feats = np.column_stack(cols)
-
-        from artibot.feature_store import freeze_feature_dim
-
-        max_dim = freeze_feature_dim(feats.shape[1])
-        if feats.shape[1] < max_dim:
-            pad = max_dim - feats.shape[1]
-            feats = np.pad(feats, ((0, 0), (0, pad)), constant_values=0.0)
-        elif feats.shape[1] > max_dim:
-            feats = feats[:, :max_dim]
+        if feats.shape[1] != 16:
+            raise ValueError("Feature dimension mismatch")
+        validate_features(feats)
+        self.feature_hash = feature_version_hash(feats)
 
         # ``ta-lib`` leaves the first few rows as NaN which would otherwise
         # propagate through scaling and ultimately make the training loss
@@ -311,7 +306,7 @@ class HourlyDataset(Dataset):
         windows = sliding_window_view(
             scaled_feats, (self.seq_len, scaled_feats.shape[1])
         )[:, 0]
-        assert windows.shape[2] == max_dim
+        assert windows.shape[2] == 16
         windows = windows[:-1]
 
         raw_closes = closes.astype(np.float32)

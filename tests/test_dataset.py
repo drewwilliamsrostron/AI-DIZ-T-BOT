@@ -104,7 +104,7 @@ def test_hourlydataset_basic(monkeypatch):
 
     random.seed(0)
     sample, label = ds[0]
-    assert sample.shape == (3, 13)
+    assert sample.shape == (3, 16)
     assert label.shape == ()
     assert label.item() == 2
 
@@ -112,14 +112,14 @@ def test_hourlydataset_basic(monkeypatch):
 @pytest.mark.parametrize(
     "hp_kwargs,ichimoku,expected",
     [
-        ({}, False, 13),
+        ({}, False, 16),
         (
             {"use_sma": False, "use_rsi": False, "use_macd": False},
             False,
-            10,
+            16,
         ),
-        ({"use_rsi": False}, False, 12),
-        ({"use_atr": True, "use_vortex": True, "use_cmf": True}, True, 17),
+        ({"use_rsi": False}, False, 16),
+        ({"use_atr": True, "use_vortex": True, "use_cmf": True}, True, 16),
     ],
 )
 def test_hourlydataset_feature_counts(hp_kwargs, ichimoku, expected):
