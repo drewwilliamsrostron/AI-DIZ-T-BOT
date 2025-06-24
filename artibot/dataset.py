@@ -122,6 +122,83 @@ def trailing_sma(arr: np.ndarray, window: int) -> np.ndarray:
     return np.nan_to_num(padded)
 
 
+def generate_fixed_features(
+    data_np: np.ndarray,
+    hp: IndicatorHyperparams,
+    *,
+    use_ichimoku: bool = False,
+) -> np.ndarray:
+    """Return a feature matrix with exactly 16 columns."""
+
+    closes = data_np[:, 4].astype(np.float64)
+    highs = data_np[:, 2].astype(np.float64)
+    lows = data_np[:, 3].astype(np.float64)
+    volume = data_np[:, 5].astype(np.float64)
+    opens = data_np[:, 1].astype(np.float64)
+
+    def zeros():
+        return np.zeros_like(closes, dtype=np.float64)
+
+    from .indicators import ema, atr, vortex, cmf, donchian, ichimoku
+
+    sma = trailing_sma(closes, hp.sma_period) if hp.use_sma else zeros()
+    rsi = talib.RSI(closes, timeperiod=hp.rsi_period) if hp.use_rsi else zeros()
+    macd, _, _ = (
+        talib.MACD(
+            closes,
+            fastperiod=hp.macd_fast,
+            slowperiod=hp.macd_slow,
+            signalperiod=hp.macd_signal,
+        )
+        if hp.use_macd
+        else (zeros(), zeros(), zeros())
+    )
+    ema20 = ema(closes, period=hp.ema_period) if hp.use_ema else zeros()
+    ema50 = ema(closes, period=50)
+    atr_vals = atr(highs, lows, closes, period=hp.atr_period) if hp.use_atr else zeros()
+    if hp.use_vortex:
+        vp, vn = vortex(highs, lows, closes, period=hp.vortex_period)
+    else:
+        vp, vn = zeros(), zeros()
+    cmf_v = (
+        cmf(highs, lows, closes, volume, period=hp.cmf_period)
+        if hp.use_cmf
+        else zeros()
+    )
+    don_mid = (
+        donchian(highs, lows, period=hp.donchian_period)[2]
+        if hp.use_donchian
+        else zeros()
+    )
+    ichi_tenkan = ichimoku(highs, lows)[0] if use_ichimoku else zeros()
+
+    feats = np.column_stack(
+        [
+            opens,
+            highs,
+            lows,
+            closes,
+            volume,
+            sma,
+            rsi,
+            macd,
+            ema20,
+            ema50,
+            atr_vals,
+            vp,
+            vn,
+            cmf_v,
+            don_mid,
+            ichi_tenkan,
+        ]
+    )
+
+    if feats.shape[1] != 16:
+        raise ValueError(f"Generated {feats.shape[1]} features, expected 16")
+
+    return feats.astype(np.float32)
+
+
 ###############################################################################
 # HourlyDataset
 ###############################################################################
@@ -152,51 +229,34 @@ class HourlyDataset(Dataset):
         self.use_cmf = indicator_hparams.use_cmf
         self.cmf_period = indicator_hparams.cmf_period
         self.use_ichimoku = use_ichimoku
+        sample_np = np.array(self.data[: min(len(self.data), 100)], dtype=float)
+        check_feats = generate_fixed_features(
+            sample_np, indicator_hparams, use_ichimoku=use_ichimoku
+        )
+        if check_feats.shape[1] != 16:
+            raise ValueError(
+                f"Feature engineering produces {check_feats.shape[1]} features, expected 16."
+            )
         self.samples, self.labels = self.preprocess()
 
     def preprocess(self):
-        data_np = np.array(self.data, dtype=np.float32)
+        data_np = np.array(self.data, dtype=float)
+        feats = generate_fixed_features(
+            data_np, self.hp, use_ichimoku=self.use_ichimoku
+        )
+        print(f"[DEBUG] Actual feature count: {feats.shape[1]}")
+        if feats.shape[1] != 16:
+            raise ValueError("Feature dimension mismatch")
+        validate_features(feats)
+        self.feature_hash = feature_version_hash(feats)
+
         closes = data_np[:, 4].astype(np.float64)
-
-        if self.use_ichimoku:
-            self.hp.use_sma = False
-            self.hp.use_ema = False
-            self.hp.use_atr = False
-
-        sma = None
-        if self.hp.use_sma:
-            sma = trailing_sma(closes, self.hp.sma_period)
-
-        rsi = None
-        if self.hp.use_rsi:
-            try:
-                rsi = talib.RSI(closes, timeperiod=self.hp.rsi_period)
-            except Exception:
-                rsi = None
-            if rsi is None:
-                rsi = np.zeros_like(closes, dtype=np.float64)
-
-        macd = None
-        if self.hp.use_macd:
-            try:
-                macd, _, _ = talib.MACD(
-                    closes,
-                    fastperiod=self.hp.macd_fast,
-                    slowperiod=self.hp.macd_slow,
-                    signalperiod=self.hp.macd_signal,
-                )
-            except Exception:
-                macd = None
-            if macd is None:
-                macd = np.zeros_like(closes, dtype=np.float64)
-
         highs = data_np[:, 2].astype(np.float64)
         lows = data_np[:, 3].astype(np.float64)
-        volume = data_np[:, 5].astype(np.float64)
-
         from .indicators import atr
 
         atr_vals = atr(highs, lows, closes, period=self.hp.atr_period)
+
 
         cols = [data_np[:, 1:6]]
         import artibot.feature_store as _fs
@@ -292,6 +352,7 @@ class HourlyDataset(Dataset):
             raise ValueError("Feature dimension mismatch")
         validate_features(feats)
         self.feature_hash = feature_version_hash(feats)
+
 
         # ``ta-lib`` leaves the first few rows as NaN which would otherwise
         # propagate through scaling and ultimately make the training loss
