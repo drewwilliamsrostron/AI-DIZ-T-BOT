@@ -28,6 +28,8 @@ import artibot.globals as G
 import logging
 from .hyperparams import IndicatorHyperparams
 
+FEATURE_DIMENSION = 16
+
 
 ###############################################################################
 # NamedTuple for per-bar trade parameters
@@ -133,7 +135,7 @@ def generate_fixed_features(
     *,
     use_ichimoku: bool = False,
 ) -> np.ndarray:
-    """Return a feature matrix with exactly 16 columns."""
+    """Return a feature matrix with exactly ``FEATURE_DIMENSION`` columns."""
 
     closes = data_np[:, 4].astype(np.float64)
     highs = data_np[:, 2].astype(np.float64)
@@ -202,10 +204,16 @@ def generate_fixed_features(
     if np.isnan(feats).any() or np.isinf(feats).any():
         print("[WARN] NaN/Inf detected in raw features!")
 
-    if feats.shape[1] != 16:
-        raise ValueError(f"Generated {feats.shape[1]} features, expected 16")
+    if feats.shape[1] != FEATURE_DIMENSION:
+        raise ValueError(
+            f"Generated {feats.shape[1]} features, expected {FEATURE_DIMENSION}"
+        )
 
-    return feats.astype(np.float32)
+    features = feats.astype(np.float32)
+    assert (
+        features.shape[1] == FEATURE_DIMENSION
+    ), f"Feature generation must output {FEATURE_DIMENSION} features"
+    return features
 
 
 ###############################################################################
@@ -242,9 +250,9 @@ class HourlyDataset(Dataset):
         check_feats = generate_fixed_features(
             sample_np, indicator_hparams, use_ichimoku=use_ichimoku
         )
-        if check_feats.shape[1] != 16:
+        if check_feats.shape[1] != FEATURE_DIMENSION:
             raise ValueError(
-                f"Feature engineering produces {check_feats.shape[1]} features, expected 16."
+                f"Feature engineering produces {check_feats.shape[1]} features, expected {FEATURE_DIMENSION}."
             )
         self.samples, self.labels = self.preprocess()
 
@@ -258,7 +266,7 @@ class HourlyDataset(Dataset):
         feats = clean_features(feats, replace_value=0.0)
         # [FIX]# range logging for debugging
         print(f"[DEBUG] Feature ranges - Min: {np.min(feats)} Max: {np.max(feats)}")
-        if feats.shape[1] != 16:
+        if feats.shape[1] != FEATURE_DIMENSION:
             raise ValueError("Feature dimension mismatch")
         validate_features(feats)
         self.feature_hash = feature_version_hash(feats)
@@ -355,7 +363,7 @@ class HourlyDataset(Dataset):
             )
 
         feats = np.column_stack(cols)
-        if feats.shape[1] != 16:
+        if feats.shape[1] != FEATURE_DIMENSION:
             raise ValueError("Feature dimension mismatch")
         validate_features(feats)
         self.feature_hash = feature_version_hash(feats)
@@ -373,7 +381,7 @@ class HourlyDataset(Dataset):
         windows = sliding_window_view(
             scaled_feats, (self.seq_len, scaled_feats.shape[1])
         )[:, 0]
-        assert windows.shape[2] == 16
+        assert windows.shape[2] == FEATURE_DIMENSION
         windows = windows[:-1]
 
         raw_closes = closes.astype(np.float32)
