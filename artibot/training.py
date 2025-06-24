@@ -2,6 +2,8 @@
 
 # ruff: noqa: F403, F405
 import artibot.globals as G
+import artibot.globals as globals
+import artibot.hyperparams as hyperparams
 
 import logging
 import datetime
@@ -249,6 +251,12 @@ def csv_training_thread(
             if G.get_warmup_step() >= WARMUP_STEPS:
                 RISK_FILTER["MIN_SHARPE"] = 0.5
                 RISK_FILTER["MAX_DRAWDOWN"] = -0.30
+
+            if globals.get_trade_count() >= 1000 and not globals.PROD_RISK:
+                hyperparams.RISK_FILTER.update(
+                    {"MIN_SHARPE": 0.5, "MAX_DRAWDOWN": -0.30}
+                )
+                globals.PROD_RISK = True
 
             sharpe = G.global_sharpe
             max_dd = G.global_max_drawdown

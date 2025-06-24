@@ -204,6 +204,9 @@ start_equity: float = 0.0
 live_equity: float = 0.0
 live_trade_count: int = 0
 
+# Production risk flag toggled after sufficient trade history
+PROD_RISK = False
+
 # Flag toggled by training thread when new live weights are ready
 live_weights_updated: bool = False
 
@@ -292,6 +295,16 @@ def bump_warmup() -> int:
     except Exception:
         pass
     return val
+
+
+def get_trade_count() -> int:
+    """Return the persisted trade counter from ``warmup.json``."""
+
+    try:
+        with open("warmup.json", "r") as f:
+            return int(json.load(f).get("trades", 0))
+    except Exception:
+        return 0
 
 
 def set_nuclear_key(enabled: bool) -> None:

@@ -289,18 +289,14 @@ class HourlyDataset(Dataset):
 
         feats = np.column_stack(cols)
 
-        from .feature_store import FEATURE_DIM, freeze_feature_dim
-        from . import hyperparams as _hp
-        import artibot.globals as _g
+        from artibot.feature_store import freeze_feature_dim
 
-        if _hp.should_freeze_features(_g.get_warmup_step()):
-            freeze_feature_dim(feats.shape[1])
-
-        if feats.shape[1] < FEATURE_DIM:
-            pad = FEATURE_DIM - feats.shape[1]
+        max_dim = freeze_feature_dim(feats.shape[1])
+        if feats.shape[1] < max_dim:
+            pad = max_dim - feats.shape[1]
             feats = np.pad(feats, ((0, 0), (0, pad)), constant_values=0.0)
-        elif feats.shape[1] > FEATURE_DIM:
-            feats = feats[:, :FEATURE_DIM]
+        elif feats.shape[1] > max_dim:
+            feats = feats[:, :max_dim]
 
         # ``ta-lib`` leaves the first few rows as NaN which would otherwise
         # propagate through scaling and ultimately make the training loss
@@ -315,7 +311,7 @@ class HourlyDataset(Dataset):
         windows = sliding_window_view(
             scaled_feats, (self.seq_len, scaled_feats.shape[1])
         )[:, 0]
-        assert windows.shape[2] == FEATURE_DIM
+        assert windows.shape[2] == max_dim
         windows = windows[:-1]
 
         raw_closes = closes.astype(np.float32)

@@ -17,19 +17,29 @@ import os
 import duckdb
 import threading
 import numpy as np
+import json
+import pathlib
+
+_STORE = pathlib.Path(".feature_dim.json")
 
 # Fixed feature dimension used by training pipelines
 FEATURE_DIM = 17
 _FROZEN_DIM = None
 
 
-def freeze_feature_dim(dim: int) -> None:
-    """Persist ``dim`` as the global feature dimension once warm-up ends."""
+def freeze_feature_dim(dim: int) -> int:
+    """Persist the maximum feature dimension across runs."""
 
-    global FEATURE_DIM, _FROZEN_DIM
-    if _FROZEN_DIM is None:
-        _FROZEN_DIM = dim
-        FEATURE_DIM = dim
+    if _STORE.exists():
+        dim = max(dim, json.load(_STORE.open())["dim"])
+    json.dump({"dim": dim}, _STORE.open("w"))
+    return dim
+
+
+def get_frozen_dim() -> int:
+    """Return the frozen feature dimension or ``FEATURE_DIM`` when unset."""
+
+    return json.load(_STORE.open())["dim"] if _STORE.exists() else FEATURE_DIM
 
 
 ###############################################################################
