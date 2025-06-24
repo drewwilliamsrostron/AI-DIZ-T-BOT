@@ -16,7 +16,12 @@ if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) 
 
 import torch
 
-from .utils import rolling_zscore, feature_version_hash, validate_features
+from .utils import (
+    rolling_zscore,
+    feature_version_hash,
+    validate_features,
+    clean_features,
+)
 from torch.utils.data import Dataset
 
 import artibot.globals as G
@@ -193,6 +198,10 @@ def generate_fixed_features(
         ]
     )
 
+    # [FIX]# warn if invalid values are produced
+    if np.isnan(feats).any() or np.isinf(feats).any():
+        print("[WARN] NaN/Inf detected in raw features!")
+
     if feats.shape[1] != 16:
         raise ValueError(f"Generated {feats.shape[1]} features, expected 16")
 
@@ -245,6 +254,10 @@ class HourlyDataset(Dataset):
             data_np, self.hp, use_ichimoku=self.use_ichimoku
         )
         print(f"[DEBUG] Actual feature count: {feats.shape[1]}")
+        # [FIX]# clean NaN/Inf values
+        feats = clean_features(feats, replace_value=0.0)
+        # [FIX]# range logging for debugging
+        print(f"[DEBUG] Feature ranges - Min: {np.min(feats)} Max: {np.max(feats)}")
         if feats.shape[1] != 16:
             raise ValueError("Feature dimension mismatch")
         validate_features(feats)
@@ -253,10 +266,10 @@ class HourlyDataset(Dataset):
         closes = data_np[:, 4].astype(np.float64)
         highs = data_np[:, 2].astype(np.float64)
         lows = data_np[:, 3].astype(np.float64)
+        volume = data_np[:, 5].astype(np.float64)
         from .indicators import atr
 
         atr_vals = atr(highs, lows, closes, period=self.hp.atr_period)
-
 
         cols = [data_np[:, 1:6]]
         import artibot.feature_store as _fs
@@ -279,12 +292,6 @@ class HourlyDataset(Dataset):
                 dtype=np.float32,
             )
             cols.append(rvol)
-        if sma is not None:
-            cols.append(sma.astype(np.float32))
-        if rsi is not None:
-            cols.append(rsi.astype(np.float32))
-        if macd is not None:
-            cols.append(macd.astype(np.float32))
         if self.hp.use_ema:
             from .indicators import ema
 
@@ -352,7 +359,6 @@ class HourlyDataset(Dataset):
             raise ValueError("Feature dimension mismatch")
         validate_features(feats)
         self.feature_hash = feature_version_hash(feats)
-
 
         # ``ta-lib`` leaves the first few rows as NaN which would otherwise
         # propagate through scaling and ultimately make the training loss

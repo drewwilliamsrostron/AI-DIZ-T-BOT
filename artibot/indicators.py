@@ -6,6 +6,21 @@ import numpy as np
 import pandas as pd
 import talib
 
+from .feature_store import safe_divide
+
+
+# [FIX]# RSI calculation using safe_divide
+def calculate_rsi(data: np.ndarray, window: int = 14) -> np.ndarray:
+    delta = np.diff(data, prepend=data[0])
+    gain = np.where(delta > 0, delta, 0)
+    loss = np.where(delta < 0, -delta, 0)
+
+    avg_gain = pd.Series(gain).rolling(window, min_periods=1).mean()
+    avg_loss = pd.Series(loss).rolling(window, min_periods=1).mean()
+
+    rs = safe_divide(avg_gain, avg_loss)
+    return 100 - (100 / (1 + rs))
+
 
 def vortex(high: np.ndarray, low: np.ndarray, close: np.ndarray, period: int = 14):
     """Return Vortex Indicator (VI+, VI-) for ``high``, ``low`` and ``close``.
@@ -28,10 +43,13 @@ def vortex(high: np.ndarray, low: np.ndarray, close: np.ndarray, period: int = 1
     vm_minus = np.abs(low - prev_high)
 
     tr_sum = pd.Series(tr).rolling(period, min_periods=1).sum()
-    vp = pd.Series(vm_plus).rolling(period, min_periods=1).sum() / tr_sum
-    vn = pd.Series(vm_minus).rolling(period, min_periods=1).sum() / tr_sum
+    vp_sum = pd.Series(vm_plus).rolling(period, min_periods=1).sum()
+    vn_sum = pd.Series(vm_minus).rolling(period, min_periods=1).sum()
+    # [FIX]# use safe division
+    vp = safe_divide(vp_sum, tr_sum)
+    vn = safe_divide(vn_sum, tr_sum)
 
-    return vp.to_numpy(dtype=float), vn.to_numpy(dtype=float)
+    return vp.astype(float), vn.astype(float)
 
 
 def cmf(
@@ -55,7 +73,8 @@ def cmf(
     mfv_sum = pd.Series(mfv).rolling(period, min_periods=1).sum()
     vol_sum = pd.Series(vol).rolling(period, min_periods=1).sum().replace(0, 1e-9)
 
-    return (mfv_sum / vol_sum).to_numpy(dtype=float)
+    # [FIX]# use safe division
+    return safe_divide(mfv_sum, vol_sum).astype(float)
 
 
 def ichimoku(high: np.ndarray, low: np.ndarray):
@@ -121,7 +140,8 @@ def donchian(highs: np.ndarray, lows: np.ndarray, period: int = 20):
     lows_s = pd.Series(np.asarray(lows, dtype=float))
     upper = highs_s.rolling(period, min_periods=1).max().to_numpy()
     lower = lows_s.rolling(period, min_periods=1).min().to_numpy()
-    middle = (upper + lower) / 2
+    # [FIX]# safe division for middle channel
+    middle = safe_divide(upper + lower, 2)
     return upper, lower, middle
 
 

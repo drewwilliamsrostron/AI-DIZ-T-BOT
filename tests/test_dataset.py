@@ -62,6 +62,7 @@ sys.modules.setdefault("sklearn.preprocessing", preproc)
 
 from artibot import dataset
 from artibot.hyperparams import IndicatorHyperparams
+from artibot.utils import clean_features
 
 
 def test_load_csv_hourly_missing(tmp_path):
@@ -140,3 +141,11 @@ def test_hourlydataset_feature_counts(hp_kwargs, ichimoku, expected):
     )
     sample, _ = ds[0]
     assert sample.shape[1] == expected
+
+
+def test_feature_cleaning():
+    bad_data = np.array([1.0, np.nan, np.inf, -np.inf])
+    cleaned = clean_features(bad_data)
+    assert not np.isnan(cleaned).any()
+    assert not np.isinf(cleaned).any()
+    assert np.array_equal(cleaned, [1, 0, 0, 0])

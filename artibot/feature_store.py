@@ -22,6 +22,17 @@ import pathlib
 
 _STORE = pathlib.Path(".feature_dim.json")
 
+
+# [FIX]# helper to avoid invalid divisions
+def safe_divide(a, b, default=0.0):
+    """Avoid division by zero and invalid values"""
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = np.divide(a, b)
+        result[~np.isfinite(result)] = default
+    return result
+
+
 # Fixed feature dimension used by training pipelines
 FEATURE_DIM = 17
 _FROZEN_DIM = None
