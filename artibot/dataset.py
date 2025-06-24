@@ -257,6 +257,103 @@ class HourlyDataset(Dataset):
 
         atr_vals = atr(highs, lows, closes, period=self.hp.atr_period)
 
+
+        cols = [data_np[:, 1:6]]
+        import artibot.feature_store as _fs
+
+        if self.hp.use_sentiment:
+            sent = np.array(
+                [_fs.news_sentiment(int(t)) for t in data_np[:, 0]],
+                dtype=np.float32,
+            )
+            cols.append(sent)
+        if self.hp.use_macro:
+            macro = np.array(
+                [_fs.macro_surprise(int(t)) for t in data_np[:, 0]],
+                dtype=np.float32,
+            )
+            cols.append(macro)
+        if self.hp.use_rvol:
+            rvol = np.array(
+                [_fs.realised_vol(int(t)) for t in data_np[:, 0]],
+                dtype=np.float32,
+            )
+            cols.append(rvol)
+        if sma is not None:
+            cols.append(sma.astype(np.float32))
+        if rsi is not None:
+            cols.append(rsi.astype(np.float32))
+        if macd is not None:
+            cols.append(macd.astype(np.float32))
+        if self.hp.use_ema:
+            from .indicators import ema
+
+            ema_v = ema(closes, period=self.hp.ema_period)
+            cols.append(ema_v.astype(np.float32))
+        if self.hp.use_atr:
+            cols.append(atr_vals.astype(np.float32))
+
+        if self.use_vortex:
+            from .indicators import vortex
+
+            vp, vn = vortex(highs, lows, closes, period=self.vortex_period)
+            cols.extend([vp.astype(np.float32), vn.astype(np.float32)])
+
+        if self.use_cmf:
+            from .indicators import cmf
+
+            cmf_v = cmf(highs, lows, closes, volume, period=self.cmf_period)
+            cols.append(cmf_v.astype(np.float32))
+
+        if self.hp.use_donchian:
+            from .indicators import donchian
+
+            up, lo, mid = donchian(highs, lows, period=self.hp.donchian_period)
+            cols.extend(
+                [
+                    up.astype(np.float32),
+                    lo.astype(np.float32),
+                    mid.astype(np.float32),
+                ]
+            )
+
+        if self.hp.use_kijun:
+            from .indicators import kijun
+
+            kj = kijun(highs, lows, period=self.hp.kijun_period)
+            cols.append(kj.astype(np.float32))
+
+        if self.hp.use_tenkan:
+            from .indicators import tenkan
+
+            tn = tenkan(highs, lows, period=self.hp.tenkan_period)
+            cols.append(tn.astype(np.float32))
+
+        if self.hp.use_displacement:
+            disp = np.roll(closes, self.hp.displacement)
+            disp[: self.hp.displacement] = np.nan
+            cols.append(disp.astype(np.float32))
+
+        if self.use_ichimoku:
+            from .indicators import ichimoku
+
+            tenkan, kijun, span_a, span_b = ichimoku(highs, lows)
+            cols.extend(
+                [
+                    tenkan.astype(np.float32),
+                    kijun.astype(np.float32),
+                    span_a.astype(np.float32),
+                    span_b.astype(np.float32),
+                ]
+            )
+
+        feats = np.column_stack(cols)
+        if feats.shape[1] != 16:
+            raise ValueError("Feature dimension mismatch")
+        validate_features(feats)
+        self.feature_hash = feature_version_hash(feats)
+
+
         # ``ta-lib`` leaves the first few rows as NaN which would otherwise
         # propagate through scaling and ultimately make the training loss
         # explode to ``nan``.  Replace them with zeros before normalisation and
