@@ -187,13 +187,32 @@ ALLOWED_META_ACTIONS = {
     "d_wd",
 }
 
+# mapping from toggle actions to mask indices
+TOGGLE_INDEX = {
+    "toggle_sma": 0,
+    "toggle_rsi": 1,
+    "toggle_macd": 2,
+    "toggle_atr": 3,
+    "toggle_vortex": 4,
+    "toggle_cmf": 5,
+    "toggle_ichimoku": 6,
+    "toggle_ema": 7,
+    "toggle_donchian": 8,
+    "toggle_kijun": 9,
+    "toggle_tenkan": 10,
+    "toggle_disp": 11,
+}
 
-def mutate_lr(old_lr: float, delta: float) -> float:
-    """Return a learning-rate within ``[LR_MIN, LR_MAX]`` with ±20 % cap."""
 
-    delta = max(-LR_FN_MAX_DELTA * old_lr, min(LR_FN_MAX_DELTA * old_lr, delta))
-    new_lr = old_lr + delta
-    return max(LR_MIN, min(LR_MAX, new_lr))
+def mutate_lr(old: float, delta: float) -> float:
+    """Return ``old`` adjusted by ``delta`` within safe bounds."""
+
+    if delta > 0.2:
+        return 5e-4
+    if delta < -0.2:
+        return 1e-5
+    new = old * (1 + delta)
+    return max(1e-5, min(5e-4, new))
 
 
 def should_freeze_features(step: int) -> bool:

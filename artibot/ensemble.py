@@ -36,7 +36,7 @@ from torch.utils.data import DataLoader
 
 from .backtest import robust_backtest
 from .hyperparams import HyperParams, IndicatorHyperparams
-from .utils import active_feature_dim, feature_dim_for
+from .utils import feature_dim_for
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
 from .model import TradingModel
@@ -143,7 +143,7 @@ def choose_best(rewards: list[float]) -> float:
     return max(rewards)
 
 
-class EnsembleModel:
+class EnsembleModel(nn.Module):
     """Simple container for multiple models and optimisers."""
 
     def __init__(
@@ -158,6 +158,7 @@ class EnsembleModel:
         total_steps: int = 10000,
         grad_accum_steps: int = 1,
     ) -> None:
+        super().__init__()
         device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.device = device
         self.weights_path = weights_path
@@ -166,14 +167,15 @@ class EnsembleModel:
         )
         self.hp = HyperParams(indicator_hp=self.indicator_hparams)
 
-        feat_dim = n_features or active_feature_dim(
-            self.indicator_hparams, use_ichimoku=self.hp.use_ichimoku
-        )
-        self.n_features = feat_dim
+        from artibot.feature_store import get_frozen_dim
+
+        fixed_dim = get_frozen_dim()
+        self.n_features = fixed_dim
 
         self.models = [
-            TradingModel(input_size=feat_dim).to(device) for _ in range(n_models)
+            TradingModel(input_size=fixed_dim).to(device) for _ in range(n_models)
         ]
+        self.register_buffer("feature_mask", torch.ones(fixed_dim))
         print("[DEBUG] Model moved to device")
         from . import hyperparams as _hp
 
@@ -244,7 +246,12 @@ class EnsembleModel:
             x = F.pad(x, (0, pad))
         elif x.shape[-1] > exp:
             x = x[..., :exp]
-        return x
+        return x * self.feature_mask
+
+    def forward(self, x: torch.Tensor):
+        x = self._align_features(x.to(self.device))
+        outs = [m(x) for m in self.models]
+        return outs
 
     def configure_one_cycle(self, total_steps: int) -> None:
         """Initialise OneCycle schedulers with ``total_steps``."""

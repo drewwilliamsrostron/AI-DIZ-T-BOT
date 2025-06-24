@@ -3,6 +3,7 @@
 # ruff: noqa: F403, F405
 
 import artibot.globals as G
+import artibot.globals as globals
 import artibot.hyperparams as hyperparams
 from .hyperparams import HyperParams, IndicatorHyperparams
 from .model import PositionalEncoding
@@ -260,6 +261,8 @@ class MetaTransformerRL:
                 or action_name.endswith("_frac")
             ):
                 continue
+            if globals.get_trade_count() < 1000 and action_name.startswith("toggle_"):
+                continue
             if action_name not in hyperparams.ALLOWED_META_ACTIONS:
                 continue
             filtered[action_name] = val
@@ -370,16 +373,43 @@ class MetaTransformerRL:
 
         if act.get("toggle_sma"):
             indicator_hp.use_sma = not indicator_hp.use_sma
+            if self.ensemble is not None and "toggle_sma" in hyperparams.TOGGLE_INDEX:
+                self.ensemble.feature_mask[hyperparams.TOGGLE_INDEX["toggle_sma"]].xor_(
+                    1
+                )
         if act.get("toggle_rsi"):
             indicator_hp.use_rsi = not indicator_hp.use_rsi
+            if self.ensemble is not None and "toggle_rsi" in hyperparams.TOGGLE_INDEX:
+                self.ensemble.feature_mask[hyperparams.TOGGLE_INDEX["toggle_rsi"]].xor_(
+                    1
+                )
         if act.get("toggle_macd"):
             indicator_hp.use_macd = not indicator_hp.use_macd
+            if self.ensemble is not None and "toggle_macd" in hyperparams.TOGGLE_INDEX:
+                self.ensemble.feature_mask[
+                    hyperparams.TOGGLE_INDEX["toggle_macd"]
+                ].xor_(1)
         if act.get("toggle_atr"):
             indicator_hp.use_atr = not indicator_hp.use_atr
+            if self.ensemble is not None and "toggle_atr" in hyperparams.TOGGLE_INDEX:
+                self.ensemble.feature_mask[hyperparams.TOGGLE_INDEX["toggle_atr"]].xor_(
+                    1
+                )
         if act.get("toggle_vortex"):
             indicator_hp.use_vortex = not indicator_hp.use_vortex
+            if (
+                self.ensemble is not None
+                and "toggle_vortex" in hyperparams.TOGGLE_INDEX
+            ):
+                self.ensemble.feature_mask[
+                    hyperparams.TOGGLE_INDEX["toggle_vortex"]
+                ].xor_(1)
         if act.get("toggle_cmf"):
             indicator_hp.use_cmf = not indicator_hp.use_cmf
+            if self.ensemble is not None and "toggle_cmf" in hyperparams.TOGGLE_INDEX:
+                self.ensemble.feature_mask[hyperparams.TOGGLE_INDEX["toggle_cmf"]].xor_(
+                    1
+                )
         if act.get("toggle_ichimoku"):
             hp.use_ichimoku = not hp.use_ichimoku
 
@@ -393,6 +423,9 @@ class MetaTransformerRL:
             if act.get(key):
                 cur = getattr(indicator_hp, flag)
                 setattr(indicator_hp, flag, not cur)
+                if self.ensemble is not None and key in hyperparams.TOGGLE_INDEX:
+                    idx = hyperparams.TOGGLE_INDEX[key]
+                    self.ensemble.feature_mask[idx].xor_(1)
 
         indicator_hp.sma_period = max(
             2, indicator_hp.sma_period + int(act.get("d_sma_period", 0))
