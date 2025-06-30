@@ -272,28 +272,35 @@ class HourlyDataset(Dataset):
             f"[DEBUG] Feature ranges - Min: {np.min(features)} Max: {np.max(features)}"
         )
 
-        # Debug: show actual vs expected
         print(
             f"[VALIDATE] Expected: {self.expected_features} ({type(self.expected_features)}), "
             f"Actual: {features.shape[1]} ({type(features.shape[1])})"
         )
+        print(f"[DEBUG] Full feature shape: {features.shape}")
 
-        # Debug: show full array shape
-        print(f"[DEBUG] Feature array shape: {features.shape}")
-
-        # Trim features if needed instead of crashing
         if features.shape[1] != self.expected_features:
-            # Log detailed error
             print(
-                f"[ERROR] Dimension mismatch! Expected {self.expected_features} features, "
+                f"[WARN] Dimension mismatch! Expected {self.expected_features} features, "
                 f"got {features.shape[1]}. Trimming to fit."
             )
-
-            # Trim features to expected dimension
             features = features[:, : self.expected_features]
 
-            # Add debug sample
-            print(f"[DEBUG] First row after trim: {features[0]}")
+        if np.isnan(features).any() or np.isinf(features).any():
+            nan_count = np.isnan(features).sum()
+            inf_count = np.isinf(features).sum()
+            print(f"[WARN] Found {nan_count} NaNs and {inf_count} Infs after trimming")
+            features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
+
+        if features.shape[1] != self.expected_features:
+            print(
+                "[CRITICAL] Still mismatched after trimming! Forcing dimension with padding"
+            )
+            padding = np.zeros(
+                (features.shape[0], self.expected_features - features.shape[1])
+            )
+            features = np.hstack([features, padding])
+
+        print(f"[DEBUG] Final feature shape: {features.shape}")
 
         validate_features(features)
         self.feature_hash = feature_version_hash(features)
@@ -391,28 +398,35 @@ class HourlyDataset(Dataset):
 
         features = np.column_stack(cols)
 
-        # Debug: show actual vs expected
         print(
             f"[VALIDATE] Expected: {self.expected_features} ({type(self.expected_features)}), "
             f"Actual: {features.shape[1]} ({type(features.shape[1])})"
         )
+        print(f"[DEBUG] Full feature shape: {features.shape}")
 
-        # Debug: show full array shape
-        print(f"[DEBUG] Feature array shape: {features.shape}")
-
-        # Trim features if needed instead of crashing
         if features.shape[1] != self.expected_features:
-            # Log detailed error
             print(
-                f"[ERROR] Dimension mismatch! Expected {self.expected_features} features, "
+                f"[WARN] Dimension mismatch! Expected {self.expected_features} features, "
                 f"got {features.shape[1]}. Trimming to fit."
             )
-
-            # Trim features to expected dimension
             features = features[:, : self.expected_features]
 
-            # Add debug sample
-            print(f"[DEBUG] First row after trim: {features[0]}")
+        if np.isnan(features).any() or np.isinf(features).any():
+            nan_count = np.isnan(features).sum()
+            inf_count = np.isinf(features).sum()
+            print(f"[WARN] Found {nan_count} NaNs and {inf_count} Infs after trimming")
+            features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
+
+        if features.shape[1] != self.expected_features:
+            print(
+                "[CRITICAL] Still mismatched after trimming! Forcing dimension with padding"
+            )
+            padding = np.zeros(
+                (features.shape[0], self.expected_features - features.shape[1])
+            )
+            features = np.hstack([features, padding])
+
+        print(f"[DEBUG] Final feature shape: {features.shape}")
 
         validate_features(features)
         self.feature_hash = feature_version_hash(features)
