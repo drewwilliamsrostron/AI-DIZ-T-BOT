@@ -99,6 +99,9 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
             max_epochs=1,
             update_globals=False,
         )
+        # [FIXED]# debug logging for test set
+        print(f"[VALIDATION] Test data shape: {test.shape}")
+        print(f"[VALIDATION] Feature sample: {test.iloc[0, :16]}")
         results.append(robust_backtest(ensemble, test))
     return results
 

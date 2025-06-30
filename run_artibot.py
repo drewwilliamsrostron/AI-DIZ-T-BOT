@@ -155,7 +155,7 @@ def main() -> None:
 
     from artibot.utils import setup_logging, get_device
     from artibot.ensemble import EnsembleModel
-    from artibot.dataset import FEATURE_DIMENSION, HourlyDataset, load_csv_hourly
+    from artibot.dataset import HourlyDataset, load_csv_hourly
     from artibot.hyperparams import HyperParams, IndicatorHyperparams
     from artibot.training import (
         PhemexConnector,
@@ -219,6 +219,8 @@ def main() -> None:
         atr_threshold_k=getattr(indicator_hp, "atr_threshold_k", 1.5),
         train_mode=False,
     )
+    # [FIXED]# log resulting feature dimension
+    print(f"[MAIN] Dataset final feature dim: {temp_ds.get_feature_dimension()}")
     n_features = temp_ds[0][0].shape[1]
 
     ensemble = EnsembleModel(

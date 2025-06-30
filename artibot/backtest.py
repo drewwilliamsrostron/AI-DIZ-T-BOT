@@ -196,6 +196,16 @@ def robust_backtest(ensemble, data_full, indicators=None):
         Optional dictionary with precomputed ``sma``, ``rsi`` and ``macd``
         arrays. When ``None`` (default), they are derived on the fly.
     """
+    # [FIXED]# log incoming feature dimensions
+    print(f"[BACKTEST] Input feature dimension: {data_full.shape}")
+    if data_full.shape[1] != 16:  # Match your FEATURE_DIMENSION
+        print("[WARN] Backtest data dimension mismatch! Adjusting…")
+        if data_full.shape[1] > 16:
+            data_full = data_full[:, :16]
+        else:
+            padding = np.zeros((data_full.shape[0], 16 - data_full.shape[1]))
+            data_full = np.hstack([data_full, padding])
+        print(f"[INFO] Adjusted backtest data shape: {data_full.shape}")
     if len(data_full) < 24:
         return {
             "net_pct": 0.0,
