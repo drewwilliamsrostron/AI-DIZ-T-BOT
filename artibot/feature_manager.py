@@ -29,30 +29,6 @@ def sanitize_features(x: torch.Tensor | np.ndarray) -> torch.Tensor | np.ndarray
     )
 
 
-def align_features(
-    x: torch.Tensor | np.ndarray, expected: int
-) -> torch.Tensor | np.ndarray:
-    """Return ``x`` trimmed or padded to ``expected`` features."""
-
-    current = x.shape[-1]
-    if current == expected:
-        aligned = x
-    elif current > expected:
-        aligned = x[..., :expected]
-    else:
-        pad_shape = (*x.shape[:-1], expected - current)
-        pad = (
-            torch.zeros(pad_shape, dtype=x.dtype, device=x.device)
-            if torch.is_tensor(x)
-            else np.zeros(pad_shape, dtype=x.dtype)
-        )
-        if torch.is_tensor(x):
-            aligned = torch.cat([x, pad], dim=-1)
-        else:
-            aligned = np.concatenate([x, pad], axis=-1)
-    return aligned
-
-
 def validate_and_align_features(fn):
     """Decorator validating feature dimension and cleaning values."""
 
@@ -84,9 +60,4 @@ def validate_and_align_features(fn):
     return wrapper
 
 
-__all__ = [
-    "FeatureDimensionError",
-    "sanitize_features",
-    "align_features",
-    "validate_and_align_features",
-]
+__all__ = ["FeatureDimensionError", "sanitize_features", "validate_and_align_features"]
