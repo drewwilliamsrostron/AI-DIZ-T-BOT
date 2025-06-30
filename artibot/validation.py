@@ -100,6 +100,8 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
             update_globals=False,
         )
         # [FIXED]# debug logging for test set
+        if not isinstance(test, np.ndarray):
+            test = np.array(test)
         print(f"[VALIDATION] Test data shape: {test.shape}")
         print(f"[VALIDATION] Feature sample: {test.iloc[0, :16]}")
         results.append(robust_backtest(ensemble, test))

@@ -196,6 +196,10 @@ def robust_backtest(ensemble, data_full, indicators=None):
         Optional dictionary with precomputed ``sma``, ``rsi`` and ``macd``
         arrays. When ``None`` (default), they are derived on the fly.
     """
+    # Ensure ``data_full`` is a NumPy array for shape checks
+    if isinstance(data_full, list):
+        data_full = np.array(data_full)
+
     # [FIXED]# log incoming feature dimensions
     print(f"[BACKTEST] Input feature dimension: {data_full.shape}")
     if data_full.shape[1] != 16:  # Match your FEATURE_DIMENSION
