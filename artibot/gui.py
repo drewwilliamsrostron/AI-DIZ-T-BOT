@@ -148,6 +148,67 @@ def ask_use_prev_weights(default: bool = True, tk_module=None) -> bool:
     return bool(result)
 
 
+def startup_options_dialog(
+    defaults: dict[str, object] | None = None,
+    tk_module=None,
+) -> dict[str, object]:
+    """Return user-selected startup options via a single Tk dialog."""
+    if tk_module is None:
+        import tkinter as tk_module  # lazy import for tests
+
+    defaults = defaults or {}
+    result: dict[str, object] = {}
+    try:
+        root = tk_module.Tk()
+    except Exception as exc:  # pragma: no cover - headless env
+        logging.warning("Tk unavailable: %s; using defaults", exc)
+        return {
+            "skip_sentiment": bool(defaults.get("skip_sentiment", False)),
+            "use_live": bool(defaults.get("use_live", False)),
+            "use_prev_weights": bool(defaults.get("use_prev_weights", True)),
+            "threads": int(defaults.get("threads", os.cpu_count() or 1)),
+        }
+
+    root.title("Startup Options")
+    skip_var = tk_module.BooleanVar(value=bool(defaults.get("skip_sentiment", False)))
+    live_var = tk_module.BooleanVar(value=bool(defaults.get("use_live", False)))
+    weights_var = tk_module.BooleanVar(
+        value=bool(defaults.get("use_prev_weights", True))
+    )
+    threads_max = os.cpu_count() or 1
+    threads_var = tk_module.IntVar(value=int(defaults.get("threads", threads_max)))
+
+    tk_module.Checkbutton(
+        root, text="Skip GDELT sentiment download", variable=skip_var
+    ).pack(anchor="w")
+    tk_module.Checkbutton(root, text="Enable LIVE trading", variable=live_var).pack(
+        anchor="w"
+    )
+    tk_module.Checkbutton(
+        root, text="Load previous weights", variable=weights_var
+    ).pack(anchor="w")
+    tk_module.Label(root, text="CPU threads:").pack(anchor="w")
+    tk_module.Spinbox(
+        root,
+        from_=1,
+        to=threads_max,
+        textvariable=threads_var,
+        width=5,
+    ).pack(anchor="w")
+
+    def cont() -> None:
+        result["skip_sentiment"] = skip_var.get()
+        result["use_live"] = live_var.get()
+        result["use_prev_weights"] = weights_var.get()
+        result["threads"] = threads_var.get()
+        root.quit()
+        root.destroy()
+
+    tk_module.Button(root, text="Continue", command=cont).pack(pady=5)
+    root.mainloop()
+    return result
+
+
 def _fetch_position(exchange):
     """Return (side, size, entry) for the BTCUSD swap position."""
     try:
