@@ -21,6 +21,7 @@ from .utils import (
     feature_version_hash,
     validate_features,
     clean_features,
+    validate_feature_dimension,
 )
 from torch.utils.data import Dataset
 
@@ -207,19 +208,14 @@ def generate_fixed_features(
         ]
     )
 
-    # [FIX]# warn if invalid values are produced
+    # Sanitise invalid values before validation
     if np.isnan(feats).any() or np.isinf(feats).any():
         print("[WARN] NaN/Inf detected in raw features!")
+    features = np.nan_to_num(feats.astype(np.float32))
 
-    if feats.shape[1] != FEATURE_DIMENSION:
-        raise ValueError(
-            f"Generated {feats.shape[1]} features, expected {FEATURE_DIMENSION}"
-        )
-
-    features = feats.astype(np.float32)
-    assert (
-        features.shape[1] == FEATURE_DIMENSION
-    ), f"Feature generation must output {FEATURE_DIMENSION} features"
+    features = validate_feature_dimension(
+        features, FEATURE_DIMENSION, logging.getLogger("features")
+    )
     return features
 
 
@@ -286,28 +282,9 @@ class HourlyDataset(Dataset):
             f"Actual: {features.shape[1]} ({type(features.shape[1])})"
         )
         print(f"[DEBUG] Full feature shape: {features.shape}")
-
-        if features.shape[1] != self.expected_features:
-            print(
-                f"[WARN] Dimension mismatch! Expected {self.expected_features} features, "
-                f"got {features.shape[1]}. Trimming to fit."
-            )
-            features = features[:, : self.expected_features]
-
-        if np.isnan(features).any() or np.isinf(features).any():
-            nan_count = np.isnan(features).sum()
-            inf_count = np.isinf(features).sum()
-            print(f"[WARN] Found {nan_count} NaNs and {inf_count} Infs after trimming")
-            features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
-
-        if features.shape[1] != self.expected_features:
-            print(
-                "[CRITICAL] Still mismatched after trimming! Forcing dimension with padding"
-            )
-            padding = np.zeros(
-                (features.shape[0], self.expected_features - features.shape[1])
-            )
-            features = np.hstack([features, padding])
+        features = validate_feature_dimension(
+            features, self.expected_features, logging.getLogger("dataset")
+        )
 
         print(f"[DEBUG] Final feature shape: {features.shape}")
 
