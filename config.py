@@ -1,0 +1,22 @@
+FEATURE_CONFIG = {
+    "expected_features": 16,
+    "feature_columns": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "sma_10",
+        "sma_50",
+        "rsi",
+        "macd",
+        "boll_upper",
+        "boll_lower",
+        "vwap",
+        "obv",
+        "stoch_k",
+        "stoch_d",
+        "atr",
+    ],
+}
+

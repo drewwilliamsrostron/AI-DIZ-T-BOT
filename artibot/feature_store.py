@@ -20,7 +20,7 @@ import numpy as np
 import json
 import pathlib
 
-from artibot.dataset import FEATURE_DIMENSION
+from config import FEATURE_CONFIG
 
 _STORE = pathlib.Path(".feature_dim.json")
 
@@ -36,7 +36,7 @@ def safe_divide(a, b, default=0.0):
 
 
 # Fixed feature dimension used by training pipelines
-FEATURE_DIM = FEATURE_DIMENSION
+FEATURE_DIM = FEATURE_CONFIG["expected_features"]
 _FROZEN_DIM = None
 
 
@@ -98,8 +98,9 @@ def generate_features(data) -> np.ndarray:
         features = features.reshape(1, -1)
 
     # Ensure feature count is integer
-    if features.shape[1] != int(FEATURE_DIMENSION):
-        features = features[:, : int(FEATURE_DIMENSION)]
+    expected = FEATURE_CONFIG["expected_features"]
+    if features.shape[1] != int(expected):
+        features = features[:, : int(expected)]
 
     return features
 
