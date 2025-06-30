@@ -128,7 +128,7 @@ def csv_training_thread(
             compute_indicators(
                 holdout_data, ensemble.indicator_hparams, with_scaled=True
             )
-            if holdout_data
+            if holdout_data is not None and len(holdout_data) > 0
             else None
         )
 
@@ -196,7 +196,7 @@ def csv_training_thread(
             )
             G.set_status("Training", status_msg)
 
-            if holdout_data:
+            if holdout_data is not None and len(holdout_data) > 0:
                 holdout_res = robust_backtest(
                     ensemble, holdout_data, indicators=holdout_indicators
                 )

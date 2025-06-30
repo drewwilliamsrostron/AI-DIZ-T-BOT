@@ -221,10 +221,30 @@ def validate_features(features: np.ndarray) -> None:
         print("[WARN] Infs detected in features")
 
 
+def validate_feature_dimension(
+    features: np.ndarray, expected: int, logger: logging.Logger
+) -> np.ndarray:
+    """Ensure ``features`` has exactly ``expected`` columns.
+
+    Pads with zeros or trims columns when mismatched and logs an error.
+    """
+
+    current = features.shape[1]
+    if current != expected:
+        logger.error("Feature mismatch! Expected %s, got %s", expected, current)
+        if current < expected:
+            padding = np.zeros((features.shape[0], expected - current))
+            features = np.hstack((features, padding))
+        else:
+            features = features[:, :expected]
+    return features
+
+
 __all__ = [
     "rolling_zscore",
     "feature_dim_for",
     "feature_version_hash",
     "clean_features",
     "validate_features",
+    "validate_feature_dimension",
 ]
