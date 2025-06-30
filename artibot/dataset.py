@@ -264,6 +264,8 @@ class HourlyDataset(Dataset):
         features = generate_fixed_features(
             data_np, self.hp, use_ichimoku=self.use_ichimoku
         )
+        if isinstance(features, list):
+            features = np.array(features)
         print(f"[DEBUG] Actual feature count: {features.shape[1]}")
         # [FIX]# clean NaN/Inf values
         features = clean_features(features, replace_value=0.0)
@@ -463,6 +465,11 @@ class HourlyDataset(Dataset):
         labels = labels[mask]
 
         windows = np.nan_to_num(windows)
+
+        if isinstance(windows, list):
+            windows = np.array(windows)
+        if isinstance(labels, list):
+            labels = np.array(labels)
 
         return windows.astype(np.float32), labels.astype(np.int64)
 
