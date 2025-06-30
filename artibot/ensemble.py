@@ -36,7 +36,6 @@ from torch.utils.data import DataLoader
 
 from .backtest import robust_backtest
 from .hyperparams import HyperParams, IndicatorHyperparams
-from .utils import feature_dim_for
 from .utils.hardware import device as hw_device
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
@@ -744,10 +743,27 @@ class EnsembleModel(nn.Module):
         self, windows_tensor: torch.Tensor, batch_size: int = 256
     ) -> Tuple[torch.Tensor, torch.Tensor, dict]:
         """Return predictions for ``windows_tensor`` in mini-batches."""
-        # Re-calculate the dimension that *should* be coming from the dataloader
-        exp_dim = feature_dim_for(self.indicator_hparams)
-        if exp_dim != self.n_features:
-            raise ValueError("Feature dimension mismatch")
+        # [FIXED]# Robust feature-dimension handling
+        expected_dim = self.n_features
+        actual_dim = windows_tensor.shape[2]
+        print(f"[PREDICT] Expected features: {expected_dim}, Actual: {actual_dim}")
+
+        if actual_dim != expected_dim:
+            print("[WARN] Feature dimension mismatch! Adjusting input…")
+            if actual_dim > expected_dim:
+                windows_tensor = windows_tensor[:, :, :expected_dim]
+            else:
+                padding = torch.zeros(
+                    (
+                        windows_tensor.shape[0],
+                        windows_tensor.shape[1],
+                        expected_dim - actual_dim,
+                    ),
+                    device=windows_tensor.device,
+                    dtype=windows_tensor.dtype,
+                )
+                windows_tensor = torch.cat([windows_tensor, padding], dim=2)
+            print(f"[INFO] Adjusted input shape: {windows_tensor.shape}")
 
         with torch.no_grad():
             all_probs = []

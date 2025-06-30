@@ -481,3 +481,7 @@ class HourlyDataset(Dataset):
             label = random.choice([0, 1])
         label_t = torch.tensor(label, dtype=torch.long)
         return sample_t, label_t
+
+    # [FIXED]# expose expected feature dimension
+    def get_feature_dimension(self):
+        return self.expected_features
