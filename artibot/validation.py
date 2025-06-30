@@ -10,7 +10,11 @@ import pandas as pd
 import logging
 
 from config import FEATURE_CONFIG
-from .feature_manager import sanitize_features, FeatureDimensionError
+from .feature_manager import (
+    sanitize_features,
+    FeatureDimensionError,
+    align_features,
+)
 
 import artibot.globals as G
 from .backtest import robust_backtest
@@ -72,7 +76,9 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
     data = load_csv_hourly(csv_path)
     if not data:
         return []
-    data = validate_dataset(np.array(data, dtype=float))
+    raw_data = np.array(data, dtype=float)
+    aligned_data = align_features(raw_data, FEATURE_CONFIG["expected_features"])
+    data = sanitize_features(aligned_data)
     device = get_device()
 
     indicator_hp = IndicatorHyperparams(
