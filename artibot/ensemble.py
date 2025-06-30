@@ -40,6 +40,7 @@ from .utils.hardware import device as hw_device
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
 from .model import TradingModel
+from config import FEATURE_CONFIG
 
 
 def update_best(epoch: int, sharpe: float, net_pct: float, best_ckpt_path: str) -> None:
@@ -167,7 +168,8 @@ class EnsembleModel(nn.Module):
         )
         self.hp = HyperParams(indicator_hp=self.indicator_hparams)
 
-        fixed_dim = 16
+        fixed_dim = FEATURE_CONFIG["expected_features"]
+        self.expected_features = fixed_dim
         self.n_features = fixed_dim
 
         self.models = [
@@ -238,10 +240,30 @@ class EnsembleModel(nn.Module):
         self.total_steps = total_steps
 
     def _align_features(self, x: torch.Tensor) -> torch.Tensor:
-        """Validate feature dimension."""
-        if x.shape[-1] != self.n_features:
-            raise ValueError("Feature dimension mismatch")
-        return x * self.feature_mask.to(x.device)
+        """Validate and align feature dimension."""
+        current_features = x.shape[-1]
+
+        if current_features == self.expected_features:
+            aligned = x
+        elif current_features > self.expected_features:
+            print(
+                f"[WARN] Trimming {current_features - self.expected_features} excess features"
+            )
+            aligned = x[..., : self.expected_features]
+        elif current_features < self.expected_features:
+            print(
+                f"[WARN] Padding {self.expected_features - current_features} missing features"
+            )
+            pad = torch.zeros(
+                *x.shape[:-1],
+                self.expected_features - current_features,
+                device=x.device,
+            )
+            aligned = torch.cat([x, pad], dim=-1)
+        else:
+            raise RuntimeError("Unresolvable feature dimension mismatch")
+
+        return aligned * self.feature_mask.to(x.device)
 
     def forward(self, x: torch.Tensor):
         x = self._align_features(x.to(self.device))

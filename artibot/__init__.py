@@ -9,6 +9,10 @@ the installer ran once on first launch.
 from .environment import ensure_dependencies
 
 ensure_dependencies()  # run the installer once at import time
+from config import FEATURE_CONFIG
+
+print(f"[INIT] System configured for {FEATURE_CONFIG['expected_features']} features")
+print(f"[INIT] Feature columns: {', '.join(FEATURE_CONFIG['feature_columns'])}")
 
 try:
     from screeninfo import get_monitors

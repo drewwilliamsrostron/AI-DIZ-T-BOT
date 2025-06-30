@@ -202,12 +202,15 @@ def robust_backtest(ensemble, data_full, indicators=None):
 
     # [FIXED]# log incoming feature dimensions
     print(f"[BACKTEST] Input feature dimension: {data_full.shape}")
-    if data_full.shape[1] != 16:  # Match your FEATURE_DIMENSION
+    from config import FEATURE_CONFIG
+
+    expected = FEATURE_CONFIG["expected_features"]
+    if data_full.shape[1] != expected:
         print("[WARN] Backtest data dimension mismatch! Adjusting…")
-        if data_full.shape[1] > 16:
-            data_full = data_full[:, :16]
+        if data_full.shape[1] > expected:
+            data_full = data_full[:, :expected]
         else:
-            padding = np.zeros((data_full.shape[0], 16 - data_full.shape[1]))
+            padding = np.zeros((data_full.shape[0], expected - data_full.shape[1]))
             data_full = np.hstack([data_full, padding])
         print(f"[INFO] Adjusted backtest data shape: {data_full.shape}")
     if len(data_full) < 24:

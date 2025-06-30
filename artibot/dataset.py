@@ -27,8 +27,9 @@ from torch.utils.data import Dataset
 import artibot.globals as G
 import logging
 from .hyperparams import IndicatorHyperparams
+from config import FEATURE_CONFIG
 
-FEATURE_DIMENSION = 16
+FEATURE_DIMENSION = FEATURE_CONFIG["expected_features"]
 
 
 ###############################################################################
@@ -110,6 +111,12 @@ def load_csv_hourly(csv_path: str) -> list[list[float]]:
     cols = ["unix", "open", "high", "low", "close", "volume_btc"]
     arr = df[cols].to_numpy(dtype=float)
     arr = arr[np.isfinite(arr).all(axis=1)]
+    arr = np.nan_to_num(
+        arr,
+        nan=0.0,
+        posinf=np.finfo(np.float32).max,
+        neginf=np.finfo(np.float32).min,
+    )
 
     return arr[np.argsort(arr[:, 0])].tolist()
 
