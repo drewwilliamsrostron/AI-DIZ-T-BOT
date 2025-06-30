@@ -1,5 +1,7 @@
 from config import FEATURE_CONFIG
 import numpy as np
+import torch
+from core.feature_manager import sanitize_features, validate_and_align_features
 
 
 def load_and_clean_data(path):
@@ -19,12 +21,14 @@ def load_and_clean_data(path):
             )
             data = np.hstack([data, padding])
 
-    data = np.nan_to_num(
-        data,
-        nan=0.0,
-        posinf=np.finfo(np.float32).max,
-        neginf=np.finfo(np.float32).min,
-    )
+    data = sanitize_features(data)
 
     return data
 
+
+@validate_and_align_features
+def load_batch(batch_data: np.ndarray) -> torch.Tensor:
+    """Return ``batch_data`` as a float tensor."""
+
+    batch_data = sanitize_features(batch_data)
+    return torch.tensor(batch_data, dtype=torch.float32)

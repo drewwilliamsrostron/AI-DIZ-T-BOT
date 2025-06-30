@@ -10,6 +10,7 @@ import pandas as pd
 import logging
 
 from config import FEATURE_CONFIG
+from core.feature_manager import FeatureDimensionError, sanitize_features
 
 import artibot.globals as G
 from .backtest import robust_backtest
@@ -21,6 +22,23 @@ from .utils import get_device
 
 YEAR_HOURS = 365 * 24
 MONTH_SECONDS = 30 * 24 * 3600
+
+
+def validate_dataset(dataset):
+    """Sanitize and validate feature dimensions."""
+
+    if dataset.shape[1] != FEATURE_CONFIG["expected_features"]:
+        raise FeatureDimensionError(
+            f"Dataset has {dataset.shape[1]} features, expected {FEATURE_CONFIG['expected_features']}"
+        )
+
+    sanitized = sanitize_features(dataset)
+    nan_count = int(np.isnan(sanitized).sum())
+    inf_count = int(np.isinf(sanitized).sum())
+    if nan_count > 0 or inf_count > 0:
+        print(f"[WARN] Sanitization cleared {nan_count} NaNs and {inf_count} Infs")
+
+    return sanitized
 
 
 def equity_returns(curve: Iterable[tuple[int, float]]) -> list[float]:

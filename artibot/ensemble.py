@@ -41,6 +41,11 @@ import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
 from .model import TradingModel
 from config import FEATURE_CONFIG
+from core.feature_manager import (
+    FeatureDimensionError,
+    sanitize_features,
+    validate_and_align_features,
+)
 
 
 def update_best(epoch: int, sharpe: float, net_pct: float, best_ckpt_path: str) -> None:
@@ -261,12 +266,15 @@ class EnsembleModel(nn.Module):
             )
             aligned = torch.cat([x, pad], dim=-1)
         else:
-            raise RuntimeError("Unresolvable feature dimension mismatch")
+            raise FeatureDimensionError("Unresolvable feature dimension mismatch")
+
+        aligned = sanitize_features(aligned)
 
         return aligned * self.feature_mask.to(x.device)
 
+    @validate_and_align_features
     def forward(self, x: torch.Tensor):
-        x = self._align_features(x.to(self.device))
+        x = x.to(self.device)
         outs = [m(x) for m in self.models]
         return outs
 

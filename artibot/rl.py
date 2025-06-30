@@ -513,12 +513,7 @@ class MetaTransformerRL:
                         old_wd, float(act["d_wd"])
                     )
 
-        if self.ensemble is not None:
-            from .utils import feature_dim_for
-
-            self.ensemble._ensure_mask_dim(
-                feature_dim_for(indicator_hp), self.ensemble.feature_mask.device
-            )
+        # Feature mask dimension handled via decorator
 
         act_str = ", ".join(
             f"{k}={v:+.2f}" if isinstance(v, float) else f"{k}={v}"
