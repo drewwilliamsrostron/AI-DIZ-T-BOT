@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from artibot.environment import ensure_dependencies
 from artibot.utils.torch_threads import set_threads
-from artibot.gui import startup_options_dialog
 
 import os
 import sys
@@ -146,23 +145,12 @@ CONFIG = load_master_config()
 
 
 def main() -> None:
-    """Prompt for startup options and run the trading bot."""
+    """Prompt for live mode and run the trading bot."""
 
-    defaults = {
-        "skip_sentiment": False,
-        "use_live": CONFIG.get("API", {}).get("LIVE_TRADING", False),
-        "use_prev_weights": CONFIG.get("USE_PREV_WEIGHTS", True),
-        "threads": CONFIG.get("CPU_LIMIT", os.cpu_count() or 1),
-    }
-    opts = startup_options_dialog(defaults)
-    global SKIP_SENTIMENT
-    SKIP_SENTIMENT = bool(opts.get("skip_sentiment", False))
-    if SKIP_SENTIMENT:
-        os.environ["NO_HEAVY"] = "1"
-    else:
-        os.environ.pop("NO_HEAVY", None)
+    ask_skip_sentiment()
+    _maybe_relaunch_for_threads()
 
-    set_threads(int(opts.get("threads", defaults["threads"])))
+    set_threads(CONFIG.get("CPU_LIMIT", os.cpu_count() or 1))
     ensure_dependencies()
 
     from artibot.utils import setup_logging, get_device
@@ -176,7 +164,7 @@ def main() -> None:
     )
     from artibot.rl import MetaTransformerRL, meta_control_loop
     from artibot.validation import validate_and_gate
-    from artibot.gui import TradingGUI
+    from artibot.gui import TradingGUI, ask_use_prev_weights
     import artibot.globals as G
 
     setup_logging()
@@ -184,12 +172,13 @@ def main() -> None:
     progress_q: Queue[tuple[float, str] | tuple[str, str]] = Queue()
     _launch_loading(root, progress_q)
 
-    G.set_cpu_limit(int(opts.get("threads", defaults["threads"])))
+    G.set_cpu_limit(CONFIG.get("CPU_LIMIT", os.cpu_count() or 1))
     G.start_equity = 0.0
     G.live_equity = 0.0
     G.live_trade_count = 0
 
-    use_live = bool(opts.get("use_live", defaults["use_live"]))
+    ans = input("Use LIVE trading? (y/N): ").strip().lower()
+    use_live = ans.startswith("y")
     CONFIG.setdefault("API", {})["LIVE_TRADING"] = use_live
     G.use_sandbox = not use_live
     mode = "LIVE" if use_live else "SANDBOX"
@@ -250,7 +239,7 @@ def main() -> None:
     )
     os.makedirs(weights_dir, exist_ok=True)
     weights_path = os.path.join(weights_dir, "best.pt")
-    use_prev_weights = bool(opts.get("use_prev_weights", defaults["use_prev_weights"]))
+    use_prev_weights = ask_use_prev_weights(CONFIG.get("USE_PREV_WEIGHTS", True))
     if os.path.isfile(weights_path) and use_prev_weights:
         ensemble.load_best_weights(weights_path)
 
