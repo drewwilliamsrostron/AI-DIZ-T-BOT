@@ -10,7 +10,9 @@ import pandas as pd
 import logging
 
 from config import FEATURE_CONFIG
+
 from .feature_manager import align_features, sanitize_features, FeatureDimensionError
+
 
 import artibot.globals as G
 from .backtest import robust_backtest
