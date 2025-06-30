@@ -1,5 +1,6 @@
 from config import FEATURE_CONFIG
 import numpy as np
+from artibot.feature_manager import sanitize_features
 
 
 def load_and_clean_data(path):
@@ -19,12 +20,6 @@ def load_and_clean_data(path):
             )
             data = np.hstack([data, padding])
 
-    data = np.nan_to_num(
-        data,
-        nan=0.0,
-        posinf=np.finfo(np.float32).max,
-        neginf=np.finfo(np.float32).min,
-    )
+    data = sanitize_features(data)
 
     return data
-
