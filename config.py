@@ -1,5 +1,6 @@
 FEATURE_CONFIG = {
     "expected_features": 16,
+    "strict_validation": True,
     "feature_columns": [
         "open",
         "high",
@@ -19,4 +20,3 @@ FEATURE_CONFIG = {
         "atr",
     ],
 }
-

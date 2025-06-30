@@ -10,6 +10,7 @@ import pandas as pd
 import logging
 
 from config import FEATURE_CONFIG
+from .feature_manager import sanitize_features, FeatureDimensionError
 
 import artibot.globals as G
 from .backtest import robust_backtest
@@ -21,6 +22,23 @@ from .utils import get_device
 
 YEAR_HOURS = 365 * 24
 MONTH_SECONDS = 30 * 24 * 3600
+
+
+def validate_dataset(dataset: np.ndarray) -> np.ndarray:
+    """Return sanitized ``dataset`` or raise :class:`FeatureDimensionError`."""
+
+    if dataset.shape[1] != FEATURE_CONFIG["expected_features"]:
+        raise FeatureDimensionError(
+            f"Dataset has {dataset.shape[1]} features, expected {FEATURE_CONFIG['expected_features']}"
+        )
+
+    sanitized = sanitize_features(dataset)
+    nan_count = int(np.isnan(sanitized).sum())
+    inf_count = int(np.isinf(sanitized).sum())
+    if nan_count > 0 or inf_count > 0:
+        print(f"[WARN] Sanitization cleared {nan_count} NaNs and {inf_count} Infs")
+
+    return sanitized
 
 
 def equity_returns(curve: Iterable[tuple[int, float]]) -> list[float]:
@@ -54,6 +72,7 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
     data = load_csv_hourly(csv_path)
     if not data:
         return []
+    data = validate_dataset(np.array(data, dtype=float))
     device = get_device()
 
     indicator_hp = IndicatorHyperparams(
