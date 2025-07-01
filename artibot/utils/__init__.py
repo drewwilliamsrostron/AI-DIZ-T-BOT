@@ -258,7 +258,7 @@ class DimensionError(Exception):
     """Raised when feature matrices do not match the expected shape."""
 
 
-def validate_features(feat: np.ndarray, enabled_mask: np.ndarray) -> None:
+def validate_features(feat: np.ndarray, enabled_mask: np.ndarray | None = None) -> None:
     """Validate ``feat`` using ``enabled_mask``.
 
     Raises :class:`DimensionError` when:
@@ -270,16 +270,24 @@ def validate_features(feat: np.ndarray, enabled_mask: np.ndarray) -> None:
     if feat.ndim != 2:
         raise DimensionError("Features must be 2-D")
 
-    mask = np.asarray(enabled_mask, dtype=bool)
-    if feat.shape[1] != mask.size:
-        raise DimensionError("Feature mask size mismatch")
+    if enabled_mask is None:
+        mask = np.ones(feat.shape[1], dtype=bool)
+    else:
+        mask = np.asarray(enabled_mask, dtype=bool)
+        if feat.shape[1] != mask.size:
+            raise DimensionError("Feature mask size mismatch")
+        if not mask.any():
+            raise DimensionError("No active features after mask")
 
     active = feat[:, mask]
     if not np.isfinite(active).all():
         raise DimensionError("NaN or Inf detected in features")
 
-    if (np.ptp(active, axis=0) == 0).any():
-        raise DimensionError("Zero-feature detected")
+    ranges = np.ptp(active, axis=0)
+    if (ranges > 0).all():
+        return
+    if not (ranges > 0).any():
+        raise DimensionError("All active features have zero variance")
 
 
 def validate_feature_dimension(
