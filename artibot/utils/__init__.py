@@ -15,7 +15,7 @@ import numpy as np
 import hashlib
 
 from ..hyperparams import IndicatorHyperparams
-from config import FEATURE_CONFIG
+from ..constants import FEATURE_DIMENSION
 
 
 # [FIX]#
@@ -192,7 +192,7 @@ def feature_mask_for(
 ) -> np.ndarray:
     """Return boolean mask for enabled feature columns."""
 
-    dim = FEATURE_CONFIG["expected_features"]
+    dim = FEATURE_DIMENSION
     mask = np.ones(dim, dtype=bool)
 
     idx_map = {
@@ -258,45 +258,27 @@ class DimensionError(Exception):
     """Raised when feature matrices do not match the expected shape."""
 
 
-def validate_features(
-    features: np.ndarray,
-    expected: int | None = None,
-    *,
-    enabled_mask: np.ndarray | None = None,
-) -> None:
-    """Validate shape and values of ``features``.
+def validate_features(feat: np.ndarray, enabled_mask: np.ndarray) -> None:
+    """Validate ``feat`` using ``enabled_mask``.
 
-    Parameters
-    ----------
-    features:
-        Feature matrix to validate.
-    expected:
-        Required feature dimension.  Defaults to ``FEATURE_CONFIG['expected_features']``.
-    enabled_mask:
-        Optional boolean array indicating which feature columns are enabled.
-        Zero-value checks are skipped for disabled columns.
+    Raises :class:`DimensionError` when:
+      * ``feat`` is not a 2‑D array
+      * ``feat.shape[1]`` does not match ``len(enabled_mask)``
+      * any active column contains NaN/Inf or has zero variance
     """
 
-    exp = FEATURE_CONFIG["expected_features"] if expected is None else expected
-    if features.shape[-1] != exp:
-        raise DimensionError(
-            f"Invalid backtest features. Expected {exp}, got {features.shape[-1]}"
-        )
+    if feat.ndim != 2:
+        raise DimensionError("Features must be 2-D")
 
-    if np.isnan(features).any():
-        raise DimensionError("NaN detected in features")
-    if np.isinf(features).any():
-        raise DimensionError("Inf detected in features")
+    mask = np.asarray(enabled_mask, dtype=bool)
+    if feat.shape[1] != mask.size:
+        raise DimensionError("Feature mask size mismatch")
 
-    if enabled_mask is not None:
-        active = np.asarray(enabled_mask, dtype=bool)
-        if active.size != features.shape[-1]:
-            raise DimensionError("Feature mask size mismatch")
-        zero_cols = (np.ptp(features, axis=0) == 0) & active
-    else:
-        zero_cols = np.ptp(features, axis=0) == 0
+    active = feat[:, mask]
+    if not np.isfinite(active).all():
+        raise DimensionError("NaN or Inf detected in features")
 
-    if zero_cols.any():
+    if (active.ptp(axis=0) == 0).any():
         raise DimensionError("Zero-feature detected")
 
 
@@ -312,7 +294,7 @@ def validate_feature_dimension(
 
 
 def enforce_feature_dim(
-    features: np.ndarray, expected: int = FEATURE_CONFIG["expected_features"]
+    features: np.ndarray, expected: int = FEATURE_DIMENSION
 ) -> np.ndarray:
     """Return ``features`` padded with zeros when dimension mismatches."""
 

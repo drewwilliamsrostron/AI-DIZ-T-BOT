@@ -41,7 +41,7 @@ from .utils import zero_disabled
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
 from .model import TradingModel
-from config import FEATURE_CONFIG
+from .constants import FEATURE_DIMENSION
 from .feature_manager import validate_and_align_features
 
 
@@ -170,7 +170,7 @@ class EnsembleModel(nn.Module):
         )
         self.hp = HyperParams(indicator_hp=self.indicator_hparams)
 
-        fixed_dim = FEATURE_CONFIG["expected_features"]
+        fixed_dim = FEATURE_DIMENSION
         self.expected_features = fixed_dim
         self.n_features = fixed_dim
 

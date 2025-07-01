@@ -10,8 +10,9 @@ from .environment import ensure_dependencies
 
 ensure_dependencies()  # run the installer once at import time
 from config import FEATURE_CONFIG
+from .constants import FEATURE_DIMENSION
 
-print(f"[INIT] System configured for {FEATURE_CONFIG['expected_features']} features")
+print(f"[INIT] System configured for {FEATURE_DIMENSION} features")
 print(f"[INIT] Feature columns: {', '.join(FEATURE_CONFIG['feature_columns'])}")
 
 try:

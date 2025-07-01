@@ -20,7 +20,7 @@ import numpy as np
 import json
 import pathlib
 
-from config import FEATURE_CONFIG
+from .constants import FEATURE_DIMENSION
 
 _STORE = pathlib.Path(".feature_dim.json")
 
@@ -36,7 +36,7 @@ def safe_divide(a, b, default=0.0):
 
 
 # Fixed feature dimension used by training pipelines
-FEATURE_DIM = FEATURE_CONFIG["expected_features"]
+FEATURE_DIM = FEATURE_DIMENSION
 _FROZEN_DIM = None
 
 
@@ -98,7 +98,7 @@ def generate_features(data) -> np.ndarray:
         features = features.reshape(1, -1)
 
     # Ensure feature count is integer
-    expected = FEATURE_CONFIG["expected_features"]
+    expected = FEATURE_DIMENSION
     if features.shape[1] != int(expected):
         features = features[:, : int(expected)]
 

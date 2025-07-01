@@ -32,9 +32,7 @@ from torch.utils.data import Dataset
 import artibot.globals as G
 import logging
 from .hyperparams import IndicatorHyperparams
-from config import FEATURE_CONFIG
-
-FEATURE_DIMENSION = FEATURE_CONFIG["expected_features"]
+from .constants import FEATURE_DIMENSION
 
 
 ###############################################################################
@@ -242,7 +240,7 @@ def build_features(
         feats, expected_features, logger or logging.getLogger("build_features")
     )
     mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
-    validate_features(feats, expected_features, enabled_mask=mask)
+    validate_features(feats, enabled_mask=mask)
     feats = np.nan_to_num(feats)
     imputer = KNNImputer(n_neighbors=5)
     feats[:, mask] = imputer.fit_transform(feats[:, mask])
@@ -270,10 +268,10 @@ def preprocess_features(
 
     from .backtest import compute_indicators
 
-    ind = compute_indicators(data_np, hp, use_ichimoku=use_ichimoku)
-    features = ind["features"]
+    ind = compute_indicators(data_np, hp, use_ichimoku=use_ichimoku, with_scaled=True)
+    features = ind["scaled"]
     mask = ind["mask"]
-    validate_features(features, expected_features=len(mask), enabled_mask=mask)
+    validate_features(features, enabled_mask=mask)
 
     features = clean_features(features, replace_value=0.0)
     features = enforce_feature_dim(features, len(mask))

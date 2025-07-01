@@ -8,11 +8,10 @@ import torch
 import torch.nn as nn
 
 import artibot.globals as G
-from config import FEATURE_CONFIG
+from .constants import FEATURE_DIMENSION
 from .dataset import TradeParams
 from .utils import attention_entropy
 
-FEATURE_DIMENSION = FEATURE_CONFIG["expected_features"]
 
 logger = logging.getLogger(__name__)
 

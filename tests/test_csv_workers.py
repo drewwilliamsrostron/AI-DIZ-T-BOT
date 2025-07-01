@@ -25,7 +25,10 @@ def test_csv_thread_uses_config(monkeypatch):
     monkeypatch.setattr("torch.utils.data.random_split", lambda ds, lens: (ds, ds))
     monkeypatch.setattr(
         "artibot.training.compute_indicators",
-        lambda *a, **k: (np.zeros((0, 16), dtype=np.float32), np.ones(16, dtype=bool)),
+        lambda *a, **k: {
+            "scaled": np.zeros((0, 16), dtype=np.float32),
+            "mask": np.ones(16, dtype=bool),
+        },
     )
 
     ens = EnsembleModel(device=torch.device("cpu"), n_models=1)
@@ -59,7 +62,10 @@ def test_persistent_workers_enabled(monkeypatch):
     monkeypatch.setattr("torch.utils.data.random_split", lambda ds, lens: (ds, ds))
     monkeypatch.setattr(
         "artibot.training.compute_indicators",
-        lambda *a, **k: (np.zeros((0, 16), dtype=np.float32), np.ones(16, dtype=bool)),
+        lambda *a, **k: {
+            "scaled": np.zeros((0, 16), dtype=np.float32),
+            "mask": np.ones(16, dtype=bool),
+        },
     )
 
     ens = EnsembleModel(device=torch.device("cpu"), n_models=1)

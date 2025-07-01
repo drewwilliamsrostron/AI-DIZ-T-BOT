@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import torch
 
-from config import FEATURE_CONFIG
+from .constants import FEATURE_DIMENSION
 
 
 class FeatureDimensionError(Exception):
@@ -46,7 +46,7 @@ def validate_and_align_features(fn):
         if not isinstance(x, (torch.Tensor, np.ndarray)):
             return fn(*args, **kwargs)
 
-        expected = FEATURE_CONFIG["expected_features"]
+        expected = FEATURE_DIMENSION
         current = x.shape[-1]
         if current != expected:
             raise FeatureDimensionError(f"Expected {expected} features, got {current}")

@@ -99,7 +99,7 @@ def test_epoch_logging_includes_net_pct_and_lr(monkeypatch, caplog):
     monkeypatch.setattr(
         "artibot.training.compute_indicators",
         lambda *a, **k: {
-            "features": np.zeros((0, 16), dtype=np.float32),
+            "scaled": np.zeros((0, 16), dtype=np.float32),
             "mask": np.ones(16, dtype=bool),
         },
     )
