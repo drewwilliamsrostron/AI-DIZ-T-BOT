@@ -289,14 +289,15 @@ def validate_features(
         raise DimensionError("Inf detected in features")
 
     if enabled_mask is not None:
-        mask = np.asarray(enabled_mask, dtype=bool)
-        if mask.size != features.shape[-1]:
+        active = np.asarray(enabled_mask, dtype=bool)
+        if active.size != features.shape[-1]:
             raise DimensionError("Feature mask size mismatch")
-        if not features[:, mask].any(axis=0).all():
-            raise DimensionError("Zero-feature detected")
+        zero_cols = (np.ptp(features, axis=0) == 0) & active
     else:
-        if not features.any(axis=0).all():
-            raise DimensionError("Zero-feature detected")
+        zero_cols = np.ptp(features, axis=0) == 0
+
+    if zero_cols.any():
+        raise DimensionError("Zero-feature detected")
 
 
 def validate_feature_dimension(

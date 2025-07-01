@@ -1,6 +1,7 @@
 import os
 import threading
 
+import numpy as np
 import torch
 
 from artibot.training import csv_training_thread
@@ -24,7 +25,7 @@ def test_csv_thread_uses_config(monkeypatch):
     monkeypatch.setattr("torch.utils.data.random_split", lambda ds, lens: (ds, ds))
     monkeypatch.setattr(
         "artibot.training.compute_indicators",
-        lambda *a, **k: {"sma": [], "rsi": [], "macd": [], "scaled": []},
+        lambda *a, **k: (np.zeros((0, 16), dtype=np.float32), np.ones(16, dtype=bool)),
     )
 
     ens = EnsembleModel(device=torch.device("cpu"), n_models=1)
@@ -58,7 +59,7 @@ def test_persistent_workers_enabled(monkeypatch):
     monkeypatch.setattr("torch.utils.data.random_split", lambda ds, lens: (ds, ds))
     monkeypatch.setattr(
         "artibot.training.compute_indicators",
-        lambda *a, **k: {"sma": [], "rsi": [], "macd": [], "scaled": []},
+        lambda *a, **k: (np.zeros((0, 16), dtype=np.float32), np.ones(16, dtype=bool)),
     )
 
     ens = EnsembleModel(device=torch.device("cpu"), n_models=1)
