@@ -38,6 +38,23 @@ def align_features(x: np.ndarray, expected: int) -> np.ndarray:
     return x
 
 
+def enforce_feature_dim(x: np.ndarray, expected: int = FEATURE_DIMENSION) -> np.ndarray:
+    """Return ``x`` padded with zeros to ``expected`` columns.
+
+    If ``x`` already has ``expected`` or more columns, it is returned
+    unchanged.  Arrays with fewer than ``expected`` columns are extended
+    with ``0.0`` columns.  This function is written with NumPy 2.x
+    compatibility in mind and avoids deprecated ``np.pad`` behaviour.
+    """
+
+    cols = x.shape[1]
+    if cols >= expected:
+        return x
+
+    pad = np.zeros((x.shape[0], expected - cols), dtype=x.dtype)
+    return np.concatenate((x, pad), axis=1)
+
+
 def validate_and_align_features(fn):
     """Decorator validating feature dimension and cleaning values."""
 
@@ -61,5 +78,6 @@ __all__ = [
     "FeatureDimensionError",
     "sanitize_features",
     "align_features",
+    "enforce_feature_dim",
     "validate_and_align_features",
 ]
