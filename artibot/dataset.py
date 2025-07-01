@@ -219,6 +219,48 @@ def generate_fixed_features(
     return features
 
 
+def preprocess_features(
+    data_np: np.ndarray,
+    hp: IndicatorHyperparams,
+    seq_len: int,
+    *,
+    use_ichimoku: bool = False,
+    expected_features: int = FEATURE_DIMENSION,
+    drop_last: bool = False,
+    logger: logging.Logger | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return ``(features, windows)`` for ``data_np``.
+
+    Disabled indicators are replaced with ``0.0`` so the returned arrays
+    always have ``expected_features`` columns.
+    """
+
+    features = generate_fixed_features(data_np, hp, use_ichimoku=use_ichimoku)
+    if isinstance(features, list):
+        features = np.array(features)
+    features = clean_features(features, replace_value=0.0)
+    features = validate_feature_dimension(
+        features, expected_features, logger or logging.getLogger("preprocess")
+    )
+    validate_features(features)
+
+    features = np.nan_to_num(features)
+    scaled_feats = rolling_zscore(features, window=50)
+
+    from numpy.lib.stride_tricks import sliding_window_view
+
+    windows = sliding_window_view(scaled_feats, (seq_len, scaled_feats.shape[1]))[:, 0]
+    assert (
+        windows.shape[2] == expected_features
+    ), f"Expected {expected_features} features, got {windows.shape[2]}"
+    if drop_last:
+        windows = windows[:-1]
+
+    windows = np.nan_to_num(windows)
+
+    return features.astype(np.float32), windows.astype(np.float32)
+
+
 ###############################################################################
 # HourlyDataset
 ###############################################################################
@@ -265,16 +307,15 @@ class HourlyDataset(Dataset):
 
     def preprocess(self):
         data_np = np.array(self.data, dtype=float)
-        features = generate_fixed_features(
-            data_np, self.hp, use_ichimoku=self.use_ichimoku
+        features, windows = preprocess_features(
+            data_np,
+            self.hp,
+            self.seq_len,
+            use_ichimoku=self.use_ichimoku,
+            expected_features=self.expected_features,
+            drop_last=True,
+            logger=self.logger,
         )
-        if isinstance(features, list):
-            features = np.array(features)
-        features = clean_features(features, replace_value=0.0)
-        features = validate_feature_dimension(
-            features, self.expected_features, self.logger
-        )
-        validate_features(features)
         self.feature_hash = feature_version_hash(features)
 
         closes = data_np[:, 4].astype(np.float64)
@@ -283,22 +324,6 @@ class HourlyDataset(Dataset):
         from .indicators import atr
 
         atr_vals = atr(highs, lows, closes, period=self.hp.atr_period)
-
-        # ``ta-lib`` leaves the first few rows as NaN which would otherwise
-        # propagate through scaling and ultimately make the training loss
-        # explode to ``nan``. Replace them with zeros before normalisation and
-        # again afterwards to be safe.
-        features = np.nan_to_num(features)
-
-        scaled_feats = rolling_zscore(features, window=50)
-
-        from numpy.lib.stride_tricks import sliding_window_view
-
-        windows = sliding_window_view(
-            scaled_feats, (self.seq_len, scaled_feats.shape[1])
-        )[:, 0]
-        assert windows.shape[2] == self.expected_features
-        windows = windows[:-1]
 
         raw_closes = closes.astype(np.float32)
         last_close_raw = raw_closes[self.seq_len - 1 : -1]
@@ -344,6 +369,9 @@ class HourlyDataset(Dataset):
 
         if self.train_mode and random.random() < 0.2:
             sample += np.random.normal(0, 0.01, sample.shape)
+        assert (
+            sample.shape[1] == self.expected_features
+        ), f"Expected {self.expected_features} features, got {sample.shape[1]}"
         sample_t = torch.as_tensor(sample, dtype=torch.float32)
         label = self.labels[idx]
         if self.rebalance and label == 2 and random.random() < 0.5:
