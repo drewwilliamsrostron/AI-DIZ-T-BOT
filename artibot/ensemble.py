@@ -147,7 +147,14 @@ def choose_best(rewards: list[float]) -> float:
 
 
 class EnsembleModel(nn.Module):
-    """Simple container for multiple models and optimisers."""
+    """Simple container for multiple models and optimisers.
+
+    Parameters
+    ----------
+    n_features:
+        Number of columns expected in the feature matrix.  When ``None`` the
+        value from :data:`~artibot.constants.FEATURE_DIMENSION` is used.
+    """
 
     def __init__(
         self,
@@ -170,15 +177,18 @@ class EnsembleModel(nn.Module):
         )
         self.hp = HyperParams(indicator_hp=self.indicator_hparams)
 
-        fixed_dim = FEATURE_DIMENSION
-        self.expected_features = fixed_dim
-        self.n_features = fixed_dim
+        # Determine the feature dimension either from the caller or fall back
+        # to the package constant.  This allows the ensemble to align its input
+        # layer with the dataset's feature matrix and prevents shape mismatches
+        # during training.
+        dim = n_features if n_features is not None else FEATURE_DIMENSION
 
-        self.models = [
-            TradingModel(input_size=fixed_dim).to(device) for _ in range(n_models)
-        ]
+        self.expected_features = dim
+        self.n_features = dim
+
+        self.models = [TradingModel(input_size=dim).to(device) for _ in range(n_models)]
         self._mask_lock = threading.Lock()
-        self.register_buffer("feature_mask", torch.ones(1, fixed_dim, device=device))
+        self.register_buffer("feature_mask", torch.ones(1, dim, device=device))
         print("[DEBUG] Model moved to device")
         from . import hyperparams as _hp
 
