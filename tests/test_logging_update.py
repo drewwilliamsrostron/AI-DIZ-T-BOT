@@ -1,5 +1,6 @@
 import logging
 import types
+import numpy as np
 
 import pytest
 import torch
@@ -97,7 +98,10 @@ def test_epoch_logging_includes_net_pct_and_lr(monkeypatch, caplog):
     monkeypatch.setattr("torch.utils.data.random_split", lambda ds, lens: (ds, ds))
     monkeypatch.setattr(
         "artibot.training.compute_indicators",
-        lambda *a, **k: {"sma": [], "rsi": [], "macd": [], "scaled": []},
+        lambda *a, **k: {
+            "features": np.zeros((0, 16), dtype=np.float32),
+            "mask": np.ones(16, dtype=bool),
+        },
     )
 
     class DummyDS:

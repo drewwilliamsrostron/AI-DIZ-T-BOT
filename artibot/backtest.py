@@ -9,7 +9,6 @@ import talib
 import torch
 
 from .utils import (
-    rolling_zscore,
     feature_mask_for,
     enforce_feature_dim,
     validate_features,
@@ -33,30 +32,19 @@ def compute_indicators(
     data_full,
     indicator_hp,
     *,
-    with_scaled: bool = False,
     use_ichimoku: bool = False,
-    enable_all: bool = False,
 ):
-    """Return indicator arrays for ``data_full``.
+    """Return feature matrix and mask for ``data_full``.
 
-    When ``with_scaled`` is ``True`` the returned dictionary also contains a
-    ``scaled`` key with normalised feature vectors matching the dataset
-    preprocessing.
+    The returned matrix always has the same width while ``mask`` indicates which
+    columns are active based on ``indicator_hp`` flags.
     """
-
-    from artibot.hyperparams import WARMUP_STEPS
-
-    global FIXED_FEATURES
-    if G.global_step < WARMUP_STEPS and FIXED_FEATURES is not None and not enable_all:
-        return FIXED_FEATURES
 
     raw = np.array(data_full, dtype=np.float64)
     closes = raw[:, 4]
     highs = raw[:, 2]
     lows = raw[:, 3]
     volume = raw[:, 5] if raw.shape[1] > 5 else np.zeros_like(closes)
-
-    atr_period = indicator_hp.atr_period
 
     rsi_period = max(2, min(getattr(indicator_hp, "rsi_period", 14), 50))
     sma_period = max(2, min(getattr(indicator_hp, "sma_period", 10), 100))
@@ -70,10 +58,15 @@ def compute_indicators(
     slow_macd = max(fast_macd + 1, min(getattr(indicator_hp, "macd_slow", 26), 200))
     sig_macd = max(1, min(getattr(indicator_hp, "macd_signal", 9), 50))
 
-    out = {}
-    cols = [raw[:, 1:6]]
+    cols: list[np.ndarray] = [
+        np.nan_to_num(raw[:, 1:6], nan=0.0, posinf=0.0, neginf=0.0)
+    ]
+    mask = [True] * 5
 
-    # === NEW FEATURE BLOCK (sentiment / macro / rvol) =======================
+    def add_feat(arr: np.ndarray, flag: bool) -> None:
+        cols.append(np.nan_to_num(arr, nan=0.0, posinf=0.0, neginf=0.0))
+        mask.append(bool(flag))
+
     import artibot.feature_store as _fs
 
     sent_vec = np.array(
@@ -83,107 +76,53 @@ def compute_indicators(
         [_fs.macro_surprise(int(t)) for t in raw[:, 0]], dtype=np.float32
     )
     rvol_vec = np.array([_fs.realised_vol(int(t)) for t in raw[:, 0]], dtype=np.float32)
-    out["sent_24h"] = sent_vec
-    out["macro_z"] = macro_vec
-    out["rvol_7d"] = rvol_vec
-    cols.extend([sent_vec, macro_vec, rvol_vec])
 
-    if getattr(indicator_hp, "use_sma", True):
-        sma = trailing_sma(closes, sma_period)
-        out["sma"] = sma.astype(np.float32)
-        cols.append(out["sma"])
+    for vec in (sent_vec, macro_vec, rvol_vec):
+        add_feat(vec, True)
 
-    if getattr(indicator_hp, "use_rsi", True):
-        rsi = talib.RSI(closes, timeperiod=rsi_period)
-        out["rsi"] = rsi.astype(np.float32)
-        cols.append(out["rsi"])
-
-    if getattr(indicator_hp, "use_macd", True):
-        macd_, _sig, _hist = talib.MACD(
-            closes,
-            fastperiod=fast_macd,
-            slowperiod=slow_macd,
-            signalperiod=sig_macd,
-        )
-        out["macd"] = macd_.astype(np.float32)
-        cols.append(out["macd"])
-
-    if getattr(indicator_hp, "use_ema", False):
-        ema_v = indicators.ema(closes, period=getattr(indicator_hp, "ema_period", 20))
-        out["ema"] = ema_v.astype(np.float32)
-        cols.append(out["ema"])
-
-    atr_vals = indicators.atr(highs, lows, closes, period=atr_period)
-    out["atr"] = atr_vals.astype(np.float32)
-    if getattr(indicator_hp, "use_atr", True):
-        cols.append(out["atr"])
-
-    if getattr(indicator_hp, "use_vortex", True):
-        vp, vn = indicators.vortex(
-            highs, lows, closes, period=getattr(indicator_hp, "vortex_period", 14)
-        )
-        out["vortex_pos"] = vp.astype(np.float32)
-        out["vortex_neg"] = vn.astype(np.float32)
-        cols.extend([out["vortex_pos"], out["vortex_neg"]])
-
-    if getattr(indicator_hp, "use_cmf", True):
-        cmf_v = indicators.cmf(
+    add_feat(trailing_sma(closes, sma_period), indicator_hp.use_sma)
+    add_feat(talib.RSI(closes, timeperiod=rsi_period), indicator_hp.use_rsi)
+    macd_, _sig, _hist = talib.MACD(
+        closes,
+        fastperiod=fast_macd,
+        slowperiod=slow_macd,
+        signalperiod=sig_macd,
+    )
+    add_feat(macd_, indicator_hp.use_macd)
+    add_feat(
+        indicators.ema(closes, period=getattr(indicator_hp, "ema_period", 20)),
+        indicator_hp.use_ema,
+    )
+    add_feat(
+        indicators.atr(highs, lows, closes, period=indicator_hp.atr_period),
+        indicator_hp.use_atr,
+    )
+    vp, vn = indicators.vortex(
+        highs, lows, closes, period=getattr(indicator_hp, "vortex_period", 14)
+    )
+    add_feat(vp, indicator_hp.use_vortex)
+    add_feat(vn, indicator_hp.use_vortex)
+    add_feat(
+        indicators.cmf(
             highs, lows, closes, volume, period=getattr(indicator_hp, "cmf_period", 20)
-        )
-        out["cmf"] = cmf_v.astype(np.float32)
-        cols.append(out["cmf"])
-
-    if getattr(indicator_hp, "use_donchian", False):
-        up, lo, mid = indicators.donchian(
-            highs, lows, period=getattr(indicator_hp, "donchian_period", 20)
-        )
-        out["don_up"] = up.astype(np.float32)
-        out["don_lo"] = lo.astype(np.float32)
-        out["don_mid"] = mid.astype(np.float32)
-        cols.extend([out["don_up"], out["don_lo"], out["don_mid"]])
-
-    if getattr(indicator_hp, "use_kijun", False):
-        kij = indicators.kijun(
-            highs, lows, period=getattr(indicator_hp, "kijun_period", 26)
-        )
-        out["kijun"] = kij.astype(np.float32)
-        cols.append(out["kijun"])
-
-    if getattr(indicator_hp, "use_tenkan", False):
-        ten = indicators.tenkan(
-            highs, lows, period=getattr(indicator_hp, "tenkan_period", 9)
-        )
-        out["tenkan"] = ten.astype(np.float32)
-        cols.append(out["tenkan"])
-
-    if getattr(indicator_hp, "use_displacement", False):
+        ),
+        indicator_hp.use_cmf,
+    )
+    if indicator_hp.use_displacement:
         disp = np.roll(closes, getattr(indicator_hp, "displacement", 26))
         disp[: getattr(indicator_hp, "displacement", 26)] = np.nan
-        out["disp"] = disp.astype(np.float32)
-        cols.append(out["disp"])
+        add_feat(disp, True)
 
     if use_ichimoku:
         tenkan, kijun, span_a, span_b = indicators.ichimoku(highs, lows)
-        out["tenkan"] = tenkan.astype(np.float32)
-        out["kijun"] = kijun.astype(np.float32)
-        out["span_a"] = span_a.astype(np.float32)
-        out["span_b"] = span_b.astype(np.float32)
-        cols.extend([out["tenkan"], out["kijun"], out["span_a"], out["span_b"]])
+        for arr in (tenkan, kijun, span_a, span_b):
+            add_feat(arr, True)
 
-    if with_scaled:
-        feats = np.column_stack(cols)
-        feats = np.nan_to_num(feats)
-        mask = feature_mask_for(indicator_hp, use_ichimoku=use_ichimoku)
-        out["scaled"] = rolling_zscore(feats, window=50, mask=mask)
-
-    if G.global_step == 0 and enable_all:
-        FIXED_FEATURES = out
-        return out
-
-    if G.global_step < WARMUP_STEPS and not enable_all and FIXED_FEATURES is not None:
-        return FIXED_FEATURES
-
-    return out
+    features = np.column_stack(cols).astype(np.float32)
+    return {
+        "features": features,
+        "mask": np.asarray(mask, dtype=bool),
+    }
 
 
 ###############################################################################

@@ -268,16 +268,18 @@ def preprocess_features(
     always have ``expected_features`` columns.
     """
 
-    features = generate_fixed_features(data_np, hp, use_ichimoku=use_ichimoku)
-    if isinstance(features, list):
-        features = np.array(features)
+    from .backtest import compute_indicators
+
+    ind = compute_indicators(data_np, hp, use_ichimoku=use_ichimoku)
+    features = ind["features"]
+    mask = ind["mask"]
+    validate_features(features, expected_features=len(mask), enabled_mask=mask)
+
     features = clean_features(features, replace_value=0.0)
-    features = enforce_feature_dim(features, expected_features)
+    features = enforce_feature_dim(features, len(mask))
     features = validate_feature_dimension(
-        features, expected_features, logger or logging.getLogger("preprocess")
+        features, len(mask), logger or logging.getLogger("preprocess")
     )
-    mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
-    validate_features(features, expected_features, enabled_mask=mask)
 
     features = np.nan_to_num(features)
 
@@ -291,9 +293,9 @@ def preprocess_features(
     from numpy.lib.stride_tricks import sliding_window_view
 
     windows = sliding_window_view(scaled_feats, (seq_len, scaled_feats.shape[1]))[:, 0]
-    assert (
-        windows.shape[2] == expected_features
-    ), f"Expected {expected_features} features, got {windows.shape[2]}"
+    assert windows.shape[2] == len(
+        mask
+    ), f"Expected {len(mask)} features, got {windows.shape[2]}"
     if drop_last:
         windows = windows[:-1]
 
