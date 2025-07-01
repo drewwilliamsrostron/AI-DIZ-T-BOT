@@ -17,4 +17,3 @@ def test_validate_feature_dimension_trim():
     logger = logging.getLogger("test")
     fixed = validate_feature_dimension(arr, 16, logger)
     assert fixed.shape == (3, 16)
-

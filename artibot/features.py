@@ -29,9 +29,7 @@ class FeatureEngineer:
             )
             missing = set(self.feature_columns) - set(feature_columns)
             for feature in missing:
-                data[feature] = (
-                    data["close"].rolling(window=5).mean().ffill().bfill()
-                )
+                data[feature] = data["close"].rolling(window=5).mean().ffill().bfill()
             feature_columns = self.feature_columns
 
         features = data[feature_columns].replace([np.inf, -np.inf], np.nan)

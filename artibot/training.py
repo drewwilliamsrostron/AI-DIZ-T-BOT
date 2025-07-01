@@ -97,7 +97,11 @@ def csv_training_thread(
             data = data[:100]
             max_epochs = 50
         holdout_len = max(1, int(len(data) * 0.1))
-        train_data = data[:-holdout_len] if len(data) > holdout_len else data
+        base = data[:-holdout_len] if len(data) > holdout_len else data
+        train_data: list[list[float]] = []
+        for row in base:
+            train_data.append([float(v) for v in row])
+        train_data = np.array(train_data)
         holdout_data = data[-holdout_len:] if len(data) > holdout_len else []
 
         ds_full = HourlyDataset(
