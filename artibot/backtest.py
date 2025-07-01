@@ -77,54 +77,95 @@ def compute_indicators(
 
     import artibot.feature_store as _fs
 
-    sent_vec = np.array(
-        [_fs.news_sentiment(int(t)) for t in raw[:, 0]], dtype=np.float32
-    )
-    macro_vec = np.array(
-        [_fs.macro_surprise(int(t)) for t in raw[:, 0]], dtype=np.float32
-    )
-    rvol_vec = np.array([_fs.realised_vol(int(t)) for t in raw[:, 0]], dtype=np.float32)
+    if indicator_hp.use_sentiment:
+        sent_vec = np.array(
+            [_fs.news_sentiment(int(t)) for t in raw[:, 0]], dtype=np.float32
+        )
+    else:
+        sent_vec = np.zeros_like(closes, dtype=np.float32)
+    if indicator_hp.use_macro:
+        macro_vec = np.array(
+            [_fs.macro_surprise(int(t)) for t in raw[:, 0]], dtype=np.float32
+        )
+    else:
+        macro_vec = np.zeros_like(closes, dtype=np.float32)
+    if indicator_hp.use_rvol:
+        rvol_vec = np.array(
+            [_fs.realised_vol(int(t)) for t in raw[:, 0]], dtype=np.float32
+        )
+    else:
+        rvol_vec = np.zeros_like(closes, dtype=np.float32)
 
-    for vec in (sent_vec, macro_vec, rvol_vec):
-        add_feat(vec, True)
+    add_feat(sent_vec, indicator_hp.use_sentiment)
+    add_feat(macro_vec, indicator_hp.use_macro)
+    add_feat(rvol_vec, indicator_hp.use_rvol)
 
-    add_feat(trailing_sma(closes, sma_period), indicator_hp.use_sma)
-    add_feat(talib.RSI(closes, timeperiod=rsi_period), indicator_hp.use_rsi)
-    macd_, _sig, _hist = talib.MACD(
-        closes,
-        fastperiod=fast_macd,
-        slowperiod=slow_macd,
-        signalperiod=sig_macd,
-    )
-    add_feat(macd_, indicator_hp.use_macd)
-    add_feat(
-        indicators.ema(closes, period=getattr(indicator_hp, "ema_period", 20)),
-        indicator_hp.use_ema,
-    )
-    add_feat(
-        indicators.atr(highs, lows, closes, period=indicator_hp.atr_period),
-        indicator_hp.use_atr,
-    )
-    vp, vn = indicators.vortex(
-        highs, lows, closes, period=getattr(indicator_hp, "vortex_period", 14)
-    )
+    if indicator_hp.use_sma:
+        sma_arr = trailing_sma(closes, sma_period)
+    else:
+        sma_arr = np.zeros_like(closes)
+    add_feat(sma_arr, indicator_hp.use_sma)
+
+    if indicator_hp.use_rsi:
+        rsi_arr = talib.RSI(closes, timeperiod=rsi_period)
+    else:
+        rsi_arr = np.zeros_like(closes)
+    add_feat(rsi_arr, indicator_hp.use_rsi)
+
+    if indicator_hp.use_macd:
+        macd_arr, _sig, _hist = talib.MACD(
+            closes,
+            fastperiod=fast_macd,
+            slowperiod=slow_macd,
+            signalperiod=sig_macd,
+        )
+    else:
+        macd_arr = np.zeros_like(closes)
+    add_feat(macd_arr, indicator_hp.use_macd)
+
+    if indicator_hp.use_ema:
+        ema_arr = indicators.ema(closes, period=getattr(indicator_hp, "ema_period", 20))
+    else:
+        ema_arr = np.zeros_like(closes)
+    add_feat(ema_arr, indicator_hp.use_ema)
+
+    if indicator_hp.use_atr:
+        atr_arr = indicators.atr(highs, lows, closes, period=indicator_hp.atr_period)
+    else:
+        atr_arr = np.zeros_like(closes)
+    add_feat(atr_arr, indicator_hp.use_atr)
+
+    if indicator_hp.use_vortex:
+        vp, vn = indicators.vortex(
+            highs, lows, closes, period=getattr(indicator_hp, "vortex_period", 14)
+        )
+    else:
+        vp = np.zeros_like(closes)
+        vn = np.zeros_like(closes)
     add_feat(vp, indicator_hp.use_vortex)
     add_feat(vn, indicator_hp.use_vortex)
-    add_feat(
-        indicators.cmf(
+
+    if indicator_hp.use_cmf:
+        cmf_arr = indicators.cmf(
             highs, lows, closes, volume, period=getattr(indicator_hp, "cmf_period", 20)
-        ),
-        indicator_hp.use_cmf,
-    )
+        )
+    else:
+        cmf_arr = np.zeros_like(closes)
+    add_feat(cmf_arr, indicator_hp.use_cmf)
+
     if indicator_hp.use_displacement:
-        disp = np.roll(closes, getattr(indicator_hp, "displacement", 26))
-        disp[: getattr(indicator_hp, "displacement", 26)] = np.nan
-        add_feat(disp, True)
+        disp_arr = np.roll(closes, getattr(indicator_hp, "displacement", 26))
+        disp_arr[: getattr(indicator_hp, "displacement", 26)] = np.nan
+    else:
+        disp_arr = np.zeros_like(closes)
+    add_feat(disp_arr, indicator_hp.use_displacement)
 
     if use_ichimoku:
         tenkan, kijun, span_a, span_b = indicators.ichimoku(highs, lows)
-        for arr in (tenkan, kijun, span_a, span_b):
-            add_feat(arr, True)
+    else:
+        tenkan = kijun = span_a = span_b = np.zeros_like(closes)
+    for arr in (tenkan, kijun, span_a, span_b):
+        add_feat(arr, use_ichimoku)
 
     feats = np.column_stack(cols).astype(np.float32)
     mask_arr = np.asarray(mask, dtype=np.uint8)
