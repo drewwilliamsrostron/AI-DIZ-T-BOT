@@ -101,11 +101,11 @@ def csv_training_thread(
         train_data: list[list[float]] = []
         for row in base:
             train_data.append([float(v) for v in row])
-        train_data = np.array(train_data)
+        train_array = np.array(train_data)
         holdout_data = data[-holdout_len:] if len(data) > holdout_len else []
 
         ds_full = HourlyDataset(
-            train_data,
+            train_array,
             seq_len=24,
             indicator_hparams=ensemble.indicator_hparams,
             atr_threshold_k=getattr(ensemble.indicator_hparams, "atr_threshold_k", 1.5),
@@ -116,14 +116,14 @@ def csv_training_thread(
             G.set_status("Training", "CSV data insufficient")
             return
         if use_prev_weights:
-            ensemble.load_best_weights(weights_path, data_full=train_data)
+            ensemble.load_best_weights(weights_path, data_full=train_array)
         n_tot = len(ds_full)
         n_tr = int(n_tot * 0.9)
         n_val = n_tot - n_tr
         ds_train, ds_val = random_split(ds_full, [n_tr, n_val])
 
         train_indicators = compute_indicators(
-            train_data,
+            train_array,
             ensemble.indicator_hparams,
             with_scaled=True,
             enable_all=True if G.global_step == 0 else False,
