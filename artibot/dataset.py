@@ -329,7 +329,18 @@ class HourlyDataset(Dataset):
             raise ValueError(
                 f"Feature engineering produces {check_feats.shape[1]} features, expected {self.expected_features}."
             )
+        self.mask = feature_mask_for(indicator_hparams, use_ichimoku=use_ichimoku)
         self.samples, self.labels = self.preprocess()
+
+    def apply_feature_mask(
+        self, hp: IndicatorHyperparams, *, use_ichimoku: bool | None = None
+    ) -> None:
+        """Zero out features based on ``hp`` without rebuilding the dataset."""
+
+        if use_ichimoku is not None:
+            self.use_ichimoku = use_ichimoku
+        self.mask = feature_mask_for(hp, use_ichimoku=self.use_ichimoku)
+        self.samples = zero_disabled(self.samples, self.mask)
 
     def preprocess(self):
         data_np = np.array(self.data, dtype=float)

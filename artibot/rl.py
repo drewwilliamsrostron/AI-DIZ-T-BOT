@@ -624,6 +624,8 @@ def meta_control_loop(
             act = filtered
             with G.model_lock:
                 agent.apply_action(hp, indicator_hp, act)
+                if dataset is not None:
+                    dataset.apply_feature_mask(indicator_hp)
                 # models stay fixed at FEATURE_DIM; missing indicators are padded
                 if ensemble.models[0].input_dim != FEATURE_DIM:
                     ensemble.rebuild_models(FEATURE_DIM)
