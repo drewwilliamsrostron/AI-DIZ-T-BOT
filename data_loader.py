@@ -1,7 +1,8 @@
 from config import FEATURE_CONFIG
 import numpy as np
 from artibot.feature_manager import sanitize_features
-from artibot.utils import enforce_feature_dim, validate_features
+from artibot.utils import enforce_feature_dim, validate_features, feature_mask_for
+from artibot.hyperparams import IndicatorHyperparams
 
 
 def load_and_clean_data(path):
@@ -16,9 +17,9 @@ def load_and_clean_data(path):
         data = enforce_feature_dim(data, FEATURE_CONFIG["expected_features"])
 
     data = sanitize_features(data)
-    validate_features(data)
+    mask = feature_mask_for(IndicatorHyperparams())
+    validate_features(data, enabled_mask=mask)
     assert not np.isnan(data).any(), "NaN detected in features"
     assert not np.isinf(data).any(), "Inf detected in features"
-    assert data.any(axis=0).all(), "Zero-feature detected"
 
     return data

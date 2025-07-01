@@ -214,7 +214,11 @@ def robust_backtest(ensemble, data_full, indicators=None):
     if data_full.shape[1] != expected:
         print("[WARN] Backtest data dimension mismatch! Adjusting…")
         data_full = enforce_feature_dim(data_full, expected)
-        validate_features(data_full, expected)
+    mask = feature_mask_for(
+        ensemble.indicator_hparams,
+        use_ichimoku=getattr(ensemble.indicator_hparams, "use_ichimoku", False),
+    )
+    validate_features(data_full, expected, enabled_mask=mask)
     if len(data_full) < 24:
         return {
             "net_pct": 0.0,
