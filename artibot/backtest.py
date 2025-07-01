@@ -8,8 +8,13 @@ from .environment import ensure_dependencies
 import talib
 import torch
 
-from .utils import rolling_zscore, feature_mask_for
-from .dataset import trailing_sma, HourlyDataset, preprocess_features
+from .utils import (
+    rolling_zscore,
+    feature_mask_for,
+    enforce_feature_dim,
+    validate_features,
+)
+from .dataset import trailing_sma, HourlyDataset, build_features
 from . import indicators
 
 import artibot.globals as G
@@ -207,7 +212,9 @@ def robust_backtest(ensemble, data_full, indicators=None):
 
     expected = FEATURE_CONFIG["expected_features"]
     if data_full.shape[1] != expected:
-        raise ValueError(f"Expected {expected} features, got {data_full.shape[1]}")
+        print("[WARN] Backtest data dimension mismatch! Adjusting…")
+        data_full = enforce_feature_dim(data_full, expected)
+        validate_features(data_full, expected)
     if len(data_full) < 24:
         return {
             "net_pct": 0.0,
@@ -242,12 +249,11 @@ def robust_backtest(ensemble, data_full, indicators=None):
     if raw_data[:, 0].max() > 1_000_000_000_000:
         raw_data[:, 0] //= 1000
 
-    _, extd = preprocess_features(
+    extd = build_features(
         raw_data,
         hp,
-        24,
+        use_ichimoku=getattr(hp, "use_ichimoku", False),
         expected_features=FEATURE_CONFIG["expected_features"],
-        drop_last=False,
     )
 
     timestamps = raw_data[:, 0]

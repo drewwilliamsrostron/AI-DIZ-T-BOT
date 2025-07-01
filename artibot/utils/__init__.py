@@ -254,13 +254,33 @@ def feature_version_hash(arr: np.ndarray) -> str:
 
 
 # [FIX]#
-def validate_features(features: np.ndarray) -> None:
-    """Log warnings about bad values instead of crashing."""
+class DimensionError(Exception):
+    """Raised when feature matrices do not match the expected shape."""
+
+
+def validate_features(features: np.ndarray, expected: int | None = None) -> None:
+    """Validate shape and values of ``features``.
+
+    Parameters
+    ----------
+    features:
+        Feature matrix to validate.
+    expected:
+        Required feature dimension.  Defaults to ``FEATURE_CONFIG['expected_features']``.
+    """
+
+    exp = FEATURE_CONFIG["expected_features"] if expected is None else expected
+    if features.shape[-1] != exp:
+        raise DimensionError(
+            f"Invalid backtest features. Expected {exp}, got {features.shape[-1]}"
+        )
 
     if np.isnan(features).any():
-        print("[WARN] NaNs detected in features")
+        raise DimensionError("NaN detected in features")
     if np.isinf(features).any():
-        print("[WARN] Infs detected in features")
+        raise DimensionError("Inf detected in features")
+    if not features.any(axis=0).all():
+        raise DimensionError("Zero-feature detected")
 
 
 def validate_feature_dimension(
@@ -271,6 +291,19 @@ def validate_feature_dimension(
     current = features.shape[1]
     if current != expected:
         logger.error("Feature mismatch! Expected %s, got %s", expected, current)
+    return features
+
+
+def enforce_feature_dim(
+    features: np.ndarray, expected: int = FEATURE_CONFIG["expected_features"]
+) -> np.ndarray:
+    """Return ``features`` padded with zeros when dimension mismatches."""
+
+    if features.shape[1] != expected:
+        corrected = np.zeros((features.shape[0], expected), dtype=features.dtype)
+        cols = min(features.shape[1], expected)
+        corrected[:, :cols] = features[:, :cols]
+        return corrected
     return features
 
 
@@ -298,5 +331,7 @@ __all__ = [
     "clean_features",
     "validate_features",
     "validate_feature_dimension",
+    "enforce_feature_dim",
+    "DimensionError",
     "zero_disabled",
 ]
