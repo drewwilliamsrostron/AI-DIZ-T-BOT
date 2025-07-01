@@ -8,7 +8,7 @@ from .environment import ensure_dependencies
 import talib
 import torch
 
-from .utils import rolling_zscore
+from .utils import rolling_zscore, feature_mask_for
 from .dataset import trailing_sma, HourlyDataset, preprocess_features
 from . import indicators
 
@@ -168,7 +168,8 @@ def compute_indicators(
     if with_scaled:
         feats = np.column_stack(cols)
         feats = np.nan_to_num(feats)
-        out["scaled"] = rolling_zscore(feats, window=50)
+        mask = feature_mask_for(indicator_hp, use_ichimoku=use_ichimoku)
+        out["scaled"] = rolling_zscore(feats, window=50, mask=mask)
 
     if G.global_step == 0 and enable_all:
         FIXED_FEATURES = out

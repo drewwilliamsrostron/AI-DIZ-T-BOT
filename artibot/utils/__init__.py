@@ -15,6 +15,7 @@ import numpy as np
 import hashlib
 
 from ..hyperparams import IndicatorHyperparams
+from config import FEATURE_CONFIG
 
 
 # [FIX]#
@@ -96,7 +97,9 @@ def attention_entropy(tensor: torch.Tensor) -> float:
     return min(ent, max_ent)
 
 
-def rolling_zscore(arr: np.ndarray, window: int = 50) -> np.ndarray:
+def rolling_zscore(
+    arr: np.ndarray, window: int = 50, mask: np.ndarray | None = None
+) -> np.ndarray:
     """Return rolling z-score normalised ``arr``.
 
     Parameters
@@ -108,9 +111,22 @@ def rolling_zscore(arr: np.ndarray, window: int = 50) -> np.ndarray:
     """
 
     df = pd.DataFrame(arr, dtype=float)
-    roll_mean = df.rolling(window=window, min_periods=1).mean()
-    roll_std = df.rolling(window=window, min_periods=1).std().replace(0, 1e-8)
-    scaled = ((df - roll_mean) / roll_std).to_numpy(dtype=float)
+    if mask is not None:
+        mask = np.asarray(mask, dtype=bool)
+        cols = [i for i, m in enumerate(mask) if m]
+        roll_mean = df.iloc[:, cols].rolling(window=window, min_periods=1).mean()
+        roll_std = (
+            df.iloc[:, cols]
+            .rolling(window=window, min_periods=1)
+            .std()
+            .replace(0, 1e-8)
+        )
+        df.iloc[:, cols] = (df.iloc[:, cols] - roll_mean) / roll_std
+    else:
+        roll_mean = df.rolling(window=window, min_periods=1).mean()
+        roll_std = df.rolling(window=window, min_periods=1).std().replace(0, 1e-8)
+        df = (df - roll_mean) / roll_std
+    scaled = df.to_numpy(dtype=float)
     scaled = np.clip(scaled, -50.0, 50.0)
     return np.nan_to_num(scaled).astype(np.float32)
 
@@ -169,6 +185,32 @@ def active_feature_dim(hp: IndicatorHyperparams, *, use_ichimoku: bool = False) 
     if use_ichimoku:
         dim += 4
     return dim
+
+
+def feature_mask_for(
+    hp: IndicatorHyperparams, *, use_ichimoku: bool = False
+) -> np.ndarray:
+    """Return boolean mask for enabled feature columns."""
+
+    dim = FEATURE_CONFIG["expected_features"]
+    mask = np.ones(dim, dtype=bool)
+
+    idx_map = {
+        5: hp.use_sma,
+        6: hp.use_rsi,
+        7: hp.use_macd,
+        8: hp.use_ema,
+        10: hp.use_atr,
+        11: hp.use_vortex,
+        12: hp.use_vortex,
+        13: hp.use_cmf,
+        14: hp.use_donchian,
+        15: use_ichimoku,
+    }
+    for idx, enabled in idx_map.items():
+        if idx < dim:
+            mask[idx] = bool(enabled)
+    return mask
 
 
 def feature_dim_for(hp: "IndicatorHyperparams") -> int:  # noqa: F811
@@ -242,6 +284,7 @@ def validate_feature_dimension(
 
 __all__ = [
     "rolling_zscore",
+    "feature_mask_for",
     "feature_dim_for",
     "feature_version_hash",
     "clean_features",

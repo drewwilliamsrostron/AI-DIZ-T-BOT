@@ -22,7 +22,9 @@ from .utils import (
     validate_features,
     clean_features,
     validate_feature_dimension,
+    feature_mask_for,
 )
+from sklearn.impute import KNNImputer
 from torch.utils.data import Dataset
 
 import artibot.globals as G
@@ -245,7 +247,12 @@ def preprocess_features(
     validate_features(features)
 
     features = np.nan_to_num(features)
-    scaled_feats = rolling_zscore(features, window=50)
+
+    imputer = KNNImputer(n_neighbors=5)
+    features = imputer.fit_transform(features)
+
+    mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
+    scaled_feats = rolling_zscore(features, window=50, mask=mask)
 
     from numpy.lib.stride_tricks import sliding_window_view
 
