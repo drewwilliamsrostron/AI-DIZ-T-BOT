@@ -22,6 +22,7 @@ from .utils import (
     validate_features,
     clean_features,
     validate_feature_dimension,
+    zero_disabled,
     feature_mask_for,
 )
 from sklearn.impute import KNNImputer
@@ -252,7 +253,9 @@ def preprocess_features(
     features = imputer.fit_transform(features)
 
     mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
+    features = zero_disabled(features, mask)
     scaled_feats = rolling_zscore(features, window=50, mask=mask)
+    scaled_feats = zero_disabled(scaled_feats, mask)
 
     from numpy.lib.stride_tricks import sliding_window_view
 
@@ -367,12 +370,9 @@ class HourlyDataset(Dataset):
                 sample.shape,
                 self.expected_features,
             )
-            fixed = np.zeros(
-                (sample.shape[0], self.expected_features), dtype=sample.dtype
+            raise ValueError(
+                f"Expected {self.expected_features} features, got {sample.shape[-1]}"
             )
-            copy_len = min(self.expected_features, sample.shape[-1])
-            fixed[:, :copy_len] = sample[:, :copy_len]
-            sample = fixed
 
         if self.train_mode and random.random() < 0.2:
             sample += np.random.normal(0, 0.01, sample.shape)

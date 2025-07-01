@@ -207,13 +207,7 @@ def robust_backtest(ensemble, data_full, indicators=None):
 
     expected = FEATURE_CONFIG["expected_features"]
     if data_full.shape[1] != expected:
-        print("[WARN] Backtest data dimension mismatch! Adjusting…")
-        if data_full.shape[1] > expected:
-            data_full = data_full[:, :expected]
-        else:
-            padding = np.zeros((data_full.shape[0], expected - data_full.shape[1]))
-            data_full = np.hstack([data_full, padding])
-        print(f"[INFO] Adjusted backtest data shape: {data_full.shape}")
+        raise ValueError(f"Expected {expected} features, got {data_full.shape[1]}")
     if len(data_full) < 24:
         return {
             "net_pct": 0.0,
