@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import logging
 
-from config import FEATURE_CONFIG
+from .constants import FEATURE_DIMENSION
 
 from .feature_manager import align_features, sanitize_features, FeatureDimensionError
 
@@ -29,9 +29,9 @@ MONTH_SECONDS = 30 * 24 * 3600
 def validate_dataset(dataset: np.ndarray) -> np.ndarray:
     """Return sanitized ``dataset`` or raise :class:`FeatureDimensionError`."""
 
-    if dataset.shape[1] != FEATURE_CONFIG["expected_features"]:
+    if dataset.shape[1] != FEATURE_DIMENSION:
         raise FeatureDimensionError(
-            f"Dataset has {dataset.shape[1]} features, expected {FEATURE_CONFIG['expected_features']}"
+            f"Dataset has {dataset.shape[1]} features, expected {FEATURE_DIMENSION}"
         )
 
     sanitized = sanitize_features(dataset)
@@ -75,7 +75,7 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
     if not data:
         return []
     raw_data = np.array(data, dtype=float)
-    aligned_data = align_features(raw_data, FEATURE_CONFIG["expected_features"])
+    aligned_data = align_features(raw_data, FEATURE_DIMENSION)
     data = sanitize_features(aligned_data)
     device = get_device()
 
@@ -129,13 +129,13 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
             test = np.array(test)
         print(f"[VALIDATION] Test data shape: {test.shape}")
         if hasattr(test, "iloc"):
-            sample = test.iloc[0, : FEATURE_CONFIG["expected_features"]]
+            sample = test.iloc[0, :FEATURE_DIMENSION]
         else:
-            sample = test[0, : FEATURE_CONFIG["expected_features"]]
+            sample = test[0, :FEATURE_DIMENSION]
         print(f"[VALIDATION] Feature sample: {sample}")
-        if test.shape[1] != FEATURE_CONFIG["expected_features"]:
+        if test.shape[1] != FEATURE_DIMENSION:
             raise FeatureDimensionError(
-                f"Expected {FEATURE_CONFIG['expected_features']} features, got {test.shape[1]}"
+                f"Expected {FEATURE_DIMENSION} features, got {test.shape[1]}"
             )
         results.append(robust_backtest(ensemble, test))
     return results

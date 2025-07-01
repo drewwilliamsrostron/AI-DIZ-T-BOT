@@ -1,4 +1,4 @@
-from config import FEATURE_CONFIG
+from artibot.constants import FEATURE_DIMENSION
 import numpy as np
 from artibot.feature_manager import sanitize_features
 from artibot.utils import enforce_feature_dim, validate_features, feature_mask_for
@@ -13,8 +13,8 @@ def load_and_clean_data(path):
     if data.size == 0:
         return data
 
-    if data.shape[1] != FEATURE_CONFIG["expected_features"]:
-        data = enforce_feature_dim(data, FEATURE_CONFIG["expected_features"])
+    if data.shape[1] != FEATURE_DIMENSION:
+        data = enforce_feature_dim(data, FEATURE_DIMENSION)
 
     data = sanitize_features(data)
     mask = feature_mask_for(IndicatorHyperparams())

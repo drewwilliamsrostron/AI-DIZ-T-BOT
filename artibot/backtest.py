@@ -9,11 +9,12 @@ import talib
 import torch
 
 from .utils import (
-    feature_mask_for,
     enforce_feature_dim,
     validate_features,
+    zero_disabled,
+    rolling_zscore,
 )
-from .dataset import trailing_sma, HourlyDataset, build_features
+from .dataset import trailing_sma, HourlyDataset
 from . import indicators
 
 import artibot.globals as G
@@ -32,12 +33,17 @@ def compute_indicators(
     data_full,
     indicator_hp,
     *,
+    with_scaled: bool = False,
     use_ichimoku: bool = False,
 ):
-    """Return feature matrix and mask for ``data_full``.
+    """Return computed indicator arrays for ``data_full``.
 
-    The returned matrix always has the same width while ``mask`` indicates which
-    columns are active based on ``indicator_hp`` flags.
+    Parameters
+    ----------
+    with_scaled:
+        When ``True`` also return a z-score normalised array under ``scaled``.
+    use_ichimoku:
+        Include Ichimoku indicators.
     """
 
     raw = np.array(data_full, dtype=np.float64)
@@ -58,14 +64,16 @@ def compute_indicators(
     slow_macd = max(fast_macd + 1, min(getattr(indicator_hp, "macd_slow", 26), 200))
     sig_macd = max(1, min(getattr(indicator_hp, "macd_signal", 9), 50))
 
-    cols: list[np.ndarray] = [
-        np.nan_to_num(raw[:, 1:6], nan=0.0, posinf=0.0, neginf=0.0)
-    ]
-    mask = [True] * 5
+    cols: list[np.ndarray] = []
+    mask: list[int] = []
 
-    def add_feat(arr: np.ndarray, flag: bool) -> None:
-        cols.append(np.nan_to_num(arr, nan=0.0, posinf=0.0, neginf=0.0))
-        mask.append(bool(flag))
+    def add_feat(col: np.ndarray, active: bool) -> None:
+        nonlocal cols, mask
+        cols.append(np.nan_to_num(col))
+        mask.append(1 if active else 0)
+
+    for c in raw[:, 1:6].T:
+        add_feat(c, True)
 
     import artibot.feature_store as _fs
 
@@ -118,11 +126,23 @@ def compute_indicators(
         for arr in (tenkan, kijun, span_a, span_b):
             add_feat(arr, True)
 
-    features = np.column_stack(cols).astype(np.float32)
-    return {
-        "features": features,
-        "mask": np.asarray(mask, dtype=bool),
-    }
+    feats = np.column_stack(cols).astype(np.float32)
+    mask_arr = np.asarray(mask, dtype=np.uint8)
+
+    result = {"features": feats, "mask": mask_arr}
+    if with_scaled:
+        tmp = feats.copy()
+        active = mask_arr.astype(bool)
+        from sklearn.impute import KNNImputer
+
+        imputer = KNNImputer(n_neighbors=5)
+        tmp[:, active] = imputer.fit_transform(tmp[:, active])
+        tmp = zero_disabled(tmp, active)
+        tmp = rolling_zscore(tmp, window=50, mask=active)
+        tmp = zero_disabled(tmp, active)
+        result["scaled"] = tmp.astype(np.float32)
+
+    return result
 
 
 ###############################################################################
@@ -147,17 +167,22 @@ def robust_backtest(ensemble, data_full, indicators=None):
 
     # [FIXED]# log incoming feature dimensions
     print(f"[BACKTEST] Input feature dimension: {data_full.shape}")
-    from config import FEATURE_CONFIG
+    from .constants import FEATURE_DIMENSION
 
-    expected = FEATURE_CONFIG["expected_features"]
-    if data_full.shape[1] != expected:
+    if data_full.shape[1] != FEATURE_DIMENSION:
         print("[WARN] Backtest data dimension mismatch! Adjusting…")
-        data_full = enforce_feature_dim(data_full, expected)
-    mask = feature_mask_for(
+        data_full = enforce_feature_dim(data_full, FEATURE_DIMENSION)
+
+    indic = compute_indicators(
+        data_full,
         ensemble.indicator_hparams,
+        with_scaled=True,
         use_ichimoku=getattr(ensemble.indicator_hparams, "use_ichimoku", False),
     )
-    validate_features(data_full, expected, enabled_mask=mask)
+    extd = indic["scaled"]
+    mask = indic["mask"]
+    assert extd.shape[1] == mask.size
+    validate_features(extd, enabled_mask=mask)
     if len(data_full) < 24:
         return {
             "net_pct": 0.0,
@@ -192,13 +217,6 @@ def robust_backtest(ensemble, data_full, indicators=None):
     if raw_data[:, 0].max() > 1_000_000_000_000:
         raw_data[:, 0] //= 1000
 
-    extd = build_features(
-        raw_data,
-        hp,
-        use_ichimoku=getattr(hp, "use_ichimoku", False),
-        expected_features=FEATURE_CONFIG["expected_features"],
-    )
-
     timestamps = raw_data[:, 0]
 
     from numpy.lib.stride_tricks import sliding_window_view
@@ -207,8 +225,8 @@ def robust_backtest(ensemble, data_full, indicators=None):
     windows = np.clip(windows, -50.0, 50.0)
     windows = np.nan_to_num(windows)
     assert (
-        windows.shape[2] == FEATURE_CONFIG["expected_features"]
-    ), f"Expected {FEATURE_CONFIG['expected_features']} features, got {windows.shape[2]}"
+        windows.shape[2] == mask.size
+    ), f"Expected {mask.size} features, got {windows.shape[2]}"
     windows_t = torch.tensor(windows, dtype=torch.float32, device=device)
     pred_indices, _, avg_params = ensemble.vectorized_predict(windows_t, batch_size=512)
     preds = [2] * 23 + pred_indices.tolist()

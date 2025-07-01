@@ -4,6 +4,7 @@ import logging
 import pandas as pd
 import numpy as np
 
+from .constants import FEATURE_DIMENSION
 from config import FEATURE_CONFIG
 from .utils import validate_feature_dimension
 
@@ -12,7 +13,7 @@ class FeatureEngineer:
     """Calculate technical indicator features with strict dimension checks."""
 
     def __init__(self) -> None:
-        self.expected_features = int(FEATURE_CONFIG["expected_features"])
+        self.expected_features = FEATURE_DIMENSION
         self.feature_columns = FEATURE_CONFIG.get("feature_columns", [])
         self.logger = logging.getLogger("FeatureEngineer")
 

@@ -40,3 +40,11 @@ def test_validate_features_zero_enabled():
     mask = feature_mask_for(hp)
     with pytest.raises(DimensionError):
         validate_features(arr, enabled_mask=mask)
+
+
+def test_zero_variance_ignored_on_disabled_cols():
+    feats = np.random.randn(100, 16).astype(np.float32)
+    mask = np.ones(16, dtype=np.uint8)
+    mask[8:] = 0
+    feats[:, 8:] = 0.0
+    validate_features(feats, enabled_mask=mask)
