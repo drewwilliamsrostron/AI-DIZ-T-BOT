@@ -258,7 +258,12 @@ class DimensionError(Exception):
     """Raised when feature matrices do not match the expected shape."""
 
 
-def validate_features(features: np.ndarray, expected: int | None = None) -> None:
+def validate_features(
+    features: np.ndarray,
+    expected: int | None = None,
+    *,
+    enabled_mask: np.ndarray | None = None,
+) -> None:
     """Validate shape and values of ``features``.
 
     Parameters
@@ -267,6 +272,9 @@ def validate_features(features: np.ndarray, expected: int | None = None) -> None
         Feature matrix to validate.
     expected:
         Required feature dimension.  Defaults to ``FEATURE_CONFIG['expected_features']``.
+    enabled_mask:
+        Optional boolean array indicating which feature columns are enabled.
+        Zero-value checks are skipped for disabled columns.
     """
 
     exp = FEATURE_CONFIG["expected_features"] if expected is None else expected
@@ -279,8 +287,16 @@ def validate_features(features: np.ndarray, expected: int | None = None) -> None
         raise DimensionError("NaN detected in features")
     if np.isinf(features).any():
         raise DimensionError("Inf detected in features")
-    if not features.any(axis=0).all():
-        raise DimensionError("Zero-feature detected")
+
+    if enabled_mask is not None:
+        mask = np.asarray(enabled_mask, dtype=bool)
+        if mask.size != features.shape[-1]:
+            raise DimensionError("Feature mask size mismatch")
+        if not features[:, mask].any(axis=0).all():
+            raise DimensionError("Zero-feature detected")
+    else:
+        if not features.any(axis=0).all():
+            raise DimensionError("Zero-feature detected")
 
 
 def validate_feature_dimension(

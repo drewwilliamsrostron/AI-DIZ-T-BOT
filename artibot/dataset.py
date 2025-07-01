@@ -241,11 +241,11 @@ def build_features(
     feats = validate_feature_dimension(
         feats, expected_features, logger or logging.getLogger("build_features")
     )
-    validate_features(feats, expected_features)
+    mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
+    validate_features(feats, expected_features, enabled_mask=mask)
     feats = np.nan_to_num(feats)
     imputer = KNNImputer(n_neighbors=5)
-    feats = imputer.fit_transform(feats)
-    mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
+    feats[:, mask] = imputer.fit_transform(feats[:, mask])
     feats = zero_disabled(feats, mask)
     feats = rolling_zscore(feats, window=50, mask=mask)
     feats = zero_disabled(feats, mask)
@@ -276,14 +276,14 @@ def preprocess_features(
     features = validate_feature_dimension(
         features, expected_features, logger or logging.getLogger("preprocess")
     )
-    validate_features(features, expected_features)
+    mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
+    validate_features(features, expected_features, enabled_mask=mask)
 
     features = np.nan_to_num(features)
 
     imputer = KNNImputer(n_neighbors=5)
-    features = imputer.fit_transform(features)
+    features[:, mask] = imputer.fit_transform(features[:, mask])
 
-    mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
     features = zero_disabled(features, mask)
     scaled_feats = rolling_zscore(features, window=50, mask=mask)
     scaled_feats = zero_disabled(scaled_feats, mask)
