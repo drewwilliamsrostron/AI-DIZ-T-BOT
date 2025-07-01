@@ -15,6 +15,7 @@ from .utils import (
     rolling_zscore,
 )
 from .dataset import trailing_sma, HourlyDataset
+from .hyperparams import IndicatorHyperparams
 from . import indicators
 
 import artibot.globals as G
@@ -186,10 +187,32 @@ def compute_indicators(
     return result
 
 
+def update_indicator_toggles(window: np.ndarray, hp: IndicatorHyperparams) -> None:
+    """Mutate ``hp`` based on simple market heuristics.
+
+    Parameters
+    ----------
+    window:
+        Recent OHLCV rows with shape ``(N, >=6)`` used to compute statistics.
+    hp:
+        ``IndicatorHyperparams`` instance to update in-place.
+    """
+
+    closes = window[:, 4].astype(float)
+    vols = window[:, 5] if window.shape[1] > 5 else np.zeros_like(closes)
+
+    vol_ratio = np.std(closes) / (np.mean(closes) + 1e-9)
+    hp.use_atr = bool(vol_ratio > 0.015)
+    hp.use_cmf = bool(vols.mean() > 0 and vols[-1] > vols.mean() * 1.2)
+    hp.use_sma = bool(closes[-1] > closes.mean())
+
+
 ###############################################################################
 # robust_backtest
 ###############################################################################
-def robust_backtest(ensemble, data_full, indicators=None):
+def robust_backtest(
+    ensemble, data_full, indicators=None, *, dynamic_indicators: bool = False
+):
     """Run a simplified backtest and return key metrics.
 
     Parameters
@@ -214,16 +237,42 @@ def robust_backtest(ensemble, data_full, indicators=None):
         print("[WARN] Backtest data dimension mismatch! Adjusting…")
         data_full = enforce_feature_dim(data_full, FEATURE_DIMENSION)
 
-    indic = compute_indicators(
-        data_full,
-        ensemble.indicator_hparams,
-        with_scaled=True,
-        use_ichimoku=getattr(ensemble.indicator_hparams, "use_ichimoku", False),
+    hp_dyn = (
+        ensemble.indicator_hparams
+        if not dynamic_indicators
+        else IndicatorHyperparams(**vars(ensemble.indicator_hparams))
     )
-    extd = indic["scaled"]
-    mask = indic["mask"]
-    assert extd.shape[1] == mask.size
-    validate_features(extd, enabled_mask=mask)
+
+    if dynamic_indicators:
+        windows_list = []
+        mask = None
+        for i in range(23, len(data_full)):
+            window = np.asarray(data_full[i - 23 : i + 1], dtype=float)
+            update_indicator_toggles(window, hp_dyn)
+            indic = compute_indicators(
+                window,
+                hp_dyn,
+                with_scaled=True,
+                use_ichimoku=getattr(hp_dyn, "use_ichimoku", False),
+            )
+            mask = indic["mask"] if mask is None else mask
+            windows_list.append(indic["scaled"])
+        extd = np.stack(windows_list, axis=0)
+        validate_features(extd[0], enabled_mask=mask)
+    else:
+        indic = compute_indicators(
+            data_full,
+            hp_dyn,
+            with_scaled=True,
+            use_ichimoku=getattr(hp_dyn, "use_ichimoku", False),
+        )
+        extd = indic["scaled"]
+        mask = indic["mask"]
+        assert extd.shape[1] == mask.size
+        validate_features(extd, enabled_mask=mask)
+        from numpy.lib.stride_tricks import sliding_window_view
+
+        extd = sliding_window_view(extd, (24, extd.shape[1])).squeeze()
     if len(data_full) < 24:
         return {
             "net_pct": 0.0,
@@ -262,7 +311,11 @@ def robust_backtest(ensemble, data_full, indicators=None):
 
     from numpy.lib.stride_tricks import sliding_window_view
 
-    windows = sliding_window_view(extd, (24, extd.shape[1])).squeeze()
+    windows = (
+        extd
+        if dynamic_indicators
+        else sliding_window_view(extd, (24, extd.shape[1])).squeeze()
+    )
     windows = np.clip(windows, -50.0, 50.0)
     windows = np.nan_to_num(windows)
     assert (
