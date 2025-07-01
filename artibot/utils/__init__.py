@@ -278,7 +278,7 @@ def validate_features(feat: np.ndarray, enabled_mask: np.ndarray) -> None:
     if not np.isfinite(active).all():
         raise DimensionError("NaN or Inf detected in features")
 
-    if (active.ptp(axis=0) == 0).any():
+    if (np.ptp(active, axis=0) == 0).any():
         raise DimensionError("Zero-feature detected")
 
 

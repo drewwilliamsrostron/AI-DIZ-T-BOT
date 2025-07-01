@@ -48,3 +48,9 @@ def test_zero_variance_ignored_on_disabled_cols():
     mask[8:] = 0
     feats[:, 8:] = 0.0
     validate_features(feats, enabled_mask=mask)
+
+
+def test_validate_features_numpy2_dummy_mask():
+    arr = np.random.randn(10, 16).astype(float)
+    mask = np.ones(16, dtype=bool)
+    validate_features(arr, enabled_mask=mask)

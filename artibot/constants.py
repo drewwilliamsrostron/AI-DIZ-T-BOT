@@ -3,4 +3,3 @@
 FEATURE_DIMENSION = 16
 
 __all__ = ["FEATURE_DIMENSION"]
-
