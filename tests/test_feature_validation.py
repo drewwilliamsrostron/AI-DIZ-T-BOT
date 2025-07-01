@@ -59,7 +59,8 @@ def test_validate_features_numpy2_dummy_mask():
 def test_zero_variance_partial_columns():
     arr = np.ones((5, 2), dtype=float)
     arr[:, 1] = np.arange(5)
-    validate_features(arr, enabled_mask=np.array([True, True]))
+    with pytest.raises(DimensionError):
+        validate_features(arr, enabled_mask=np.array([True, True]))
 
 
 def test_zero_variance_all_columns():
