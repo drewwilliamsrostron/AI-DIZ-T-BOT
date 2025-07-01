@@ -226,7 +226,6 @@ def build_features(
     hp: IndicatorHyperparams,
     *,
     use_ichimoku: bool = False,
-    expected_features: int = FEATURE_DIMENSION,
     logger: logging.Logger | None = None,
 ) -> np.ndarray:
     """Return normalised feature matrix for ``data_np``."""
@@ -235,9 +234,9 @@ def build_features(
     if isinstance(feats, list):
         feats = np.array(feats)
     feats = clean_features(feats, replace_value=0.0)
-    feats = enforce_feature_dim(feats, expected_features)
+    feats = enforce_feature_dim(feats, FEATURE_DIMENSION)
     feats = validate_feature_dimension(
-        feats, expected_features, logger or logging.getLogger("build_features")
+        feats, FEATURE_DIMENSION, logger or logging.getLogger("build_features")
     )
     mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
     validate_features(feats, enabled_mask=mask)
@@ -256,14 +255,13 @@ def preprocess_features(
     seq_len: int,
     *,
     use_ichimoku: bool = False,
-    expected_features: int = FEATURE_DIMENSION,
     drop_last: bool = False,
     logger: logging.Logger | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return ``(features, windows)`` for ``data_np``.
 
     Disabled indicators are replaced with ``0.0`` so the returned arrays
-    always have ``expected_features`` columns.
+    always have ``FEATURE_DIMENSION`` columns.
     """
 
     from .backtest import compute_indicators
@@ -317,7 +315,6 @@ class HourlyDataset(Dataset):
         train_mode: bool = True,
         rebalance: bool = True,
         use_ichimoku: bool = False,
-        expected_features: int = FEATURE_DIMENSION,
     ) -> None:
         self.data = data
         self.seq_len = seq_len
@@ -333,9 +330,9 @@ class HourlyDataset(Dataset):
         self.use_cmf = indicator_hparams.use_cmf
         self.cmf_period = indicator_hparams.cmf_period
         self.use_ichimoku = use_ichimoku
-        self.expected_features = int(expected_features)
+        self.expected_features = FEATURE_DIMENSION
         self.logger = logging.getLogger("dataset")
-        print(f"[INIT] Expected features type: {type(expected_features)}")
+        print(f"[INIT] Expected features type: {type(FEATURE_DIMENSION)}")
         sample_np = np.array(self.data[: min(len(self.data), 100)], dtype=float)
         check_feats = generate_fixed_features(
             sample_np, indicator_hparams, use_ichimoku=use_ichimoku
@@ -353,7 +350,6 @@ class HourlyDataset(Dataset):
             self.hp,
             self.seq_len,
             use_ichimoku=self.use_ichimoku,
-            expected_features=self.expected_features,
             drop_last=True,
             logger=self.logger,
         )
