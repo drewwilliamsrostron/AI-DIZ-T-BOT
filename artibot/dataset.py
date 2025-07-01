@@ -269,6 +269,7 @@ def preprocess_features(
     ind = compute_indicators(data_np, hp, use_ichimoku=use_ichimoku, with_scaled=True)
     features = ind["scaled"]
     mask = ind["mask"]
+    features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
     validate_features(features, enabled_mask=mask)
 
     features = clean_features(features, replace_value=0.0)
