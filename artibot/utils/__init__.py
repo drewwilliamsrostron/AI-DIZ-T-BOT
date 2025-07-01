@@ -284,10 +284,14 @@ def validate_features(feat: np.ndarray, enabled_mask: np.ndarray | None = None) 
         raise DimensionError("NaN or Inf detected in features")
 
     ranges = np.ptp(active, axis=0)
-    if (ranges > 0).all():
+    has_var = ranges > 0
+    if (~has_var).any():
+        for idx, var in enumerate(has_var):
+            if not var and not np.allclose(active[:, idx], 0.0):
+                raise DimensionError("Zero variance feature detected")
+    if has_var.any():
         return
-    if not (ranges > 0).any():
-        raise DimensionError("All active features have zero variance")
+    raise DimensionError("All active features have zero variance")
 
 
 def validate_feature_dimension(
