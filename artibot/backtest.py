@@ -9,7 +9,7 @@ import talib
 import torch
 
 from .utils import rolling_zscore
-from .dataset import trailing_sma, HourlyDataset
+from .dataset import trailing_sma, HourlyDataset, preprocess_features
 from . import indicators
 
 import artibot.globals as G
@@ -247,38 +247,24 @@ def robust_backtest(ensemble, data_full, indicators=None):
     if raw_data[:, 0].max() > 1_000_000_000_000:
         raw_data[:, 0] //= 1000
 
-    if indicators is None:
-        indic = compute_indicators(data_full, hp, with_scaled=True)
-    else:
-        indic = indicators
-
-    sma = indic.get("sma")
-    rsi = indic.get("rsi")
-    macd_ = indic.get("macd")
-
-    if "scaled" in indic:
-        extd = indic["scaled"].astype(np.float32)
-    else:
-        cols = [raw_data[:, 1:6]]
-        if sma is not None:
-            cols.append(sma.astype(np.float32))
-        if rsi is not None:
-            cols.append(rsi.astype(np.float32))
-        if macd_ is not None:
-            cols.append(macd_.astype(np.float32))
-        feats = np.column_stack(cols)
-        feats = np.nan_to_num(feats)
-        extd = rolling_zscore(feats, window=50)
+    _, extd = preprocess_features(
+        raw_data,
+        hp,
+        24,
+        expected_features=FEATURE_CONFIG["expected_features"],
+        drop_last=False,
+    )
 
     timestamps = raw_data[:, 0]
 
     from numpy.lib.stride_tricks import sliding_window_view
 
     windows = sliding_window_view(extd, (24, extd.shape[1])).squeeze()
-
     windows = np.clip(windows, -50.0, 50.0)
-
     windows = np.nan_to_num(windows)
+    assert (
+        windows.shape[2] == FEATURE_CONFIG["expected_features"]
+    ), f"Expected {FEATURE_CONFIG['expected_features']} features, got {windows.shape[2]}"
     windows_t = torch.tensor(windows, dtype=torch.float32, device=device)
     pred_indices, _, avg_params = ensemble.vectorized_predict(windows_t, batch_size=512)
     preds = [2] * 23 + pred_indices.tolist()
