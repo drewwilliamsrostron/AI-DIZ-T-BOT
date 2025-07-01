@@ -54,11 +54,26 @@ class SimpleScaler:
 preproc = types.ModuleType("sklearn.preprocessing")
 preproc.StandardScaler = SimpleScaler
 preproc.__spec__ = ModuleSpec("sklearn.preprocessing", loader=None)
+impute_mod = types.ModuleType("sklearn.impute")
+
+
+class SimpleImputer:
+    def __init__(self, n_neighbors=5):
+        pass
+
+    def fit_transform(self, arr):
+        return np.nan_to_num(arr, copy=False)
+
+
+impute_mod.KNNImputer = SimpleImputer
+impute_mod.__spec__ = ModuleSpec("sklearn.impute", loader=None)
 sklearn = types.ModuleType("sklearn")
 sklearn.preprocessing = preproc
+sklearn.impute = impute_mod
 sklearn.__spec__ = ModuleSpec("sklearn", loader=None)
 sys.modules.setdefault("sklearn", sklearn)
 sys.modules.setdefault("sklearn.preprocessing", preproc)
+sys.modules.setdefault("sklearn.impute", impute_mod)
 
 from artibot import dataset
 from artibot.hyperparams import IndicatorHyperparams
