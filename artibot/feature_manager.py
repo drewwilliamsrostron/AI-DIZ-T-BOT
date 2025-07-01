@@ -30,15 +30,11 @@ def sanitize_features(x: torch.Tensor | np.ndarray) -> torch.Tensor | np.ndarray
 
 
 def align_features(x: np.ndarray, expected: int) -> np.ndarray:
-    """Return ``x`` padded or trimmed to ``expected`` feature dimension."""
+    """Ensure ``x`` has ``expected`` feature columns."""
+
     current = x.shape[1]
-    if current > expected:
-        print(f"[WARN] Trimming {current - expected} excess features")
-        x = x[:, :expected]
-    elif current < expected:
-        print(f"[WARN] Padding {expected - current} missing features")
-        pad = np.zeros((x.shape[0], expected - current), dtype=x.dtype)
-        x = np.hstack([x, pad])
+    if current != expected:
+        raise FeatureDimensionError(f"Expected {expected} features, got {current}")
     return x
 
 
@@ -53,19 +49,7 @@ def validate_and_align_features(fn):
         expected = FEATURE_CONFIG["expected_features"]
         current = x.shape[-1]
         if current != expected:
-            if current > expected:
-                x = x[..., :expected]
-            else:
-                pad_shape = (*x.shape[:-1], expected - current)
-                pad = (
-                    torch.zeros(pad_shape, dtype=x.dtype, device=x.device)
-                    if torch.is_tensor(x)
-                    else np.zeros(pad_shape, dtype=x.dtype)
-                )
-                if torch.is_tensor(x):
-                    x = torch.cat([x, pad], dim=-1)
-                else:
-                    x = np.concatenate([x, pad], axis=-1)
+            raise FeatureDimensionError(f"Expected {expected} features, got {current}")
 
         x = sanitize_features(x)
         return fn(args[0], x, *args[2:], **kwargs)

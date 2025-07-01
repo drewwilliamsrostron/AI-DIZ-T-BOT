@@ -12,13 +12,9 @@ def load_and_clean_data(path):
         return data
 
     if data.shape[1] != FEATURE_CONFIG["expected_features"]:
-        if data.shape[1] > FEATURE_CONFIG["expected_features"]:
-            data = data[:, : FEATURE_CONFIG["expected_features"]]
-        else:
-            padding = np.zeros(
-                (data.shape[0], FEATURE_CONFIG["expected_features"] - data.shape[1])
-            )
-            data = np.hstack([data, padding])
+        raise ValueError(
+            f"CSV has {data.shape[1]} features, expected {FEATURE_CONFIG['expected_features']}"
+        )
 
     data = sanitize_features(data)
 

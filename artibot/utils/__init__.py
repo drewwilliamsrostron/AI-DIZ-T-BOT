@@ -266,20 +266,28 @@ def validate_features(features: np.ndarray) -> None:
 def validate_feature_dimension(
     features: np.ndarray, expected: int, logger: logging.Logger
 ) -> np.ndarray:
-    """Ensure ``features`` has exactly ``expected`` columns.
-
-    Pads with zeros or trims columns when mismatched and logs an error.
-    """
+    """Log a feature-dimension mismatch without modifying ``features``."""
 
     current = features.shape[1]
     if current != expected:
         logger.error("Feature mismatch! Expected %s, got %s", expected, current)
-        if current < expected:
-            padding = np.zeros((features.shape[0], expected - current))
-            features = np.hstack((features, padding))
-        else:
-            features = features[:, :expected]
     return features
+
+
+def zero_disabled(
+    features: np.ndarray | torch.Tensor, enabled_mask: np.ndarray
+) -> np.ndarray | torch.Tensor:
+    """Return ``features`` with disabled columns zeroed."""
+
+    mask = np.asarray(enabled_mask, dtype=bool)
+    reshape = [1] * features.ndim
+    reshape[-1] = mask.size
+    mask = mask.reshape(reshape)
+
+    if torch.is_tensor(features):
+        mask_t = torch.as_tensor(mask, dtype=torch.bool, device=features.device)
+        return torch.where(mask_t, features, torch.zeros_like(features))
+    return np.where(mask, features, 0.0)
 
 
 __all__ = [
@@ -290,4 +298,5 @@ __all__ = [
     "clean_features",
     "validate_features",
     "validate_feature_dimension",
+    "zero_disabled",
 ]

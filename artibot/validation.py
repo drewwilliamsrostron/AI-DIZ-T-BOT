@@ -134,16 +134,9 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
             sample = test[0, : FEATURE_CONFIG["expected_features"]]
         print(f"[VALIDATION] Feature sample: {sample}")
         if test.shape[1] != FEATURE_CONFIG["expected_features"]:
-            print(
-                f"[WARN] Adjusting validation features from {test.shape[1]} to {FEATURE_CONFIG['expected_features']}"
+            raise FeatureDimensionError(
+                f"Expected {FEATURE_CONFIG['expected_features']} features, got {test.shape[1]}"
             )
-            if test.shape[1] > FEATURE_CONFIG["expected_features"]:
-                test = test[:, : FEATURE_CONFIG["expected_features"]]
-            else:
-                padding = np.zeros(
-                    (test.shape[0], FEATURE_CONFIG["expected_features"] - test.shape[1])
-                )
-                test = np.hstack([test, padding])
         results.append(robust_backtest(ensemble, test))
     return results
 

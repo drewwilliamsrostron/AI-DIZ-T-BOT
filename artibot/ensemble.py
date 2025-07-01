@@ -37,6 +37,7 @@ from torch.utils.data import DataLoader
 from .backtest import robust_backtest
 from .hyperparams import HyperParams, IndicatorHyperparams
 from .utils.hardware import device as hw_device
+from .utils import zero_disabled
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
 from .model import TradingModel
@@ -241,30 +242,16 @@ class EnsembleModel(nn.Module):
         self.total_steps = total_steps
 
     def _align_features(self, x: torch.Tensor) -> torch.Tensor:
-        """Validate and align feature dimension."""
+        """Validate feature dimension and zero disabled columns."""
+
         current_features = x.shape[-1]
+        if current_features != self.expected_features:
+            raise ValueError(
+                f"Expected {self.expected_features} features, got {current_features}"
+            )
 
-        if current_features == self.expected_features:
-            aligned = x
-        elif current_features > self.expected_features:
-            print(
-                f"[WARN] Trimming {current_features - self.expected_features} excess features"
-            )
-            aligned = x[..., : self.expected_features]
-        elif current_features < self.expected_features:
-            print(
-                f"[WARN] Padding {self.expected_features - current_features} missing features"
-            )
-            pad = torch.zeros(
-                *x.shape[:-1],
-                self.expected_features - current_features,
-                device=x.device,
-            )
-            aligned = torch.cat([x, pad], dim=-1)
-        else:
-            raise RuntimeError("Unresolvable feature dimension mismatch")
-
-        return aligned * self.feature_mask.to(x.device)
+        mask = self.feature_mask.to(x.device)
+        return zero_disabled(x, mask)
 
     @validate_and_align_features
     def forward(self, x: torch.Tensor) -> list[torch.Tensor]:
@@ -773,21 +760,9 @@ class EnsembleModel(nn.Module):
         print(f"[PREDICT] Expected features: {expected_dim}, Actual: {actual_dim}")
 
         if actual_dim != expected_dim:
-            print("[WARN] Feature dimension mismatch! Adjusting input…")
-            if actual_dim > expected_dim:
-                windows_tensor = windows_tensor[:, :, :expected_dim]
-            else:
-                padding = torch.zeros(
-                    (
-                        windows_tensor.shape[0],
-                        windows_tensor.shape[1],
-                        expected_dim - actual_dim,
-                    ),
-                    device=windows_tensor.device,
-                    dtype=windows_tensor.dtype,
-                )
-                windows_tensor = torch.cat([windows_tensor, padding], dim=2)
-            print(f"[INFO] Adjusted input shape: {windows_tensor.shape}")
+            raise ValueError(f"Expected {expected_dim} features, got {actual_dim}")
+
+        windows_tensor = self._align_features(windows_tensor)
 
         with torch.no_grad():
             all_probs = []
