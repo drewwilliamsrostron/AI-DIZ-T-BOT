@@ -264,32 +264,16 @@ def preprocess_features(
     always have ``FEATURE_DIMENSION`` columns.
     """
 
-    from .backtest import compute_indicators
-
-    ind = compute_indicators(data_np, hp, use_ichimoku=use_ichimoku, with_scaled=True)
-    features = ind["scaled"]
-    mask = ind["mask"]
-    features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
-    validate_features(features, enabled_mask=mask)
-
-    features = clean_features(features, replace_value=0.0)
-    features = enforce_feature_dim(features, len(mask))
-    features = validate_feature_dimension(
-        features, len(mask), logger or logging.getLogger("preprocess")
+    mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
+    features = build_features(
+        data_np,
+        hp,
+        use_ichimoku=use_ichimoku,
+        logger=logger or logging.getLogger("preprocess"),
     )
-
-    features = np.nan_to_num(features)
-
-    imputer = KNNImputer(n_neighbors=5)
-    features[:, mask] = imputer.fit_transform(features[:, mask])
-
-    features = zero_disabled(features, mask)
-    scaled_feats = rolling_zscore(features, window=50, mask=mask)
-    scaled_feats = zero_disabled(scaled_feats, mask)
-
     from numpy.lib.stride_tricks import sliding_window_view
 
-    windows = sliding_window_view(scaled_feats, (seq_len, scaled_feats.shape[1]))[:, 0]
+    windows = sliding_window_view(features, (seq_len, features.shape[1]))[:, 0]
     assert windows.shape[2] == len(
         mask
     ), f"Expected {len(mask)} features, got {windows.shape[2]}"
@@ -335,8 +319,11 @@ class HourlyDataset(Dataset):
         self.logger = logging.getLogger("dataset")
         print(f"[INIT] Expected features type: {type(FEATURE_DIMENSION)}")
         sample_np = np.array(self.data[: min(len(self.data), 100)], dtype=float)
-        check_feats = generate_fixed_features(
-            sample_np, indicator_hparams, use_ichimoku=use_ichimoku
+        check_feats = build_features(
+            sample_np,
+            indicator_hparams,
+            use_ichimoku=use_ichimoku,
+            logger=self.logger,
         )
         if check_feats.shape[1] != self.expected_features:
             raise ValueError(
