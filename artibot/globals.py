@@ -128,7 +128,8 @@ global_best_avg_trade_duration = 0.0
 global_best_avg_win = 0.0
 global_best_avg_loss = 0.0
 global_best_inactivity_penalty = None
-global_best_composite_reward = None
+# Initialise to ``-inf`` so comparisons succeed before any training
+global_best_composite_reward = float("-inf")
 global_best_days_in_profit = None
 
 # Global best hyperparameters:
