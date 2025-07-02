@@ -12,6 +12,7 @@ from __future__ import annotations
 from artibot.environment import ensure_dependencies
 from artibot.utils.torch_threads import set_threads
 from artibot.gui import startup_options_dialog
+import artibot.globals as G
 
 import os
 import sys
@@ -153,6 +154,12 @@ def main() -> None:
         "use_live": CONFIG.get("API", {}).get("LIVE_TRADING", False),
         "use_prev_weights": CONFIG.get("USE_PREV_WEIGHTS", True),
         "threads": CONFIG.get("CPU_LIMIT", os.cpu_count() or 1),
+        "use_net_term": G.use_net_term,
+        "use_sharpe_term": G.use_sharpe_term,
+        "use_drawdown_term": G.use_drawdown_term,
+        "use_trade_term": G.use_trade_term,
+        "use_profit_days_term": G.use_profit_days_term,
+        "risk_filter": G.is_risk_filter_enabled(),
     }
     opts = startup_options_dialog(defaults)
     global SKIP_SENTIMENT
@@ -164,6 +171,17 @@ def main() -> None:
 
     set_threads(int(opts.get("threads", defaults["threads"])))
     ensure_dependencies()
+
+    G.use_net_term = bool(opts.get("use_net_term", defaults["use_net_term"]))
+    G.use_sharpe_term = bool(opts.get("use_sharpe_term", defaults["use_sharpe_term"]))
+    G.use_drawdown_term = bool(
+        opts.get("use_drawdown_term", defaults["use_drawdown_term"])
+    )
+    G.use_trade_term = bool(opts.get("use_trade_term", defaults["use_trade_term"]))
+    G.use_profit_days_term = bool(
+        opts.get("use_profit_days_term", defaults["use_profit_days_term"])
+    )
+    G.set_risk_filter_enabled(bool(opts.get("risk_filter", defaults["risk_filter"])))
 
     from artibot.utils import setup_logging, get_device
     from artibot.ensemble import EnsembleModel
@@ -177,7 +195,6 @@ def main() -> None:
     from artibot.rl import MetaTransformerRL, meta_control_loop
     from artibot.validation import validate_and_gate
     from artibot.gui import TradingGUI
-    import artibot.globals as G
 
     setup_logging()
     root = tk.Tk()

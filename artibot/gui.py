@@ -167,6 +167,12 @@ def startup_options_dialog(
             "use_live": bool(defaults.get("use_live", False)),
             "use_prev_weights": bool(defaults.get("use_prev_weights", True)),
             "threads": int(defaults.get("threads", os.cpu_count() or 1)),
+            "use_net_term": bool(defaults.get("use_net_term", True)),
+            "use_sharpe_term": bool(defaults.get("use_sharpe_term", True)),
+            "use_drawdown_term": bool(defaults.get("use_drawdown_term", True)),
+            "use_trade_term": bool(defaults.get("use_trade_term", True)),
+            "use_profit_days_term": bool(defaults.get("use_profit_days_term", True)),
+            "risk_filter": bool(defaults.get("risk_filter", True)),
         }
 
     root.title("Startup Options")
@@ -177,6 +183,14 @@ def startup_options_dialog(
     )
     threads_max = os.cpu_count() or 1
     threads_var = tk_module.IntVar(value=int(defaults.get("threads", threads_max)))
+    risk_var = tk_module.BooleanVar(value=bool(defaults.get("risk_filter", True)))
+    net_var = tk_module.BooleanVar(value=bool(defaults.get("use_net_term", True)))
+    sharpe_var = tk_module.BooleanVar(value=bool(defaults.get("use_sharpe_term", True)))
+    dd_var = tk_module.BooleanVar(value=bool(defaults.get("use_drawdown_term", True)))
+    trade_var = tk_module.BooleanVar(value=bool(defaults.get("use_trade_term", True)))
+    days_var = tk_module.BooleanVar(
+        value=bool(defaults.get("use_profit_days_term", True))
+    )
 
     tk_module.Checkbutton(
         root, text="Skip GDELT sentiment download", variable=skip_var
@@ -187,6 +201,15 @@ def startup_options_dialog(
     tk_module.Checkbutton(
         root, text="Load previous weights", variable=weights_var
     ).pack(anchor="w")
+    tk_module.Checkbutton(root, text="Enable risk filter", variable=risk_var).pack(
+        anchor="w"
+    )
+    tk_module.Label(root, text="Reward terms:").pack(anchor="w")
+    tk_module.Checkbutton(root, text="Net%", variable=net_var).pack(anchor="w")
+    tk_module.Checkbutton(root, text="Sharpe", variable=sharpe_var).pack(anchor="w")
+    tk_module.Checkbutton(root, text="Drawdown", variable=dd_var).pack(anchor="w")
+    tk_module.Checkbutton(root, text="Trades", variable=trade_var).pack(anchor="w")
+    tk_module.Checkbutton(root, text="Profit Days", variable=days_var).pack(anchor="w")
     tk_module.Label(root, text="CPU threads:").pack(anchor="w")
     tk_module.Spinbox(
         root,
@@ -201,6 +224,12 @@ def startup_options_dialog(
         result["use_live"] = live_var.get()
         result["use_prev_weights"] = weights_var.get()
         result["threads"] = threads_var.get()
+        result["use_net_term"] = net_var.get()
+        result["use_sharpe_term"] = sharpe_var.get()
+        result["use_drawdown_term"] = dd_var.get()
+        result["use_trade_term"] = trade_var.get()
+        result["use_profit_days_term"] = days_var.get()
+        result["risk_filter"] = risk_var.get()
         root.quit()
         root.destroy()
 

@@ -67,6 +67,9 @@ def reject_if_risky(
 ) -> bool:
     """Return ``True`` when metrics breach the configured risk limits."""
 
+    if not G.is_risk_filter_enabled():
+        return False
+
     if thresholds is None:
         try:  # lazy import avoids circular dependency
             from .bot_app import CONFIG
