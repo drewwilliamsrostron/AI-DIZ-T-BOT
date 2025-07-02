@@ -58,12 +58,15 @@ def rebuild_loader(
 
 
 def apply_risk_curriculum(epoch: int) -> None:
-    """Adjust ``RISK_FILTER`` drawdown limits as training progresses."""
+    """Adjust ``RISK_FILTER`` thresholds as training progresses."""
     if epoch <= 20:
+        RISK_FILTER["MIN_SHARPE"] = -2.0
         RISK_FILTER["MAX_DRAWDOWN"] = -0.80
-    elif epoch <= 50:
+    elif epoch <= 40:
+        RISK_FILTER["MIN_SHARPE"] = -1.0
         RISK_FILTER["MAX_DRAWDOWN"] = -0.50
     else:
+        RISK_FILTER["MIN_SHARPE"] = 0.0
         RISK_FILTER["MAX_DRAWDOWN"] = -0.25
 
 
