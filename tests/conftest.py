@@ -15,6 +15,7 @@ import types
 import contextlib
 from importlib.machinery import ModuleSpec
 import numpy as np
+import pytest
 
 sys.modules.setdefault("openai", types.SimpleNamespace())
 
@@ -176,6 +177,14 @@ def pytest_configure(config):
         db.BinderException = Exception
         sys.modules["duckdb"] = db
 
+    if "sklearn" not in sys.modules:
+        sk = types.ModuleType("sklearn")
+        impute_mod = types.ModuleType("sklearn.impute")
+        impute_mod.KNNImputer = object
+        sk.impute = impute_mod
+        sys.modules["sklearn"] = sk
+        sys.modules["sklearn.impute"] = impute_mod
+
     if "matplotlib" not in sys.modules:
         matplotlib = types.ModuleType("matplotlib")
         matplotlib.use = lambda *a, **k: None
@@ -203,3 +212,10 @@ def pytest_configure(config):
         sched.every = every
         sched.run_pending = lambda: None
         sys.modules["schedule"] = sched
+
+
+@pytest.fixture
+def dummy_checkpoint(tmp_path):
+    path = tmp_path / "ckpt.json"
+    path.write_text("{}")
+    return path
