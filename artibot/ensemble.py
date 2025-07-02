@@ -364,10 +364,12 @@ class EnsembleModel(nn.Module):
             G.global_monthly_stats_table = monthly_table
 
         # update live weights when the composite reward improves
-        if (
-            update_globals
-            and current_result["composite_reward"] > G.global_best_composite_reward
-        ):
+        best = (
+            G.global_best_composite_reward
+            if G.global_best_composite_reward is not None
+            else float("-inf")
+        )
+        if update_globals and current_result["composite_reward"] > best:
             G.global_best_composite_reward = current_result["composite_reward"]
             G.global_best_sharpe = max(G.global_best_sharpe, current_result["sharpe"])
             self.best_state_dicts = [m.state_dict() for m in self.models]
