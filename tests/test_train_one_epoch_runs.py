@@ -34,7 +34,9 @@ def test_train_one_epoch_runs(monkeypatch):
 
     monkeypatch.setattr("artibot.ensemble.robust_backtest", dummy_backtest)
     monkeypatch.setattr("artibot.ensemble.compute_yearly_stats", dummy_stats)
-    monkeypatch.setattr("artibot.ensemble.compute_monthly_stats", lambda *a, **k: (None, ""))
+    monkeypatch.setattr(
+        "artibot.ensemble.compute_monthly_stats", lambda *a, **k: (None, "")
+    )
 
     ens = EnsembleModel(device=device, n_models=1)
 
