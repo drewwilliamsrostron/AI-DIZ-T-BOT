@@ -23,6 +23,7 @@ if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) 
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 
 try:
     from torch.amp import GradScaler, autocast  # PyTorch >=2.3
@@ -357,9 +358,13 @@ class EnsembleModel(nn.Module):
         if update_globals:
             G.global_monthly_stats_table = monthly_table
 
-        # update live weights when Sharpe improves
-        if update_globals and current_result["sharpe"] > G.global_best_sharpe:
-            G.global_best_sharpe = current_result["sharpe"]
+        # update live weights when the composite reward improves
+        if (
+            update_globals
+            and current_result["composite_reward"] > G.global_best_composite_reward
+        ):
+            G.global_best_composite_reward = current_result["composite_reward"]
+            G.global_best_sharpe = max(G.global_best_sharpe, current_result["sharpe"])
             self.best_state_dicts = [m.state_dict() for m in self.models]
             self.save_best_weights(self.weights_path)
             md5 = ""
@@ -387,7 +392,7 @@ class EnsembleModel(nn.Module):
         # For the main training, we keep your code.
 
         # The composite reward is used as training target
-        scaled_target = torch.tanh(
+        scaled_target = F.softsign(
             torch.tensor(
                 current_result["composite_reward"] / 100.0,
                 dtype=torch.float32,
@@ -540,15 +545,15 @@ class EnsembleModel(nn.Module):
             cur_reward = current_result["composite_reward"]
 
             if trades_now == 0:
-                # Reduced from 99999 => 500
-                cur_reward -= 500
+                # Reduced penalty for complete inactivity
+                cur_reward -= 50
             elif trades_now < 5:
-                # small graduated penalty
-                cur_reward -= 100 * (5 - trades_now)
+                # small graduated penalty per missing trade
+                cur_reward -= 10 * (5 - trades_now)
 
             # negative net => smaller penalty
             if current_result["net_pct"] < 0:
-                cur_reward -= 500  # from 2000
+                cur_reward -= 50  # previously 2000 -> 500
 
             # (3) Dynamic Patience => measure improvement
             # We'll track the last 10 net profits

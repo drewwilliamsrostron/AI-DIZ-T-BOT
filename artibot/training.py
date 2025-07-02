@@ -15,6 +15,7 @@ from .dataset import HourlyDataset, trailing_sma
 from .ensemble import reject_if_risky
 from .backtest import robust_backtest, compute_indicators
 from .feature_manager import enforce_feature_dim
+from artibot.hyperparams import RISK_FILTER
 
 import sys
 import json
@@ -54,6 +55,16 @@ def rebuild_loader(
         persistent_workers=True,
         pin_memory=False,
     )
+
+
+def apply_risk_curriculum(epoch: int) -> None:
+    """Adjust ``RISK_FILTER`` drawdown limits as training progresses."""
+    if epoch <= 20:
+        RISK_FILTER["MAX_DRAWDOWN"] = -0.80
+    elif epoch <= 50:
+        RISK_FILTER["MAX_DRAWDOWN"] = -0.50
+    else:
+        RISK_FILTER["MAX_DRAWDOWN"] = -0.25
 
 
 ###############################################################################
@@ -172,6 +183,7 @@ def csv_training_thread(
                 break
             ensemble.train_steps += 1
             epochs += 1
+            apply_risk_curriculum(ensemble.train_steps)
 
             progress = int(100 * ensemble.train_steps / max_epochs) if max_epochs else 0
             G.global_progress_pct = progress
