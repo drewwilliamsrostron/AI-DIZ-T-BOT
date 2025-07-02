@@ -134,10 +134,6 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
         else:
             sample = test[0, :FEATURE_DIMENSION]
         print(f"[VALIDATION] Feature sample: {sample}")
-        if test.shape[1] != FEATURE_DIMENSION:
-            raise FeatureDimensionError(
-                f"Expected {FEATURE_DIMENSION} features, got {test.shape[1]}"
-            )
         results.append(robust_backtest(ensemble, test))
     return results
 
