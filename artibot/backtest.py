@@ -266,9 +266,6 @@ def robust_backtest(
         mask = indic["mask"]
         assert extd.shape[1] == mask.size
         validate_features(extd, enabled_mask=mask)
-        from numpy.lib.stride_tricks import sliding_window_view
-
-        extd = sliding_window_view(extd, (24, extd.shape[1])).squeeze()
     if len(data_full) < 24:
         return {
             "net_pct": 0.0,
