@@ -76,31 +76,6 @@ def compute_indicators(
     for c in raw[:, 1:6].T:
         add_feat(c, True)
 
-    import artibot.feature_store as _fs
-
-    if indicator_hp.use_sentiment:
-        sent_vec = np.array(
-            [_fs.news_sentiment(int(t)) for t in raw[:, 0]], dtype=np.float32
-        )
-    else:
-        sent_vec = np.zeros_like(closes, dtype=np.float32)
-    if indicator_hp.use_macro:
-        macro_vec = np.array(
-            [_fs.macro_surprise(int(t)) for t in raw[:, 0]], dtype=np.float32
-        )
-    else:
-        macro_vec = np.zeros_like(closes, dtype=np.float32)
-    if indicator_hp.use_rvol:
-        rvol_vec = np.array(
-            [_fs.realised_vol(int(t)) for t in raw[:, 0]], dtype=np.float32
-        )
-    else:
-        rvol_vec = np.zeros_like(closes, dtype=np.float32)
-
-    add_feat(sent_vec, indicator_hp.use_sentiment)
-    add_feat(macro_vec, indicator_hp.use_macro)
-    add_feat(rvol_vec, indicator_hp.use_rvol)
-
     if indicator_hp.use_sma:
         sma_arr = trailing_sma(closes, sma_period)
     else:
@@ -130,6 +105,9 @@ def compute_indicators(
         ema_arr = np.zeros_like(closes)
     add_feat(ema_arr, indicator_hp.use_ema)
 
+    ema50_arr = indicators.ema(closes, period=50)
+    add_feat(ema50_arr, True)
+
     if indicator_hp.use_atr:
         atr_arr = indicators.atr(highs, lows, closes, period=indicator_hp.atr_period)
     else:
@@ -154,19 +132,19 @@ def compute_indicators(
         cmf_arr = np.zeros_like(closes)
     add_feat(cmf_arr, indicator_hp.use_cmf)
 
-    if indicator_hp.use_displacement:
-        disp_arr = np.roll(closes, getattr(indicator_hp, "displacement", 26))
-        disp_arr[: getattr(indicator_hp, "displacement", 26)] = np.nan
+    if indicator_hp.use_donchian:
+        _up, _lo, mid = indicators.donchian(
+            highs, lows, period=getattr(indicator_hp, "donchian_period", 20)
+        )
     else:
-        disp_arr = np.zeros_like(closes)
-    add_feat(disp_arr, indicator_hp.use_displacement)
+        mid = np.zeros_like(closes)
+    add_feat(mid, indicator_hp.use_donchian)
 
-    if use_ichimoku:
-        tenkan, kijun, span_a, span_b = indicators.ichimoku(highs, lows)
+    if use_ichimoku or getattr(indicator_hp, "use_tenkan", False):
+        tenkan, _kijun, _a, _b = indicators.ichimoku(highs, lows)
     else:
-        tenkan = kijun = span_a = span_b = np.zeros_like(closes)
-    for arr in (tenkan, kijun, span_a, span_b):
-        add_feat(arr, use_ichimoku)
+        tenkan = np.zeros_like(closes)
+    add_feat(tenkan, bool(use_ichimoku or getattr(indicator_hp, "use_tenkan", False)))
 
     feats = np.column_stack(cols).astype(np.float32)
     mask_arr = np.asarray(mask, dtype=np.uint8)
