@@ -212,7 +212,7 @@ def generate_fixed_features(
 
     # Sanitise invalid values before validation
     if np.isnan(feats).any() or np.isinf(feats).any():
-        print("[WARN] NaN/Inf detected in raw features!")
+        logging.debug("Raw features contained NaN/Inf – cleaned")
     features = np.nan_to_num(feats.astype(np.float32), nan=0.0, posinf=0.0, neginf=0.0)
 
     features = validate_feature_dimension(

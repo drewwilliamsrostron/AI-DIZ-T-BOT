@@ -14,6 +14,7 @@ import os
 from .dataset import HourlyDataset, trailing_sma
 from .ensemble import reject_if_risky
 from .backtest import robust_backtest, compute_indicators
+from .feature_manager import enforce_feature_dim
 
 import sys
 import json
@@ -313,6 +314,8 @@ def csv_training_thread(
                         ]
                     )
                 ext = np.array(ext, dtype=np.float32)
+                # Pad preview tensor to match model input width
+                ext = enforce_feature_dim(ext, expected=16)
                 seq_t = (
                     torch.tensor(ext, dtype=torch.float32)
                     .unsqueeze(0)
