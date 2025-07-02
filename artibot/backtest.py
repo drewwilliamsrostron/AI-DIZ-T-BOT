@@ -7,6 +7,7 @@ import os
 from .environment import ensure_dependencies
 import talib
 import torch
+from .constants import FEATURE_DIMENSION
 
 from .utils import (
     enforce_feature_dim,
@@ -38,6 +39,10 @@ def compute_indicators(
     use_ichimoku: bool = False,
 ):
     """Return computed indicator arrays for ``data_full``.
+
+    The returned feature matrix always has :data:`FEATURE_DIMENSION` columns
+    regardless of which indicators are enabled. Missing columns are padded with
+    zeros and the accompanying ``mask`` reflects active indicators.
 
     Parameters
     ----------
@@ -148,6 +153,17 @@ def compute_indicators(
 
     feats = np.column_stack(cols).astype(np.float32)
     mask_arr = np.asarray(mask, dtype=np.uint8)
+
+    # ensure constant feature dimension
+    if feats.shape[1] < FEATURE_DIMENSION:
+        pad = FEATURE_DIMENSION - feats.shape[1]
+        feats = np.concatenate(
+            [feats, np.zeros((feats.shape[0], pad), dtype=feats.dtype)], axis=1
+        )
+        mask_arr = np.concatenate([mask_arr, np.zeros(pad, dtype=np.uint8)])
+    elif feats.shape[1] > FEATURE_DIMENSION:
+        feats = feats[:, :FEATURE_DIMENSION]
+        mask_arr = mask_arr[:FEATURE_DIMENSION]
 
     result = {"features": feats, "mask": mask_arr}
     if with_scaled:
