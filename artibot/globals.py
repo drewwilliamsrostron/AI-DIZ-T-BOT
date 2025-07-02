@@ -104,6 +104,7 @@ global_avg_win = 0.0
 global_avg_loss = 0.0
 global_inactivity_penalty = None
 global_composite_reward = None
+global_composite_reward_ema = 0.0
 global_days_without_trading = None
 global_trade_details = []
 global_holdout_sharpe = 0.0
