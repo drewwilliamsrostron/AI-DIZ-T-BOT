@@ -204,7 +204,7 @@ class EnsembleModel(nn.Module):
             for m in self.models
         ]
         self.criterion = nn.CrossEntropyLoss(
-            weight=torch.tensor([3.0, 3.0, 0.2]).to(device)
+            weight=torch.tensor([2.0, 2.0, 1.0]).to(device)
         )
         self.mse_loss_fn = nn.MSELoss()
         amp_on = device.type == "cuda"
