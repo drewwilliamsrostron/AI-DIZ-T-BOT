@@ -1,4 +1,6 @@
 import logging
+import json
+import pytest
 import threading
 
 import torch
@@ -29,3 +31,17 @@ def test_loss_regression(tmp_path, caplog):
     val = g.global_validation_loss[:n]
     assert tr and val
     assert max(tr) <= max(val) * 1.05
+
+
+@pytest.fixture
+def dummy_checkpoint(tmp_path):
+    path = tmp_path / "ckpt.json"
+    path.write_text(json.dumps({"foo": "bar"}))
+    return str(path)
+
+
+def test_best_reward_never_none_after_state_load(dummy_checkpoint):
+    from artibot import globals as G, state
+
+    state.load(dummy_checkpoint)
+    assert G.global_best_composite_reward is not None
