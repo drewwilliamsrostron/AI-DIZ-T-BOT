@@ -44,6 +44,7 @@ def load_rl_module():
     stub.epoch_count = 0
     stub.global_min_hold_seconds = 1800
     stub.global_composite_reward = 0.0
+    stub.global_composite_reward_ema = 0.0
     stub.global_best_composite_reward = 0.0
     stub.global_sharpe = 0.0
     stub.global_max_drawdown = 0.0

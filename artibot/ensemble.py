@@ -219,9 +219,11 @@ class EnsembleModel(nn.Module):
         self.best_composite_reward = float("-inf")
         self.best_state_dicts = None
         self.train_steps = 0
-        self.reward_loss_weight = 0.2
+        # Start with a small reward weight and no delay
+        self.reward_loss_weight = 0.05
+        self.max_reward_loss_weight = 0.2
         self.patience = 0
-        self.delayed_reward_epochs = 25
+        self.delayed_reward_epochs = 0
 
         # per-epoch attention stats
         self.entropies: list[float] = []
@@ -391,10 +393,15 @@ class EnsembleModel(nn.Module):
         # but that happens in meta_control_loop.
         # For the main training, we keep your code.
 
-        # The composite reward is used as training target
+        # The composite reward is used as training target with a baseline
+        baseline = (
+            G.global_composite_reward_ema
+            if G.global_composite_reward_ema is not None
+            else 0.0
+        )
         scaled_target = F.softsign(
             torch.tensor(
-                current_result["composite_reward"] / 100.0,
+                (current_result["composite_reward"] - baseline) / 100.0,
                 dtype=torch.float32,
                 device=self.device,
             )
