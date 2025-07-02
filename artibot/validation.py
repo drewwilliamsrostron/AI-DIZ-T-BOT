@@ -11,7 +11,7 @@ import logging
 
 from .constants import FEATURE_DIMENSION
 
-from .feature_manager import align_features, sanitize_features, FeatureDimensionError
+from .feature_manager import sanitize_features, FeatureDimensionError
 
 
 import artibot.globals as G
@@ -75,8 +75,9 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
     if not data:
         return []
     raw_data = np.array(data, dtype=float)
-    aligned_data = align_features(raw_data, FEATURE_DIMENSION)
-    data = sanitize_features(aligned_data)
+    # Raw CSV data only contains OHLCV columns. Skip dimension checks and
+    # simply sanitise before feature generation.
+    data = sanitize_features(raw_data)
     device = get_device()
 
     indicator_hp = IndicatorHyperparams(
