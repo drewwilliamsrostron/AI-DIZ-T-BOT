@@ -146,6 +146,7 @@ use_sharpe_term = True
 use_drawdown_term = True
 use_trade_term = True
 use_profit_days_term = True
+risk_filter_enabled = True
 
 ###############################################################################
 # GPT Memories (unchanged)
@@ -321,6 +322,21 @@ def is_nuclear_key_enabled() -> bool:
     """Return ``True`` when the nuclear key gate is active."""
     with state_lock:
         return nuclear_key_enabled
+
+
+def set_risk_filter_enabled(enabled: bool) -> None:
+    """Toggle the training risk filter."""
+    global risk_filter_enabled
+    with state_lock:
+        risk_filter_enabled = enabled
+    status = "ENABLED" if enabled else "DISABLED"
+    logging.info("RISK_FILTER_%s", status)
+
+
+def is_risk_filter_enabled() -> bool:
+    """Return ``True`` when the risk filter is active."""
+    with state_lock:
+        return risk_filter_enabled
 
 
 def set_live_weights_updated(value: bool) -> None:
