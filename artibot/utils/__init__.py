@@ -128,7 +128,7 @@ def rolling_zscore(
         df = (df - roll_mean) / roll_std
     scaled = df.to_numpy(dtype=float)
     scaled = np.clip(scaled, -50.0, 50.0)
-    return np.nan_to_num(scaled).astype(np.float32)
+    return np.nan_to_num(scaled, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
 
 
 def feature_dim_for(indicators: "IndicatorHyperparams") -> int:

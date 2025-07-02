@@ -75,7 +75,7 @@ def compute_indicators(
 
     def add_feat(col: np.ndarray, active: bool) -> None:
         nonlocal cols, mask
-        cols.append(np.nan_to_num(col))
+        cols.append(np.nan_to_num(col, nan=0.0, posinf=0.0, neginf=0.0))
         mask.append(1 if active else 0)
 
     for c in raw[:, 1:6].T:
@@ -152,6 +152,7 @@ def compute_indicators(
     add_feat(tenkan, bool(use_ichimoku or getattr(indicator_hp, "use_tenkan", False)))
 
     feats = np.column_stack(cols).astype(np.float32)
+    feats = np.nan_to_num(feats, nan=0.0, posinf=0.0, neginf=0.0)
     mask_arr = np.asarray(mask, dtype=np.uint8)
 
     # ensure constant feature dimension
@@ -176,6 +177,7 @@ def compute_indicators(
         tmp = zero_disabled(tmp, active)
         tmp = rolling_zscore(tmp, window=50, mask=active)
         tmp = zero_disabled(tmp, active)
+        tmp = np.nan_to_num(tmp, nan=0.0, posinf=0.0, neginf=0.0)
         result["scaled"] = tmp.astype(np.float32)
 
     return result
@@ -311,7 +313,7 @@ def robust_backtest(
         else sliding_window_view(extd, (24, extd.shape[1])).squeeze()
     )
     windows = np.clip(windows, -50.0, 50.0)
-    windows = np.nan_to_num(windows)
+    windows = np.nan_to_num(windows, nan=0.0, posinf=0.0, neginf=0.0)
     assert (
         windows.shape[2] == mask.size
     ), f"Expected {mask.size} features, got {windows.shape[2]}"
