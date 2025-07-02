@@ -1,4 +1,13 @@
-"""Lightweight training state loader and saver."""
+# artibot/state.py
+"""Light-weight training-state loader/saver.
+
+Features
+--------
+* Always initialises ``G.global_best_composite_reward`` to -∞ when the value is
+  missing from a checkpoint, so comparisons in ``ensemble.train_one_epoch`` can
+  never raise a ``TypeError``.
+* Optional `save()` helper for symmetry with `load()`.
+"""
 
 from __future__ import annotations
 
@@ -6,19 +15,18 @@ import json
 import os
 from typing import Any
 
-from . import globals as G
+import artibot.globals as G
 
 
 def load(path: str | os.PathLike = "checkpoint.json") -> dict[str, Any]:
-    """Load checkpoint ``path`` and update globals.
+    """Load checkpoint *path* and update globals.
 
-    The file is optional; missing files return an empty dict.
-    ``G.global_best_composite_reward`` defaults to ``-inf`` when the key
-    is absent.
+    If the file is absent or unreadable an **empty dict** is returned.
+    The global best reward is forced to ``-inf`` when the key is missing.
     """
     try:
         with open(path, "r") as fh:
-            state = json.load(fh)
+            state: dict[str, Any] = json.load(fh)
     except OSError:
         return {}
 
@@ -27,6 +35,6 @@ def load(path: str | os.PathLike = "checkpoint.json") -> dict[str, Any]:
 
 
 def save(state: dict[str, Any], path: str | os.PathLike = "checkpoint.json") -> None:
-    """Persist ``state`` to ``path``."""
+    """Persist *state* to *path* as prettified JSON."""
     with open(path, "w") as fh:
         json.dump(state, fh, indent=2)
