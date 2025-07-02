@@ -18,14 +18,14 @@ def sanitize_features(x: torch.Tensor | np.ndarray) -> torch.Tensor | np.ndarray
         return torch.nan_to_num(
             x,
             nan=0.0,
-            posinf=torch.finfo(x.dtype).max,
-            neginf=torch.finfo(x.dtype).min,
+            posinf=0.0,
+            neginf=0.0,
         )
     return np.nan_to_num(
         x,
         nan=0.0,
-        posinf=np.finfo(x.dtype).max,
-        neginf=np.finfo(x.dtype).min,
+        posinf=0.0,
+        neginf=0.0,
     )
 
 

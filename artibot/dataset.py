@@ -117,8 +117,8 @@ def load_csv_hourly(csv_path: str) -> list[list[float]]:
     arr = np.nan_to_num(
         arr,
         nan=0.0,
-        posinf=np.finfo(np.float32).max,
-        neginf=np.finfo(np.float32).min,
+        posinf=0.0,
+        neginf=0.0,
     )
 
     return arr[np.argsort(arr[:, 0])].tolist()
@@ -136,7 +136,7 @@ def trailing_sma(arr: np.ndarray, window: int) -> np.ndarray:
 
     valid = np.convolve(arr, np.ones(window) / window, mode="valid")
     padded = np.concatenate([np.full(window - 1, np.nan, dtype=float), valid])
-    return np.nan_to_num(padded)
+    return np.nan_to_num(padded, nan=0.0, posinf=0.0, neginf=0.0)
 
 
 def generate_fixed_features(
@@ -213,7 +213,7 @@ def generate_fixed_features(
     # Sanitise invalid values before validation
     if np.isnan(feats).any() or np.isinf(feats).any():
         print("[WARN] NaN/Inf detected in raw features!")
-    features = np.nan_to_num(feats.astype(np.float32))
+    features = np.nan_to_num(feats.astype(np.float32), nan=0.0, posinf=0.0, neginf=0.0)
 
     features = validate_feature_dimension(
         features, FEATURE_DIMENSION, logging.getLogger("features")
@@ -240,12 +240,13 @@ def build_features(
     )
     mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
     validate_features(feats, enabled_mask=mask)
-    feats = np.nan_to_num(feats)
+    feats = np.nan_to_num(feats, nan=0.0, posinf=0.0, neginf=0.0)
     imputer = KNNImputer(n_neighbors=5)
     feats[:, mask] = imputer.fit_transform(feats[:, mask])
     feats = zero_disabled(feats, mask)
     feats = rolling_zscore(feats, window=50, mask=mask)
     feats = zero_disabled(feats, mask)
+    feats = np.nan_to_num(feats, nan=0.0, posinf=0.0, neginf=0.0)
     return feats.astype(np.float32)
 
 
@@ -280,7 +281,7 @@ def preprocess_features(
     if drop_last:
         windows = windows[:-1]
 
-    windows = np.nan_to_num(windows)
+    windows = np.nan_to_num(windows, nan=0.0, posinf=0.0, neginf=0.0)
 
     return features.astype(np.float32), windows.astype(np.float32)
 
@@ -376,7 +377,7 @@ class HourlyDataset(Dataset):
         windows = windows[mask]
         labels = labels[mask]
 
-        windows = np.nan_to_num(windows)
+        windows = np.nan_to_num(windows, nan=0.0, posinf=0.0, neginf=0.0)
 
         if isinstance(windows, list):
             windows = np.array(windows)
