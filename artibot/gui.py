@@ -562,8 +562,12 @@ class TradingGUI:
         try:
             valid_eq = [
                 (t, b)
-                for (t, b) in G.global_equity_curve
-                if isinstance(t, (int, float, np.integer, np.floating))
+                for pair in G.global_equity_curve
+                if isinstance(pair, (list, tuple))
+                and len(pair) == 2
+                and isinstance(pair[0], (int, float, np.integer, np.floating))
+                and pair[0] >= 946684800
+                for t, b in [pair]
             ]
             if valid_eq:
                 ts_, bs_ = zip(*valid_eq)
@@ -574,8 +578,12 @@ class TradingGUI:
             if G.global_best_equity_curve:
                 best_eq = [
                     (t, b)
-                    for (t, b) in G.global_best_equity_curve
-                    if isinstance(t, (int, float, np.integer, np.floating))
+                    for pair in G.global_best_equity_curve
+                    if isinstance(pair, (list, tuple))
+                    and len(pair) == 2
+                    and isinstance(pair[0], (int, float, np.integer, np.floating))
+                    and pair[0] >= 946684800
+                    for t, b in [pair]
                 ]
                 if best_eq:
                     t2, b2 = zip(*best_eq)
