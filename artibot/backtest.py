@@ -8,6 +8,7 @@ from .environment import ensure_dependencies
 import talib
 import torch
 from .constants import FEATURE_DIMENSION
+from config import FEATURE_CONFIG
 
 from .utils import (
     enforce_feature_dim,
@@ -29,6 +30,16 @@ from .metrics import (
 )
 
 FIXED_FEATURES = None
+
+
+def prepare_backtest_data(data: np.ndarray) -> np.ndarray:
+    """Validate and return ``data`` for backtesting."""
+
+    expected = len(FEATURE_CONFIG.get("feature_columns", []))
+    assert (
+        data.shape[1] == expected
+    ), f"Expected {expected} features, got {data.shape[1]}"
+    return data
 
 
 def compute_indicators(
@@ -237,6 +248,8 @@ def robust_backtest(
     if data_full.shape[1] != FEATURE_DIMENSION:
         print("[WARN] Backtest data dimension mismatch! Adjusting…")
         data_full = enforce_feature_dim(data_full, FEATURE_DIMENSION)
+
+    prepare_backtest_data(data_full)
 
     base_hp = getattr(ensemble, "indicator_hparams", IndicatorHyperparams())
     hp_dyn = (
