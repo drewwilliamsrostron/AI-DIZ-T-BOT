@@ -572,8 +572,8 @@ def robust_backtest(
     avg_win = metrics["avg_win"]
     avg_loss = metrics["avg_loss"]
 
-    net_score = net_pct / 100.0
-    shr_score = sharpe
+    net_score = net_pct
+    shr_score = float(np.clip(sharpe, -1.0, 1.0))
     trade_count = len(trades)
     trade_term = trade_count * delta
     # final composite
@@ -585,11 +585,13 @@ def robust_backtest(
     if G.use_sharpe_term:
         composite_reward += beta * shr_score * 2
     if G.use_drawdown_term:
-        composite_reward += gamma * (1 - abs(mdd))
+        dd_term = float(np.clip(1 - abs(mdd), -1.0, 1.0))
+        composite_reward += gamma * dd_term
     if G.use_trade_term:
         composite_reward += trade_term * 3
     if G.use_profit_days_term:
-        composite_reward += (days_in_pf / 365) * 1000
+        composite_reward += (days_in_pf / 365) * 10
+    composite_reward -= tot_inact_pen
     return {
         "net_pct": net_pct,
         "trades": trade_count,

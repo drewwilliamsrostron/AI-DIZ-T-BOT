@@ -36,19 +36,19 @@ ACTION_SPACE = {
     "toggle_kijun": (0, 1),
     "toggle_tenkan": (0, 1),
     "toggle_disp": (0, 1),
-    "d_sma_period": (-4, 4),
-    "d_rsi_period": (-4, 4),
+    "d_sma_period": (-2, 2),
+    "d_rsi_period": (-2, 2),
     "d_macd_fast": (-2, 2),
     "d_macd_slow": (-2, 2),
     "d_macd_signal": (-2, 2),
-    "d_atr_period": (-4, 4),
-    "d_vortex_period": (-4, 4),
-    "d_cmf_period": (-4, 4),
-    "d_ema_period": (-4, 4),
-    "d_donchian_period": (-4, 4),
-    "d_kijun_period": (-4, 4),
-    "d_tenkan_period": (-4, 4),
-    "d_displacement": (-4, 4),
+    "d_atr_period": (-2, 2),
+    "d_vortex_period": (-2, 2),
+    "d_cmf_period": (-2, 2),
+    "d_ema_period": (-2, 2),
+    "d_donchian_period": (-2, 2),
+    "d_kijun_period": (-2, 2),
+    "d_tenkan_period": (-2, 2),
+    "d_displacement": (-2, 2),
     "d_sl": (-2.0, 2.0),
     "d_tp": (-2.0, 2.0),
     "d_long_frac": (-0.04, 0.04),
@@ -149,19 +149,20 @@ class MetaTransformerRL:
         # Reward shaping baseline (EMA of |Δreward|)
         self.reward_ema = 1.0
         self.tau_inv = 1.0 / 50.0
-        self.entropy_beta = 0.0
+        self.entropy_beta = 0.005
         self.low_kl_count = 0
 
         # (7) Scheduled exploration
         # Change epsilon parameters for longer exploration
-        self.eps_start = 0.5  # Increased from 0.3
-        self.eps_end = 0.15  # Increased from 0.05
-        self.eps_decay = 0.995  # Slower decay
+        self.eps_start = 0.20
+        self.eps_end = 0.05
+        self.eps_decay = 0.99
         # Add exploration reset mechanism
         self.exploration_reset_interval = 100  # not sure if this is used tho
         # Rest of init remains
         self.steps = 0
         self.last_improvement = 0
+        self.batch_buffer: list[tuple] = []
 
     @property
     def model(self):
@@ -248,6 +249,11 @@ class MetaTransformerRL:
                 ) - torch.log(std[i] * math.sqrt(2 * math.pi))
                 logp = logp + log_prob_gauss
 
+        # allow only one hyper-parameter mutation per step
+        if act:
+            k_only = _random.choice(list(act.keys()))
+            act = {k_only: act[k_only]}
+
         self.prev_logits = (p_logits, b_logits, g_mean)
         self.prev_logprob = logp.detach()
         self.prev_action_idx = action_idx
@@ -271,6 +277,15 @@ class MetaTransformerRL:
     def update(self, state_np, action_idx, reward, next_state_np, logprob, value):
         """Update the meta policy using PPO."""
 
+        self.batch_buffer.append(
+            (state_np, action_idx, reward, next_state_np, logprob, value)
+        )
+        if len(self.batch_buffer) < 10:
+            return
+        state_np, action_idx, reward, next_state_np, logprob, value = (
+            self.batch_buffer.pop(0)
+        )
+
         s = torch.tensor(state_np, dtype=torch.float32).unsqueeze(0)
         ns = torch.tensor(next_state_np, dtype=torch.float32).unsqueeze(0)
         out = self.model(s)
@@ -291,12 +306,8 @@ class MetaTransformerRL:
         with torch.no_grad():
             out_ns = self.model(ns)
             val_ns = out_ns[-1]
-        # Reward shaping using EMA of absolute reward changes
-        self.reward_ema = (1 - self.tau_inv) * self.reward_ema + self.tau_inv * abs(
-            reward
-        )
-        shaped = reward / max(self.reward_ema, 1e-8)
-        target = shaped + self.gamma * val_ns.item()
+        # Use raw reward without EMA shaping
+        target = reward + self.gamma * val_ns.item()
         if not math.isfinite(target):
             logging.warning("Non-finite target: %s", target)
             target = self.target_range[1] if target > 0 else self.target_range[0]
@@ -322,7 +333,8 @@ class MetaTransformerRL:
         else:
             self.low_kl_count = 0
 
-        loss_p = pg_loss + kl + (-self.entropy_beta * entropy)
+        # KL penalty removed for simplicity
+        loss_p = pg_loss + (-self.entropy_beta * entropy)
         loss_v = F.mse_loss(val_s, torch.tensor([target], device=val_s.device))
         loss = loss_p + 0.5 * loss_v
         self.opt.zero_grad()
@@ -495,6 +507,10 @@ class MetaTransformerRL:
             hp.long_frac *= scale
             hp.short_frac *= scale
 
+        # enforce required indicators
+        indicator_hp.use_sma = True
+        indicator_hp.use_cmf = True
+
         if self.ensemble is not None:
             for opt in self.ensemble.optimizers:
                 group = opt.param_groups[0]
@@ -573,14 +589,21 @@ def meta_control_loop(
     # old initial state was just 2 dims. Now we add (sharpe, dd, trades, days_in_profit)
     prev_r = G.global_composite_reward if G.global_composite_reward else 0.0
     best_r = G.global_best_composite_reward if G.global_best_composite_reward else 0.0
-    prev_reward = prev_r
     st_sharpe = G.global_sharpe
     st_dd = G.global_max_drawdown
     st_trades = G.global_num_trades
     st_days = G.global_days_in_profit if G.global_days_in_profit else 0.0
 
     state = np.array(
-        [prev_r, best_r, st_sharpe, abs(st_dd), st_trades, st_days], dtype=np.float32
+        [
+            prev_r,
+            best_r,
+            st_sharpe / 5,
+            abs(st_dd),
+            st_trades / 500,
+            st_days / 365,
+        ],
+        dtype=np.float32,
     )
 
     cycle_count = 0
@@ -606,7 +629,14 @@ def meta_control_loop(
             st_trades = G.global_num_trades
             st_days = G.global_days_in_profit if G.global_days_in_profit else 0.0
             new_state = np.array(
-                [curr_r, b_r, st_sharpe, abs(st_dd), st_trades, st_days],
+                [
+                    curr_r,
+                    b_r,
+                    st_sharpe / 5,
+                    abs(st_dd),
+                    st_trades / 500,
+                    st_days / 365,
+                ],
                 dtype=np.float32,
             )
 
@@ -636,15 +666,9 @@ def meta_control_loop(
             G.status_sleep("Meta agent sleeping", "", interval)
 
             curr2 = G.global_composite_reward if G.global_composite_reward else 0.0
-            trade_pen = 0.0003 * abs(new_state[4] - state[4])
-            reward_raw = curr2 - prev_reward - trade_pen
-            agent.reward_ema = (
-                1 - agent.tau_inv
-            ) * agent.reward_ema + agent.tau_inv * abs(reward_raw)
-            shaped_r = reward_raw / (agent.reward_ema + 1e-8)
-            agent.update(state, 0, shaped_r, new_state, logp, val_s)
-            prev_reward = curr2
-            rew_delta = shaped_r
+            reward_val = curr2
+            agent.update(state, 0, reward_val, new_state, logp, val_s)
+            rew_delta = reward_val
 
             G.set_status(
                 "Meta agent",

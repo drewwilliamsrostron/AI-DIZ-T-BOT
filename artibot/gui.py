@@ -258,8 +258,17 @@ def _fetch_position(exchange):
 
 
 class TradingGUI:
-    def __init__(self, root, ensemble, weights_path: str | None = None, connector=None):
+    def __init__(
+        self,
+        root,
+        ensemble,
+        weights_path: str | None = None,
+        connector=None,
+        *,
+        dev: bool = False,
+    ):
         global tk, ttk, matplotlib, plt, FigureCanvasTkAgg
+        self.dev = dev
         if tk is None:
             import tkinter as tk
             from tkinter import ttk
@@ -1506,15 +1515,18 @@ class TradingGUI:
             command=self.adjust_cpu_limit,
         )
         self.cpu_button.pack(side=tk.LEFT, padx=5)
-        self.force_nk_var = tk.BooleanVar(value=False)
-        self.force_nk_chk = ttk.Checkbutton(
-            self.controls_frame,
-            text="Bypass NK",
-            variable=self.force_nk_var,
-            command=self.on_toggle_force_nk,
-        )
-        self.force_nk_chk.pack(side=tk.LEFT, padx=5)
-        self.on_toggle_force_nk()
+        if self.dev:
+            self.force_nk_var = tk.BooleanVar(value=False)
+            self.force_nk_chk = ttk.Checkbutton(
+                self.controls_frame,
+                text="Bypass NK",
+                variable=self.force_nk_var,
+                command=self.on_toggle_force_nk,
+            )
+            self.force_nk_chk.pack(side=tk.LEFT, padx=5)
+            self.on_toggle_force_nk()
+        else:
+            G.nuke_armed = False
 
         self.validation_label = ttk.Label(
             self.info_frame, text="Validation: N/A", font=("Helvetica", 12)

@@ -1,6 +1,7 @@
 """CCXT-based helper for simplified Phemex access."""
 
 import logging
+import os
 
 
 class ExchangeConnector:
@@ -13,13 +14,17 @@ class ExchangeConnector:
         self.symbol = "BTCUSD"
         api_conf = config.get("API", {})
         self.live = bool(api_conf.get("LIVE_TRADING", False))
-        key = (
-            api_conf.get("API_KEY_LIVE") if self.live else api_conf.get("API_KEY_TEST")
+        key = os.getenv(
+            "PHEMEX_KEY",
+            api_conf.get("API_KEY_LIVE") if self.live else api_conf.get("API_KEY_TEST"),
         )
-        secret = (
-            api_conf.get("API_SECRET_LIVE")
-            if self.live
-            else api_conf.get("API_SECRET_TEST")
+        secret = os.getenv(
+            "PHEMEX_SECRET",
+            (
+                api_conf.get("API_SECRET_LIVE")
+                if self.live
+                else api_conf.get("API_SECRET_TEST")
+            ),
         )
         default_type = api_conf.get("DEFAULT_TYPE", "swap")
         self.default_type = default_type

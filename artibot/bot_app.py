@@ -108,7 +108,10 @@ def run_bot(max_epochs: int | None = None, *, overfit_toy: bool = False) -> None
     G.global_min_hold_seconds = config.get(
         "MIN_HOLD_SECONDS", G.global_min_hold_seconds
     )
-    openai.api_key = config["CHATGPT"]["API_KEY"]
+    openai.api_key = os.getenv(
+        "OPENAI_API_KEY",
+        config.get("CHATGPT", {}).get("API_KEY", ""),
+    )
     csv_path = config["CSV_PATH"]
     if not os.path.isabs(csv_path):
         here = os.path.dirname(os.path.abspath(__file__))
