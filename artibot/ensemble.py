@@ -37,6 +37,7 @@ from torch.utils.data import DataLoader
 
 from .backtest import robust_backtest
 from .hyperparams import HyperParams, IndicatorHyperparams
+from .dataset import build_features
 from .utils.hardware import device as hw_device
 from .utils import zero_disabled
 import artibot.globals as G
@@ -236,23 +237,9 @@ class EnsembleModel(nn.Module):
         # (3) We'll do dynamic patience mechanism, so this is an initial
         self.patience_counter = 0
 
-        self.schedulers = [
-            ReduceLROnPlateau(
-                opt,
-                mode="min",
-                patience=6,
-                factor=0.8,
-                min_lr=2e-5,
-            )
-            for opt in self.optimizers
-        ]
-        self.cycle = [
-            OneCycleLR(opt, max_lr=lr, total_steps=total_steps)
-            for opt in self.optimizers
-        ]
-        for sch in self.cycle:
-            sch.step_num = 0
-            sch.total_steps = total_steps
+        # Disable LR schedulers to avoid the step-order warning from PyTorch
+        self.schedulers = []
+        self.cycle = []
 
         self.grad_accum_steps = grad_accum_steps
         self.total_steps = total_steps
@@ -278,13 +265,8 @@ class EnsembleModel(nn.Module):
     def configure_one_cycle(self, total_steps: int) -> None:
         """Initialise OneCycle schedulers with ``total_steps``."""
         self.total_steps = total_steps
-        self.cycle = [
-            OneCycleLR(opt, max_lr=opt.param_groups[0]["lr"], total_steps=total_steps)
-            for opt in self.optimizers
-        ]
-        for sch in self.cycle:
-            sch.step_num = 0
-            sch.total_steps = total_steps
+        # Scheduler disabled – maintain attribute for callers
+        self.cycle = []
 
     def rebuild_models(self, new_dim: int) -> None:
         """Validate that the requested dimension matches the frozen setting."""
@@ -326,7 +308,11 @@ class EnsembleModel(nn.Module):
         """
         # mutate shared state on the globals module
 
-        current_result = robust_backtest(self, data_full, indicators=features)
+        if len(data_full) == 0:
+            feats = np.zeros((0, FEATURE_DIMENSION), dtype=np.float32)
+        else:
+            feats = build_features(np.asarray(data_full), self.indicator_hparams)
+        current_result = robust_backtest(self, feats)
 
         if update_globals:
             G.global_equity_curve = current_result["equity_curve"]
