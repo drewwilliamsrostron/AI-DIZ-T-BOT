@@ -39,3 +39,14 @@ class FeatureEngineer:
             features, self.expected_features, self.logger
         )
         return features
+
+
+def calculate_features(df: pd.DataFrame) -> np.ndarray:
+    """Wrapper around :class:`FeatureEngineer` with debug output."""
+
+    engineer = FeatureEngineer()
+    features = engineer.transform(df)
+    print(
+        f"[DEBUG] Post-feature shape: {features.shape}, Columns: {df.columns.tolist()}"
+    )
+    return features

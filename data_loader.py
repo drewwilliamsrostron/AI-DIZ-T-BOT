@@ -1,10 +1,23 @@
 from artibot.constants import FEATURE_DIMENSION
 import numpy as np
 from artibot.feature_manager import sanitize_features
-from artibot.utils import enforce_feature_dim, validate_features, feature_mask_for
+from artibot.utils import (
+    enforce_feature_dim,
+    validate_features,
+    feature_mask_for,
+)
 from artibot.hyperparams import IndicatorHyperparams
 import os
 import joblib
+import pandas as pd
+
+
+def load_backtest_data(path: str) -> pd.DataFrame:
+    """Load raw CSV data for backtesting with a debug summary."""
+
+    df = pd.read_csv(path)
+    print(f"[DEBUG] Raw CSV shape: {df.shape}, Columns: {df.columns.tolist()}")
+    return df
 
 
 def load_and_clean_data(
@@ -48,3 +61,15 @@ def load_and_clean_data(
         pass
 
     return data
+
+
+def get_backtest_data() -> np.ndarray:
+    """Load, process and return data for debugging the pipeline."""
+
+    data = load_backtest_data("path.csv")
+    print(f"[PRE-FEATURE] Data shape: {data.shape}")
+    from artibot.features import calculate_features
+
+    processed = calculate_features(data)
+    print(f"[POST-FEATURE] Data shape: {processed.shape}")
+    return processed
