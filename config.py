@@ -20,3 +20,6 @@ FEATURE_CONFIG = {
         "atr",
     ],
 }
+
+# Convenient alias for core modules
+FEATURE_COLUMNS = FEATURE_CONFIG["feature_columns"]
