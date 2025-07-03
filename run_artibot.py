@@ -17,6 +17,7 @@ import artibot.globals as G
 import os
 import sys
 import subprocess
+import argparse
 
 os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 
@@ -148,6 +149,11 @@ CONFIG = load_master_config()
 
 def main() -> None:
     """Prompt for startup options and run the trading bot."""
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dev", action="store_true")
+    args, _ = parser.parse_known_args()
+    dev_mode = args.dev
 
     defaults = {
         "skip_sentiment": False,
@@ -352,7 +358,7 @@ def main() -> None:
 
     threading.Thread(target=_bg_init, daemon=True).start()
 
-    gui = TradingGUI(root, ensemble, weights_path, connector)  # noqa: F841
+    TradingGUI(root, ensemble, weights_path, connector, dev=dev_mode)
 
     logging.info("Tkinter dashboard starting on main thread…")
 

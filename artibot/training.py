@@ -501,15 +501,21 @@ class PhemexConnector:
         api_conf = config.get("API", {})
         self.live_trading = bool(api_conf.get("LIVE_TRADING", True))
 
-        key = (
-            api_conf.get("API_KEY_LIVE", "")
-            if self.live_trading
-            else api_conf.get("API_KEY_TEST", "")
+        key = os.getenv(
+            "PHEMEX_KEY",
+            (
+                api_conf.get("API_KEY_LIVE", "")
+                if self.live_trading
+                else api_conf.get("API_KEY_TEST", "")
+            ),
         )
-        secret = (
-            api_conf.get("API_SECRET_LIVE", "")
-            if self.live_trading
-            else api_conf.get("API_SECRET_TEST", "")
+        secret = os.getenv(
+            "PHEMEX_SECRET",
+            (
+                api_conf.get("API_SECRET_LIVE", "")
+                if self.live_trading
+                else api_conf.get("API_SECRET_TEST", "")
+            ),
         )
 
         api_url_live = api_conf.get("API_URL_LIVE", "https://api.phemex.com")
