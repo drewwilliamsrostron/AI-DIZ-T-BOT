@@ -37,7 +37,6 @@ from torch.utils.data import DataLoader
 
 from .backtest import robust_backtest
 from .hyperparams import HyperParams, IndicatorHyperparams
-from .dataset import build_features
 from .utils.hardware import device as hw_device
 from .utils import zero_disabled
 import artibot.globals as G
@@ -308,11 +307,9 @@ class EnsembleModel(nn.Module):
         """
         # mutate shared state on the globals module
 
-        if len(data_full) == 0:
-            feats = np.zeros((0, FEATURE_DIMENSION), dtype=np.float32)
-        else:
-            feats = build_features(np.asarray(data_full), self.indicator_hparams)
-        current_result = robust_backtest(self, feats)
+        current_result = robust_backtest(self, data_full, indicators=features)
+        if data_full:
+            assert len(data_full[0]) >= 5, "Expect raw OHLCV rows"
 
         if update_globals:
             G.global_equity_curve = current_result["equity_curve"]

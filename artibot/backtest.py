@@ -216,7 +216,8 @@ def robust_backtest(
     ensemble:
         Ensemble providing ``vectorized_predict`` and indicator settings.
     data_full:
-        Full OHLCV history used for backtesting.
+        Full OHLCV history used for backtesting. Must contain raw OHLCV rows
+        with at least five columns ``[ts, open, high, low, close, ...]``.
     indicators:
         Optional dictionary with precomputed ``sma``, ``rsi`` and ``macd``
         arrays. When ``None`` (default), they are derived on the fly.
@@ -224,6 +225,10 @@ def robust_backtest(
     # Ensure ``data_full`` is a NumPy array for shape checks
     if isinstance(data_full, list):
         data_full = np.array(data_full)
+
+    cols = np.asarray(data_full).shape[1]
+    if cols < 5 or cols > 6:
+        raise ValueError("robust_backtest expects raw OHLCV rows")
 
     # Log incoming feature dimension for debugging
     print(f"[BACKTEST] Input feature dimension: {data_full.shape[1]}")
@@ -233,10 +238,9 @@ def robust_backtest(
         print("[WARN] Backtest data dimension mismatch! Adjusting…")
         data_full = enforce_feature_dim(data_full, FEATURE_DIMENSION)
 
+    base_hp = getattr(ensemble, "indicator_hparams", IndicatorHyperparams())
     hp_dyn = (
-        ensemble.indicator_hparams
-        if not dynamic_indicators
-        else IndicatorHyperparams(**vars(ensemble.indicator_hparams))
+        base_hp if not dynamic_indicators else IndicatorHyperparams(**vars(base_hp))
     )
 
     if dynamic_indicators:
@@ -280,7 +284,7 @@ def robust_backtest(
     FUNDING_RATE = 0.0001
     device = ensemble.device
 
-    hp = ensemble.indicator_hparams
+    hp = getattr(ensemble, "indicator_hparams", IndicatorHyperparams())
 
     # (5) If meta-agent is adjusting threshold, store it in ensemble or define a separate variable.
     # For a simpler demonstration, we keep using GLOBAL_THRESHOLD, but you could do:
