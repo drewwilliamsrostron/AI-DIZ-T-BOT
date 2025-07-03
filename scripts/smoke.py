@@ -15,7 +15,7 @@ from artibot.dataset import load_csv_hourly, HourlyDataset
 from artibot.ensemble import EnsembleModel
 from artibot.hyperparams import HyperParams, IndicatorHyperparams
 from artibot.training import csv_training_thread
-from artibot.backtest import robust_backtest
+from backtest import run_backtest
 from artibot.utils import get_device, setup_logging
 
 
@@ -63,7 +63,8 @@ def main() -> None:
         use_prev_weights=False,
         max_epochs=10,
     )
-    result = robust_backtest(ensemble, data)
+    data_path = "Gemini_BTCUSD_1h.csv"
+    result = run_backtest(ensemble, data_path)
     arr = np.array(data[:500], dtype=np.float64)
     mean_range = (arr[:, 2] - arr[:, 3]).mean()
     logging.info(
