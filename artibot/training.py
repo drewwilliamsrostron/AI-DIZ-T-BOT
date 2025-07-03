@@ -234,7 +234,10 @@ def csv_training_thread(
                 ensemble.max_reward_loss_weight,
                 ensemble.reward_loss_weight + 0.01,
             )
-            lr_now = ensemble.cycle[0].get_last_lr()[0]
+            if ensemble.cycle:
+                lr_now = ensemble.cycle[0].get_last_lr()[0]
+            else:
+                lr_now = ensemble.optimizers[0].param_groups[0]["lr"]
             attn_mean = (
                 float(np.mean(G.global_attention_weights_history[-100:]))
                 if G.global_attention_weights_history
