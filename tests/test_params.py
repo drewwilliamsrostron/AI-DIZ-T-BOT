@@ -1,7 +1,9 @@
 from artibot.rl import MetaTransformerRL
 
+
 class DummyEnsemble:
     pass
+
 
 def test_rl_params():
     agent = MetaTransformerRL(DummyEnsemble())
