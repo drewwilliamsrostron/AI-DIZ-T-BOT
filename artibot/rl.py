@@ -139,9 +139,8 @@ class MetaTransformerRL:
         self.toggle_keys = self._model.toggle_keys
         self.gauss_keys = self._model.gauss_keys
         self.opt = optim.AdamW(self._model.parameters(), lr=lr)
-        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.opt, T_max=100)
-        self.scheduler.step_num = 0
-        self.scheduler.total_steps = 100
+        # Disable cosine decay to avoid lr falling below 1e-5 and PyTorch order warning
+        self.scheduler = None
         self.gamma = 0.95
         self.ensemble = ensemble
         self.value_range = value_range
@@ -335,12 +334,15 @@ class MetaTransformerRL:
                     p.grad = torch.zeros_like(p)
         torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
         self.opt.step()
-        try:
-            if getattr(self.scheduler, "step_num", 0) < self.scheduler.total_steps:
-                self.scheduler.step()
-                self.scheduler.step_num = getattr(self.scheduler, "step_num", 0) + 1
-        except ValueError as e:
-            logging.warning("LR scheduler skipped: %s", e)
+        if self.scheduler is not None:
+            try:
+                if getattr(self.scheduler, "step_num", 0) < getattr(
+                    self.scheduler, "total_steps", 0
+                ):
+                    self.scheduler.step()
+                    self.scheduler.step_num = getattr(self.scheduler, "step_num", 0) + 1
+            except ValueError as e:
+                logging.warning("LR scheduler skipped: %s", e)
         if reward > 0:
             self.last_improvement = 0
         else:
@@ -608,6 +610,7 @@ def meta_control_loop(
                 dtype=np.float32,
             )
 
+            state = np.nan_to_num(state, nan=0.0, posinf=1e6, neginf=-1e6)
             act, logp, val_s = agent.pick_action(state)
             filtered = {}
             freeze = hyperparams.should_freeze_features(G.get_warmup_step())

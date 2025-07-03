@@ -225,8 +225,8 @@ def robust_backtest(
     if isinstance(data_full, list):
         data_full = np.array(data_full)
 
-    # [FIXED]# log incoming feature dimensions
-    print(f"[BACKTEST] Input feature dimension: {data_full.shape}")
+    # Log incoming feature dimension for debugging
+    print(f"[BACKTEST] Input feature dimension: {data_full.shape[1]}")
     from .constants import FEATURE_DIMENSION
 
     if data_full.shape[1] != FEATURE_DIMENSION:
