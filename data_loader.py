@@ -7,6 +7,8 @@ from artibot.utils import (
     feature_mask_for,
 )
 from artibot.hyperparams import IndicatorHyperparams
+from feature_engineering import calculate_technical_indicators
+import config
 import os
 import joblib
 import pandas as pd
@@ -16,6 +18,11 @@ def load_backtest_data(path: str) -> pd.DataFrame:
     """Load raw CSV data for backtesting with a debug summary."""
 
     df = pd.read_csv(path)
+
+    if not set(config.FEATURE_CONFIG["feature_columns"]).issubset(df.columns):
+        print("🚨 Backtest data missing features - calculating indicators...")
+        df = calculate_technical_indicators(df)
+
     print(f"[DEBUG] Raw CSV shape: {df.shape}, Columns: {df.columns.tolist()}")
     return df
 
