@@ -11,7 +11,7 @@ import time
 import threading
 import os
 
-from .dataset import HourlyDataset, trailing_sma
+from .dataset import HourlyDataset, trailing_sma, build_features
 from .ensemble import reject_if_risky
 from .backtest import robust_backtest, compute_indicators
 from .feature_manager import enforce_feature_dim
@@ -141,13 +141,6 @@ def csv_training_thread(
             ensemble.indicator_hparams,
             with_scaled=True,
         )
-        holdout_indicators = (
-            compute_indicators(
-                holdout_data, ensemble.indicator_hparams, with_scaled=True
-            )
-            if holdout_data is not None and len(holdout_data) > 0
-            else None
-        )
 
         workers = int(config.get("NUM_WORKERS", G.cpu_limit))
         logging.info(
@@ -215,9 +208,10 @@ def csv_training_thread(
             G.set_status("Training", status_msg)
 
             if holdout_data is not None and len(holdout_data) > 0:
-                holdout_res = robust_backtest(
-                    ensemble, holdout_data, indicators=holdout_indicators
+                feats = build_features(
+                    np.asarray(holdout_data), ensemble.indicator_hparams
                 )
+                holdout_res = robust_backtest(ensemble, feats)
                 G.global_holdout_sharpe = holdout_res.get("sharpe", 0.0)
                 G.global_holdout_max_drawdown = holdout_res.get("max_drawdown", 0.0)
             else:
