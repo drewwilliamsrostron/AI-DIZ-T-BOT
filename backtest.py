@@ -6,16 +6,7 @@ from data_loader import load_backtest_data
 
 
 def run_backtest(strategy: Any, data_path: str):
-    """Run a strategy on CSV data using engineered features.
-
-    Parameters
-    ----------
-    strategy:
-        Object exposing a ``run`` method accepting ``features`` and
-        ``timestamps`` arrays.
-    data_path:
-        Path to the CSV file containing at least a ``timestamp`` column.
-    """
+    """Run ``strategy`` on processed features from ``data_path``."""
 
     # Load and process data with feature engineering
     df = load_backtest_data(data_path)
