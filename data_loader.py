@@ -8,33 +8,30 @@ from artibot.utils import (
 )
 from artibot.hyperparams import IndicatorHyperparams
 from feature_engineering import calculate_technical_indicators
-import config
 import os
 import joblib
 import pandas as pd
 
 
 def load_backtest_data(path: str) -> pd.DataFrame:
-    """Load raw CSV data for backtesting with a debug summary.
-
-    The ``timestamp`` column is preserved so sequencing remains valid after
-    feature engineering.
-    """
+    """Return DataFrame with engineered features for backtesting."""
 
     df = pd.read_csv(path)
+    print(f"[LOADER] Raw columns: {df.columns.tolist()}")
 
     if "timestamp" not in df.columns:
         raise KeyError("CSV must contain 'timestamp' column")
 
     timestamps = df["timestamp"].copy()
 
-    if not set(config.FEATURE_CONFIG["feature_columns"]).issubset(df.columns):
-        print("🚨 Backtest data missing features - calculating indicators...")
+    # Calculate missing features
+    if "sma_10" not in df.columns:
+        print("\ud83d\udd27 Calculating technical indicators...")
         df = calculate_technical_indicators(df)
 
     df["timestamp"] = timestamps
 
-    print(f"[DEBUG] Raw CSV shape: {df.shape}, Columns: {df.columns.tolist()}")
+    print(f"[LOADER] Processed columns: {df.columns.tolist()}")
     return df
 
 
