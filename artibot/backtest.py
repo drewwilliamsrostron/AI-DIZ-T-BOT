@@ -35,10 +35,10 @@ def prepare_backtest_data(data: np.ndarray) -> np.ndarray:
     """Validate and return ``data`` for backtesting."""
 
     expected = len(FEATURE_CONFIG.get("feature_columns", []))
-    assert (
-        data.shape[1] == expected
-    ), f"Expected {expected} features, got {data.shape[1]}"
-    return data
+    hp = IndicatorHyperparams()
+    fixed = compute_indicators(data, hp)["features"]
+    assert fixed.shape[1] == expected, f"wanted {expected}, got {fixed.shape[1]}"
+    return fixed
 
 
 def compute_indicators(
