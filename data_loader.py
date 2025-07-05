@@ -10,28 +10,21 @@ import pandas as pd
 
 
 def load_backtest_data(csv_path: str) -> pd.DataFrame:
-    """Load and engineer features for backtesting with timestamp handling."""
-    print(f"[LOADER] Loading: {csv_path}")
+    print(f"\N{OPEN FILE FOLDER} Loading: {csv_path}")
     df = pd.read_csv(csv_path)
-    print(f"[LOADER] Raw columns: {df.columns.tolist()}")
+    print(f"\N{BAR CHART} Raw columns ({len(df.columns)}): {df.columns.tolist()}")
 
-    # Handle missing timestamps
+    if "sma_10" not in df.columns:
+        print("\N{WRENCH} Calculating technical indicators...")
+        df = calculate_technical_indicators(df)
+
     if "timestamp" not in df.columns:
-        print("⚠️ Generating synthetic timestamps")
+        print("\N{WARNING SIGN} Generating synthetic timestamps")
         df["timestamp"] = pd.date_range(
             start="2020-01-01", periods=len(df), freq="1min"
         )
 
-    timestamps = df["timestamp"].copy()
-
-    # Calculate missing features
-    if "sma_10" not in df.columns:
-        print("\ud83d\udd27 Calculating technical indicators...")
-        df = calculate_technical_indicators(df)
-
-    # Restore timestamps after feature calculation
-    df["timestamp"] = timestamps
-    print(f"[LOADER] Processed columns: {df.columns.tolist()}")
+    print(f"\N{SPARKLES} Processed columns ({len(df.columns)}): {df.columns.tolist()}")
     return df
 
 
