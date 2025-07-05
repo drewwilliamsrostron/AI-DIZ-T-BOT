@@ -9,6 +9,7 @@ import talib
 import torch
 from .constants import FEATURE_DIMENSION
 from config import FEATURE_CONFIG
+import logging
 
 from .utils import (
     validate_features,
@@ -334,6 +335,11 @@ def robust_backtest(
         extd
         if dynamic_indicators
         else sliding_window_view(extd, (24, extd.shape[1])).squeeze()
+    )
+    log = logging.getLogger(__name__)
+    log.info(
+        "[TRACE] backtest window shape=%s (rule-engine expects 6 core bars)",
+        windows.shape,
     )
     windows = np.clip(windows, -50.0, 50.0)
     windows = np.nan_to_num(windows, nan=0.0, posinf=0.0, neginf=0.0)
