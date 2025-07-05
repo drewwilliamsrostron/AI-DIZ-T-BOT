@@ -11,7 +11,6 @@ from .constants import FEATURE_DIMENSION
 from config import FEATURE_CONFIG
 
 from .utils import (
-    enforce_feature_dim,
     validate_features,
     zero_disabled,
     rolling_zscore,
@@ -162,6 +161,16 @@ def compute_indicators(
         tenkan = np.zeros_like(closes)
     add_feat(tenkan, bool(use_ichimoku or getattr(indicator_hp, "use_tenkan", False)))
 
+    EXPECTED_DIM = 16
+    cur_dim = len(cols)
+    if cur_dim < EXPECTED_DIM:
+        # pad with zero-arrays so model always sees 16 columns
+        pad = [np.zeros_like(raw[:, 4])] * (EXPECTED_DIM - cur_dim)
+        cols.extend(pad)
+    elif cur_dim > EXPECTED_DIM:
+        # truncate extras to keep contract
+        cols = cols[:EXPECTED_DIM]
+
     feats = np.column_stack(cols).astype(np.float32)
     feats = np.nan_to_num(feats, nan=0.0, posinf=0.0, neginf=0.0)
     mask_arr = np.asarray(mask, dtype=np.uint8)
@@ -246,8 +255,8 @@ def robust_backtest(
     from .constants import FEATURE_DIMENSION
 
     if data_full.shape[1] != FEATURE_DIMENSION:
-        print("[WARN] Backtest data dimension mismatch! Adjusting…")
-        data_full = enforce_feature_dim(data_full, FEATURE_DIMENSION)
+        # silently handled inside compute_indicators
+        pass
 
     prepare_backtest_data(data_full)
 

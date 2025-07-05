@@ -3,7 +3,6 @@
 import threading
 from typing import Iterable
 import torch
-import sys
 
 import numpy as np
 import pandas as pd
@@ -103,10 +102,9 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
     ensemble.hp = HyperParams(indicator_hp=indicator_hp)
     if hasattr(torch, "set_float32_matmul_precision"):
         torch.set_float32_matmul_precision("high")
-    if hasattr(torch, "compile") and sys.version_info < (3, 12):
-        ensemble.models = [torch.compile(m) for m in ensemble.models]
-    else:
-        logging.info("Skipping torch.compile on Python 3.12+")
+    from artibot.utils.safe_compile import safe_compile
+
+    ensemble.models = [safe_compile(m) for m in ensemble.models]
     results = []
     one_month = YEAR_HOURS // 12
     seven_months = 7 * one_month
