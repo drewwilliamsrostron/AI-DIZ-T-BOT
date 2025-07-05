@@ -432,6 +432,10 @@ def csv_training_thread(
             if ensemble.train_steps % 5 == 0 and ensemble.best_state_dicts:
                 ensemble.save_best_weights(weights_path)
 
+            from artibot.training.engine import save_epoch_checkpoint
+
+            save_epoch_checkpoint(ensemble, ensemble.train_steps)
+
         if overfit_toy:
             if final_loss is None or final_loss >= 0.3:
                 raise AssertionError(

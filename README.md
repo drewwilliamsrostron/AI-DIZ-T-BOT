@@ -87,6 +87,9 @@ python run_artibot.py
 pip install torch openai ccxt pandas numpy matplotlib scikit-learn TA-Lib pytest
 ```
 
+Users on Python 3.11 should install a CUDA 12.1 build of PyTorch 2.x to enable
+GPU acceleration. The bot falls back to CPU when no compatible wheel is found.
+
 The environment sets `NUMEXPR_MAX_THREADS` to the CPU count when the variable is
 not defined, downgrades NumPy to the latest 1.x release for legacy packages and
 chooses the correct CPU or CUDA build of PyTorch automatically.  Set

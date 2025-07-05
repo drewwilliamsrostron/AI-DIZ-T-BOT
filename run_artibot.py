@@ -203,6 +203,9 @@ def main() -> None:
     from artibot.gui import TradingGUI
 
     setup_logging()
+    from artibot.utils import heartbeat
+
+    heartbeat.start()
     root = tk.Tk()
     progress_q: Queue[tuple[float, str] | tuple[str, str]] = Queue()
     _launch_loading(root, progress_q)

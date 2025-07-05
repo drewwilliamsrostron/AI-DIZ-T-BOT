@@ -9,7 +9,7 @@ import json
 
 import math
 import torch
-from .hardware import device as _device
+from ..core.device import DEVICE
 import pandas as pd
 import numpy as np
 import hashlib
@@ -33,7 +33,7 @@ CONTEXT_FLAGS = ("use_sentiment", "use_macro", "use_rvol")
 
 def get_device() -> torch.device:
     """Return detected hardware device."""
-    return torch.device(_device)
+    return DEVICE
 
 
 class JsonFormatter(logging.Formatter):

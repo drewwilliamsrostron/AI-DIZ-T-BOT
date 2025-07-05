@@ -23,3 +23,6 @@ FEATURE_CONFIG = {
 
 # Convenient alias for core modules
 FEATURE_COLUMNS = FEATURE_CONFIG["feature_columns"]
+
+# Toggle the training risk filter
+RISK_FILTER = True
