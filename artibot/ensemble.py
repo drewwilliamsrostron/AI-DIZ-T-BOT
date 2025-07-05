@@ -37,7 +37,7 @@ from torch.utils.data import DataLoader
 
 from .backtest import robust_backtest
 from .hyperparams import HyperParams, IndicatorHyperparams
-from .utils.hardware import device as hw_device
+from artibot.core.device import DEVICE
 from .utils import zero_disabled
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
@@ -173,7 +173,7 @@ class EnsembleModel(nn.Module):
         grad_accum_steps: int = 1,
     ) -> None:
         super().__init__()
-        device = torch.device(device if device is not None else hw_device)
+        device = torch.device(device if device is not None else DEVICE)
         self.device = device
         self.weights_path = weights_path
         self.indicator_hparams = IndicatorHyperparams(

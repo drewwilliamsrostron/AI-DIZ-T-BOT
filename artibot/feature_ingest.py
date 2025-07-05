@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import logging
-import math
 import time
 from typing import List
 
@@ -25,8 +24,9 @@ if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) 
 
 import schedule
 
-require("yfinance")
-import yfinance as yf
+require("ccxt")
+import ccxt
+import pandas as pd
 from .finbert_helper import score as finbert_score
 
 import artibot.feature_store as fs
@@ -37,6 +37,19 @@ _LOG = logging.getLogger("feature_ingest")
 _MACRO_SRC = (
     "https://api.tradingeconomics.com/calendar/country/united states?c=guest:guest"
 )
+
+
+def _fetch_btc_usdt_hourly() -> pd.DataFrame:
+    """Return recent BTC/USDT hourly bars from Phemex."""
+
+    ex = ccxt.phemex()
+    bars = ex.fetch_ohlcv("BTC/USDT:USDT", timeframe="1h", limit=168)
+    df = pd.DataFrame(bars, columns=["ts", "open", "high", "low", "close", "volume"])
+    df["ts"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
+    df.set_index("ts", inplace=True)
+    rvol = df["close"].pct_change().rolling(24).std() * np.sqrt(24)
+    fs.upsert_rvol(int(df.index[-1].timestamp()), float(rvol.iloc[-1]))
+    return df
 
 
 def _ts_hour() -> int:
@@ -99,14 +112,7 @@ def upd_macro() -> None:
 def upd_rvol() -> None:
     """Compute and store 7d realised volatility from BTC prices."""
     try:
-        btc = yf.download("BTC-USD", period="8d", interval="1h", progress=False)[
-            "Close"
-        ]
-        logret = np.log(btc).diff().dropna()
-        if len(logret) < 168:
-            return
-        rvol = logret.rolling(168).std(ddof=0).iloc[-1] * math.sqrt(8760)
-        fs.upsert_rvol(_ts_hour(), float(rvol))
+        _fetch_btc_usdt_hourly()
     except Exception as exc:  # pragma: no cover - network
         _LOG.error("rvol fetch failed: %s", exc)
 
