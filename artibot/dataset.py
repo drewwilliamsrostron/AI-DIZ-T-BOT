@@ -33,6 +33,7 @@ import artibot.globals as G
 import logging
 from .hyperparams import IndicatorHyperparams
 from .constants import FEATURE_DIMENSION
+from config import FEATURE_COLUMNS
 
 
 ###############################################################################
@@ -265,16 +266,22 @@ def preprocess_features(
     always have ``FEATURE_DIMENSION`` columns.
     """
 
+    log = logger or logging.getLogger(__name__)
     mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
     features = build_features(
         data_np,
         hp,
         use_ichimoku=use_ichimoku,
-        logger=logger or logging.getLogger("preprocess"),
+        logger=log,
     )
     from numpy.lib.stride_tricks import sliding_window_view
 
     windows = sliding_window_view(features, (seq_len, features.shape[1]))[:, 0]
+    log.debug(
+        "[TRACE] dataset pre-mask shape=%s (expects %d)",
+        windows.shape,
+        FEATURE_DIMENSION,
+    )
     assert windows.shape[2] == len(
         mask
     ), f"Expected {len(mask)} features, got {windows.shape[2]}"
@@ -282,6 +289,11 @@ def preprocess_features(
         windows = windows[:-1]
 
     windows = np.nan_to_num(windows, nan=0.0, posinf=0.0, neginf=0.0)
+    windows = zero_disabled(windows, mask)
+    log.debug(
+        "[TRACE] dataset post-mask shape=%s (zeros on disabled cols)",
+        windows.shape,
+    )
 
     return features.astype(np.float32), windows.astype(np.float32)
 
@@ -353,6 +365,9 @@ class HourlyDataset(Dataset):
             drop_last=True,
             logger=self.logger,
         )
+        if getattr(self.hp, "debug", False):
+            enabled = [name for f, name in zip(self.mask, FEATURE_COLUMNS) if f]
+            self.logger.info("[TRACE] mask enabled=%s (len=%d)", enabled, len(enabled))
         self.feature_hash = feature_version_hash(features)
 
         closes = data_np[:, 4].astype(np.float64)

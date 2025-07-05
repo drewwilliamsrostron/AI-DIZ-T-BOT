@@ -768,6 +768,15 @@ class EnsembleModel(nn.Module):
         expected_dim = self.n_features
         actual_dim = windows_tensor.shape[2]
         print(f"[PREDICT] Expected features: {expected_dim}, Actual: {actual_dim}")
+        log = logging.getLogger(__name__)
+        log.info(
+            "[TRACE] model.predict() tensor shape=%s  |  model.input_features=%d",
+            windows_tensor.shape,
+            expected_dim,
+        )
+        assert (
+            windows_tensor.shape[2] == expected_dim
+        ), f"PREDICT shape mismatch: got {windows_tensor.shape[2]}, expected {expected_dim}"
 
         if actual_dim != expected_dim:
             raise ValueError(f"Expected {expected_dim} features, got {actual_dim}")
