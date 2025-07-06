@@ -258,7 +258,7 @@ def main() -> None:
     indicator_hp = IndicatorHyperparams(
         rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
     )
-    data = load_csv_hourly(csv_path)
+    data = load_csv_hourly(csv_path, cfg=DEFAULT_CFG)
     if not data:
         logging.error("No usable CSV data found")
         return

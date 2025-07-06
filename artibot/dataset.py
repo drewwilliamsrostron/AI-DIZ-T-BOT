@@ -10,6 +10,7 @@ import pandas as pd
 import talib
 import sys
 import importlib.machinery as _machinery
+import tomllib
 
 if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) is None:
     sys.modules["openai"].__spec__ = _machinery.ModuleSpec("openai", None)
@@ -55,7 +56,7 @@ class TradeParams(NamedTuple):
 ###############################################################################
 # CSV Loader and Dataset
 ###############################################################################
-def load_csv_hourly(csv_path: str) -> list[list[float]]:
+def load_csv_hourly(csv_path: str, *, cfg: dict | None = None) -> list[list[float]]:
     """Return parsed hourly OHLCV data from ``csv_path``.
 
     The previous implementation iterated row by row with :func:`DataFrame.iterrows`,
@@ -113,7 +114,18 @@ def load_csv_hourly(csv_path: str) -> list[list[float]]:
     else:
         df["volume_btc"] = 0.0
 
-    df = risk_filter(df, enabled=True)
+    enabled = True
+    if cfg is not None:
+        enabled = bool(cfg.get("risk_filter", {}).get("enabled", True))
+    else:
+        try:
+            with open("config/default.toml", "rb") as fh:
+                tcfg = tomllib.load(fh)
+                enabled = bool(tcfg.get("risk_filter", {}).get("enabled", True))
+        except Exception:
+            enabled = True
+
+    df = risk_filter(df, enabled=enabled)
 
     cols = ["unix", "open", "high", "low", "close", "volume_btc"]
     arr = df[cols].to_numpy(dtype=float)

@@ -117,7 +117,7 @@ def run_bot(max_epochs: int | None = None, *, overfit_toy: bool = False) -> None
         csv_path = os.path.join(here, "..", csv_path)
     csv_path = os.path.abspath(os.path.expanduser(csv_path))
     logging.info("%s", json.dumps({"event": "load_csv", "path": csv_path}))
-    data = load_csv_hourly(csv_path)
+    data = load_csv_hourly(csv_path, cfg=config)
     if overfit_toy:
         data = data[:100]
 
