@@ -46,20 +46,20 @@ from .constants import FEATURE_DIMENSION
 from .feature_manager import validate_and_align_features
 
 
-def update_best(epoch: int, sharpe: float, net_pct: float, best_ckpt_path: str) -> None:
+def update_best(epoch: int, reward: float, net_pct: float, best_ckpt_path: str) -> None:
     """Log a NEW_BEST event with key metrics."""
 
     logging.info(
-        "NEW_BEST  epoch=%d  sharpe=%.3f  net_pct=%.2f  saved %s",
+        "NEW_BEST  epoch=%d  reward=%.3f  net_pct=%.2f  saved %s",
         epoch,
-        sharpe,
+        reward,
         net_pct,
         best_ckpt_path,
     )
 
 
 def reject_if_risky(
-    sharpe: float,
+    reward: float,
     max_dd: float,
     entropy: float,
     *,
@@ -79,20 +79,20 @@ def reject_if_risky(
             thresholds = {}
 
     min_entropy = float(thresholds.get("MIN_ENTROPY", 1.0))
-    min_sharpe = float(thresholds.get("MIN_SHARPE", 1.0))
+    min_reward = float(thresholds.get("MIN_REWARD", -1.0))
     max_drawdown = float(thresholds.get("MAX_DRAWDOWN", -0.30))
 
     # Early-stage models get a looser gate until trade count builds up
     if G.global_num_trades < 1000:
-        return sharpe <= 0.0 and max_dd <= -0.40
+        return reward <= 0.0 and max_dd <= -0.40
 
     if entropy < min_entropy:
         return True  # reject collapsed runs
-    return max_dd < max_drawdown or sharpe < min_sharpe
+    return max_dd < max_drawdown or reward < min_reward
 
 
 def nuclear_key_gate(
-    sharpe: float,
+    reward: float,
     max_dd: float,
     entropy: float,
     profit_factor: float,
@@ -110,7 +110,7 @@ def nuclear_key_gate(
             thresholds = {}
 
     min_entropy = float(thresholds.get("MIN_ENTROPY", 1.0))
-    min_sharpe = float(thresholds.get("MIN_SHARPE", 1.0))
+    min_reward = float(thresholds.get("MIN_REWARD", -1.0))
     max_drawdown = float(thresholds.get("MAX_DRAWDOWN", -0.30))
     min_profit_factor = 1.5
 
@@ -119,7 +119,7 @@ def nuclear_key_gate(
 
     return (
         entropy >= min_entropy
-        and sharpe >= min_sharpe
+        and reward >= min_reward
         and max_dd >= max_drawdown
         and profit_factor >= min_profit_factor
     )
@@ -133,7 +133,7 @@ def nk_gate_passes() -> bool:
         else 0.0
     )
     return nuclear_key_gate(
-        G.global_sharpe,
+        G.global_composite_reward,
         G.global_max_drawdown,
         entropy,
         G.global_profit_factor,
@@ -706,7 +706,7 @@ class EnsembleModel(nn.Module):
             G.global_best_monthly_stats_table = best_monthly
             update_best(
                 self.train_steps,
-                current_result["sharpe"],
+                cur_reward,
                 current_result["net_pct"],
                 self.weights_path,
             )

@@ -113,7 +113,7 @@ def load_csv_hourly(csv_path: str) -> list[list[float]]:
     else:
         df["volume_btc"] = 0.0
 
-    df = risk_filter(df, enabled=True)
+    df = risk_filter(df, enabled=G.is_risk_filter_enabled())
 
     cols = ["unix", "open", "high", "low", "close", "volume_btc"]
     arr = df[cols].to_numpy(dtype=float)

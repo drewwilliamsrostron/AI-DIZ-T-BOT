@@ -16,7 +16,7 @@
     "LIVE_POLL_INTERVAL": 3600,
     "MIN_HOLD_SECONDS": 1800,
     "RISK_FILTER": {
-        "MIN_SHARPE": 0.0,
+        "MIN_REWARD": 0.0,
         "MIN_ENTROPY": 0.0,
         "MAX_DRAWDOWN": -1.0
     },

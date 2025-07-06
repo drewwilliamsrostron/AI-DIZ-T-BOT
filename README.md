@@ -96,6 +96,7 @@ GPU acceleration. The bot falls back to CPU when no compatible wheel is found.
 pip install --upgrade pip
 pip install --extra-index-url https://download.pytorch.org/whl/cu121 \
     torch torchvision torchaudio --force-reinstall --no-cache-dir
+pip install torch==2.2.0+cu121 -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
 Windows and Linux both require an NVIDIA driver version 545.23 or newer for CUDA 12.1.
@@ -129,7 +130,7 @@ stop‑loss/take‑profit parameters and ATR threshold:
   "ADAPT_TO_LIVE": true,
   "LIVE_POLL_INTERVAL": 900,
   "MIN_HOLD_SECONDS": 1800,
-  "MIN_SHARPE": 1.0,
+  "MIN_REWARD": 1.0,
   "MAX_DRAWDOWN": -0.3,
   "MIN_ENTROPY": 1.0,
   "MIN_PROFIT_FACTOR": 1.0,
