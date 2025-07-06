@@ -14,6 +14,7 @@ import os
 from .dataset import HourlyDataset, trailing_sma
 from .ensemble import reject_if_risky
 from .backtest import robust_backtest, compute_indicators
+from .utils import heartbeat
 from .feature_manager import enforce_feature_dim
 from artibot.hyperparams import RISK_FILTER
 
@@ -427,6 +428,11 @@ def csv_training_thread(
                     "lr": lr_now,
                     "equity": equity,
                 },
+            )
+            heartbeat.update(
+                epoch=ensemble.train_steps,
+                candidate=None,
+                best_sharpe=G.global_best_sharpe,
             )
 
             if ensemble.train_steps % 5 == 0 and ensemble.best_state_dicts:

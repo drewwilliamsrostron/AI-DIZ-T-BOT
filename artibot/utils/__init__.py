@@ -51,7 +51,8 @@ class JsonFormatter(logging.Formatter):
             "loss": getattr(record, "loss", None),
             "val": getattr(record, "val", None),
         }
-        return json.dumps(base)
+        clean = {k: v for k, v in base.items() if v is not None}
+        return json.dumps(clean)
 
 
 def setup_logging() -> None:
