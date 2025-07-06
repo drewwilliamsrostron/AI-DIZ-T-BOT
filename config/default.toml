@@ -1,0 +1,2 @@
+[logging]
+heartbeat_interval = 120

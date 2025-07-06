@@ -12,8 +12,12 @@ ensure_dependencies()  # run the installer once at import time
 from config import FEATURE_CONFIG
 from .constants import FEATURE_DIMENSION
 
-print(f"[INIT] System configured for {FEATURE_DIMENSION} features")
-print(f"[INIT] Feature columns: {', '.join(FEATURE_CONFIG['feature_columns'])}")
+import logging
+
+_LOG = logging.getLogger(__name__)
+
+_LOG.debug("[INIT] System configured for %s features", FEATURE_DIMENSION)
+_LOG.debug("[INIT] Feature columns: %s", ", ".join(FEATURE_CONFIG["feature_columns"]))
 
 try:
     from screeninfo import get_monitors
