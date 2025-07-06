@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import random
 import sys
 from pathlib import Path
@@ -47,6 +46,7 @@ if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) 
 # caching objects
 # --------------------------------------------------------------------------- #
 _IMPUTER = KNNImputer(n_neighbors=5)
+
 
 # --------------------------------------------------------------------------- #
 # NamedTuple – per-bar trade parameters
