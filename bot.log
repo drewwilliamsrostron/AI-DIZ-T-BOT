@@ -8780,3 +8780,148 @@
 {"time": "2025-07-06 01:37:00,533", "level": "INFO", "msg": "[TRACE] backtest window shape=(3919, 24, 16) (rule-engine expects 6 core bars)", "epoch": null, "sharpe": null, "max_dd": null, "attn_entropy": null, "lr": null, "profit_factor": null, "loss": null, "val": null}
 {"time": "2025-07-06 01:37:00,540", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([3919, 24, 16])  |  model.input_features=16", "epoch": null, "sharpe": null, "max_dd": null, "attn_entropy": null, "lr": null, "profit_factor": null, "loss": null, "val": null}
 {"time": "2025-07-06 01:37:21,095", "level": "INFO", "msg": "[HEARTBEAT] bot alive @ Sun Jul  6 01:37:21 2025", "epoch": null, "sharpe": null, "max_dd": null, "attn_entropy": null, "lr": null, "profit_factor": null, "loss": null, "val": null}
+{"time": "2025-07-06 23:05:31,838", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:05:31 2025\", \"cpu\": \"0.0%\", \"mem\": \"37.1%\"}"}
+{"time": "2025-07-06 23:05:31,849", "level": "INFO", "msg": "Trading mode: SANDBOX"}
+{"time": "2025-07-06 23:05:38,712", "level": "INFO", "msg": "ACCOUNT_BALANCE {\"total\": {\"USDT\": 61180.55830858}}"}
+{"time": "2025-07-06 23:05:42,245", "level": "INFO", "msg": "VALIDATION_START"}
+{"time": "2025-07-06 23:05:42,273", "level": "INFO", "msg": "feature-ingest thread started"}
+{"time": "2025-07-06 23:05:44,217", "level": "INFO", "msg": "DATALOADER"}
+{"time": "2025-07-06 23:05:44,223", "level": "INFO", "msg": "START_EPOCH", "epoch": 1}
+{"time": "2025-07-06 23:05:44,512", "level": "INFO", "msg": "[TRACE] backtest window shape=(73618, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-06 23:05:44,724", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([73618, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-06 23:05:44,727", "level": "INFO", "msg": "Tkinter dashboard starting on main thread\u2026"}
+{"time": "2025-07-06 23:05:45,094", "level": "INFO", "msg": "DATALOADER"}
+{"time": "2025-07-06 23:05:45,100", "level": "INFO", "msg": "START_EPOCH", "epoch": 1}
+{"time": "2025-07-06 23:05:45,174", "level": "INFO", "msg": "[TRACE] backtest window shape=(3919, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-06 23:05:45,218", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([3919, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-06 23:06:00,070", "level": "INFO", "msg": "PROMOTED_BEST hash=00e3d3e5377e40f0680736eedddcd82b"}
+{"time": "2025-07-06 23:07:14,377", "level": "INFO", "msg": "NEW_BEST", "epoch": 1, "sharpe": -3.740463124767107, "max_dd": -0.9999998598467, "attn_entropy": 3.1757243215184654, "lr": 0.0003}
+{"time": "2025-07-06 23:07:14,403", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 1, 'mean_entropy': 3.1744344234466553, 'mean_max_prob': 0.05356530472636223, 'rejections': 0}"}
+{"time": "2025-07-06 23:07:14,597", "level": "INFO", "msg": "[TRACE] backtest window shape=(415, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-06 23:07:14,611", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([415, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-06 23:07:14,828", "level": "INFO", "msg": "EPOCH_METRICS", "epoch": 1, "sharpe": -3.740463124767107, "max_dd": -0.9999998598467, "attn_entropy": 3.175708907757327, "lr": 0.0003, "profit_factor": 0.9808045676757815, "loss": 1.2383854410478048, "val": 1.1815069019794464}
+{"time": "2025-07-06 23:07:15,354", "level": "INFO", "msg": "DATALOADER"}
+{"time": "2025-07-06 23:07:18,048", "level": "INFO", "msg": "[TRACE] backtest window shape=(4019, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-06 23:07:18,150", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([4019, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-06 23:07:31,860", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:07:31 2025\", \"cpu\": \"13.1%\", \"mem\": \"43.4%\"}"}
+{"time": "2025-07-06 23:09:31,920", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:09:31 2025\", \"cpu\": \"10.3%\", \"mem\": \"43.4%\"}"}
+{"time": "2025-07-06 23:11:31,933", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:11:31 2025\", \"cpu\": \"10.1%\", \"mem\": \"43.6%\"}"}
+{"time": "2025-07-06 23:13:31,945", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:13:31 2025\", \"cpu\": \"9.9%\", \"mem\": \"43.4%\"}"}
+{"time": "2025-07-06 23:15:31,971", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:15:31 2025\", \"cpu\": \"10.2%\", \"mem\": \"43.4%\"}"}
+{"time": "2025-07-06 23:17:31,997", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:17:31 2025\", \"cpu\": \"10.3%\", \"mem\": \"43.3%\"}"}
+{"time": "2025-07-06 23:19:32,055", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:19:32 2025\", \"cpu\": \"10.2%\", \"mem\": \"43.4%\"}"}
+{"time": "2025-07-06 23:21:32,071", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:21:32 2025\", \"cpu\": \"10.0%\", \"mem\": \"43.4%\"}"}
+{"time": "2025-07-06 23:23:32,120", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:23:32 2025\", \"cpu\": \"10.7%\", \"mem\": \"42.8%\"}"}
+{"time": "2025-07-06 23:25:32,161", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:25:32 2025\", \"cpu\": \"10.8%\", \"mem\": \"42.8%\"}"}
+{"time": "2025-07-06 23:27:32,175", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:27:32 2025\", \"cpu\": \"10.8%\", \"mem\": \"43.0%\"}"}
+{"time": "2025-07-06 23:29:32,300", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:29:32 2025\", \"cpu\": \"10.9%\", \"mem\": \"43.0%\"}"}
+{"time": "2025-07-06 23:31:32,382", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:31:32 2025\", \"cpu\": \"10.2%\", \"mem\": \"42.9%\"}"}
+{"time": "2025-07-06 23:33:32,443", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:33:32 2025\", \"cpu\": \"10.2%\", \"mem\": \"42.8%\"}"}
+{"time": "2025-07-06 23:35:32,453", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:35:32 2025\", \"cpu\": \"12.1%\", \"mem\": \"43.2%\"}"}
+{"time": "2025-07-06 23:37:32,464", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:37:32 2025\", \"cpu\": \"10.2%\", \"mem\": \"43.3%\"}"}
+{"time": "2025-07-06 23:39:32,484", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:39:32 2025\", \"cpu\": \"10.3%\", \"mem\": \"43.4%\"}"}
+{"time": "2025-07-06 23:41:32,592", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:41:32 2025\", \"cpu\": \"11.2%\", \"mem\": \"43.6%\"}"}
+{"time": "2025-07-06 23:43:32,770", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:43:32 2025\", \"cpu\": \"10.1%\", \"mem\": \"43.4%\"}"}
+{"time": "2025-07-06 23:45:32,853", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:45:32 2025\", \"cpu\": \"10.3%\", \"mem\": \"43.3%\"}"}
+{"time": "2025-07-06 23:47:33,276", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:47:33 2025\", \"cpu\": \"11.9%\", \"mem\": \"43.4%\"}"}
+{"time": "2025-07-06 23:48:40,735", "level": "INFO", "msg": "NEW_BEST", "epoch": 1, "sharpe": -3.740463124767107, "max_dd": -0.9999998598467, "attn_entropy": 3.17659681558609, "lr": 0.0005}
+{"time": "2025-07-06 23:48:40,736", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_sma 0.525"}
+{"time": "2025-07-06 23:48:40,737", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 1, 'mean_entropy': 3.175844669342041, 'mean_max_prob': 0.050153154879808426, 'rejections': 0}"}
+{"time": "2025-07-06 23:48:40,738", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_rsi 0.764"}
+{"time": "2025-07-06 23:48:40,739", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_macd 0.572"}
+{"time": "2025-07-06 23:48:40,740", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_atr 0.365"}
+{"time": "2025-07-06 23:48:40,740", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_vortex 0.736"}
+{"time": "2025-07-06 23:48:40,741", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_cmf 0.421"}
+{"time": "2025-07-06 23:48:40,742", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_ichimoku 0.421"}
+{"time": "2025-07-06 23:48:40,742", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_ema 0.242"}
+{"time": "2025-07-06 23:48:40,743", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_donchian 0.622"}
+{"time": "2025-07-06 23:48:40,746", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_kijun 0.834"}
+{"time": "2025-07-06 23:48:40,747", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_tenkan 0.734"}
+{"time": "2025-07-06 23:48:40,749", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_disp 0.322"}
+{"time": "2025-07-06 23:48:40,750", "level": "INFO", "msg": "META_MUTATION  sl=5.00 tp=5.00 atr=14 vortex=14 cmf=20, ema=20, don=20, kij=26, ten=9, disp=26, long=0.050 short=0.050"}
+{"time": "2025-07-06 23:48:40,768", "level": "INFO", "msg": "[TRACE] backtest window shape=(8159, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-06 23:48:40,785", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8159, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-06 23:48:43,853", "level": "INFO", "msg": "EPOCH_METRICS", "epoch": 1, "sharpe": -3.740463124767107, "max_dd": -0.9999998598467, "attn_entropy": 3.176561736038625, "lr": 0.0005, "profit_factor": 0.9808045676757815, "loss": 1.1554463155740915, "val": 1.0902225724582015}
+{"time": "2025-07-06 23:48:44,194", "level": "INFO", "msg": "EPOCH", "epoch": 1, "sharpe": -3.740463124767107, "lr": 0.0005, "loss": 1.1554463155740915}
+{"time": "2025-07-06 23:48:44,216", "level": "INFO", "msg": "START_EPOCH", "epoch": 2}
+{"time": "2025-07-06 23:48:45,622", "level": "INFO", "msg": "[TRACE] backtest window shape=(73618, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-06 23:48:45,899", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([73618, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-06 23:49:13,195", "level": "INFO", "msg": "PROMOTED_BEST hash=1b45e9bf4b76832d2d2be5053bfabc0a"}
+{"time": "2025-07-06 23:49:33,299", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:49:33 2025\", \"cpu\": \"14.8%\", \"mem\": \"49.8%\", \"epoch\": 1, \"candidate_sharpe\": -3.740463124767107, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-06 23:50:21,623", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_sma 0.631"}
+{"time": "2025-07-06 23:50:21,623", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 1, 'mean_entropy': 3.1748335361480713, 'mean_max_prob': 0.053569234907627106, 'rejections': 0}"}
+{"time": "2025-07-06 23:50:21,624", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_rsi 0.646"}
+{"time": "2025-07-06 23:50:21,626", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_macd 0.529"}
+{"time": "2025-07-06 23:50:21,634", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_atr 0.479"}
+{"time": "2025-07-06 23:50:21,654", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_vortex 0.646"}
+{"time": "2025-07-06 23:50:21,693", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_cmf 0.486"}
+{"time": "2025-07-06 23:50:21,694", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_ichimoku 0.420"}
+{"time": "2025-07-06 23:50:21,694", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_ema 0.176"}
+{"time": "2025-07-06 23:50:21,695", "level": "INFO", "msg": "EPOCH", "epoch": 1, "sharpe": -3.60497821033155, "lr": 0.0003, "loss": 1.2383854410478048}
+{"time": "2025-07-06 23:50:21,717", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_donchian 0.564"}
+{"time": "2025-07-06 23:50:21,755", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_kijun 0.761"}
+{"time": "2025-07-06 23:50:21,789", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_tenkan 0.784"}
+{"time": "2025-07-06 23:50:21,804", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_disp 0.382"}
+{"time": "2025-07-06 23:50:21,805", "level": "INFO", "msg": "META_MUTATION lr=+0.00 sl=5.00 tp=5.00 atr=14 vortex=14 cmf=20, ema=20, don=20, kij=26, ten=9, disp=26, long=0.050 short=0.050"}
+{"time": "2025-07-06 23:50:23,580", "level": "INFO", "msg": "[TRACE] backtest window shape=(707, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-06 23:50:23,633", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([707, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-06 23:50:24,405", "level": "INFO", "msg": "DATALOADER"}
+{"time": "2025-07-06 23:50:24,407", "level": "INFO", "msg": "START_EPOCH", "epoch": 2}
+{"time": "2025-07-06 23:50:24,703", "level": "INFO", "msg": "[TRACE] backtest window shape=(3919, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-06 23:50:24,775", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([3919, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-06 23:51:33,353", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:51:33 2025\", \"cpu\": \"13.4%\", \"mem\": \"47.0%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-06 23:53:33,371", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:53:33 2025\", \"cpu\": \"8.4%\", \"mem\": \"46.5%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-06 23:55:33,387", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:55:33 2025\", \"cpu\": \"10.3%\", \"mem\": \"46.4%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-06 23:57:33,452", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:57:33 2025\", \"cpu\": \"10.7%\", \"mem\": \"46.6%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-06 23:59:33,791", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Sun Jul  6 23:59:33 2025\", \"cpu\": \"11.3%\", \"mem\": \"47.0%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:00:00,391", "level": "INFO", "msg": "LIVE_WEIGHTS_LOADED"}
+{"time": "2025-07-07 00:01:33,821", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:01:33 2025\", \"cpu\": \"8.8%\", \"mem\": \"47.2%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:03:34,077", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:03:34 2025\", \"cpu\": \"8.0%\", \"mem\": \"47.0%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:05:34,127", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:05:34 2025\", \"cpu\": \"8.2%\", \"mem\": \"46.9%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:05:46,294", "level": "WARNING", "msg": "macro fetch failed: could not convert string to float: ''"}
+{"time": "2025-07-07 00:05:49,880", "level": "ERROR", "msg": "rvol fetch failed: phemex {\"code\":30000,\"msg\":\"Please double check input arguments\",\"data\":null}"}
+{"time": "2025-07-07 00:07:34,202", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:07:34 2025\", \"cpu\": \"8.1%\", \"mem\": \"46.9%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:09:34,246", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:09:34 2025\", \"cpu\": \"9.9%\", \"mem\": \"47.0%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:11:34,286", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:11:34 2025\", \"cpu\": \"8.0%\", \"mem\": \"46.5%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:13:34,313", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:13:34 2025\", \"cpu\": \"8.1%\", \"mem\": \"46.6%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:15:34,357", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:15:34 2025\", \"cpu\": \"8.6%\", \"mem\": \"46.6%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:17:34,385", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:17:34 2025\", \"cpu\": \"10.9%\", \"mem\": \"47.1%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:19:34,423", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:19:34 2025\", \"cpu\": \"10.4%\", \"mem\": \"47.2%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:21:34,440", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:21:34 2025\", \"cpu\": \"10.5%\", \"mem\": \"48.5%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:23:34,452", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:23:34 2025\", \"cpu\": \"10.5%\", \"mem\": \"48.2%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:25:34,473", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:25:34 2025\", \"cpu\": \"9.5%\", \"mem\": \"48.0%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:27:00,141", "level": "INFO", "msg": "NEW_BEST", "epoch": 2, "sharpe": -3.60497821033155, "max_dd": -0.9999997769248903, "attn_entropy": 3.1765967202186585, "lr": 0.0005}
+{"time": "2025-07-07 00:27:00,142", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 2, 'mean_entropy': 3.175825595855713, 'mean_max_prob': 0.05020905286073685, 'rejections': 0}"}
+{"time": "2025-07-07 00:27:00,163", "level": "INFO", "msg": "[TRACE] backtest window shape=(8159, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-07 00:27:00,444", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8159, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-07 00:27:05,799", "level": "INFO", "msg": "EPOCH_METRICS", "epoch": 2, "sharpe": -3.60497821033155, "max_dd": -0.9999997769248903, "attn_entropy": 3.176466901046857, "lr": 0.0005, "profit_factor": 1.0183668786119433, "loss": 1.107633117557496, "val": 1.100502493052647}
+{"time": "2025-07-07 00:27:06,576", "level": "INFO", "msg": "DATALOADER"}
+{"time": "2025-07-07 00:27:10,279", "level": "INFO", "msg": "[TRACE] backtest window shape=(73718, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-07 00:27:10,521", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([73718, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-07 00:27:34,502", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:27:34 2025\", \"cpu\": \"11.8%\", \"mem\": \"44.3%\", \"epoch\": 1, \"candidate_sharpe\": -3.60497821033155, \"best_reward\": -300.8451592356627}"}
+{"time": "2025-07-07 00:28:45,561", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_sma 0.593"}
+{"time": "2025-07-07 00:28:45,561", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 2, 'mean_entropy': 3.175855875015259, 'mean_max_prob': 0.05409272760152817, 'rejections': 0}"}
+{"time": "2025-07-07 00:28:45,562", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_rsi 0.622"}
+{"time": "2025-07-07 00:28:45,563", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_macd 0.497"}
+{"time": "2025-07-07 00:28:45,564", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_atr 0.526"}
+{"time": "2025-07-07 00:28:45,564", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_vortex 0.571"}
+{"time": "2025-07-07 00:28:45,566", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_cmf 0.367"}
+{"time": "2025-07-07 00:28:45,586", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_ichimoku 0.411"}
+{"time": "2025-07-07 00:28:45,628", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_ema 0.168"}
+{"time": "2025-07-07 00:28:45,630", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_donchian 0.470"}
+{"time": "2025-07-07 00:28:45,665", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_kijun 0.756"}
+{"time": "2025-07-07 00:28:45,692", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_tenkan 0.763"}
+{"time": "2025-07-07 00:28:45,725", "level": "INFO", "msg": "FEATURE_IMPORTANCE toggle_disp 0.461"}
+{"time": "2025-07-07 00:28:45,735", "level": "INFO", "msg": "META_MUTATION  sl=5.00 tp=5.00 atr=14 vortex=14 cmf=20, ema=20, don=20, kij=26, ten=9, disp=26, long=0.050 short=0.050"}
+{"time": "2025-07-07 00:28:45,784", "level": "INFO", "msg": "[TRACE] backtest window shape=(415, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-07 00:28:45,800", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([415, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-07 00:28:46,009", "level": "INFO", "msg": "EPOCH_METRICS", "epoch": 2, "sharpe": -2.4555270203897823, "max_dd": -0.9999909219050553, "attn_entropy": 3.176335021512433, "lr": 0.0003, "profit_factor": 1.0694096876703068, "loss": 1.0921690059559686, "val": 0.5939377248287201}
+{"time": "2025-07-07 00:28:46,052", "level": "INFO", "msg": "EPOCH", "epoch": 2, "sharpe": -2.4555270203897823, "lr": 0.0003, "loss": 1.0921690059559686}
+{"time": "2025-07-07 00:28:47,939", "level": "INFO", "msg": "[TRACE] backtest window shape=(707, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-07 00:28:47,943", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([707, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-07 00:28:48,757", "level": "INFO", "msg": "DATALOADER"}
+{"time": "2025-07-07 00:28:48,766", "level": "INFO", "msg": "START_EPOCH", "epoch": 3}
+{"time": "2025-07-07 00:28:48,945", "level": "INFO", "msg": "[TRACE] backtest window shape=(3919, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-07 00:28:48,989", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([3919, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-07 00:29:34,572", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:29:34 2025\", \"cpu\": \"10.6%\", \"mem\": \"44.2%\", \"epoch\": 2, \"candidate_sharpe\": -2.4555270203897823, \"best_reward\": -625.6251620869402}"}
+{"time": "2025-07-07 00:31:34,585", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Mon Jul  7 00:31:34 2025\", \"cpu\": \"9.3%\", \"mem\": \"44.5%\", \"epoch\": 2, \"candidate_sharpe\": -2.4555270203897823, \"best_reward\": -625.6251620869402}"}
