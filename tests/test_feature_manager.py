@@ -42,3 +42,18 @@ def test_indicator_toggle_zeroed_columns(monkeypatch):
     assert disabled_idx.size > 0
     assert np.all(result[:, disabled_idx] == 0.0)
     assert np.all(result[:, mask] == 1.0)
+
+
+def test_zero_disabled_torch_tensor():
+    """Torch tensors should remain on-device and be zeroed correctly."""
+    import torch
+
+    arr = torch.ones((2, FEATURE_DIMENSION), dtype=torch.float32)
+    hp = IndicatorHyperparams(use_sma=False, use_atr=False, use_vortex=False)
+    mask = torch.as_tensor(feature_mask_for(hp), dtype=torch.bool)
+
+    result = zero_disabled(arr, mask)
+    disabled_idx = (~mask).nonzero(as_tuple=True)[0]
+    assert result.shape == arr.shape
+    assert (result[:, disabled_idx] == 0).all()
+    assert (result[:, mask] == 1).all()
