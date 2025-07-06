@@ -201,7 +201,8 @@ def main() -> None:
     )
     G.set_risk_filter_enabled(bool(opts.get("risk_filter", defaults["risk_filter"])))
 
-    from artibot.utils import setup_logging, get_device
+    from artibot.utils import setup_logging
+    from artibot.core.device import get_device
     from artibot.ensemble import EnsembleModel
     from artibot.dataset import HourlyDataset, load_csv_hourly
     from artibot.hyperparams import HyperParams, IndicatorHyperparams

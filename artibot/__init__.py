@@ -7,8 +7,10 @@ the installer ran once on first launch.
 
 # ruff: noqa: E402
 from .environment import ensure_dependencies
+from .core.device import check_cuda
 
 ensure_dependencies()  # run the installer once at import time
+check_cuda()
 from config import FEATURE_CONFIG
 from .constants import FEATURE_DIMENSION
 

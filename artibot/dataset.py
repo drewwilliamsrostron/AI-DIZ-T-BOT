@@ -424,11 +424,13 @@ class HourlyDataset(Dataset):
         assert (
             sample.shape[1] == self.expected_features
         ), f"Expected {self.expected_features} features, got {sample.shape[1]}"
-        sample_t = torch.as_tensor(sample, dtype=torch.float32)
+        from .core.device import DEVICE
+
+        sample_t = torch.as_tensor(sample, dtype=torch.float32, device=DEVICE)
         label = self.labels[idx]
         if self.rebalance and label == 2 and random.random() < 0.5:
             label = random.choice([0, 1])
-        label_t = torch.tensor(label, dtype=torch.long)
+        label_t = torch.tensor(label, dtype=torch.long, device=DEVICE)
         return sample_t, label_t
 
     # [FIXED]# expose expected feature dimension

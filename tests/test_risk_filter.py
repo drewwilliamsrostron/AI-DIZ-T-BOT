@@ -19,4 +19,3 @@ def test_risk_filter_apply():
 
     disabled = risk_filter(df, enabled=False)
     assert len(disabled) == 3
-
