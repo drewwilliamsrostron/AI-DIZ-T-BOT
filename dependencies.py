@@ -63,7 +63,9 @@ def ensure_dependencies() -> None:
 
     gpu = _driver_major() >= 516
     wheel_key = "gpu" if gpu else "cpu"
-    extra_index = ["--extra-index-url", "https://download.pytorch.org/whl/cu118"] if gpu else None
+    extra_index = (
+        ["--extra-index-url", "https://download.pytorch.org/whl/cu118"] if gpu else None
+    )
 
     for name, options in dependencies.items():
         import_name = name.replace("-", "_")

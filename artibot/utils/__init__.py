@@ -320,18 +320,30 @@ def enforce_feature_dim(
 
 
 def zero_disabled(
-    features: np.ndarray | torch.Tensor, enabled_mask: np.ndarray
+    features: np.ndarray | torch.Tensor, enabled_mask
 ) -> np.ndarray | torch.Tensor:
     """Return ``features`` with disabled columns zeroed."""
+
+    if torch.is_tensor(features):
+        if not torch.is_tensor(enabled_mask):
+            mask = torch.as_tensor(
+                enabled_mask, device=features.device, dtype=torch.bool
+            )
+        else:
+            mask = enabled_mask.to(features.device, dtype=torch.bool)
+
+        while mask.dim() < features.dim():
+            mask = mask.unsqueeze(0)
+
+        out = features.clone()
+        out.masked_fill_(~mask, 0)
+        return out
 
     mask = np.asarray(enabled_mask, dtype=bool)
     reshape = [1] * features.ndim
     reshape[-1] = mask.size
     mask = mask.reshape(reshape)
 
-    if torch.is_tensor(features):
-        mask_t = torch.as_tensor(mask, dtype=torch.bool, device=features.device)
-        return torch.where(mask_t, features, torch.zeros_like(features))
     return np.where(mask, features, 0.0)
 
 
