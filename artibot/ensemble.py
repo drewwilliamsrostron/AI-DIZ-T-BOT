@@ -37,7 +37,7 @@ from torch.utils.data import DataLoader
 
 from .backtest import robust_backtest
 from .hyperparams import HyperParams, IndicatorHyperparams
-from artibot.core.device import DEVICE
+from artibot.core.device import get_device
 from .utils import zero_disabled
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
@@ -173,7 +173,7 @@ class EnsembleModel(nn.Module):
         grad_accum_steps: int = 1,
     ) -> None:
         super().__init__()
-        device = torch.device(device if device is not None else DEVICE)
+        device = torch.device(device) if device is not None else get_device()
         self.device = device
         self.weights_path = weights_path
         self.indicator_hparams = IndicatorHyperparams(
@@ -190,7 +190,10 @@ class EnsembleModel(nn.Module):
         self.expected_features = dim
         self.n_features = dim
 
-        self.models = [TradingModel(input_size=dim).to(device) for _ in range(n_models)]
+        self.models = [
+            TradingModel(input_size=dim).to(device, non_blocking=True)
+            for _ in range(n_models)
+        ]
         self._mask_lock = threading.Lock()
         self.register_buffer("feature_mask", torch.ones(1, dim, device=device))
         print("[DEBUG] Model moved to device")
@@ -207,7 +210,7 @@ class EnsembleModel(nn.Module):
             for m in self.models
         ]
         self.criterion = nn.CrossEntropyLoss(
-            weight=torch.tensor([2.0, 2.0, 1.0]).to(device)
+            weight=torch.tensor([2.0, 2.0, 1.0], device=device)
         )
         self.mse_loss_fn = nn.MSELoss()
         amp_on = device.type == "cuda"

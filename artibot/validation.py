@@ -19,7 +19,7 @@ from .dataset import load_csv_hourly, HourlyDataset
 from .ensemble import EnsembleModel
 from .hyperparams import HyperParams, IndicatorHyperparams
 from .training import csv_training_thread
-from .utils import get_device
+from artibot.core.device import get_device
 
 YEAR_HOURS = 365 * 24
 MONTH_SECONDS = 30 * 24 * 3600

@@ -151,7 +151,7 @@ def run_bot(max_epochs: int | None = None, *, overfit_toy: bool = False) -> None
     else:
         use_prev_weights = False
 
-    from .utils import get_device
+    from artibot.core.device import get_device
 
     device = get_device()
     msg = f"Using device: {device.type}"

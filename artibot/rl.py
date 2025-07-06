@@ -177,7 +177,9 @@ class MetaTransformerRL:
     def pick_action(self, state_np):
         """Return an action dictionary with PPO-compatible log probability."""
 
-        state = torch.tensor(state_np, dtype=torch.float32).unsqueeze(0)
+        from .core.device import DEVICE
+
+        state = torch.tensor(state_np, dtype=torch.float32, device=DEVICE).unsqueeze(0)
         with torch.no_grad():
             out = self.model(state)
             if len(out) == 4:
@@ -197,7 +199,7 @@ class MetaTransformerRL:
             act = {
                 k: v for k, v in act.items() if k in hyperparams.ALLOWED_META_ACTIONS
             }
-            logp = torch.tensor(0.0)
+            logp = torch.tensor(0.0, device=DEVICE)
             self.prev_logits = (p_logits, b_logits, g_mean)
             self.prev_logprob = logp
             self.prev_action_idx = None
@@ -286,15 +288,23 @@ class MetaTransformerRL:
             self.batch_buffer.pop(0)
         )
 
-        s = torch.tensor(state_np, dtype=torch.float32).unsqueeze(0)
-        ns = torch.tensor(next_state_np, dtype=torch.float32).unsqueeze(0)
+        from .core.device import DEVICE
+
+        s = torch.tensor(state_np, dtype=torch.float32, device=DEVICE).unsqueeze(0)
+        ns = torch.tensor(next_state_np, dtype=torch.float32, device=DEVICE).unsqueeze(
+            0
+        )
         out = self.model(s)
         if len(out) == 4:
             p_logits, _, _, val_s = out
         else:
             p_logits, val_s = out
         dist = torch.distributions.Categorical(logits=p_logits)
-        a = torch.tensor([action_idx]) if action_idx is not None else dist.sample()
+        a = (
+            torch.tensor([action_idx], device=DEVICE)
+            if action_idx is not None
+            else dist.sample()
+        )
         lp_s = dist.log_prob(a)
         if not hasattr(self, "prev_logits"):
             self.prev_logits = (
@@ -302,7 +312,7 @@ class MetaTransformerRL:
                 torch.zeros_like(p_logits),
                 torch.zeros_like(p_logits),
             )
-            logprob = torch.tensor(0.0)
+            logprob = torch.tensor(0.0, device=DEVICE)
         with torch.no_grad():
             out_ns = self.model(ns)
             val_ns = out_ns[-1]

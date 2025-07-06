@@ -645,7 +645,7 @@ if __name__ == "__main__":
     from .dataset import load_csv_hourly, HourlyDataset
     from .ensemble import EnsembleModel
     from .training import csv_training_thread
-    from .utils import get_device
+    from artibot.core.device import get_device
     from .hyperparams import IndicatorHyperparams
     from .bot_app import CONFIG
     import threading
