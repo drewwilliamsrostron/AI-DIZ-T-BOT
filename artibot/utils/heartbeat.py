@@ -13,12 +13,17 @@ import torch
 import psutil
 
 try:
-    from nvidia import nvml
+    from pynvml import (
+        nvmlInit,
+        nvmlDeviceGetHandleByIndex,
+        nvmlDeviceGetUtilizationRates,
+        nvmlDeviceGetMemoryInfo,
+    )
 
-    GPU_METRICS = True
+    nvmlInit()
+    _NVML = True
 except ImportError:  # pragma: no cover - optional dep
-    nvml = None
-    GPU_METRICS = False
+    _NVML = False
 
 _HANDLE = None
 
@@ -41,9 +46,9 @@ def sample() -> dict[str, Any]:
     mem = f"{psutil.virtual_memory().percent:.1f}%"
     gpu_util = None
     vram_used_mb = None
-    if GPU_METRICS and _HANDLE is not None:
-        util = nvml.nvmlDeviceGetUtilizationRates(_HANDLE)
-        meminfo = nvml.nvmlDeviceGetMemoryInfo(_HANDLE)
+    if _NVML and _HANDLE is not None:
+        util = nvmlDeviceGetUtilizationRates(_HANDLE)
+        meminfo = nvmlDeviceGetMemoryInfo(_HANDLE)
         gpu_util = util.gpu
         vram_used_mb = int(meminfo.used / 1024**2)
     return dict(
@@ -68,10 +73,9 @@ def start(interval: int | None = None) -> None:
         except Exception:
             interval = 120
 
-    if GPU_METRICS and torch.cuda.is_available():
+    if _NVML and torch.cuda.is_available():
         try:
-            nvml.nvmlInit()
-            _HANDLE = nvml.nvmlDeviceGetHandleByIndex(torch.cuda.current_device())
+            _HANDLE = nvmlDeviceGetHandleByIndex(torch.cuda.current_device())
         except Exception as exc:  # pragma: no cover - nvml errors
             logging.warning("NVML init failed: %s", exc)
             _HANDLE = None
