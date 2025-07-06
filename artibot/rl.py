@@ -111,7 +111,9 @@ class TransformerMetaAgent(nn.Module):
 
     def forward(self, x):
         """Return policy components and value for state ``x``."""
-
+        assert (
+            x.device == self.embed.weight.device
+        ), f"input{ x.device } != model{ self.embed.weight.device }"
         x_emb = self.embed(x).unsqueeze(1)
         x_pe = self.pos_enc(x_emb)
         x_enc = self.transformer_enc(x_pe)
@@ -131,8 +133,12 @@ class MetaTransformerRL:
         *,
         value_range: tuple[float, float] = (-10.0, 10.0),
         target_range: tuple[float, float] = (-10.0, 10.0),
+        device: torch.device | str | None = None,
     ):
-        self._model = TransformerMetaAgent()
+        from .core.device import get_device
+
+        self.device = torch.device(device) if device is not None else get_device()
+        self._model = TransformerMetaAgent().to(self.device)
         self.state_dim = self._model.state_dim
         self.action_keys = ACTION_KEYS
         self.discrete_keys = self._model.discrete_keys
@@ -164,6 +170,14 @@ class MetaTransformerRL:
         self.last_improvement = 0
         self.batch_buffer: list[tuple] = []
 
+    def _to_device(self, *tensors):
+        """Move tensors to ``self.device``.
+
+        DataLoader should use ``pin_memory=True`` so the non-blocking copy is
+        truly asynchronous.
+        """
+        return [t.to(self.device, non_blocking=True) for t in tensors]
+
     @property
     def model(self):
         return self._model
@@ -173,13 +187,13 @@ class MetaTransformerRL:
         self._model = value
         if not hasattr(self._model, "state_dim"):
             self._model.state_dim = self.state_dim
+        self._model.to(self.device, non_blocking=True)
 
     def pick_action(self, state_np):
         """Return an action dictionary with PPO-compatible log probability."""
 
-        from .core.device import DEVICE
-
-        state = torch.tensor(state_np, dtype=torch.float32, device=DEVICE).unsqueeze(0)
+        state = torch.as_tensor(state_np, dtype=torch.float32).unsqueeze(0)
+        (state,) = self._to_device(state)
         with torch.no_grad():
             out = self.model(state)
             if len(out) == 4:
@@ -199,7 +213,7 @@ class MetaTransformerRL:
             act = {
                 k: v for k, v in act.items() if k in hyperparams.ALLOWED_META_ACTIONS
             }
-            logp = torch.tensor(0.0, device=DEVICE)
+            logp = torch.tensor(0.0, device=self.device)
             self.prev_logits = (p_logits, b_logits, g_mean)
             self.prev_logprob = logp
             self.prev_action_idx = None
@@ -288,12 +302,9 @@ class MetaTransformerRL:
             self.batch_buffer.pop(0)
         )
 
-        from .core.device import DEVICE
-
-        s = torch.tensor(state_np, dtype=torch.float32, device=DEVICE).unsqueeze(0)
-        ns = torch.tensor(next_state_np, dtype=torch.float32, device=DEVICE).unsqueeze(
-            0
-        )
+        s = torch.as_tensor(state_np, dtype=torch.float32).unsqueeze(0)
+        ns = torch.as_tensor(next_state_np, dtype=torch.float32).unsqueeze(0)
+        s, ns = self._to_device(s, ns)
         out = self.model(s)
         if len(out) == 4:
             p_logits, _, _, val_s = out
@@ -301,7 +312,7 @@ class MetaTransformerRL:
             p_logits, val_s = out
         dist = torch.distributions.Categorical(logits=p_logits)
         a = (
-            torch.tensor([action_idx], device=DEVICE)
+            torch.tensor([action_idx], device=self.device)
             if action_idx is not None
             else dist.sample()
         )
@@ -312,7 +323,7 @@ class MetaTransformerRL:
                 torch.zeros_like(p_logits),
                 torch.zeros_like(p_logits),
             )
-            logprob = torch.tensor(0.0, device=DEVICE)
+            logprob = torch.tensor(0.0, device=self.device)
         with torch.no_grad():
             out_ns = self.model(ns)
             val_ns = out_ns[-1]
