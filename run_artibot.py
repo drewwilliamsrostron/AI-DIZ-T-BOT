@@ -26,6 +26,7 @@ import logging
 import threading
 import tkinter as tk
 from queue import Queue, Empty
+import tomllib
 
 
 SKIP_SENTIMENT = False
@@ -73,6 +74,16 @@ def load_master_config(path: str = "master_config.json") -> dict:
     try:
         with open(cfg_path, "r") as fh:
             return json.load(fh)
+    except FileNotFoundError:
+        return {}
+
+
+def load_default_config(path: str = "config/default.toml") -> dict:
+    """Return optional TOML configuration."""
+    cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), path)
+    try:
+        with open(cfg_path, "rb") as fh:
+            return tomllib.load(fh)
     except FileNotFoundError:
         return {}
 
@@ -145,6 +156,7 @@ def _launch_loading(
 
 
 CONFIG = load_master_config()
+DEFAULT_CFG = load_default_config()
 
 
 def main() -> None:
@@ -205,7 +217,8 @@ def main() -> None:
     setup_logging()
     from artibot.utils import heartbeat
 
-    heartbeat.start()
+    hb_interval = DEFAULT_CFG.get("logging", {}).get("heartbeat_interval", 120)
+    heartbeat.start(interval=hb_interval)
     root = tk.Tk()
     progress_q: Queue[tuple[float, str] | tuple[str, str]] = Queue()
     _launch_loading(root, progress_q)
