@@ -653,7 +653,7 @@ if __name__ == "__main__":
     set_threads(int(os.environ.get("OMP_NUM_THREADS", os.cpu_count() or 1)))
     ensure_dependencies()
 
-    data = load_csv_hourly("Gemini_BTCUSD_1h.csv")
+    data = load_csv_hourly("Gemini_BTCUSD_1h.csv", cfg=CONFIG)
     ds_tmp = HourlyDataset(
         data,
         seq_len=24,

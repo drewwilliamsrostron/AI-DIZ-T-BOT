@@ -271,6 +271,7 @@ def csv_training_thread(
                 "loss": tl,
                 "val": None if vl is None else vl,
                 "reward": last_reward,
+                "best_reward": best_reward,
                 "sharpe": G.global_sharpe,
                 "max_dd": G.global_max_drawdown,
                 "net_pct": G.global_net_pct,
@@ -451,8 +452,8 @@ def csv_training_thread(
             )
             heartbeat.update(
                 epoch=ensemble.train_steps,
-                candidate=None,
-                best_sharpe=G.global_best_sharpe,
+                candidate_sharpe=G.global_sharpe,
+                best_reward=best_reward,
             )
 
             if ensemble.train_steps % 5 == 0 and ensemble.best_state_dicts:
