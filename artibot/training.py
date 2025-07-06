@@ -10,6 +10,7 @@ import datetime
 import time
 import threading
 import os
+from pathlib import Path
 
 from .dataset import HourlyDataset, trailing_sma
 from .ensemble import reject_if_risky
@@ -29,6 +30,25 @@ with G.state_lock:
     G.cpu_limit = CPU_LIMIT_DEFAULT
 torch.set_num_threads(CPU_LIMIT_DEFAULT)
 os.environ["OMP_NUM_THREADS"] = str(CPU_LIMIT_DEFAULT)
+
+
+CHECKPOINTS_DIR = Path("models/checkpoints")
+CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def save_epoch_checkpoint(model: torch.nn.Module, epoch: int) -> None:
+    """Save ``model`` state and keep only the last 5 checkpoints."""
+
+    CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
+    path = CHECKPOINTS_DIR / f"epoch_{epoch}.pt"
+    torch.save(model.state_dict(), path)
+    files = sorted(CHECKPOINTS_DIR.glob("epoch_*.pt"))
+    if len(files) > 5:
+        for f in files[:-5]:
+            try:
+                f.unlink()
+            except OSError:
+                logging.warning("Failed to remove %s", f)
 
 
 def rebuild_loader(
@@ -61,13 +81,13 @@ def rebuild_loader(
 def apply_risk_curriculum(epoch: int) -> None:
     """Adjust ``RISK_FILTER`` thresholds as training progresses."""
     if epoch <= 20:
-        RISK_FILTER["MIN_SHARPE"] = -2.0
+        RISK_FILTER["MIN_REWARD"] = -2.0
         RISK_FILTER["MAX_DRAWDOWN"] = -0.80
     elif epoch <= 40:
-        RISK_FILTER["MIN_SHARPE"] = -1.0
+        RISK_FILTER["MIN_REWARD"] = -1.0
         RISK_FILTER["MAX_DRAWDOWN"] = -0.50
     else:
-        RISK_FILTER["MIN_SHARPE"] = 0.0
+        RISK_FILTER["MIN_REWARD"] = 0.0
         RISK_FILTER["MAX_DRAWDOWN"] = -0.25
 
 
@@ -270,26 +290,26 @@ def csv_training_thread(
             from artibot.hyperparams import RISK_FILTER, WARMUP_STEPS
 
             if G.get_warmup_step() >= WARMUP_STEPS:
-                RISK_FILTER["MIN_SHARPE"] = 0.5
+                RISK_FILTER["MIN_REWARD"] = 0.5
                 RISK_FILTER["MAX_DRAWDOWN"] = -0.30
 
             if globals.get_trade_count() >= 1000 and not globals.PROD_RISK:
                 hyperparams.RISK_FILTER.update(
-                    {"MIN_SHARPE": 0.5, "MAX_DRAWDOWN": -0.30}
+                    {"MIN_REWARD": 0.5, "MAX_DRAWDOWN": -0.30}
                 )
                 globals.PROD_RISK = True
 
-            sharpe = G.global_sharpe
+            reward_val = last_reward
             max_dd = G.global_max_drawdown
             entropy = attn_entropy
             if overfit_toy:
                 print(f"Toy epoch {epochs} loss {tl:.4f}")
-            if not overfit_toy and reject_if_risky(sharpe, max_dd, entropy):
+            if not overfit_toy and reject_if_risky(reward_val, max_dd, entropy):
                 logging.info(
                     "REJECTED",
                     extra={
                         "epoch": ensemble.train_steps,
-                        "sharpe": sharpe,
+                        "reward": reward_val,
                         "max_dd": max_dd,
                         "attn_entropy": entropy,
                     },
@@ -438,8 +458,6 @@ def csv_training_thread(
 
             if ensemble.train_steps % 5 == 0 and ensemble.best_state_dicts:
                 ensemble.save_best_weights(weights_path)
-
-            from artibot.training.engine import save_epoch_checkpoint
 
             save_epoch_checkpoint(ensemble, ensemble.train_steps)
 

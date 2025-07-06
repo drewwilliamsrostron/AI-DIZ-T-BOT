@@ -154,7 +154,7 @@ def validate_and_gate(csv_path: str, config: dict) -> dict:
     flat = [s for dist in distributions for s in dist]
     gate_nuclear_key(
         flat,
-        threshold=float(config.get("RISK_FILTER", config).get("MIN_SHARPE", 1.0)),
+        threshold=float(config.get("RISK_FILTER", config).get("MIN_REWARD", 1.0)),
     )
     summary = {
         "windows": len(results),
