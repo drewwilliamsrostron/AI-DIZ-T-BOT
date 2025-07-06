@@ -1,49 +1,62 @@
 import importlib
 import logging
 import subprocess
+import sys
 
 import torch
 
 log = logging.getLogger("device")
 
 
-def select_device() -> torch.device:
-    """Return detected device, installing the GPU wheel when possible."""
+CUDA_TAG = "+cu121"
+TORCH_VER = "2.2.1"
+TV_VER = "0.17.1"
+TA_VER = "2.2.1"
+CUDA_IDX = "https://download.pytorch.org/whl/cu121"
 
-    if torch.version.cuda is None:
-        log.warning("CUDA wheel missing; attempting install")
-        try:
-            log.info("Installing torch %s+cu121", torch.__version__)
-            subprocess.check_call(
-                [
-                    "pip",
-                    "install",
-                    "--index-url",
-                    "https://download.pytorch.org/whl/cu121",
-                    "torch==" + torch.__version__ + "+cu121",
-                ]
-            )
-            importlib.reload(torch)
-        except Exception as exc:  # pragma: no cover - network errors
-            log.warning("GPU wheel install failed: %s", exc)
 
-    if torch.cuda.is_available():
-        idx = torch.cuda.current_device()
-        name = torch.cuda.get_device_name(idx)
-        log.info("Using CUDA device %s: %s", idx, name)
-        return torch.device("cuda", idx)
+def _have_cuda() -> bool:
+    return torch.version.cuda is not None
 
-    log.info("Using CPU")
-    return torch.device("cpu")
+
+def _install_cuda() -> None:
+    if _have_cuda():
+        return
+    cmd = [
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "--index-url",
+        CUDA_IDX,
+        f"torch=={TORCH_VER}{CUDA_TAG}",
+        f"torchvision=={TV_VER}{CUDA_TAG}",
+        f"torchaudio=={TA_VER}{CUDA_TAG}",
+        "--extra-index-url",
+        "https://pypi.org/simple",
+    ]
+    log.warning("CUDA wheel missing – installing… (%s)", " ".join(cmd))
+    try:
+        subprocess.check_call(cmd)
+        importlib.reload(sys.modules["torch"])
+        log.info("CUDA wheel installed and torch reloaded")
+    except subprocess.CalledProcessError as e:
+        log.error("CUDA wheel install failed: %s", e)
+
+
+try:
+    _install_cuda()
+except Exception:
+    log.exception("unexpected CUDA-install failure")
 
 
 def get_device() -> torch.device:
     """Return the globally selected device."""
 
-    return select_device()
+    return DEVICE
 
 
-DEVICE = get_device()
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def check_cuda() -> None:
