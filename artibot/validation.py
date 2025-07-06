@@ -70,7 +70,7 @@ def monte_carlo_sharpe(returns: Iterable[float], runs: int = 1000) -> list[float
 
 def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
     """Train on 6 months, test the next month then roll forward."""
-    data = load_csv_hourly(csv_path)
+    data = load_csv_hourly(csv_path, cfg=config)
     if not data:
         return []
     raw_data = np.array(data, dtype=float)

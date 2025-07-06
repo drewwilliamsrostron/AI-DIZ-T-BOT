@@ -4,4 +4,7 @@ torchvision==0.17.0+cu121
 torchaudio==2.2.0+cu121
 ccxt~=4.2
 psutil~=7.0
-nvidia-ml-py3~=7.352
+
+# extras
+# optional GPU monitoring
+nvidia-ml-py3>=7.352
