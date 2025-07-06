@@ -28,6 +28,7 @@ from .utils import (
 )
 from sklearn.impute import KNNImputer
 from torch.utils.data import Dataset
+from artibot.rules.risk_filter import apply as risk_filter
 
 import artibot.globals as G
 import logging
@@ -111,6 +112,8 @@ def load_csv_hourly(csv_path: str) -> list[list[float]]:
         df["volume_btc"] = num(df["volume_btc"], errors="coerce").fillna(0.0)
     else:
         df["volume_btc"] = 0.0
+
+    df = risk_filter(df, enabled=True)
 
     cols = ["unix", "open", "high", "low", "close", "volume_btc"]
     arr = df[cols].to_numpy(dtype=float)
