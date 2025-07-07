@@ -2,6 +2,7 @@ import importlib
 import logging
 import subprocess
 import sys
+import os
 
 import torch
 
@@ -44,10 +45,11 @@ def _install_cuda() -> None:
         log.error("CUDA wheel install failed: %s", e)
 
 
-try:
-    _install_cuda()
-except Exception:
-    log.exception("unexpected CUDA-install failure")
+if os.environ.get("ARTIBOT_SKIP_INSTALL") != "1":
+    try:
+        _install_cuda()
+    except Exception:
+        log.exception("unexpected CUDA-install failure")
 
 
 def get_device() -> torch.device:
