@@ -74,8 +74,26 @@ def rebuild_loader(
         shuffle=shuffle,
         num_workers=num_workers,
         persistent_workers=True,
-        pin_memory=False,
+        pin_memory=True,
     )
+
+
+def profile_data_copy(
+    loader: torch.utils.data.DataLoader, device: torch.device, steps: int = 5
+) -> None:
+    """Profile CPU to GPU copy times for ``loader``."""
+    activities = [torch.profiler.ProfilerActivity.CPU]
+    if torch.cuda.is_available():
+        activities.append(torch.profiler.ProfilerActivity.CUDA)
+    schedule = torch.profiler.schedule(wait=1, warmup=1, active=3)
+    with torch.profiler.profile(activities=activities, schedule=schedule) as prof:
+        for step, batch in enumerate(loader):
+            for t in batch:
+                t.to(device, non_blocking=True)
+            prof.step()
+            if step >= steps:
+                break
+    logging.info("\n%s", prof.key_averages().table(sort_by="self_cuda_time_total"))
 
 
 def apply_risk_curriculum(epoch: int) -> None:
@@ -173,6 +191,8 @@ def csv_training_thread(
         dl_val = rebuild_loader(
             None, ds_val, batch_size=128, shuffle=False, num_workers=workers
         )
+        if config.get("PROFILE", False):
+            profile_data_copy(dl_train, ensemble.device)
         steps_per_epoch = len(dl_train)
         if max_epochs is not None:
             total_steps = steps_per_epoch * max_epochs

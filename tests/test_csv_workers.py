@@ -15,6 +15,7 @@ def test_csv_thread_uses_config(monkeypatch):
     def fake_loader(*args, **kwargs):
         called["workers"] = kwargs.get("num_workers")
         called["persistent"] = kwargs.get("persistent_workers")
+        called["pinned"] = kwargs.get("pin_memory")
 
         class DL:
             pass
@@ -44,6 +45,7 @@ def test_csv_thread_uses_config(monkeypatch):
 
     assert called.get("workers") == 3
     assert called.get("persistent") is True
+    assert called.get("pinned") is True
 
 
 def test_persistent_workers_enabled(monkeypatch):
@@ -52,6 +54,7 @@ def test_persistent_workers_enabled(monkeypatch):
 
     def fake_loader(*args, **kwargs):
         called["persistent"] = kwargs.get("persistent_workers")
+        called["pinned"] = kwargs.get("pin_memory")
 
         class DL:
             pass
@@ -78,3 +81,4 @@ def test_persistent_workers_enabled(monkeypatch):
     csv_training_thread(ens, data, stop, {}, use_prev_weights=False, max_epochs=1)
 
     assert called.get("persistent") is True
+    assert called.get("pinned") is True

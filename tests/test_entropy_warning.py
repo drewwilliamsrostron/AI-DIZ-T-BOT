@@ -56,7 +56,7 @@ def test_entropy_warning(monkeypatch, caplog):
     ens.optimizers = [torch.optim.AdamW(ens.models[0].parameters(), lr=1e-3)]
 
     ds = TensorDataset(torch.zeros(1, 24, 8), torch.zeros(1, dtype=torch.long))
-    dl = DataLoader(ds, batch_size=1)
+    dl = DataLoader(ds, batch_size=1, pin_memory=True)
 
     caplog.set_level(logging.WARNING)
     G.global_attention_entropy_history = [0.4] * 120
