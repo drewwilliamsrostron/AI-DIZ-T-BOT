@@ -9,6 +9,22 @@ import torch
 log = logging.getLogger("device")
 
 
+def enable_flash_sdp() -> bool:
+    """Enable FlashAttention/SDP kernels when available."""
+
+    try:
+        torch.backends.cuda.enable_flash_sdp(True)
+    except Exception as exc:  # pragma: no cover - optional feature
+        log.debug("Flash SDP not enabled: %s", exc)
+        return False
+    else:
+        log.info("Flash SDP kernels enabled")
+        return True
+
+
+FLASH_SDP_ENABLED = enable_flash_sdp()
+
+
 CUDA_TAG = "+cu121"
 TORCH_VER = "2.2.1"
 TV_VER = "0.17.1"
