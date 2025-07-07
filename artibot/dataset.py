@@ -272,13 +272,11 @@ def preprocess_features(
     seq_len: int,
     *,
     use_ichimoku: bool = False,
-    drop_last: bool = False,
     logger: logging.Logger | None = None,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Return *(features, windows)* for *data_np*."""
+) -> np.ndarray:
+    """Return feature matrix for *data_np* without creating windows eagerly."""
 
     log = logger or logging.getLogger(__name__)
-    mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
 
     features = build_features(
         data_np,
@@ -287,18 +285,7 @@ def preprocess_features(
         logger=log,
     )
 
-    from numpy.lib.stride_tricks import sliding_window_view
-
-    windows = sliding_window_view(features, (seq_len, features.shape[1]))[:, 0]
-    log.debug("[TRACE] dataset pre-mask shape=%s", windows.shape)
-
-    if drop_last:
-        windows = windows[:-1]
-
-    windows = np.nan_to_num(windows, nan=0.0, posinf=0.0, neginf=0.0)
-    windows = zero_disabled(windows, mask)
-
-    return features.astype(np.float32), windows.astype(np.float32)
+    return features.astype(np.float32)
 
 
 # --------------------------------------------------------------------------- #
@@ -343,7 +330,7 @@ class HourlyDataset(Dataset):
             )
 
         self.mask = feature_mask_for(indicator_hparams, use_ichimoku=use_ichimoku)
-        self.samples, self.labels = self.preprocess()
+        self.features, self.labels = self.preprocess()
 
     # --------------------------------------------------------------------- #
     def apply_feature_mask(
@@ -353,18 +340,17 @@ class HourlyDataset(Dataset):
         if use_ichimoku is not None:
             self.use_ichimoku = use_ichimoku
         self.mask = feature_mask_for(hp, use_ichimoku=self.use_ichimoku)
-        self.samples = zero_disabled(self.samples, self.mask)
+        self.features = zero_disabled(self.features, self.mask)
 
     # --------------------------------------------------------------------- #
     def preprocess(self):
         data_np = np.array(self.data, dtype=float)
 
-        features, windows = preprocess_features(
+        features = preprocess_features(
             data_np,
             self.hp,
             self.seq_len,
             use_ichimoku=self.use_ichimoku,
-            drop_last=True,
             logger=self.logger,
         )
         if getattr(self.hp, "debug", False):
@@ -387,24 +373,21 @@ class HourlyDataset(Dataset):
         thresholds = self.atr_threshold_k * atr_vals[self.seq_len - 1 : -1]
         labels = np.where(rets > thresholds, 0, np.where(rets < -thresholds, 1, 2))
 
-        mask = (
-            np.isfinite(windows).all(axis=(1, 2))
-            & np.isfinite(rets)
-            & np.isfinite(thresholds)
+        self.features = zero_disabled(
+            np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0), self.mask
         )
-        windows = windows[mask]
-        labels = labels[mask]
 
-        windows = np.nan_to_num(windows, nan=0.0, posinf=0.0, neginf=0.0)
-
-        return windows.astype(np.float32), labels.astype(np.int64)
+        labels = labels.astype(np.int64)
+        return self.features, labels
 
     # --------------------------------------------------------------------- #
     def __len__(self):
-        return len(self.samples)
+        return len(self.labels)
 
     def __getitem__(self, idx):
-        sample = self.samples[idx].copy()
+        start = idx
+        end = idx + self.seq_len
+        sample = self.features[start:end].copy()
         if sample.shape[-1] != self.expected_features:
             self.logger.error("Feature dimension mismatch: %s", sample.shape)
             raise ValueError(

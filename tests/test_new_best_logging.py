@@ -72,7 +72,7 @@ def test_new_best_logging(monkeypatch, caplog):
     ens.optimizers = [torch.optim.AdamW(ens.models[0].parameters(), lr=1e-3)]
 
     ds = TensorDataset(torch.zeros(1, 24, 8), torch.zeros(1, dtype=torch.long))
-    dl = DataLoader(ds, batch_size=1)
+    dl = DataLoader(ds, batch_size=1, pin_memory=True)
 
     G.global_attention_entropy_history = [1.2]
     G.global_sharpe = 1.2
