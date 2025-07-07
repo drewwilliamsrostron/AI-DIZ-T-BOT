@@ -529,8 +529,8 @@ class TradingGUI:
         self.status_var.set(f"{primary} | NK {nk_state} \n{secondary}")
         self.progress["value"] = G.global_progress_pct
 
-        live_pnl = G.live_equity - G.start_equity
-        trade_cnt = G.live_trade_count
+        _ = G.live_equity - G.start_equity
+        _ = G.live_trade_count
         if should_enable_live_trading() and not G.live_trading_enabled:
             self.nuclear_button.config(state=tk.NORMAL)
         else:
