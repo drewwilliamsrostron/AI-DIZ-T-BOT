@@ -67,9 +67,13 @@ def ensure_dependencies() -> None:
         ["--extra-index-url", "https://download.pytorch.org/whl/cu118"] if gpu else None
     )
 
+    flash_auto = os.getenv("FLASH_SDP_AUTO_INSTALL") == "1"
+
     for name, options in dependencies.items():
         import_name = name.replace("-", "_")
         if importlib.util.find_spec(import_name) is not None:
+            continue
+        if flash_auto and name in {"torch", "torchvision", "torchaudio"}:
             continue
         pkg = options.get(wheel_key) or options.get("any")
         if not pkg:

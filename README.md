@@ -114,6 +114,17 @@ to enable FlashAttention‑v2.  Benchmarks show 1.5–3× speed‑ups on sequenc
 ≤128 tokens and up to 40 % shorter epochs when profiling with
 `torch.profiler.schedule(wait=1, warmup=1, active=3)`.
 
+### FlashAttention Auto-Install
+
+To automatically install a FlashAttention-capable PyTorch nightly on CUDA 11.8:
+
+```bash
+export FLASH_SDP_AUTO_INSTALL=1
+python run_artibot.py
+```
+
+The wheels are hosted at <https://download.pytorch.org/whl/nightly/cu118>.
+
 ## Configuration
 
 Create `master_config.json` with your credentials. The bot currently trades

@@ -1,28 +1,73 @@
+import os
+import sys
+import subprocess
 import importlib
 import logging
-import subprocess
-import sys
-import os
 
 import torch
+
+
+def ensure_flash_sdp() -> None:
+    """Auto-install FlashAttention builds and enable kernels."""
+    try:
+        from torch.backends.cuda import is_flash_attention_available
+    except Exception:  # pragma: no cover - CPU-only environments
+        return
+
+    if (
+        not is_flash_attention_available()
+        and os.getenv("FLASH_SDP_AUTO_INSTALL") == "1"
+    ):
+        install_cmd = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--force-reinstall",
+            "--pre",
+            "torch",
+            "torchvision",
+            "--extra-index-url",
+            "https://download.pytorch.org/whl/nightly/cu118",
+        ]
+        print(
+            f"Installing FlashAttention-enabled PyTorch nightly: {' '.join(install_cmd)}"
+        )
+        subprocess.check_call(install_cmd)
+        import importlib as _importlib
+
+        _importlib.reload(torch)
+    torch.backends.cuda.enable_flash_sdp(True)
+
+
+ensure_flash_sdp()
 
 log = logging.getLogger("device")
 
 
-def enable_flash_sdp() -> bool:
+def enable_flash_sdp(flag: bool = True) -> bool:
     """Enable FlashAttention/SDP kernels when available."""
 
     try:
-        torch.backends.cuda.enable_flash_sdp(True)
+        torch.backends.cuda.enable_flash_sdp(flag)
     except Exception as exc:  # pragma: no cover - optional feature
         log.debug("Flash SDP not enabled: %s", exc)
         return False
     else:
-        log.info("Flash SDP kernels enabled")
+        if flag:
+            log.info("Flash SDP kernels enabled")
         return True
 
 
-FLASH_SDP_ENABLED = enable_flash_sdp()
+def is_flash_sdp_enabled() -> bool:
+    """Return ``True`` when FlashAttention is available and active."""
+
+    try:
+        from torch.backends.cuda import is_flash_attention_available, flash_sdp_enabled
+
+        return is_flash_attention_available() and flash_sdp_enabled()
+    except Exception:  # pragma: no cover - optional feature
+        return False
 
 
 CUDA_TAG = "+cu121"
