@@ -397,11 +397,11 @@ class HourlyDataset(Dataset):
         if self.train_mode and random.random() < 0.2:
             sample += np.random.normal(0, 0.01, sample.shape)
 
-        sample_t = torch.as_tensor(sample, dtype=torch.float32)
+        sample_t = torch.as_tensor(sample, dtype=torch.float32, device="cpu")
         label = self.labels[idx]
         if self.rebalance and label == 2 and random.random() < 0.5:
             label = random.choice([0, 1])
-        label_t = torch.tensor(label, dtype=torch.long)
+        label_t = torch.tensor(label, dtype=torch.long, device="cpu")
         return sample_t, label_t
 
     # convenience for external callers
