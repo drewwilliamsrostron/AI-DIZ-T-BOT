@@ -134,6 +134,7 @@ class MetaTransformerRL:
         value_range: tuple[float, float] = (-10.0, 10.0),
         target_range: tuple[float, float] = (-10.0, 10.0),
         device: torch.device | str | None = None,
+        cfg: object | None = None,
     ):
         from .core.device import get_device
 
@@ -155,7 +156,18 @@ class MetaTransformerRL:
         # Reward shaping baseline (EMA of |Δreward|)
         self.reward_ema = 1.0
         self.tau_inv = 1.0 / 50.0
-        self.entropy_beta = math.exp(_random.uniform(math.log(1e-4), math.log(5e-3)))
+        if cfg and hasattr(cfg, "entropy_beta"):
+            import math as _math
+            import random as _rand
+
+            mn = getattr(
+                getattr(cfg, "entropy_beta"), "min", getattr(cfg, "entropy_beta")
+            )
+            mx = getattr(getattr(cfg, "entropy_beta"), "max", mn)
+            self.entropy_beta = 10 ** _rand.uniform(_math.log10(mn), _math.log10(mx))
+        else:
+            self.entropy_beta = 0.005
+        self.skip_risk_epochs = getattr(cfg, "skip_risk_epochs", 3) if cfg else 3
         self.low_kl_count = 0
 
         # (7) Scheduled exploration
@@ -191,6 +203,11 @@ class MetaTransformerRL:
 
     def pick_action(self, state_np):
         """Return an action dictionary with PPO-compatible log probability."""
+
+        if getattr(self, "current_epoch", 0) < getattr(self, "skip_risk_epochs", 3):
+            self.skip_risk_check = True
+        else:
+            self.skip_risk_check = False
 
         state = torch.as_tensor(state_np, dtype=torch.float32).unsqueeze(0)
         (state,) = self._to_device(state)

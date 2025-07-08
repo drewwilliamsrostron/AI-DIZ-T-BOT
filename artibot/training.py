@@ -19,7 +19,6 @@ from .utils import heartbeat
 from .feature_manager import enforce_feature_dim
 from artibot.hyperparams import RISK_FILTER
 from artibot.utils.reward_utils import ema, differential_sharpe
-import pandas as pd
 
 import sys
 import json
@@ -280,13 +279,9 @@ def csv_training_thread(
             ret_val = G.global_backtest_profit[-1] if G.global_backtest_profit else 0.0
             returns_series.append(float(ret_val))
 
-            trade_term = ema(
-                torch.tensor(trade_count_series, dtype=torch.float32), tau=96
-            )[-1].item()
-            days_term = ema(
-                torch.tensor(days_in_profit_series, dtype=torch.float32), tau=96
-            )[-1].item()
-            sharpe_term = differential_sharpe(pd.Series(returns_series))
+            trade_term = ema(torch.tensor(trade_count_series), tau=96.0)[-1]
+            days_term = ema(torch.tensor(days_in_profit_series), tau=96.0)[-1]
+            sharpe_term = differential_sharpe(torch.tensor(returns_series))
             ensemble.reward_loss_weight = min(
                 ensemble.max_reward_loss_weight,
                 ensemble.reward_loss_weight + 0.01,
