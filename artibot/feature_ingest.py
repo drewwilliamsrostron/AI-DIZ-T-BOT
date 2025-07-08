@@ -37,9 +37,9 @@ _LOG = logging.getLogger("feature_ingest")
 def ingest_features(df: pd.DataFrame) -> pd.DataFrame:
     """Forward-fill missing values and add a feature mask column."""
 
-    mask = ~df.isna()
+    valid_mask = ~df.isna()
     df = df.ffill(limit=7)
-    df["feature_mask"] = mask.all(axis=1).astype(int)
+    df["feature_mask"] = valid_mask.all(axis=1).astype(int)
     return df
 
 

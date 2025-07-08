@@ -163,12 +163,13 @@ stop‑loss/take‑profit parameters and ATR threshold:
 }
 ```
 
-### Window-Length & Hyperparameter Sweep
+### Hyperparameter Sweep
 
 Define `experiment_axes` in your config YAML and run:
 
 ```bash
-python scripts/sweep.py --config-file config/hyperparams.yaml
+export FLASH_SDP_AUTO_INSTALL=1
+python scripts/sweep.py --config config/hyperparams.yaml --early_stop_epochs 3 --top_k 3
 ```
 
 ## Usage

@@ -10,7 +10,9 @@ import torch
 def ensure_flash_sdp() -> None:
     """Auto-install FlashAttention builds and enable kernels."""
     try:
-        from torch.backends.cuda import is_flash_attention_available
+        from torch.backends.cuda import (
+            is_flash_attention_available,
+        )
     except Exception:  # pragma: no cover - CPU-only environments
         return
 
@@ -18,7 +20,7 @@ def ensure_flash_sdp() -> None:
         not is_flash_attention_available()
         and os.getenv("FLASH_SDP_AUTO_INSTALL") == "1"
     ):
-        install_cmd = [
+        cmd = [
             sys.executable,
             "-m",
             "pip",
@@ -30,13 +32,9 @@ def ensure_flash_sdp() -> None:
             "--extra-index-url",
             "https://download.pytorch.org/whl/nightly/cu118",
         ]
-        print(
-            f"Installing FlashAttention-enabled PyTorch nightly: {' '.join(install_cmd)}"
-        )
-        subprocess.check_call(install_cmd)
-        import importlib as _importlib
-
-        _importlib.reload(torch)
+        print("Installing FlashAttention nightly:", " ".join(cmd))
+        subprocess.check_call(cmd)
+        importlib.reload(torch)
     torch.backends.cuda.enable_flash_sdp(True)
 
 
@@ -119,7 +117,10 @@ def get_device() -> torch.device:
     return DEVICE
 
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if callable(getattr(torch, "device", None)) and hasattr(torch.cuda, "is_available"):
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+else:  # pragma: no cover - torch stubbed
+    DEVICE = "cpu"
 
 
 def check_cuda() -> None:

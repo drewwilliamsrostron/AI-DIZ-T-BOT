@@ -7,7 +7,14 @@ the installer ran once on first launch.
 
 # ruff: noqa: E402
 from .environment import ensure_dependencies
-from .core.device import check_cuda
+
+try:
+    from .core.device import check_cuda
+except Exception:  # pragma: no cover - optional torch missing
+
+    def check_cuda() -> None:
+        pass
+
 
 ensure_dependencies()  # run the installer once at import time
 check_cuda()
