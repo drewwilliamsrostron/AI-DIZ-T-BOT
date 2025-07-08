@@ -431,7 +431,14 @@ def robust_backtest(
                     proceeds = pos["size"] * exit_price
                     comm_exit = proceeds * commission_rate
                     profit = proceeds - (pos["size"] * pos["entry_price"]) - comm_exit
-                    bal += profit
+                    new_bal = bal + profit
+                    if new_bal < 0:
+                        log.warning(
+                            "[BACKTEST] equity negative after long exit; clamping to zero (bal=%.2f, profit=%.2f)",
+                            bal,
+                            profit,
+                        )
+                    bal = max(0.0, new_bal)
                 else:
                     exit_price = _price_with_noise("buy", exit_price)
                     comm_exit = abs(pos["size"]) * exit_price * commission_rate
@@ -441,7 +448,14 @@ def robust_backtest(
                     hrs = (cur_t - pos["entry_time"]) / 3600.0
                     funding = abs(pos["size"]) * pos["entry_price"] * FUNDING_RATE * hrs
                     profit -= funding
-                    bal += profit
+                    new_bal = bal + profit
+                    if new_bal < 0:
+                        log.warning(
+                            "[BACKTEST] equity negative after short exit; clamping to zero (bal=%.2f, profit=%.2f)",
+                            bal,
+                            profit,
+                        )
+                    bal = max(0.0, new_bal)
                 trades.append(
                     {
                         "entry_time": pos["entry_time"],
@@ -517,7 +531,14 @@ def robust_backtest(
             exit_price = _price_with_noise("sell", final_price)
             comm_exit = pos["size"] * exit_price * commission_rate
             pf = pos["size"] * (exit_price - pos["entry_price"]) - comm_exit
-            bal += pf
+            new_bal = bal + pf
+            if new_bal < 0:
+                log.warning(
+                    "[BACKTEST] equity negative on final long exit; clamping to zero (bal=%.2f, profit=%.2f)",
+                    bal,
+                    pf,
+                )
+            bal = max(0.0, new_bal)
         else:
             exit_price = _price_with_noise("buy", final_price)
             comm_exit = abs(pos["size"]) * exit_price * commission_rate
@@ -525,7 +546,14 @@ def robust_backtest(
             hrs = (timestamps[-1] - pos["entry_time"]) / 3600.0
             fund = abs(pos["size"]) * pos["entry_price"] * FUNDING_RATE * hrs
             pf -= fund
-            bal += pf
+            new_bal = bal + pf
+            if new_bal < 0:
+                log.warning(
+                    "[BACKTEST] equity negative on final short exit; clamping to zero (bal=%.2f, profit=%.2f)",
+                    bal,
+                    pf,
+                )
+            bal = max(0.0, new_bal)
         trades.append(
             {
                 "entry_time": pos["entry_time"],
