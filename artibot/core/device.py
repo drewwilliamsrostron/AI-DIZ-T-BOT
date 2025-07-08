@@ -3,8 +3,27 @@ import sys
 import subprocess
 import importlib
 import logging
-
 import torch
+
+
+# ---------------------------------------------------------------------------
+# Ensure optional dependencies are present
+# ---------------------------------------------------------------------------
+def ensure_dependencies() -> None:
+    """Install additional packages at startup if they are missing."""
+
+    if os.environ.get("ARTIBOT_SKIP_INSTALL") == "1":
+        return
+
+    pkgs = ["optuna", "pandas"]
+    for pkg in pkgs:
+        try:
+            __import__(pkg)
+        except ImportError:  # pragma: no cover - network required
+            subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
+
+
+ensure_dependencies()
 
 
 def ensure_flash_sdp() -> None:

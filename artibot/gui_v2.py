@@ -25,8 +25,6 @@ import tkinter as tk
 from tkinter import ttk
 
 
-import matplotlib
-
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 
@@ -94,11 +92,9 @@ def select_weight_file(use_prev: bool = True) -> str | None:
     if use_prev and messagebox.askyesno("Load Weights", "Use best.pt?"):
         return "best.pt"
     return (
-
         filedialog.askopenfilename(
             title="Select weight file", filetypes=[("PyTorch", "*.pth")]
         )
-
         or None
     )
 
@@ -182,7 +178,6 @@ def startup_options_dialog(
     tk_module.Spinbox(
         root, from_=1, to=threads_max, textvariable=threads_var, width=5
     ).pack(anchor="w")
-
 
     def cont() -> None:
         result["skip_sentiment"] = skip_var.get()
@@ -366,11 +361,15 @@ class TradingGUI:
             self.frame_trades, orient="vertical", command=self.trade_tree.yview
         )
 
-        self.trade_tree = ttk.Treeview(self.frame_trades, columns=cols, show="headings", height=10)
+        self.trade_tree = ttk.Treeview(
+            self.frame_trades, columns=cols, show="headings", height=10
+        )
         for c in cols:
             self.trade_tree.heading(c, text=c)
             self.trade_tree.column(c, anchor=tk.CENTER)
-        vsb = ttk.Scrollbar(self.frame_trades, orient="vertical", command=self.trade_tree.yview)
+        vsb = ttk.Scrollbar(
+            self.frame_trades, orient="vertical", command=self.trade_tree.yview
+        )
 
         self.trade_tree.configure(yscrollcommand=vsb.set)
         self.trade_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -423,7 +422,6 @@ class TradingGUI:
         self.best_lr_label.grid(row=3, column=0, sticky="w", padx=5, pady=2)
         self.best_wd_label = ttk.Label(self.info, text="Weight Decay: N/A")
         self.best_wd_label.grid(row=3, column=1, sticky="w", padx=5, pady=2)
-
 
         self.current_stats = ttk.LabelFrame(self.info, text="Current Stats")
         self.current_stats.grid(
@@ -894,12 +892,10 @@ class TradingGUI:
             text=f"Best Avg Loss: {G.global_best_avg_loss:.3f}"
         )
 
-
         primary, secondary = G.get_status_full()
         nk_state = "ARMED" if G.nuke_armed else "SAFE"
         self.status_var.set(f"{primary} | NK {nk_state} \n{secondary}")
         self.progress["value"] = G.global_progress_pct
-
 
         _ = G.live_equity - G.start_equity
         _ = G.live_trade_count
@@ -910,7 +906,6 @@ class TradingGUI:
             self.nuclear_button.config(state=tk.DISABLED)
         if G.live_trading_enabled:
             self.nuclear_button.config(text="Live Trading ON")
-
 
         allowed = nuclear_key_condition(
             G.global_sharpe, G.global_max_drawdown, G.global_profit_factor
@@ -955,7 +950,6 @@ class TradingGUI:
                 self.ai_log_list.yview_moveto(1.0)
             except Exception:
                 pass
-
 
     def on_test_buy(self) -> None:
         self.on_test_trade("buy")
@@ -1020,11 +1014,9 @@ class TradingGUI:
             G.update_trade_params(sl_var.get(), tp_var.get())
             win.destroy()
 
-
         ttk.Button(win, text="Apply", command=apply).grid(
             row=2, column=0, columnspan=2, pady=5
         )
-
 
     def adjust_cpu_limit(self) -> None:
         win = tk.Toplevel(self.root)
@@ -1035,16 +1027,13 @@ class TradingGUI:
             win, from_=1, to=os.cpu_count() or 1, textvariable=cpu_var, width=5
         ).grid(row=0, column=1, padx=5, pady=5)
 
-
         def apply() -> None:
             G.set_cpu_limit(cpu_var.get())
             win.destroy()
 
-
         ttk.Button(win, text="Apply", command=apply).grid(
             row=1, column=0, columnspan=2, pady=5
         )
-
 
     def manual_validate(self) -> None:
         self.validation_label.config(text="Validating...")
@@ -1083,7 +1072,6 @@ class TradingGUI:
         G.use_trade_term = bool(self.use_trade_var.get())
         G.use_profit_days_term = bool(self.use_days_var.get())
 
-
     def on_toggle_force_nk(self) -> None:
         G.nuke_armed = bool(self.force_nk_var.get())
 
@@ -1106,7 +1094,6 @@ if __name__ == "__main__":
     G.global_best_equity_curve = G.global_equity_curve
     G.timeline_ind_on[:] = 0
     G.timeline_trades[:] = 0
-
 
     ens = types.SimpleNamespace(
         optimizers=[types.SimpleNamespace(param_groups=[{"lr": 1e-3}])]

@@ -6,15 +6,18 @@ import artibot.globals as globals
 import artibot.hyperparams as hyperparams
 
 import logging
+import optuna
+import pandas as pd
 import datetime
 import time
 import threading
 import os
 from pathlib import Path
 
-from .dataset import HourlyDataset, trailing_sma
-from .ensemble import reject_if_risky
+from .dataset import HourlyDataset, trailing_sma, load_csv_hourly
+from .ensemble import reject_if_risky, EnsembleModel
 from .backtest import robust_backtest, compute_indicators
+from .core.device import get_device
 from .utils import heartbeat
 from .feature_manager import enforce_feature_dim
 from artibot.hyperparams import RISK_FILTER
@@ -25,6 +28,8 @@ import json
 import torch
 import multiprocessing
 import gc
+
+logger = logging.getLogger(__name__)
 
 CPU_LIMIT_DEFAULT = max(1, multiprocessing.cpu_count() - 2)
 with G.state_lock:
@@ -52,10 +57,18 @@ def save_epoch_checkpoint(model: torch.nn.Module, epoch: int) -> None:
                 logging.warning("Failed to remove %s", f)
 
 
+def smooth(series: list[float], span: int = 10) -> list[float]:
+    """Return exponentially smoothed values for ``series``."""
+
+    if not series:
+        return []
+    return pd.Series(series).ewm(span=span).mean().tolist()
+
+
 def rebuild_loader(
     old_loader: torch.utils.data.DataLoader | None,
     dataset: torch.utils.data.Dataset,
-    batch_size: int = 128,
+    batch_size: int = 512,
     shuffle: bool = True,
     *,
     num_workers: int,
@@ -187,10 +200,10 @@ def csv_training_thread(
             "DATALOADER", extra={"workers": workers, "device": ensemble.device.type}
         )
         dl_train = rebuild_loader(
-            None, ds_train, batch_size=128, shuffle=True, num_workers=workers
+            None, ds_train, batch_size=512, shuffle=True, num_workers=workers
         )
         dl_val = rebuild_loader(
-            None, ds_val, batch_size=128, shuffle=False, num_workers=workers
+            None, ds_val, batch_size=512, shuffle=False, num_workers=workers
         )
         if config.get("PROFILE", False):
             profile_data_copy(dl_train, ensemble.device)
@@ -265,6 +278,13 @@ def csv_training_thread(
                 G.global_validation_loss.append(vl)
             else:
                 G.global_validation_loss.append(None)
+            smoothed_loss = smooth(G.global_training_loss)
+            eq_vals = [b for _, b in G.global_equity_curve]
+            smoothed_equity = smooth(eq_vals)
+            if smoothed_loss:
+                logger.info("Smoothed Loss: %.4f", smoothed_loss[-1])
+            if smoothed_equity:
+                logger.info("Smoothed Equity: %.4f", smoothed_equity[-1])
             if G.global_backtest_profit:
                 _ = G.global_backtest_profit[-1]
             last_reward = (
@@ -453,14 +473,14 @@ def csv_training_thread(
                         dl_train = rebuild_loader(
                             dl_train,
                             ds_tr_,
-                            batch_size=128,
+                            batch_size=512,
                             shuffle=True,
                             num_workers=workers,
                         )
                         dl_val = rebuild_loader(
                             dl_val,
                             ds_val_,
-                            batch_size=128,
+                            batch_size=512,
                             shuffle=False,
                             num_workers=workers,
                         )
@@ -733,3 +753,62 @@ def save_checkpoint():
     }
     with open("checkpoint.json", "w") as f:
         json.dump(checkpoint, f, indent=2)
+
+
+###############################################################################
+# Hyper-parameter optimisation utilities
+###############################################################################
+
+
+def objective(trial: optuna.trial.Trial) -> float:
+    """Objective for Optuna optimisation."""
+
+    params = {
+        "lr": trial.suggest_loguniform("lr", 1e-5, 1e-2),
+        "entropy_beta": trial.suggest_loguniform("entropy_beta", 1e-4, 5e-3),
+    }
+    data = load_csv_hourly("Gemini_BTCUSD_1h.csv")
+    if not data:
+        return 0.0
+    ds_tmp = HourlyDataset(data, seq_len=24, train_mode=True)
+    n_features = ds_tmp[0][0].shape[1]
+    model = EnsembleModel(
+        device=get_device(), n_models=1, lr=params["lr"], n_features=n_features
+    )
+    model.entropy_beta = params["entropy_beta"]
+    stop = threading.Event()
+    csv_training_thread(
+        model,
+        data,
+        stop,
+        {"ADAPT_TO_LIVE": False},
+        use_prev_weights=False,
+        max_epochs=1,
+        update_globals=False,
+    )
+    metrics = robust_backtest(model, data)
+    return -metrics.get("sharpe", 0.0)
+
+
+def run_hpo() -> dict:
+    """Run Bayesian hyper-parameter search with Optuna."""
+
+    study = optuna.create_study(direction="minimize")
+    study.optimize(objective, n_trials=50, timeout=3600)
+    best = study.best_params
+    print("Best hyperparams:", best)
+    return best
+
+
+def walk_forward_backtest(data: list, train_window: int, test_horizon: int) -> list:
+    """Perform walk-forward validation across ``data``."""
+
+    results: list = []
+    for start in range(0, len(data) - train_window - test_horizon, test_horizon):
+        train_slice = data[start : start + train_window]
+        test_slice = data[start + train_window : start + train_window + test_horizon]
+        model = EnsembleModel(device=get_device(), n_models=1)
+        model.train(train_slice)
+        metrics = robust_backtest(model, test_slice)
+        results.append(metrics)
+    return results
