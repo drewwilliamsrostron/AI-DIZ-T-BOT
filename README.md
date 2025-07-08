@@ -152,6 +152,14 @@ stop‑loss/take‑profit parameters and ATR threshold:
 }
 ```
 
+### Window-Length & Hyperparameter Sweep
+
+Define `experiment_axes` in your config YAML and run:
+
+```bash
+python scripts/sweep.py --config-file config/hyperparams.yaml
+```
+
 ## Usage
 
 Start the bot and follow the prompt to choose live or sandbox mode:
