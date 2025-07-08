@@ -36,6 +36,7 @@ def test_enable_flash_sdp_auto_install(monkeypatch):
     monkeypatch.setattr(importlib, "reload", fake_reload)
 
     import artibot.core.device as dev
+
     importlib.reload(dev)
 
     assert dev.is_flash_sdp_enabled()
