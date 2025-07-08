@@ -661,17 +661,22 @@ class TradingGUI:
         self.ax_loss.clear()
         n = min(len(G.global_training_loss), len(G.global_validation_loss))
         x = range(1, n + 1)
-        self.ax_loss.plot(x, G.global_training_loss[:n], label="Train", marker="o")
 
-        val = [
-            (i + 1, v)
-            for i, v in enumerate(G.global_validation_loss[:n])
-            if v is not None
-        ]
+        train_vals = list(G.global_training_loss[:n])
+        if pd is not None and train_vals:
+            train_vals = pd.Series(train_vals).ewm(span=10).mean().tolist()
+        self.ax_loss.plot(x, train_vals, label="Train", marker="o")
 
-        if val:
-            xv, yv = zip(*val)
-            self.ax_loss.plot(xv, yv, label="Val", marker="x")
+        val_x = []
+        val_y = []
+        for idx, v in enumerate(G.global_validation_loss[:n]):
+            if v is not None:
+                val_x.append(idx + 1)
+                val_y.append(v)
+        if pd is not None and val_y:
+            val_y = pd.Series(val_y).ewm(span=10).mean().tolist()
+        if val_x:
+            self.ax_loss.plot(val_x, val_y, label="Val", marker="x")
         self.ax_loss.set_title("Loss")
         self.ax_loss.legend()
         self.loss_comment_label.config(text=self._loss_comment())
