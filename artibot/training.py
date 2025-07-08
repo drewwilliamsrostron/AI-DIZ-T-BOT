@@ -18,6 +18,8 @@ from .backtest import robust_backtest, compute_indicators
 from .utils import heartbeat
 from .feature_manager import enforce_feature_dim
 from artibot.hyperparams import RISK_FILTER
+from artibot.utils.reward_utils import ema, differential_sharpe
+import pandas as pd
 
 import sys
 import json
@@ -206,6 +208,10 @@ def csv_training_thread(
         )
         ensemble.optimize_models(dummy_input)
 
+        trade_count_series: list[float] = []
+        days_in_profit_series: list[float] = []
+        returns_series: list[float] = []
+
         import talib
 
         epochs = 0
@@ -268,6 +274,19 @@ def csv_training_thread(
             G.global_composite_reward_ema = (
                 0.9 * (G.global_composite_reward_ema or 0.0) + 0.1 * last_reward
             )
+
+            trade_count_series.append(float(G.global_num_trades))
+            days_in_profit_series.append(float(G.global_days_in_profit))
+            ret_val = G.global_backtest_profit[-1] if G.global_backtest_profit else 0.0
+            returns_series.append(float(ret_val))
+
+            trade_term = ema(
+                torch.tensor(trade_count_series, dtype=torch.float32), tau=96
+            )[-1].item()
+            days_term = ema(
+                torch.tensor(days_in_profit_series, dtype=torch.float32), tau=96
+            )[-1].item()
+            sharpe_term = differential_sharpe(pd.Series(returns_series))
             ensemble.reward_loss_weight = min(
                 ensemble.max_reward_loss_weight,
                 ensemble.reward_loss_weight + 0.01,
@@ -301,6 +320,9 @@ def csv_training_thread(
                 "attn_entropy": attn_entropy,
                 "lr": lr_now,
                 "profit_factor": G.global_profit_factor,
+                "trade_term": trade_term,
+                "days_term": days_term,
+                "sharpe_term": sharpe_term,
             }
             logging.info(
                 "EPOCH_METRICS",
