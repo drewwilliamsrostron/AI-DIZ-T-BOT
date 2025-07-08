@@ -25,7 +25,9 @@ import tkinter as tk
 from tkinter import ttk
 
 
+
 import matplotlib
+
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
@@ -85,6 +87,33 @@ def should_enable_live_trading() -> bool:
         min_trades = 0
 
     return sharpe >= 1.0 and dd >= -0.30 and pnl >= min_pnl and trades >= min_trades
+
+
+class ScrollableFrame(ttk.Frame):
+    """A ttk frame with optional scrollbars for large content."""
+
+    def __init__(self, master: tk.Widget, **kw) -> None:
+        super().__init__(master, **kw)
+        canvas = tk.Canvas(self, borderwidth=0, highlightthickness=0, bg="#222")
+        vsb = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        hsb = ttk.Scrollbar(self, orient="horizontal", command=canvas.xview)
+        canvas.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        vsb.pack(side=tk.RIGHT, fill=tk.Y)
+        hsb.pack(side=tk.BOTTOM, fill=tk.X)
+        self.inner = ttk.Frame(canvas)
+        self._win = canvas.create_window((0, 0), window=self.inner, anchor="nw")
+
+        def _update(_evt: tk.Event | None = None) -> None:
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        self.inner.bind("<Configure>", _update)
+
+        def _resize(evt: tk.Event) -> None:
+            canvas.itemconfig(self._win, width=evt.width)
+
+        canvas.bind("<Configure>", _resize)
+
 
 
 def select_weight_file(use_prev: bool = True) -> str | None:
@@ -270,6 +299,17 @@ class TradingGUI:
         style.configure("TLabel", background="#222", foreground="white")
         style.configure("TLabelframe", background="#222", foreground="white")
         style.configure("TLabelframe.Label", background="#222", foreground="white")
+
+        style.configure("TButton", background="#333", foreground="white")
+        style.configure("TCheckbutton", background="#222", foreground="white")
+        style.configure("TNotebook", background="#222")
+        style.configure("TNotebook.Tab", background="#333", foreground="white")
+        style.configure(
+            "Treeview", background="#333", fieldbackground="#333", foreground="white"
+        )
+        style.configure("Treeview.Heading", background="#444", foreground="white")
+        style.configure("TEntry", fieldbackground="#333", foreground="white")
+
         root.configure(bg="#222")
 
         self._init_layout()
@@ -305,10 +345,13 @@ class TradingGUI:
         self.notebook = ttk.Notebook(self.main)
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
-        # Training page
-        self.frame_train = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_train, text="Training")
 
+        # Add additional pages here to extend the dashboard.  Each frame
+        # corresponds to a tab and should be updated in ``update_dashboard``.
+
+        # Training page
+        self.frame_train = ScrollableFrame(self.notebook)
+        self.notebook.add(self.frame_train, text="Training")
         self.fig_train, axs = plt.subplots(
             2, 2, figsize=(8, 6), constrained_layout=True
         )
@@ -317,47 +360,50 @@ class TradingGUI:
         self.ax_equity = axs[0, 1]
         self.ax_attention = axs[1, 0]
         self.ax_trades = axs[1, 1]
-        self.canvas_train = FigureCanvasTkAgg(self.fig_train, master=self.frame_train)
+
+        self.canvas_train = FigureCanvasTkAgg(
+            self.fig_train, master=self.frame_train.inner
+        )
         self.canvas_train.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        self.loss_comment_label = ttk.Label(self.frame_train, text="")
+        self.loss_comment_label = ttk.Label(self.frame_train.inner, text="")
         self.loss_comment_label.pack(anchor="w", padx=5, pady=2)
 
         # Live price
-        self.frame_live = ttk.Frame(self.notebook)
+        self.frame_live = ScrollableFrame(self.notebook)
         self.notebook.add(self.frame_live, text="Live")
-
         self.fig_live, self.ax_live = plt.subplots(
             figsize=(8, 4), constrained_layout=True
         )
-
-        self.canvas_live = FigureCanvasTkAgg(self.fig_live, master=self.frame_live)
+        self.canvas_live = FigureCanvasTkAgg(
+            self.fig_live, master=self.frame_live.inner
+        )
         self.canvas_live.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
         # Backtest page
-        self.frame_back = ttk.Frame(self.notebook)
+        self.frame_back = ScrollableFrame(self.notebook)
         self.notebook.add(self.frame_back, text="Backtest")
-
         self.fig_back, self.ax_net = plt.subplots(
             figsize=(8, 4), constrained_layout=True
         )
-
-        self.canvas_back = FigureCanvasTkAgg(self.fig_back, master=self.frame_back)
+        self.canvas_back = FigureCanvasTkAgg(
+            self.fig_back, master=self.frame_back.inner
+        )
         self.canvas_back.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
         # Timeline page
-        self.frame_tl = ttk.Frame(self.notebook)
+        self.frame_tl = ScrollableFrame(self.notebook)
         self.notebook.add(self.frame_tl, text="Timeline")
         self.fig_tl, self.ax_tl = plt.subplots(figsize=(8, 4), constrained_layout=True)
-        self.canvas_tl = FigureCanvasTkAgg(self.fig_tl, master=self.frame_tl)
+        self.canvas_tl = FigureCanvasTkAgg(self.fig_tl, master=self.frame_tl.inner)
         self.canvas_tl.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
         # Trade details
-        self.frame_trades = ttk.Frame(self.notebook)
+        self.frame_trades = ScrollableFrame(self.notebook)
         self.notebook.add(self.frame_trades, text="Trades")
         cols = ("Date", "Side", "Size", "Entry", "Exit", "PnL")
-
         self.trade_tree = ttk.Treeview(
-            self.frame_trades, columns=cols, show="headings", height=10
+            self.frame_trades.inner, columns=cols, show="headings", height=10
+
         )
         for c in cols:
             self.trade_tree.heading(c, text=c)
@@ -366,21 +412,23 @@ class TradingGUI:
             self.frame_trades, orient="vertical", command=self.trade_tree.yview
         )
 
+
         self.trade_tree = ttk.Treeview(self.frame_trades, columns=cols, show="headings", height=10)
         for c in cols:
             self.trade_tree.heading(c, text=c)
             self.trade_tree.column(c, anchor=tk.CENTER)
         vsb = ttk.Scrollbar(self.frame_trades, orient="vertical", command=self.trade_tree.yview)
 
+
         self.trade_tree.configure(yscrollcommand=vsb.set)
         self.trade_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         vsb.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Yearly page
-        self.frame_yearly = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_yearly, text="Yearly")
-        self.yearly_text = tk.Text(self.frame_yearly, width=50, height=20)
 
+        self.frame_yearly = ScrollableFrame(self.notebook)
+        self.notebook.add(self.frame_yearly, text="Yearly")
+        self.yearly_text = tk.Text(self.frame_yearly.inner, width=50, height=20)
         yscroll = ttk.Scrollbar(
             self.frame_yearly, orient="vertical", command=self.yearly_text.yview
         )
@@ -390,10 +438,10 @@ class TradingGUI:
         yscroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Monthly page
-        self.frame_monthly = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_monthly, text="Monthly")
-        self.monthly_text = tk.Text(self.frame_monthly, width=50, height=20)
 
+        self.frame_monthly = ScrollableFrame(self.notebook)
+        self.notebook.add(self.frame_monthly, text="Monthly")
+        self.monthly_text = tk.Text(self.frame_monthly.inner, width=50, height=20)
         mscroll = ttk.Scrollbar(
             self.frame_monthly, orient="vertical", command=self.monthly_text.yview
         )
@@ -403,6 +451,14 @@ class TradingGUI:
         mscroll.pack(side=tk.RIGHT, fill=tk.Y)
 
     def _build_sidebar(self) -> None:
+
+        """Create sidebar widgets with stats and controls.
+
+        Future contributors can extend this method to add new metric labels
+        or controls.  Insert additional ``ttk.Label`` or ``ttk.Button`` widgets
+        in the ``self.info`` or ``self.controls`` frames as needed.
+        """
+
         self.info = ttk.LabelFrame(self.sidebar, text="Performance")
         self.info.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
@@ -553,7 +609,17 @@ class TradingGUI:
             variable=self.use_days_var,
             command=self.update_composite_flags,
         ).grid(row=2, column=0, sticky="w")
+
+        self.risk_filter_var = tk.BooleanVar(value=G.is_risk_filter_enabled())
+        ttk.Checkbutton(
+            self.comp_frame,
+            text="Risk Filter",
+            variable=self.risk_filter_var,
+            command=self.update_risk_filter,
+        ).grid(row=2, column=1, sticky="w")
         self.update_composite_flags()
+        self.update_risk_filter()
+
 
         self.ai_frame = ttk.Frame(self.sidebar)
         self.ai_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -630,7 +696,6 @@ class TradingGUI:
         self.status_var = tk.StringVar(value="Ready")
         status = ttk.Label(self.footer, textvariable=self.status_var)
         status.pack(side=tk.LEFT, padx=5)
-
         self.progress = ttk.Progressbar(
             self.footer, mode="determinate", maximum=100, length=150
         )
@@ -655,6 +720,8 @@ class TradingGUI:
         return "training loss above validation - model learning"
 
     def update_dashboard(self) -> None:  # noqa: C901 - full dashboard update
+        """Refresh all charts and labels from ``artibot.globals``."""
+
         if self.after_id is not None:
             self.root.after_cancel(self.after_id)
             self.after_id = None
@@ -901,8 +968,10 @@ class TradingGUI:
         self.progress["value"] = G.global_progress_pct
 
 
+
         _ = G.live_equity - G.start_equity
         _ = G.live_trade_count
+
 
         if should_enable_live_trading() and not G.live_trading_enabled:
             self.nuclear_button.config(state=tk.NORMAL)
@@ -910,7 +979,6 @@ class TradingGUI:
             self.nuclear_button.config(state=tk.DISABLED)
         if G.live_trading_enabled:
             self.nuclear_button.config(text="Live Trading ON")
-
 
         allowed = nuclear_key_condition(
             G.global_sharpe, G.global_max_drawdown, G.global_profit_factor
@@ -983,7 +1051,6 @@ class TradingGUI:
                     else:
                         bars = self.connector.fetch_latest_bars(limit=1)
                         close_price = bars[-1][4] if bars else price
-
                     close_order = self.connector.create_order(
                         close_side, 1, close_price
                     )
@@ -1083,6 +1150,10 @@ class TradingGUI:
         G.use_trade_term = bool(self.use_trade_var.get())
         G.use_profit_days_term = bool(self.use_days_var.get())
 
+    def update_risk_filter(self) -> None:
+        """Enable or disable the risk filter in ``artibot.globals``."""
+        G.set_risk_filter_enabled(bool(self.risk_filter_var.get()))
+
 
     def on_toggle_force_nk(self) -> None:
         G.nuke_armed = bool(self.force_nk_var.get())
@@ -1106,7 +1177,6 @@ if __name__ == "__main__":
     G.global_best_equity_curve = G.global_equity_curve
     G.timeline_ind_on[:] = 0
     G.timeline_trades[:] = 0
-
 
     ens = types.SimpleNamespace(
         optimizers=[types.SimpleNamespace(param_groups=[{"lr": 1e-3}])]
