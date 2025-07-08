@@ -346,7 +346,12 @@ def csv_training_thread(
             entropy = attn_entropy
             if overfit_toy:
                 print(f"Toy epoch {epochs} loss {tl:.4f}")
-            if not overfit_toy and reject_if_risky(reward_val, max_dd, entropy):
+            skip_risk_check = ensemble.train_steps < 3
+            if (
+                not overfit_toy
+                and not skip_risk_check
+                and reject_if_risky(reward_val, max_dd, entropy)
+            ):
                 logging.info(
                     "REJECTED",
                     extra={
