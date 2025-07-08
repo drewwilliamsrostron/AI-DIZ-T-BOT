@@ -13,6 +13,8 @@ import hashlib
 
 import os
 import shutil
+import json
+import copy
 import numpy as np
 import sys
 import importlib.machinery as _machinery
@@ -36,6 +38,7 @@ from torch.optim.lr_scheduler import (
 from torch.utils.data import DataLoader
 
 from .backtest import robust_backtest
+from .gui_v2 import GUI_INSTANCE
 from .hyperparams import HyperParams, IndicatorHyperparams
 from artibot.core.device import get_device
 from .utils import zero_disabled
@@ -225,6 +228,15 @@ class EnsembleModel(nn.Module):
         self.best_composite_reward = float("-inf")
         self.best_state_dicts = None
         self.train_steps = 0
+        self.save_dir = os.path.dirname(os.path.abspath(weights_path))
+        self.best_reward = float("-inf")
+        self.best_sharpe = 0.0
+        self.best_max_dd = 0.0
+        self.best_epoch = 0
+        self.best_state = None
+        self.latest_equity_ts: list = []
+        self.latest_equity_vals: list = []
+        self.gui = GUI_INSTANCE
         # Start with a small reward weight and no delay
         self.reward_loss_weight = 0.05
         self.max_reward_loss_weight = 0.2
@@ -710,6 +722,29 @@ class EnsembleModel(nn.Module):
                 current_result["net_pct"],
                 self.weights_path,
             )
+            self.best_reward = cur_reward
+            self.best_sharpe = current_result["sharpe"]
+            self.best_max_dd = current_result["max_drawdown"]
+            self.best_epoch = self.train_steps
+            self.best_state = copy.deepcopy(self.models[0].state_dict())
+            self.latest_equity_ts = [t for t, _ in current_result["equity_curve"]]
+            self.latest_equity_vals = [v for _, v in current_result["equity_curve"]]
+            self.persist_best()
+            if self.gui is not None:
+                try:
+                    self.gui.update_equity_curve(
+                        self.latest_equity_ts, self.latest_equity_vals
+                    )
+                    self.gui.update_best_stats(
+                        {
+                            "sharpe": self.best_sharpe,
+                            "max_dd": self.best_max_dd,
+                            "reward": self.best_reward,
+                            "epoch": self.best_epoch,
+                        }
+                    )
+                except Exception:
+                    pass
 
         mean_ent = float(torch.tensor(self.entropies).mean()) if self.entropies else 0.0
         mean_mp = float(torch.tensor(self.max_probs).mean()) if self.max_probs else 0.0
@@ -827,7 +862,39 @@ class EnsembleModel(nn.Module):
             path,
         )
 
+    def persist_best(self) -> None:
+        os.makedirs(self.save_dir, exist_ok=True)
+        torch.save(self.best_state, os.path.join(self.save_dir, "best_model.pt"))
+        with open(os.path.join(self.save_dir, "best_metrics.json"), "w") as f:
+            json.dump(
+                {
+                    "best_reward": self.best_reward,
+                    "best_sharpe": self.best_sharpe,
+                    "best_max_dd": self.best_max_dd,
+                    "best_epoch": self.best_epoch,
+                },
+                f,
+            )
+
+    def load_persisted_best(self) -> None:
+        best_path = os.path.join(self.save_dir, "best_model.pt")
+        metrics_path = os.path.join(self.save_dir, "best_metrics.json")
+        if os.path.exists(best_path):
+            state = torch.load(best_path, map_location=self.device)
+            try:
+                self.models[0].load_state_dict(state, strict=False)
+            except Exception:
+                pass
+            if os.path.exists(metrics_path):
+                with open(metrics_path) as f:
+                    m = json.load(f)
+                self.best_reward = m.get("best_reward", float("-inf"))
+                self.best_sharpe = m.get("best_sharpe", 0.0)
+                self.best_max_dd = m.get("best_max_dd", 0.0)
+                self.best_epoch = m.get("best_epoch", 0)
+
     def load_best_weights(self, path: str | None = None, data_full=None) -> None:
+        self.load_persisted_best()
         if path is None:
             path = self.weights_path
         if os.path.isfile(path):
