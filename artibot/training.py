@@ -164,12 +164,21 @@ def csv_training_thread(
         if overfit_toy:
             data = data[:100]
             max_epochs = 50
-        holdout_len = max(1, int(len(data) * 0.1))
-        base = data[:-holdout_len] if len(data) > holdout_len else data
         train_data: list[list[float]] = []
-        for row in base:
+        for row in data:
             train_data.append([float(v) for v in row])
-        holdout_data = data[-holdout_len:] if len(data) > holdout_len else []
+
+        # Perform walk-forward validation to establish holdout metrics
+        one_month = 24 * 30
+        walk_results = walk_forward_backtest(train_data, 12 * one_month, one_month)
+        if walk_results:
+            mean_sharpe = float(np.mean([r.get("sharpe", 0.0) for r in walk_results]))
+            mean_dd = float(np.mean([r.get("max_drawdown", 0.0) for r in walk_results]))
+            G.global_holdout_sharpe = mean_sharpe
+            G.global_holdout_max_drawdown = mean_dd
+        else:
+            G.global_holdout_sharpe = 0.0
+            G.global_holdout_max_drawdown = 0.0
 
         ds_full = HourlyDataset(
             train_data,
@@ -184,10 +193,7 @@ def csv_training_thread(
             return
         if use_prev_weights:
             ensemble.load_best_weights(weights_path, data_full=train_data)
-        n_tot = len(ds_full)
-        n_tr = int(n_tot * 0.9)
-        n_val = n_tot - n_tr
-        ds_train, ds_val = random_split(ds_full, [n_tr, n_val])
+        ds_train = ds_full
 
         train_indicators = compute_indicators(
             train_data,
@@ -202,9 +208,7 @@ def csv_training_thread(
         dl_train = rebuild_loader(
             None, ds_train, batch_size=512, shuffle=True, num_workers=workers
         )
-        dl_val = rebuild_loader(
-            None, ds_val, batch_size=512, shuffle=False, num_workers=workers
-        )
+        dl_val = None
         if config.get("PROFILE", False):
             profile_data_copy(dl_train, ensemble.device)
         steps_per_epoch = len(dl_train)
@@ -266,10 +270,15 @@ def csv_training_thread(
             )
             G.set_status("Training", status_msg)
 
-            if holdout_data is not None and len(holdout_data) > 0:
-                holdout_res = robust_backtest(ensemble, holdout_data)
-                G.global_holdout_sharpe = holdout_res.get("sharpe", 0.0)
-                G.global_holdout_max_drawdown = holdout_res.get("max_drawdown", 0.0)
+            if walk_results:
+                mean_sharpe = float(
+                    np.mean([r.get("sharpe", 0.0) for r in walk_results])
+                )
+                mean_dd = float(
+                    np.mean([r.get("max_drawdown", 0.0) for r in walk_results])
+                )
+                G.global_holdout_sharpe = mean_sharpe
+                G.global_holdout_max_drawdown = mean_dd
             else:
                 G.global_holdout_sharpe = 0.0
                 G.global_holdout_max_drawdown = 0.0
