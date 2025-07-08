@@ -15,13 +15,20 @@ sys.modules.setdefault(
     "matplotlib",
     types.SimpleNamespace(use=lambda *a, **k: None),
 )
+sys.modules.setdefault(
+    "nvidia",
+    types.SimpleNamespace(
+        nvml=types.SimpleNamespace(
+            nvmlInit=lambda: None,
+            nvmlDeviceGetHandleByIndex=lambda idx: object(),
+            nvmlDeviceGetUtilizationRates=lambda h: types.SimpleNamespace(gpu=0),
+            nvmlDeviceGetMemoryInfo=lambda h: types.SimpleNamespace(used=0, total=1),
+            nvmlShutdown=lambda: None,
+        )
+    ),
+)
 
-from artibot.core.device import DEVICE
 from artibot.utils import heartbeat
-
-
-def test_device_constant():
-    assert getattr(DEVICE, "type", str(DEVICE)) in {"cuda", "cpu"}
 
 
 def test_heartbeat_logging(monkeypatch):

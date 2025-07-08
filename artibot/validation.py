@@ -19,7 +19,7 @@ from .dataset import load_csv_hourly, HourlyDataset
 from .ensemble import EnsembleModel
 from .hyperparams import HyperParams, IndicatorHyperparams
 from .training import csv_training_thread
-from .utils import get_device
+from artibot.core.device import get_device
 
 YEAR_HOURS = 365 * 24
 MONTH_SECONDS = 30 * 24 * 3600
@@ -70,7 +70,7 @@ def monte_carlo_sharpe(returns: Iterable[float], runs: int = 1000) -> list[float
 
 def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
     """Train on 6 months, test the next month then roll forward."""
-    data = load_csv_hourly(csv_path)
+    data = load_csv_hourly(csv_path, cfg=config)
     if not data:
         return []
     raw_data = np.array(data, dtype=float)
@@ -154,7 +154,7 @@ def validate_and_gate(csv_path: str, config: dict) -> dict:
     flat = [s for dist in distributions for s in dist]
     gate_nuclear_key(
         flat,
-        threshold=float(config.get("RISK_FILTER", config).get("MIN_SHARPE", 1.0)),
+        threshold=float(config.get("RISK_FILTER", config).get("MIN_REWARD", 1.0)),
     )
     summary = {
         "windows": len(results),

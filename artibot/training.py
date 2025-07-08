@@ -10,12 +10,16 @@ import datetime
 import time
 import threading
 import os
+from pathlib import Path
 
 from .dataset import HourlyDataset, trailing_sma
 from .ensemble import reject_if_risky
 from .backtest import robust_backtest, compute_indicators
+from .utils import heartbeat
 from .feature_manager import enforce_feature_dim
 from artibot.hyperparams import RISK_FILTER
+from artibot.utils.reward_utils import ema, differential_sharpe
+import pandas as pd
 
 import sys
 import json
@@ -28,6 +32,25 @@ with G.state_lock:
     G.cpu_limit = CPU_LIMIT_DEFAULT
 torch.set_num_threads(CPU_LIMIT_DEFAULT)
 os.environ["OMP_NUM_THREADS"] = str(CPU_LIMIT_DEFAULT)
+
+
+CHECKPOINTS_DIR = Path("models/checkpoints")
+CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def save_epoch_checkpoint(model: torch.nn.Module, epoch: int) -> None:
+    """Save ``model`` state and keep only the last 5 checkpoints."""
+
+    CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
+    path = CHECKPOINTS_DIR / f"epoch_{epoch}.pt"
+    torch.save(model.state_dict(), path)
+    files = sorted(CHECKPOINTS_DIR.glob("epoch_*.pt"))
+    if len(files) > 5:
+        for f in files[:-5]:
+            try:
+                f.unlink()
+            except OSError:
+                logging.warning("Failed to remove %s", f)
 
 
 def rebuild_loader(
@@ -53,20 +76,38 @@ def rebuild_loader(
         shuffle=shuffle,
         num_workers=num_workers,
         persistent_workers=True,
-        pin_memory=False,
+        pin_memory=True,
     )
+
+
+def profile_data_copy(
+    loader: torch.utils.data.DataLoader, device: torch.device, steps: int = 5
+) -> None:
+    """Profile CPU to GPU copy times for ``loader``."""
+    activities = [torch.profiler.ProfilerActivity.CPU]
+    if torch.cuda.is_available():
+        activities.append(torch.profiler.ProfilerActivity.CUDA)
+    schedule = torch.profiler.schedule(wait=1, warmup=1, active=3)
+    with torch.profiler.profile(activities=activities, schedule=schedule) as prof:
+        for step, batch in enumerate(loader):
+            for t in batch:
+                t.to(device, non_blocking=True)
+            prof.step()
+            if step >= steps:
+                break
+    logging.info("\n%s", prof.key_averages().table(sort_by="self_cuda_time_total"))
 
 
 def apply_risk_curriculum(epoch: int) -> None:
     """Adjust ``RISK_FILTER`` thresholds as training progresses."""
     if epoch <= 20:
-        RISK_FILTER["MIN_SHARPE"] = -2.0
+        RISK_FILTER["MIN_REWARD"] = -2.0
         RISK_FILTER["MAX_DRAWDOWN"] = -0.80
     elif epoch <= 40:
-        RISK_FILTER["MIN_SHARPE"] = -1.0
+        RISK_FILTER["MIN_REWARD"] = -1.0
         RISK_FILTER["MAX_DRAWDOWN"] = -0.50
     else:
-        RISK_FILTER["MIN_SHARPE"] = 0.0
+        RISK_FILTER["MIN_REWARD"] = 0.0
         RISK_FILTER["MAX_DRAWDOWN"] = -0.25
 
 
@@ -152,6 +193,8 @@ def csv_training_thread(
         dl_val = rebuild_loader(
             None, ds_val, batch_size=128, shuffle=False, num_workers=workers
         )
+        if config.get("PROFILE", False):
+            profile_data_copy(dl_train, ensemble.device)
         steps_per_epoch = len(dl_train)
         if max_epochs is not None:
             total_steps = steps_per_epoch * max_epochs
@@ -164,6 +207,10 @@ def csv_training_thread(
             1, 24, ensemble.models[0].input_dim, device=ensemble.device
         )
         ensemble.optimize_models(dummy_input)
+
+        trade_count_series: list[float] = []
+        days_in_profit_series: list[float] = []
+        returns_series: list[float] = []
 
         import talib
 
@@ -227,6 +274,19 @@ def csv_training_thread(
             G.global_composite_reward_ema = (
                 0.9 * (G.global_composite_reward_ema or 0.0) + 0.1 * last_reward
             )
+
+            trade_count_series.append(float(G.global_num_trades))
+            days_in_profit_series.append(float(G.global_days_in_profit))
+            ret_val = G.global_backtest_profit[-1] if G.global_backtest_profit else 0.0
+            returns_series.append(float(ret_val))
+
+            trade_term = ema(
+                torch.tensor(trade_count_series, dtype=torch.float32), tau=96
+            )[-1].item()
+            days_term = ema(
+                torch.tensor(days_in_profit_series, dtype=torch.float32), tau=96
+            )[-1].item()
+            sharpe_term = differential_sharpe(pd.Series(returns_series))
             ensemble.reward_loss_weight = min(
                 ensemble.max_reward_loss_weight,
                 ensemble.reward_loss_weight + 0.01,
@@ -250,6 +310,7 @@ def csv_training_thread(
                 "loss": tl,
                 "val": None if vl is None else vl,
                 "reward": last_reward,
+                "best_reward": best_reward,
                 "sharpe": G.global_sharpe,
                 "max_dd": G.global_max_drawdown,
                 "net_pct": G.global_net_pct,
@@ -259,6 +320,9 @@ def csv_training_thread(
                 "attn_entropy": attn_entropy,
                 "lr": lr_now,
                 "profit_factor": G.global_profit_factor,
+                "trade_term": trade_term,
+                "days_term": days_term,
+                "sharpe_term": sharpe_term,
             }
             logging.info(
                 "EPOCH_METRICS",
@@ -268,26 +332,31 @@ def csv_training_thread(
             from artibot.hyperparams import RISK_FILTER, WARMUP_STEPS
 
             if G.get_warmup_step() >= WARMUP_STEPS:
-                RISK_FILTER["MIN_SHARPE"] = 0.5
+                RISK_FILTER["MIN_REWARD"] = 0.5
                 RISK_FILTER["MAX_DRAWDOWN"] = -0.30
 
             if globals.get_trade_count() >= 1000 and not globals.PROD_RISK:
                 hyperparams.RISK_FILTER.update(
-                    {"MIN_SHARPE": 0.5, "MAX_DRAWDOWN": -0.30}
+                    {"MIN_REWARD": 0.5, "MAX_DRAWDOWN": -0.30}
                 )
                 globals.PROD_RISK = True
 
-            sharpe = G.global_sharpe
+            reward_val = last_reward
             max_dd = G.global_max_drawdown
             entropy = attn_entropy
             if overfit_toy:
                 print(f"Toy epoch {epochs} loss {tl:.4f}")
-            if not overfit_toy and reject_if_risky(sharpe, max_dd, entropy):
+            skip_risk_check = ensemble.train_steps < 3
+            if (
+                not overfit_toy
+                and not skip_risk_check
+                and reject_if_risky(reward_val, max_dd, entropy)
+            ):
                 logging.info(
                     "REJECTED",
                     extra={
                         "epoch": ensemble.train_steps,
-                        "sharpe": sharpe,
+                        "reward": reward_val,
                         "max_dd": max_dd,
                         "attn_entropy": entropy,
                     },
@@ -428,11 +497,14 @@ def csv_training_thread(
                     "equity": equity,
                 },
             )
+            heartbeat.update(
+                epoch=ensemble.train_steps,
+                candidate_sharpe=G.global_sharpe,
+                best_reward=best_reward,
+            )
 
             if ensemble.train_steps % 5 == 0 and ensemble.best_state_dicts:
                 ensemble.save_best_weights(weights_path)
-
-            from artibot.training.engine import save_epoch_checkpoint
 
             save_epoch_checkpoint(ensemble, ensemble.train_steps)
 

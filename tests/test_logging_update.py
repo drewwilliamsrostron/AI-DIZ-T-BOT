@@ -86,7 +86,7 @@ def build_dummy_ensemble(monkeypatch):
     monkeypatch.setattr("artibot.ensemble.compute_yearly_stats", dummy_stats)
 
     ds = TensorDataset(torch.zeros(1, 24, 8), torch.zeros(1, dtype=torch.long))
-    dl = DataLoader(ds, batch_size=1)
+    dl = DataLoader(ds, batch_size=1, pin_memory=True)
     return ens, dl
 
 

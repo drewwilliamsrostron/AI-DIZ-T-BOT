@@ -1,44 +1,56 @@
 """Dataset utilities for the trading bot."""
 
 # ruff: noqa: F403, F405
-import os
+from __future__ import annotations
+
+import logging
 import random
+import sys
+from pathlib import Path
 from typing import NamedTuple
+
+import importlib.machinery as _machinery
+import tomllib
 
 import numpy as np
 import pandas as pd
 import talib
-import sys
-import importlib.machinery as _machinery
-
-if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) is None:
-    sys.modules["openai"].__spec__ = _machinery.ModuleSpec("openai", None)
-
 import torch
-
-from .utils import (
-    rolling_zscore,
-    feature_version_hash,
-    validate_features,
-    clean_features,
-    enforce_feature_dim,
-    validate_feature_dimension,
-    zero_disabled,
-    feature_mask_for,
-)
 from sklearn.impute import KNNImputer
 from torch.utils.data import Dataset
 
 import artibot.globals as G
-import logging
-from .hyperparams import IndicatorHyperparams
-from .constants import FEATURE_DIMENSION
+from artibot.rules.risk_filter import apply as risk_filter
 from config import FEATURE_COLUMNS
 
+from .constants import FEATURE_DIMENSION
+from .hyperparams import IndicatorHyperparams
+from .utils import (
+    clean_features,
+    enforce_feature_dim,
+    feature_mask_for,
+    feature_version_hash,
+    rolling_zscore,
+    validate_feature_dimension,
+    validate_features,
+    zero_disabled,
+)
 
-###############################################################################
-# NamedTuple for per-bar trade parameters
-###############################################################################
+# --------------------------------------------------------------------------- #
+# openai stub-spec guard (avoids import side-effects in some IDEs)
+# --------------------------------------------------------------------------- #
+if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) is None:
+    sys.modules["openai"].__spec__ = _machinery.ModuleSpec("openai", None)
+
+# --------------------------------------------------------------------------- #
+# caching objects
+# --------------------------------------------------------------------------- #
+_IMPUTER = KNNImputer(n_neighbors=5)
+
+
+# --------------------------------------------------------------------------- #
+# NamedTuple – per-bar trade parameters
+# --------------------------------------------------------------------------- #
 class TradeParams(NamedTuple):
     risk_fraction: torch.Tensor
     sl_multiplier: torch.Tensor
@@ -46,92 +58,101 @@ class TradeParams(NamedTuple):
     attention: torch.Tensor
 
 
-###############################################################################
-# Dataclass for global indicator hyperparams
-###############################################################################
+# --------------------------------------------------------------------------- #
+# CSV loader
+# --------------------------------------------------------------------------- #
+def _risk_filter_enabled_from_toml(path: str = "config/default.toml") -> bool:
+    """Fallback to the default config file (True if missing/error)."""
+    try:
+        with open(path, "rb") as fh:
+            cfg = tomllib.load(fh)
+            return bool(cfg.get("risk_filter", {}).get("enabled", True))
+    except Exception:
+        return True
 
 
-###############################################################################
-# CSV Loader and Dataset
-###############################################################################
-def load_csv_hourly(csv_path: str) -> list[list[float]]:
-    """Return parsed hourly OHLCV data from ``csv_path``.
-
-    The previous implementation iterated row by row with :func:`DataFrame.iterrows`,
-    which is noticeably slow for large files.  This version leverages vectorised
-    ``pandas`` operations so the entire CSV is processed in bulk.
+def _determine_risk_filter_flag(cfg: dict | None) -> bool:
     """
+    Priority (high → low):
 
-    if not os.path.isfile(csv_path):
-        logging.warning(f"CSV file '{csv_path}' not found.")
+    1. `cfg["risk_filter"]["enabled"]` given directly to `load_csv_hourly`
+    2. Runtime global `G.is_risk_filter_enabled()` (returns None if unset)
+    3. Value in *config/default.toml*
+    4. Hard default `True`
+    """
+    if cfg and "risk_filter" in cfg:
+        return bool(cfg["risk_filter"].get("enabled", True))
+
+    runtime_flag = getattr(G, "is_risk_filter_enabled", lambda: None)()
+    if runtime_flag is not None:
+        return bool(runtime_flag)
+
+    return _risk_filter_enabled_from_toml()
+
+
+def load_csv_hourly(csv_path: str, *, cfg: dict | None = None) -> list[list[float]]:
+    """Fast vectorised CSV→list loader for hourly OHLCV bars."""
+
+    log = logging.getLogger("dataset.loader")
+
+    if not Path(csv_path).is_file():
+        log.warning("CSV file '%s' not found.", csv_path)
         return []
 
     try:
         df = pd.read_csv(
             csv_path,
-            sep=r"[,\t]+",
+            sep=r"[,\t]+",  # accept comma OR tab
             engine="python",
             skiprows=1,
             header=0,
         )
-    except Exception as e:  # pragma: no cover - IO failures
-        logging.warning(f"Error reading CSV: {e}")
+    except Exception as exc:  # pragma: no cover – IO failures
+        log.warning("Error reading CSV: %s", exc)
         return []
 
+    # normalise column names
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
 
-    required = {"unix", "open", "high", "low", "close"}
-    if not required.issubset(df.columns):
-        logging.warning("CSV missing required columns: %s", required - set(df.columns))
+    must_have = {"unix", "open", "high", "low", "close"}
+    if not must_have.issubset(df.columns):
+        log.warning("CSV missing required columns: %s", must_have - set(df.columns))
         return []
 
     num = pd.to_numeric
     df["unix"] = num(df["unix"], errors="coerce").fillna(0).astype("int64")
-    df.loc[df["unix"] > 1e12, "unix"] //= 1000
-    df["open"] = num(df["open"], errors="coerce")
-    df["high"] = num(df["high"], errors="coerce")
-    df["low"] = num(df["low"], errors="coerce")
-    df["close"] = num(df["close"], errors="coerce")
+    df.loc[df["unix"] > 1e12, "unix"] //= 1000  # ms → s
 
-    # ----------------------------------------------------------------------------
-    # Adaptive scaling: legacy datasets may store prices multiplied by 1e5 or 1e3
-    # ----------------------------------------------------------------------------
+    for col in ("open", "high", "low", "close"):
+        df[col] = num(df[col], errors="coerce")
+
+    # legacy price scaling
     if not df.empty:
-        ref_price = float(df["open"].iloc[0])
-        scale = 1.0
-        if ref_price > 1e8:
-            scale = 1e5
-        elif ref_price > 1e5:
-            scale = 1e3
-        if scale != 1.0:
-            for col in ["open", "high", "low", "close"]:
-                df[col] /= scale
+        ref = float(df["open"].iloc[0])
+        factor = 1e5 if ref > 1e8 else (1e3 if ref > 1e5 else 1.0)
+        if factor != 1.0:
+            df[["open", "high", "low", "close"]] /= factor
 
-    if "volume_btc" in df.columns:
-        df["volume_btc"] = num(df["volume_btc"], errors="coerce").fillna(0.0)
-    else:
-        df["volume_btc"] = 0.0
+    df["volume_btc"] = num(df.get("volume_btc", 0.0), errors="coerce").fillna(0.0)
 
+    # ---------------- risk filter ---------------- #
+    enabled = _determine_risk_filter_flag(cfg)
+    df = risk_filter(df, enabled=enabled)
+
+    # ---------------- ndarray cleanup ------------ #
     cols = ["unix", "open", "high", "low", "close", "volume_btc"]
     arr = df[cols].to_numpy(dtype=float)
     arr = arr[np.isfinite(arr).all(axis=1)]
-    arr = np.nan_to_num(
-        arr,
-        nan=0.0,
-        posinf=0.0,
-        neginf=0.0,
-    )
+    arr = np.nan_to_num(arr, nan=0.0, posinf=0.0, neginf=0.0)
 
     return arr[np.argsort(arr[:, 0])].tolist()
 
 
+# --------------------------------------------------------------------------- #
+# Technical-indicator feature engineering
+# --------------------------------------------------------------------------- #
 def trailing_sma(arr: np.ndarray, window: int) -> np.ndarray:
-    """Trailing (causal) SMA: value at t uses [t-window+1 … t].
-
-    Pads the first ``window-1`` positions with ``np.nan`` so the returned array
-    matches the input length.
-    """
-
+    """Causal SMA (pads first *window-1* values with NaN)."""
     if window < 1:
         raise ValueError("window must be ≥1")
 
@@ -146,7 +167,7 @@ def generate_fixed_features(
     *,
     use_ichimoku: bool = False,
 ) -> np.ndarray:
-    """Return a feature matrix with exactly ``FEATURE_DIMENSION`` columns."""
+    """Return a raw feature matrix with **exactly** `FEATURE_DIMENSION` columns."""
 
     closes = data_np[:, 4].astype(np.float64)
     highs = data_np[:, 2].astype(np.float64)
@@ -214,12 +235,8 @@ def generate_fixed_features(
     # Sanitise invalid values before validation
     if np.isnan(feats).any() or np.isinf(feats).any():
         logging.debug("Raw features contained NaN/Inf – cleaned")
-    features = np.nan_to_num(feats.astype(np.float32), nan=0.0, posinf=0.0, neginf=0.0)
 
-    features = validate_feature_dimension(
-        features, FEATURE_DIMENSION, logging.getLogger("features")
-    )
-    return features
+    return np.nan_to_num(feats.astype(np.float32), nan=0.0, posinf=0.0, neginf=0.0)
 
 
 def build_features(
@@ -229,26 +246,24 @@ def build_features(
     use_ichimoku: bool = False,
     logger: logging.Logger | None = None,
 ) -> np.ndarray:
-    """Return normalised feature matrix for ``data_np``."""
-
+    """Return normalised feature matrix for *data_np*."""
     feats = generate_fixed_features(data_np, hp, use_ichimoku=use_ichimoku)
-    if isinstance(feats, list):
-        feats = np.array(feats)
     feats = clean_features(feats, replace_value=0.0)
     feats = enforce_feature_dim(feats, FEATURE_DIMENSION)
     feats = validate_feature_dimension(
         feats, FEATURE_DIMENSION, logger or logging.getLogger("build_features")
     )
+
     mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
     validate_features(feats, enabled_mask=mask)
+
     feats = np.nan_to_num(feats, nan=0.0, posinf=0.0, neginf=0.0)
-    imputer = KNNImputer(n_neighbors=5)
-    feats[:, mask] = imputer.fit_transform(feats[:, mask])
+    feats[:, mask] = _IMPUTER.fit_transform(feats[:, mask])
     feats = zero_disabled(feats, mask)
     feats = rolling_zscore(feats, window=50, mask=mask)
     feats = zero_disabled(feats, mask)
-    feats = np.nan_to_num(feats, nan=0.0, posinf=0.0, neginf=0.0)
-    return feats.astype(np.float32)
+
+    return np.nan_to_num(feats, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
 
 
 def preprocess_features(
@@ -257,50 +272,25 @@ def preprocess_features(
     seq_len: int,
     *,
     use_ichimoku: bool = False,
-    drop_last: bool = False,
     logger: logging.Logger | None = None,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Return ``(features, windows)`` for ``data_np``.
-
-    Disabled indicators are replaced with ``0.0`` so the returned arrays
-    always have ``FEATURE_DIMENSION`` columns.
-    """
+) -> np.ndarray:
+    """Return feature matrix for *data_np* without creating windows eagerly."""
 
     log = logger or logging.getLogger(__name__)
-    mask = feature_mask_for(hp, use_ichimoku=use_ichimoku)
+
     features = build_features(
         data_np,
         hp,
         use_ichimoku=use_ichimoku,
         logger=log,
     )
-    from numpy.lib.stride_tricks import sliding_window_view
 
-    windows = sliding_window_view(features, (seq_len, features.shape[1]))[:, 0]
-    log.debug(
-        "[TRACE] dataset pre-mask shape=%s (expects %d)",
-        windows.shape,
-        FEATURE_DIMENSION,
-    )
-    assert windows.shape[2] == len(
-        mask
-    ), f"Expected {len(mask)} features, got {windows.shape[2]}"
-    if drop_last:
-        windows = windows[:-1]
-
-    windows = np.nan_to_num(windows, nan=0.0, posinf=0.0, neginf=0.0)
-    windows = zero_disabled(windows, mask)
-    log.debug(
-        "[TRACE] dataset post-mask shape=%s (zeros on disabled cols)",
-        windows.shape,
-    )
-
-    return features.astype(np.float32), windows.astype(np.float32)
+    return features.astype(np.float32)
 
 
-###############################################################################
-# HourlyDataset
-###############################################################################
+# --------------------------------------------------------------------------- #
+# PyTorch dataset wrapper
+# --------------------------------------------------------------------------- #
 class HourlyDataset(Dataset):
     def __init__(
         self,
@@ -314,62 +304,62 @@ class HourlyDataset(Dataset):
         rebalance: bool = True,
         use_ichimoku: bool = False,
     ) -> None:
+        self.logger = logging.getLogger("dataset")
+
         self.data = data
         self.seq_len = seq_len
         self.threshold = threshold
         self.hp = indicator_hparams
-        self.sma_period = indicator_hparams.sma_period
-        self.atr_period = indicator_hparams.atr_period
         self.atr_threshold_k = atr_threshold_k
         self.train_mode = train_mode
         self.rebalance = rebalance
-        self.use_vortex = indicator_hparams.use_vortex
-        self.vortex_period = indicator_hparams.vortex_period
-        self.use_cmf = indicator_hparams.use_cmf
-        self.cmf_period = indicator_hparams.cmf_period
         self.use_ichimoku = use_ichimoku
+
         self.expected_features = FEATURE_DIMENSION
-        self.logger = logging.getLogger("dataset")
-        print(f"[INIT] Expected features type: {type(FEATURE_DIMENSION)}")
+        self.logger.debug("[INIT] Expected features type: %s", type(FEATURE_DIMENSION))
+
+        # sanity-check with a small sample
         sample_np = np.array(self.data[: min(len(self.data), 100)], dtype=float)
         check_feats = build_features(
-            sample_np,
-            indicator_hparams,
-            use_ichimoku=use_ichimoku,
-            logger=self.logger,
+            sample_np, indicator_hparams, use_ichimoku=use_ichimoku, logger=self.logger
         )
         if check_feats.shape[1] != self.expected_features:
             raise ValueError(
-                f"Feature engineering produces {check_feats.shape[1]} features, expected {self.expected_features}."
+                f"Feature engineering produces {check_feats.shape[1]} features, "
+                f"expected {self.expected_features}."
             )
-        self.mask = feature_mask_for(indicator_hparams, use_ichimoku=use_ichimoku)
-        self.samples, self.labels = self.preprocess()
 
+        self.mask = feature_mask_for(indicator_hparams, use_ichimoku=use_ichimoku)
+        self.features, self.labels = self.preprocess()
+
+    # --------------------------------------------------------------------- #
     def apply_feature_mask(
         self, hp: IndicatorHyperparams, *, use_ichimoku: bool | None = None
     ) -> None:
-        """Zero out features based on ``hp`` without rebuilding the dataset."""
-
+        """Zero-out features based on *hp* without rebuilding the dataset."""
         if use_ichimoku is not None:
             self.use_ichimoku = use_ichimoku
         self.mask = feature_mask_for(hp, use_ichimoku=self.use_ichimoku)
-        self.samples = zero_disabled(self.samples, self.mask)
+        self.features = zero_disabled(self.features, self.mask)
 
+    # --------------------------------------------------------------------- #
     def preprocess(self):
         data_np = np.array(self.data, dtype=float)
-        features, windows = preprocess_features(
+
+        features = preprocess_features(
             data_np,
             self.hp,
             self.seq_len,
             use_ichimoku=self.use_ichimoku,
-            drop_last=True,
             logger=self.logger,
         )
         if getattr(self.hp, "debug", False):
-            enabled = [name for f, name in zip(self.mask, FEATURE_COLUMNS) if f]
+            enabled = [n for f, n in zip(self.mask, FEATURE_COLUMNS) if f]
             self.logger.info("[TRACE] mask enabled=%s (len=%d)", enabled, len(enabled))
+
         self.feature_hash = feature_version_hash(features)
 
+        # label generation
         closes = data_np[:, 4].astype(np.float64)
         highs = data_np[:, 2].astype(np.float64)
         lows = data_np[:, 3].astype(np.float64)
@@ -377,57 +367,43 @@ class HourlyDataset(Dataset):
 
         atr_vals = atr(highs, lows, closes, period=self.hp.atr_period)
 
-        raw_closes = closes.astype(np.float32)
-        last_close_raw = raw_closes[self.seq_len - 1 : -1]
-        next_close_raw = raw_closes[self.seq_len :]
-        rets = (next_close_raw - last_close_raw) / (last_close_raw + 1e-8)
+        last_close = closes[self.seq_len - 1 : -1]
+        next_close = closes[self.seq_len :]
+        rets = (next_close - last_close) / (last_close + 1e-8)
         thresholds = self.atr_threshold_k * atr_vals[self.seq_len - 1 : -1]
         labels = np.where(rets > thresholds, 0, np.where(rets < -thresholds, 1, 2))
 
-        mask = (
-            np.isfinite(windows).all(axis=(1, 2))
-            & np.isfinite(rets)
-            & np.isfinite(thresholds)
+        self.features = zero_disabled(
+            np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0), self.mask
         )
-        windows = windows[mask]
-        labels = labels[mask]
 
-        windows = np.nan_to_num(windows, nan=0.0, posinf=0.0, neginf=0.0)
+        labels = labels.astype(np.int64)
+        return self.features, labels
 
-        if isinstance(windows, list):
-            windows = np.array(windows)
-        if isinstance(labels, list):
-            labels = np.array(labels)
-
-        return windows.astype(np.float32), labels.astype(np.int64)
-
+    # --------------------------------------------------------------------- #
     def __len__(self):
-        return len(self.samples)
+        return len(self.labels)
 
     def __getitem__(self, idx):
-        sample = self.samples[idx].copy()
+        start = idx
+        end = idx + self.seq_len
+        sample = self.features[start:end].copy()
         if sample.shape[-1] != self.expected_features:
-            self.logger.error(
-                "Feature dimension mismatch: %s != %s",
-                sample.shape,
-                self.expected_features,
-            )
+            self.logger.error("Feature dimension mismatch: %s", sample.shape)
             raise ValueError(
                 f"Expected {self.expected_features} features, got {sample.shape[-1]}"
             )
 
         if self.train_mode and random.random() < 0.2:
             sample += np.random.normal(0, 0.01, sample.shape)
-        assert (
-            sample.shape[1] == self.expected_features
-        ), f"Expected {self.expected_features} features, got {sample.shape[1]}"
-        sample_t = torch.as_tensor(sample, dtype=torch.float32)
+
+        sample_t = torch.as_tensor(sample, dtype=torch.float32, device="cpu")
         label = self.labels[idx]
         if self.rebalance and label == 2 and random.random() < 0.5:
             label = random.choice([0, 1])
-        label_t = torch.tensor(label, dtype=torch.long)
+        label_t = torch.tensor(label, dtype=torch.long, device="cpu")
         return sample_t, label_t
 
-    # [FIXED]# expose expected feature dimension
+    # convenience for external callers
     def get_feature_dimension(self):
         return self.expected_features

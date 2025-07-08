@@ -3,6 +3,9 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        torch: [cpu, cu121]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
@@ -11,7 +14,11 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -U pip
-          pip install numpy pandas torch matplotlib ccxt --extra-index-url https://download.pytorch.org/whl/cpu
+          if [ "${{ matrix.torch }}" = "cu121" ]; then
+            pip install numpy pandas torch torchvision torchaudio matplotlib ccxt --extra-index-url https://download.pytorch.org/whl/cu121
+          else
+            pip install numpy pandas torch matplotlib ccxt --extra-index-url https://download.pytorch.org/whl/cpu
+          fi
       - name: Run tests
         env:
           PYTHONPATH: ${{ github.workspace }}

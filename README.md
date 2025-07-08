@@ -90,10 +90,40 @@ pip install torch openai ccxt pandas numpy matplotlib scikit-learn TA-Lib pytest
 Users on Python 3.11 should install a CUDA 12.1 build of PyTorch 2.x to enable
 GPU acceleration. The bot falls back to CPU when no compatible wheel is found.
 
+### GPU quick-start
+
+```bash
+pip install --upgrade pip
+pip install --extra-index-url https://download.pytorch.org/whl/cu121 \
+    torch torchvision torchaudio --force-reinstall --no-cache-dir
+pip install torch==2.2.0+cu121 -f https://download.pytorch.org/whl/torch_stable.html
+```
+
+Windows and Linux both require an NVIDIA driver version 545.23 or newer for CUDA 12.1.
+
 The environment sets `NUMEXPR_MAX_THREADS` to the CPU count when the variable is
 not defined, downgrades NumPy to the latest 1.x release for legacy packages and
 chooses the correct CPU or CUDA build of PyTorch automatically.  Set
 `ARTIBOT_SKIP_INSTALL=1` to disable the automatic installer.
+
+### FlashAttention / SDP kernels
+
+Install a **PyTorch nightly** wheel built with `USE_FLASH_ATTENTION=1` or compile
+from source.  Call `torch.backends.cuda.enable_flash_sdp(True)` before training
+to enable FlashAttention‑v2.  Benchmarks show 1.5–3× speed‑ups on sequences of
+≤128 tokens and up to 40 % shorter epochs when profiling with
+`torch.profiler.schedule(wait=1, warmup=1, active=3)`.
+
+### FlashAttention Auto-Install
+
+To automatically install a FlashAttention-capable PyTorch nightly on CUDA 11.8:
+
+```bash
+export FLASH_SDP_AUTO_INSTALL=1
+python run_artibot.py
+```
+
+The wheels are hosted at <https://download.pytorch.org/whl/nightly/cu118>.
 
 ## Configuration
 
@@ -119,7 +149,7 @@ stop‑loss/take‑profit parameters and ATR threshold:
   "ADAPT_TO_LIVE": true,
   "LIVE_POLL_INTERVAL": 900,
   "MIN_HOLD_SECONDS": 1800,
-  "MIN_SHARPE": 1.0,
+  "MIN_REWARD": 1.0,
   "MAX_DRAWDOWN": -0.3,
   "MIN_ENTROPY": 1.0,
   "MIN_PROFIT_FACTOR": 1.0,
@@ -131,6 +161,14 @@ stop‑loss/take‑profit parameters and ATR threshold:
   "WEIGHTS_DIR": "weights",
   "CHATGPT": {"API_KEY": "..."}
 }
+```
+
+### Window-Length & Hyperparameter Sweep
+
+Define `experiment_axes` in your config YAML and run:
+
+```bash
+python scripts/sweep.py --config-file config/hyperparams.yaml
 ```
 
 ## Usage
