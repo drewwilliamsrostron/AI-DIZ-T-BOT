@@ -10,10 +10,12 @@ from typing import Optional
 
 import numpy as np
 
+
 try:
     import pandas as pd
 except Exception:  # pragma: no cover - optional dependency
     pd = None
+
 
 import artibot.globals as G
 from .metrics import nuclear_key_condition
@@ -21,6 +23,11 @@ from .live_risk import update_auto_pause
 
 import tkinter as tk
 from tkinter import ttk
+
+
+
+import matplotlib
+
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
@@ -40,6 +47,7 @@ def format_trade_details(trades: list[dict], limit: int = 50) -> str:
     """Return a compact table string for the most recent trades."""
     if not trades:
         return "No Trade Details"
+
     if pd is None:
         lines = []
         for tr in trades[-limit:]:
@@ -47,6 +55,7 @@ def format_trade_details(trades: list[dict], limit: int = 50) -> str:
                 f"{tr.get('entry_time', 0)} {tr.get('side','')} {tr.get('return',0):.2f}"
             )
         return "\n".join(lines) if lines else "No Trade Details"
+
     df = pd.DataFrame(trades)
     if df.empty:
         return "No Trade Details"
@@ -106,6 +115,7 @@ class ScrollableFrame(ttk.Frame):
         canvas.bind("<Configure>", _resize)
 
 
+
 def select_weight_file(use_prev: bool = True) -> str | None:
     """Return the weight file path based on user selection."""
     from tkinter import filedialog, messagebox
@@ -113,9 +123,11 @@ def select_weight_file(use_prev: bool = True) -> str | None:
     if use_prev and messagebox.askyesno("Load Weights", "Use best.pt?"):
         return "best.pt"
     return (
+
         filedialog.askopenfilename(
             title="Select weight file", filetypes=[("PyTorch", "*.pth")]
         )
+
         or None
     )
 
@@ -162,6 +174,7 @@ def startup_options_dialog(
     root.title("Startup Options")
     skip_var = tk_module.BooleanVar(value=bool(defaults.get("skip_sentiment", False)))
     live_var = tk_module.BooleanVar(value=bool(defaults.get("use_live", False)))
+
     weights_var = tk_module.BooleanVar(
         value=bool(defaults.get("use_prev_weights", True))
     )
@@ -199,17 +212,20 @@ def startup_options_dialog(
         root, from_=1, to=threads_max, textvariable=threads_var, width=5
     ).pack(anchor="w")
 
+
     def cont() -> None:
         result["skip_sentiment"] = skip_var.get()
         result["use_live"] = live_var.get()
         result["use_prev_weights"] = weights_var.get()
         result["threads"] = threads_var.get()
+
         result["risk_filter"] = risk_var.get()
         result["use_net_term"] = net_var.get()
         result["use_sharpe_term"] = sharpe_var.get()
         result["use_drawdown_term"] = dd_var.get()
         result["use_trade_term"] = trade_var.get()
         result["use_profit_days_term"] = days_var.get()
+
         root.quit()
         root.destroy()
 
@@ -283,6 +299,7 @@ class TradingGUI:
         style.configure("TLabel", background="#222", foreground="white")
         style.configure("TLabelframe", background="#222", foreground="white")
         style.configure("TLabelframe.Label", background="#222", foreground="white")
+
         style.configure("TButton", background="#333", foreground="white")
         style.configure("TCheckbutton", background="#222", foreground="white")
         style.configure("TNotebook", background="#222")
@@ -292,6 +309,7 @@ class TradingGUI:
         )
         style.configure("Treeview.Heading", background="#444", foreground="white")
         style.configure("TEntry", fieldbackground="#333", foreground="white")
+
         root.configure(bg="#222")
 
         self._init_layout()
@@ -327,6 +345,7 @@ class TradingGUI:
         self.notebook = ttk.Notebook(self.main)
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
+
         # Add additional pages here to extend the dashboard.  Each frame
         # corresponds to a tab and should be updated in ``update_dashboard``.
 
@@ -336,10 +355,12 @@ class TradingGUI:
         self.fig_train, axs = plt.subplots(
             2, 2, figsize=(8, 6), constrained_layout=True
         )
+
         self.ax_loss = axs[0, 0]
         self.ax_equity = axs[0, 1]
         self.ax_attention = axs[1, 0]
         self.ax_trades = axs[1, 1]
+
         self.canvas_train = FigureCanvasTkAgg(
             self.fig_train, master=self.frame_train.inner
         )
@@ -382,6 +403,7 @@ class TradingGUI:
         cols = ("Date", "Side", "Size", "Entry", "Exit", "PnL")
         self.trade_tree = ttk.Treeview(
             self.frame_trades.inner, columns=cols, show="headings", height=10
+
         )
         for c in cols:
             self.trade_tree.heading(c, text=c)
@@ -389,39 +411,54 @@ class TradingGUI:
         vsb = ttk.Scrollbar(
             self.frame_trades, orient="vertical", command=self.trade_tree.yview
         )
+
+
+        self.trade_tree = ttk.Treeview(self.frame_trades, columns=cols, show="headings", height=10)
+        for c in cols:
+            self.trade_tree.heading(c, text=c)
+            self.trade_tree.column(c, anchor=tk.CENTER)
+        vsb = ttk.Scrollbar(self.frame_trades, orient="vertical", command=self.trade_tree.yview)
+
+
         self.trade_tree.configure(yscrollcommand=vsb.set)
         self.trade_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         vsb.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Yearly page
+
         self.frame_yearly = ScrollableFrame(self.notebook)
         self.notebook.add(self.frame_yearly, text="Yearly")
         self.yearly_text = tk.Text(self.frame_yearly.inner, width=50, height=20)
         yscroll = ttk.Scrollbar(
             self.frame_yearly, orient="vertical", command=self.yearly_text.yview
         )
+
         self.yearly_text.configure(yscrollcommand=yscroll.set)
         self.yearly_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         yscroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Monthly page
+
         self.frame_monthly = ScrollableFrame(self.notebook)
         self.notebook.add(self.frame_monthly, text="Monthly")
         self.monthly_text = tk.Text(self.frame_monthly.inner, width=50, height=20)
         mscroll = ttk.Scrollbar(
             self.frame_monthly, orient="vertical", command=self.monthly_text.yview
         )
+
         self.monthly_text.configure(yscrollcommand=mscroll.set)
         self.monthly_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         mscroll.pack(side=tk.RIGHT, fill=tk.Y)
 
     def _build_sidebar(self) -> None:
+
         """Create sidebar widgets with stats and controls.
 
         Future contributors can extend this method to add new metric labels
         or controls.  Insert additional ``ttk.Label`` or ``ttk.Button`` widgets
         in the ``self.info`` or ``self.controls`` frames as needed.
         """
+
         self.info = ttk.LabelFrame(self.sidebar, text="Performance")
         self.info.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
@@ -442,6 +479,7 @@ class TradingGUI:
         self.best_lr_label.grid(row=3, column=0, sticky="w", padx=5, pady=2)
         self.best_wd_label = ttk.Label(self.info, text="Weight Decay: N/A")
         self.best_wd_label.grid(row=3, column=1, sticky="w", padx=5, pady=2)
+
 
         self.current_stats = ttk.LabelFrame(self.info, text="Current Stats")
         self.current_stats.grid(
@@ -571,6 +609,7 @@ class TradingGUI:
             variable=self.use_days_var,
             command=self.update_composite_flags,
         ).grid(row=2, column=0, sticky="w")
+
         self.risk_filter_var = tk.BooleanVar(value=G.is_risk_filter_enabled())
         ttk.Checkbutton(
             self.comp_frame,
@@ -580,6 +619,7 @@ class TradingGUI:
         ).grid(row=2, column=1, sticky="w")
         self.update_composite_flags()
         self.update_risk_filter()
+
 
         self.ai_frame = ttk.Frame(self.sidebar)
         self.ai_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
@@ -651,6 +691,7 @@ class TradingGUI:
         disclaimer = ttk.Label(
             self.footer, text="NOT INVESTMENT ADVICE!", foreground="orange"
         )
+
         disclaimer.pack(side=tk.LEFT, padx=5)
         self.status_var = tk.StringVar(value="Ready")
         status = ttk.Label(self.footer, textvariable=self.status_var)
@@ -658,6 +699,7 @@ class TradingGUI:
         self.progress = ttk.Progressbar(
             self.footer, mode="determinate", maximum=100, length=150
         )
+
         self.progress.pack(side=tk.RIGHT, padx=5)
         self.weights_label = ttk.Label(
             self.footer,
@@ -679,6 +721,7 @@ class TradingGUI:
 
     def update_dashboard(self) -> None:  # noqa: C901 - full dashboard update
         """Refresh all charts and labels from ``artibot.globals``."""
+
         if self.after_id is not None:
             self.root.after_cancel(self.after_id)
             self.after_id = None
@@ -688,11 +731,13 @@ class TradingGUI:
         n = min(len(G.global_training_loss), len(G.global_validation_loss))
         x = range(1, n + 1)
         self.ax_loss.plot(x, G.global_training_loss[:n], label="Train", marker="o")
+
         val = [
             (i + 1, v)
             for i, v in enumerate(G.global_validation_loss[:n])
             if v is not None
         ]
+
         if val:
             xv, yv = zip(*val)
             self.ax_loss.plot(xv, yv, label="Val", marker="x")
@@ -705,11 +750,13 @@ class TradingGUI:
         eq = G.global_equity_curve
         if eq:
             ts, bal = zip(*eq)
+
             ts_dt = [_dt.datetime.fromtimestamp(t) for t in ts]
             self.ax_equity.plot(ts_dt, bal, color="red", label="Current")
         if G.global_best_equity_curve:
             ts, bal = zip(*G.global_best_equity_curve)
             ts_dt = [_dt.datetime.fromtimestamp(t) for t in ts]
+
             self.ax_equity.plot(ts_dt, bal, color="green", label="Best")
         self.ax_equity.legend()
 
@@ -739,11 +786,13 @@ class TradingGUI:
         # Live price
         self.ax_live.clear()
         if G.global_phemex_data:
+
             times = [
                 _dt.datetime.fromtimestamp(b[0] / 1000)
                 for b in G.global_phemex_data
                 if b
             ]
+
             closes = [b[4] for b in G.global_phemex_data if b]
             self.ax_live.plot(times, closes, marker="o")
         self.ax_live.set_title("Live Price")
@@ -809,10 +858,12 @@ class TradingGUI:
         # Stats labels
         pred_str = G.global_current_prediction or "N/A"
         color_map = {"BUY": "lightgreen", "SELL": "red", "HOLD": "white"}
+
         self.pred_label.config(
             text=f"AI Prediction: {pred_str}",
             foreground=color_map.get(pred_str.upper(), "white"),
         )
+
         price = 0.0
         if G.global_phemex_data and len(G.global_phemex_data[-1]) >= 5:
             price = float(G.global_phemex_data[-1][4])
@@ -829,6 +880,7 @@ class TradingGUI:
         self.position_label.config(text=f"Position: {pos}")
 
         current_lr = self.ensemble.optimizers[0].param_groups[0]["lr"]
+
         self.best_lr_label.config(
             text=f"Best LR: {G.global_best_lr if G.global_best_lr else current_lr:.2e}"
         )
@@ -909,10 +961,17 @@ class TradingGUI:
             text=f"Best Avg Loss: {G.global_best_avg_loss:.3f}"
         )
 
+
         primary, secondary = G.get_status_full()
         nk_state = "ARMED" if G.nuke_armed else "SAFE"
         self.status_var.set(f"{primary} | NK {nk_state} \n{secondary}")
         self.progress["value"] = G.global_progress_pct
+
+
+
+        _ = G.live_equity - G.start_equity
+        _ = G.live_trade_count
+
 
         if should_enable_live_trading() and not G.live_trading_enabled:
             self.nuclear_button.config(state=tk.NORMAL)
@@ -924,6 +983,7 @@ class TradingGUI:
         allowed = nuclear_key_condition(
             G.global_sharpe, G.global_max_drawdown, G.global_profit_factor
         )
+
         if not allowed or not should_enable_live_trading():
             self.nuclear_button.config(state=tk.DISABLED)
 
@@ -956,12 +1016,14 @@ class TradingGUI:
 
     def log_trade(self, msg: str) -> None:
         logging.info(msg)
+
         if hasattr(self, "ai_log_list"):
             try:
                 self.ai_log_list.insert(tk.END, msg)
                 self.ai_log_list.yview_moveto(1.0)
             except Exception:
                 pass
+
 
     def on_test_buy(self) -> None:
         self.on_test_trade("buy")
@@ -992,6 +1054,7 @@ class TradingGUI:
                     close_order = self.connector.create_order(
                         close_side, 1, close_price
                     )
+
                     self.log_trade(f"[TEST-CLOSE] {close_order}")
                 except Exception as e:  # pragma: no cover
                     self.log_trade(f"[TEST-CLOSE-ERROR] {e}")
@@ -1024,9 +1087,11 @@ class TradingGUI:
             G.update_trade_params(sl_var.get(), tp_var.get())
             win.destroy()
 
+
         ttk.Button(win, text="Apply", command=apply).grid(
             row=2, column=0, columnspan=2, pady=5
         )
+
 
     def adjust_cpu_limit(self) -> None:
         win = tk.Toplevel(self.root)
@@ -1037,13 +1102,16 @@ class TradingGUI:
             win, from_=1, to=os.cpu_count() or 1, textvariable=cpu_var, width=5
         ).grid(row=0, column=1, padx=5, pady=5)
 
+
         def apply() -> None:
             G.set_cpu_limit(cpu_var.get())
             win.destroy()
 
+
         ttk.Button(win, text="Apply", command=apply).grid(
             row=1, column=0, columnspan=2, pady=5
         )
+
 
     def manual_validate(self) -> None:
         self.validation_label.config(text="Validating...")
@@ -1075,6 +1143,7 @@ class TradingGUI:
         self.run_button.config(text=new_text)
 
     def update_composite_flags(self) -> None:
+
         G.use_net_term = bool(self.use_net_var.get())
         G.use_sharpe_term = bool(self.use_sharpe_var.get())
         G.use_drawdown_term = bool(self.use_dd_var.get())
@@ -1084,6 +1153,7 @@ class TradingGUI:
     def update_risk_filter(self) -> None:
         """Enable or disable the risk filter in ``artibot.globals``."""
         G.set_risk_filter_enabled(bool(self.risk_filter_var.get()))
+
 
     def on_toggle_force_nk(self) -> None:
         G.nuke_armed = bool(self.force_nk_var.get())
@@ -1098,10 +1168,12 @@ if __name__ == "__main__":
 
     G.global_training_loss = [1.0, 0.8, 0.6]
     G.global_validation_loss = [1.2, 0.9, 0.7]
+
     G.global_equity_curve = [
         [_dt.datetime.now().timestamp() - 3600, 0.0],
         [_dt.datetime.now().timestamp(), 1.0],
     ]
+
     G.global_best_equity_curve = G.global_equity_curve
     G.timeline_ind_on[:] = 0
     G.timeline_trades[:] = 0
@@ -1109,6 +1181,7 @@ if __name__ == "__main__":
     ens = types.SimpleNamespace(
         optimizers=[types.SimpleNamespace(param_groups=[{"lr": 1e-3}])]
     )
+
     root = tk.Tk()
     gui = TradingGUI(root, ens)
     root.mainloop()

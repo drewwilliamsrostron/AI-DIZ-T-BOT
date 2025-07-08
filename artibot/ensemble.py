@@ -37,7 +37,7 @@ from torch.utils.data import DataLoader
 
 from .backtest import robust_backtest
 from .hyperparams import HyperParams, IndicatorHyperparams
-from artibot.core.device import DEVICE
+from artibot.core.device import get_device
 from .utils import zero_disabled
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
@@ -46,20 +46,20 @@ from .constants import FEATURE_DIMENSION
 from .feature_manager import validate_and_align_features
 
 
-def update_best(epoch: int, sharpe: float, net_pct: float, best_ckpt_path: str) -> None:
+def update_best(epoch: int, reward: float, net_pct: float, best_ckpt_path: str) -> None:
     """Log a NEW_BEST event with key metrics."""
 
     logging.info(
-        "NEW_BEST  epoch=%d  sharpe=%.3f  net_pct=%.2f  saved %s",
+        "NEW_BEST  epoch=%d  reward=%.3f  net_pct=%.2f  saved %s",
         epoch,
-        sharpe,
+        reward,
         net_pct,
         best_ckpt_path,
     )
 
 
 def reject_if_risky(
-    sharpe: float,
+    reward: float,
     max_dd: float,
     entropy: float,
     *,
@@ -79,20 +79,20 @@ def reject_if_risky(
             thresholds = {}
 
     min_entropy = float(thresholds.get("MIN_ENTROPY", 1.0))
-    min_sharpe = float(thresholds.get("MIN_SHARPE", 1.0))
+    min_reward = float(thresholds.get("MIN_REWARD", -1.0))
     max_drawdown = float(thresholds.get("MAX_DRAWDOWN", -0.30))
 
     # Early-stage models get a looser gate until trade count builds up
     if G.global_num_trades < 1000:
-        return sharpe <= 0.0 and max_dd <= -0.40
+        return reward <= 0.0 and max_dd <= -0.40
 
     if entropy < min_entropy:
         return True  # reject collapsed runs
-    return max_dd < max_drawdown or sharpe < min_sharpe
+    return max_dd < max_drawdown or reward < min_reward
 
 
 def nuclear_key_gate(
-    sharpe: float,
+    reward: float,
     max_dd: float,
     entropy: float,
     profit_factor: float,
@@ -110,7 +110,7 @@ def nuclear_key_gate(
             thresholds = {}
 
     min_entropy = float(thresholds.get("MIN_ENTROPY", 1.0))
-    min_sharpe = float(thresholds.get("MIN_SHARPE", 1.0))
+    min_reward = float(thresholds.get("MIN_REWARD", -1.0))
     max_drawdown = float(thresholds.get("MAX_DRAWDOWN", -0.30))
     min_profit_factor = 1.5
 
@@ -119,7 +119,7 @@ def nuclear_key_gate(
 
     return (
         entropy >= min_entropy
-        and sharpe >= min_sharpe
+        and reward >= min_reward
         and max_dd >= max_drawdown
         and profit_factor >= min_profit_factor
     )
@@ -133,7 +133,7 @@ def nk_gate_passes() -> bool:
         else 0.0
     )
     return nuclear_key_gate(
-        G.global_sharpe,
+        G.global_composite_reward,
         G.global_max_drawdown,
         entropy,
         G.global_profit_factor,
@@ -173,7 +173,7 @@ class EnsembleModel(nn.Module):
         grad_accum_steps: int = 1,
     ) -> None:
         super().__init__()
-        device = torch.device(device if device is not None else DEVICE)
+        device = torch.device(device) if device is not None else get_device()
         self.device = device
         self.weights_path = weights_path
         self.indicator_hparams = IndicatorHyperparams(
@@ -190,7 +190,10 @@ class EnsembleModel(nn.Module):
         self.expected_features = dim
         self.n_features = dim
 
-        self.models = [TradingModel(input_size=dim).to(device) for _ in range(n_models)]
+        self.models = [
+            TradingModel(input_size=dim).to(device, non_blocking=True)
+            for _ in range(n_models)
+        ]
         self._mask_lock = threading.Lock()
         self.register_buffer("feature_mask", torch.ones(1, dim, device=device))
         print("[DEBUG] Model moved to device")
@@ -207,7 +210,7 @@ class EnsembleModel(nn.Module):
             for m in self.models
         ]
         self.criterion = nn.CrossEntropyLoss(
-            weight=torch.tensor([2.0, 2.0, 1.0]).to(device)
+            weight=torch.tensor([2.0, 2.0, 1.0], device=device)
         )
         self.mse_loss_fn = nn.MSELoss()
         amp_on = device.type == "cuda"
@@ -703,7 +706,7 @@ class EnsembleModel(nn.Module):
             G.global_best_monthly_stats_table = best_monthly
             update_best(
                 self.train_steps,
-                current_result["sharpe"],
+                cur_reward,
                 current_result["net_pct"],
                 self.weights_path,
             )

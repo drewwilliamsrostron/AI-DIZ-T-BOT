@@ -34,6 +34,15 @@ import artibot.feature_store as fs
 _LOG = logging.getLogger("feature_ingest")
 
 
+def ingest_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Forward-fill missing values and add a feature mask column."""
+
+    mask = ~df.isna()
+    df = df.ffill(limit=7)
+    df["feature_mask"] = mask.all(axis=1).astype(int)
+    return df
+
+
 _MACRO_SRC = (
     "https://api.tradingeconomics.com/calendar/country/united states?c=guest:guest"
 )

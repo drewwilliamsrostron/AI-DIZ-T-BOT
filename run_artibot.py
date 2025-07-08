@@ -26,6 +26,7 @@ import logging
 import threading
 import tkinter as tk
 from queue import Queue, Empty
+import tomllib
 
 
 SKIP_SENTIMENT = False
@@ -73,6 +74,16 @@ def load_master_config(path: str = "master_config.json") -> dict:
     try:
         with open(cfg_path, "r") as fh:
             return json.load(fh)
+    except FileNotFoundError:
+        return {}
+
+
+def load_default_config(path: str = "config/default.toml") -> dict:
+    """Return optional TOML configuration."""
+    cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), path)
+    try:
+        with open(cfg_path, "rb") as fh:
+            return tomllib.load(fh)
     except FileNotFoundError:
         return {}
 
@@ -145,6 +156,7 @@ def _launch_loading(
 
 
 CONFIG = load_master_config()
+DEFAULT_CFG = load_default_config()
 
 
 def main() -> None:
@@ -189,7 +201,8 @@ def main() -> None:
     )
     G.set_risk_filter_enabled(bool(opts.get("risk_filter", defaults["risk_filter"])))
 
-    from artibot.utils import setup_logging, get_device
+    from artibot.utils import setup_logging
+    from artibot.core.device import get_device
     from artibot.ensemble import EnsembleModel
     from artibot.dataset import HourlyDataset, load_csv_hourly
     from artibot.hyperparams import HyperParams, IndicatorHyperparams
@@ -205,7 +218,8 @@ def main() -> None:
     setup_logging()
     from artibot.utils import heartbeat
 
-    heartbeat.start()
+    hb_interval = DEFAULT_CFG.get("logging", {}).get("heartbeat_interval", 120)
+    heartbeat.start(interval=hb_interval)
     root = tk.Tk()
     progress_q: Queue[tuple[float, str] | tuple[str, str]] = Queue()
     _launch_loading(root, progress_q)
@@ -244,7 +258,7 @@ def main() -> None:
     indicator_hp = IndicatorHyperparams(
         rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
     )
-    data = load_csv_hourly(csv_path)
+    data = load_csv_hourly(csv_path, cfg=DEFAULT_CFG)
     if not data:
         logging.error("No usable CSV data found")
         return

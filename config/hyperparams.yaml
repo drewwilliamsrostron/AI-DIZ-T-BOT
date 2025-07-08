@@ -1,0 +1,17 @@
+experiment_axes:
+  window_length:
+    sampling: log_uniform
+    min: 64
+    max: 512
+  reward_weights:
+    sampling: dirichlet
+  learning_rate:
+    sampling: log_uniform
+    min: 1e-6
+    max: 1e-2
+  entropy_beta:
+    sampling: log_uniform
+    min: 1e-4
+    max: 5e-3
+  attention_impl:
+    choices: [standard_eager, flash_attention_v2]

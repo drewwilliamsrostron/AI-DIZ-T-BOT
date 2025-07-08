@@ -645,7 +645,7 @@ if __name__ == "__main__":
     from .dataset import load_csv_hourly, HourlyDataset
     from .ensemble import EnsembleModel
     from .training import csv_training_thread
-    from .utils import get_device
+    from artibot.core.device import get_device
     from .hyperparams import IndicatorHyperparams
     from .bot_app import CONFIG
     import threading
@@ -653,7 +653,7 @@ if __name__ == "__main__":
     set_threads(int(os.environ.get("OMP_NUM_THREADS", os.cpu_count() or 1)))
     ensure_dependencies()
 
-    data = load_csv_hourly("Gemini_BTCUSD_1h.csv")
+    data = load_csv_hourly("Gemini_BTCUSD_1h.csv", cfg=CONFIG)
     ds_tmp = HourlyDataset(
         data,
         seq_len=24,

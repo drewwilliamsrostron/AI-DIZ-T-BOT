@@ -54,6 +54,6 @@ def test_train_one_epoch_runs(monkeypatch):
     ens.optimizers = [torch.optim.AdamW(ens.models[0].parameters(), lr=1e-3)]
 
     ds = TensorDataset(torch.zeros(2, 24, 16), torch.zeros(2, dtype=torch.long))
-    dl = DataLoader(ds, batch_size=1)
+    dl = DataLoader(ds, batch_size=1, pin_memory=True)
 
     ens.train_one_epoch(dl, dl, [])

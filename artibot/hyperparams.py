@@ -147,7 +147,7 @@ class IndicatorHyperparams:
 # Risk control
 # ---------------------------------------------------------------------------
 RISK_FILTER = {
-    "MIN_SHARPE": -1.0,
+    "MIN_REWARD": -1.0,
     "MAX_DRAWDOWN": -0.90,
 }
 
