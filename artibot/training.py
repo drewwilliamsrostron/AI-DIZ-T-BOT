@@ -221,7 +221,7 @@ def csv_training_thread(
             with_scaled=True,
         )
 
-        workers = int(config.get("NUM_WORKERS", G.cpu_limit))
+        workers = int(config.get("NUM_WORKERS", 0))
         logging.info(
             "DATALOADER", extra={"workers": workers, "device": ensemble.device.type}
         )
