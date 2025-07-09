@@ -107,6 +107,18 @@ def _have_cuda() -> bool:
 def _install_cuda() -> None:
     if _have_cuda():
         return
+    try:
+        if (
+            subprocess.call(
+                ["nvidia-smi"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+            != 0
+        ):
+            log.info("No NVIDIA driver detected; skipping CUDA wheel install.")
+            return
+    except Exception:
+        log.info("No NVIDIA driver detected; skipping CUDA wheel install.")
+        return
     cmd = [
         sys.executable,
         "-m",
