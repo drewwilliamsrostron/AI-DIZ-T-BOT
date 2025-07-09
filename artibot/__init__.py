@@ -8,6 +8,11 @@ the installer ran once on first launch.
 # ruff: noqa: E402
 from .environment import ensure_dependencies
 
+# Make sure third‑party packages like ``torch`` are present before importing
+# modules that rely on them.  This mirrors the behavior of the original
+# single‑file script where packages were installed on first launch.
+ensure_dependencies()  # run the installer once at import time
+
 try:
     from .core.device import check_cuda
 except Exception:  # pragma: no cover - optional torch missing
@@ -16,7 +21,6 @@ except Exception:  # pragma: no cover - optional torch missing
         pass
 
 
-ensure_dependencies()  # run the installer once at import time
 check_cuda()
 from config import FEATURE_CONFIG
 from .constants import FEATURE_DIMENSION
