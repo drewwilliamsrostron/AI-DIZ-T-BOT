@@ -4,6 +4,7 @@ import subprocess
 import importlib
 import logging
 import torch
+import builtins
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +164,8 @@ else:  # pragma: no cover - torch stubbed
 def check_cuda() -> None:
     """Warn when CUDA support is missing."""
 
+    dll_paths = os.getenv("PATH", "").split(os.pathsep)
+
     has_cuda = torch.version.cuda is not None
     try:
         ret = subprocess.call(
@@ -170,9 +173,23 @@ def check_cuda() -> None:
         )
     except Exception:
         ret = 1
+    if builtins.all(
+        not os.path.exists(os.path.join(p, "nvToolsExt64_1.dll")) for p in dll_paths
+    ):
+        # no CUDA toolkit DLLs on PATH → skip
+        log.info("No CUDA toolkit DLLs found; skipping CUDA wheel install.")
+        return
     if not (has_cuda and ret == 0):
         msg = (
             "torch-cu121 wheel not installed or driver < 545; "
             "see README 'CUDA 12.1' section"
         )
         print(f"\033[91m{msg}\033[0m")
+
+
+if __name__ == "__main__":
+    try:
+        check_cuda()
+        print("check_cuda() ran successfully.")
+    except TypeError as e:
+        print("ERROR: check_cuda() raised a TypeError:", e)
