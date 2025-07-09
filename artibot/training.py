@@ -30,6 +30,22 @@ import torch
 import multiprocessing
 import gc
 
+
+def quick_fit(model: EnsembleModel, data: list[list[float]], epochs: int = 1) -> None:
+    """Train ``model`` on ``data`` for a small number of epochs."""
+
+    ds = HourlyDataset(
+        data,
+        seq_len=24,
+        indicator_hparams=model.indicator_hparams,
+        atr_threshold_k=getattr(model.indicator_hparams, "atr_threshold_k", 1.5),
+        train_mode=True,
+    )
+    dl = torch.utils.data.DataLoader(ds, batch_size=512, shuffle=True, num_workers=0)
+    for _ in range(epochs):
+        model.train_one_epoch(dl, None, data, update_globals=False)
+
+
 logger = logging.getLogger(__name__)
 
 CPU_LIMIT_DEFAULT = max(1, multiprocessing.cpu_count() - 2)
@@ -847,7 +863,7 @@ def walk_forward_backtest(data: list, train_window: int, test_horizon: int) -> l
         train_slice = data[start : start + train_window]
         test_slice = data[start + train_window : start + train_window + test_horizon]
         model = EnsembleModel(device=get_device(), n_models=1)
-        model.train(train_slice)
+        quick_fit(model, train_slice, epochs=1)
         metrics = robust_backtest(model, test_slice)
         results.append(metrics)
     return results
