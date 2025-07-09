@@ -214,7 +214,7 @@ def run_bot(max_epochs: int | None = None, *, overfit_toy: bool = False) -> None
             max_epochs,
             weights_path,
         ),
-        kwargs={"debug_anomaly": __debug__, "overfit_toy": overfit_toy},
+        kwargs={"debug_anomaly": overfit_toy, "overfit_toy": overfit_toy},
         daemon=True,
     )
     train_th.start()
@@ -255,6 +255,8 @@ def run_bot(max_epochs: int | None = None, *, overfit_toy: bool = False) -> None
         root.mainloop()
     except KeyboardInterrupt:
         pass
+    except Exception as exc:  # pragma: no cover - unexpected GUI error
+        logging.exception("Tkinter mainloop failed: %s", exc)
 
     stop_event.set()
     threads = [

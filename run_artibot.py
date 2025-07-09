@@ -325,7 +325,7 @@ def main() -> None:
             None,
             weights_path,
         ),
-        kwargs={"debug_anomaly": __debug__, "init_event": init_done},
+        kwargs={"debug_anomaly": dev_mode, "init_event": init_done},
         daemon=True,
     )
     train_th.start()
@@ -401,6 +401,8 @@ def main() -> None:
         root.mainloop()
     except KeyboardInterrupt:
         pass
+    except Exception as exc:  # pragma: no cover - unexpected GUI error
+        logging.exception("Tkinter mainloop failed: %s", exc)
 
     stop_event.set()
     for th in (train_th, live_feed_th, meta_th, validate_th):

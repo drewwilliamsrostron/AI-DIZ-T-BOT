@@ -678,7 +678,9 @@ class TradingGUI:
         if val_x:
             self.ax_loss.plot(val_x, val_y, label="Val", marker="x")
         self.ax_loss.set_title("Loss")
-        self.ax_loss.legend()
+        handles, labels = self.ax_loss.get_legend_handles_labels()
+        if labels:
+            self.ax_loss.legend(handles, labels)
         self.loss_comment_label.config(text=self._loss_comment())
 
         self.ax_equity.clear()
@@ -694,7 +696,9 @@ class TradingGUI:
             ts_dt = [_dt.datetime.fromtimestamp(t) for t in ts]
 
             self.ax_equity.plot(ts_dt, bal, color="green", label="Best")
-        self.ax_equity.legend()
+        handles, labels = self.ax_equity.get_legend_handles_labels()
+        if labels:
+            self.ax_equity.legend(handles, labels)
 
         # Attention
         self.ax_attention.clear()
@@ -755,7 +759,9 @@ class TradingGUI:
         self.ax_tl.set_ylim(-0.5, 7.5)
         self.ax_tl.set_yticks([])
         if idx > 0:
-            self.ax_tl.legend(ncol=4, fontsize=6, framealpha=0.3)
+            handles, labels = self.ax_tl.get_legend_handles_labels()
+            if labels:
+                self.ax_tl.legend(handles, labels, ncol=4, fontsize=6, framealpha=0.3)
         self.ax_tl.set_title("Indicators / Trade")
         self.canvas_tl.draw()
 
