@@ -223,6 +223,18 @@ def csv_training_thread(
             1, 24, ensemble.models[0].input_dim, device=ensemble.device
         )
         ensemble.optimize_models(dummy_input)
+        lr_base = ensemble.optimizers[0].param_groups[0]["lr"]
+        schedulers = []
+        one_cycle = getattr(torch.optim.lr_scheduler, "OneCycleLR", None)
+        if callable(one_cycle) and getattr(one_cycle, "__name__", "") == "OneCycleLR":
+            schedulers = [
+                one_cycle(
+                    opt,
+                    max_lr=lr_base * 10,
+                    total_steps=max_epochs or 30,
+                )
+                for opt in ensemble.optimizers
+            ]
 
         trade_count_series: list[float] = []
         days_in_profit_series: list[float] = []
@@ -531,6 +543,15 @@ def csv_training_thread(
                 ensemble.save_best_weights(weights_path)
 
             save_epoch_checkpoint(ensemble, ensemble.train_steps)
+            for sch in schedulers:
+                if not hasattr(sch, "step"):
+                    continue
+                try:
+                    if getattr(sch, "step_num", 0) < getattr(sch, "total_steps", 0):
+                        sch.step()
+                        sch.step_num = getattr(sch, "step_num", 0) + 1
+                except ValueError as e:
+                    logging.warning("LR scheduler skipped: %s", e)
 
         if overfit_toy:
             if final_loss is None or final_loss >= 0.3:
