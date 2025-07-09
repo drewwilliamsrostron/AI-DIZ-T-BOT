@@ -15,7 +15,13 @@ def ensure_dependencies() -> None:
     if os.environ.get("ARTIBOT_SKIP_INSTALL") == "1":
         return
 
-    pkgs = ["optuna", "pandas"]
+    pkgs = [
+        "optuna",
+        "pandas",
+        "torchmetrics",
+        "torchvision",
+        "tensorboard",
+    ]
     for pkg in pkgs:
         try:
             __import__(pkg)

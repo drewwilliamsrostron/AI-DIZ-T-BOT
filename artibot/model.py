@@ -13,6 +13,11 @@ from .dataset import TradeParams
 from .utils import attention_entropy
 
 
+def _ver_tuple(ver: str) -> tuple[int, int]:
+    major, minor, *_ = ver.split(".")
+    return int(major), int(minor)
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -150,6 +155,21 @@ class TradingTransformer(TradingModel):
     """Backward-compatible alias for :class:`TradingModel`."""
 
     pass
+
+
+###############################################################################
+
+
+def build_model(*args, **kwargs) -> TradingModel:
+    """Return a ``TradingModel`` compiled on PyTorch 2+."""
+
+    model = TradingModel(*args, **kwargs)
+    if hasattr(torch, "compile") and _ver_tuple(torch.__version__) >= (2, 0):
+        try:  # pragma: no cover - optional feature
+            model = torch.compile(model)  # type: ignore[arg-type]
+        except Exception as exc:  # pragma: no cover - compile may fail
+            logger.info("torch.compile failed: %s", exc)
+    return model
 
 
 ###############################################################################
