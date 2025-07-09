@@ -6,6 +6,7 @@ import artibot.globals as globals
 import artibot.hyperparams as hyperparams
 
 import logging
+from torch.utils.tensorboard import SummaryWriter
 import optuna
 import pandas as pd
 import datetime
@@ -36,6 +37,9 @@ with G.state_lock:
     G.cpu_limit = CPU_LIMIT_DEFAULT
 torch.set_num_threads(CPU_LIMIT_DEFAULT)
 os.environ["OMP_NUM_THREADS"] = str(CPU_LIMIT_DEFAULT)
+
+# TensorBoard writer for real-time metrics
+writer = SummaryWriter(log_dir="runs/experiment1")
 
 
 CHECKPOINTS_DIR = Path("models/checkpoints")
@@ -533,6 +537,11 @@ def csv_training_thread(
                     "equity": equity,
                 },
             )
+            writer.add_scalar("Loss/train", tl, ensemble.train_steps)
+            if vl is not None:
+                writer.add_scalar("Loss/val", vl, ensemble.train_steps)
+            writer.add_scalar("LR", lr_now, ensemble.train_steps)
+            writer.add_scalar("Equity", equity, ensemble.train_steps)
             heartbeat.update(
                 epoch=ensemble.train_steps,
                 candidate_sharpe=G.global_sharpe,
