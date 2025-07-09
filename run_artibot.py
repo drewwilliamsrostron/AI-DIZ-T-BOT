@@ -271,129 +271,144 @@ def main() -> None:
     except Exception as exc:  # pragma: no cover - network errors
         logging.error("Balance fetch failed: %s", exc)
 
-    device = get_device()
-
-    csv_path = CONFIG["CSV_PATH"]
-    if not os.path.isabs(csv_path):
-        here = os.path.dirname(os.path.abspath(__file__))
-        csv_path = os.path.join(here, csv_path)
-
-    indicator_hp = IndicatorHyperparams(
-        rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
-    )
-    data = load_csv_hourly(csv_path, cfg=DEFAULT_CFG)
-    if not data:
-        logging.error("No usable CSV data found")
-        return
-
-    temp_ds = HourlyDataset(
-        data,
-        seq_len=24,
-        indicator_hparams=indicator_hp,
-        atr_threshold_k=getattr(indicator_hp, "atr_threshold_k", 1.5),
-        train_mode=False,
-    )
-    # [FIXED]# log resulting feature dimension
-    print(f"[MAIN] Dataset final feature dim: {temp_ds.get_feature_dimension()}")
-    n_features = temp_ds[0][0].shape[1]
-
-    from artibot.training import run_hpo
-
-    best = run_hpo()
-    ensemble = build_model(device=device, n_features=n_features, **best)
-    ensemble.indicator_hparams = indicator_hp
-    ensemble.hp = HyperParams(indicator_hp=indicator_hp)
-    weights_dir = os.path.abspath(
-        os.path.expanduser(CONFIG.get("WEIGHTS_DIR", "weights"))
-    )
-    os.makedirs(weights_dir, exist_ok=True)
-    weights_path = os.path.join(weights_dir, "best.pt")
-    use_prev_weights = bool(opts.get("use_prev_weights", defaults["use_prev_weights"]))
-    if os.path.isfile(weights_path) and use_prev_weights:
-        ensemble.load_best_weights(weights_path)
-
     stop_event = threading.Event()
-    init_done = threading.Event()
-    train_th = threading.Thread(
-        target=csv_training_thread,
-        args=(
-            ensemble,
-            data,
-            stop_event,
-            CONFIG,
-            use_prev_weights,
-            None,
-            weights_path,
-        ),
-        kwargs={"debug_anomaly": dev_mode, "init_event": init_done},
-        daemon=True,
-    )
-    train_th.start()
+    train_th: threading.Thread | None = None
+    live_feed_th: threading.Thread | None = None
+    meta_th: threading.Thread | None = None
+    validate_th: threading.Thread | None = None
 
-    poll_interval = CONFIG.get("LIVE_POLL_INTERVAL", 60)
-    live_path = os.path.join(os.path.dirname(weights_path), "live_model.pt")
-    live_feed_th = threading.Thread(
-        target=phemex_live_thread,
-        args=(connector, stop_event, poll_interval, ensemble, live_path),
-        daemon=True,
-    )
-    live_feed_th.start()
+    def setup_worker() -> None:
+        nonlocal train_th, live_feed_th, meta_th, validate_th
+        from artibot.training import run_hpo
 
-    ds = HourlyDataset(
-        data,
-        seq_len=24,
-        indicator_hparams=ensemble.indicator_hparams,
-        atr_threshold_k=getattr(ensemble.indicator_hparams, "atr_threshold_k", 1.5),
-        train_mode=False,
-    )
-    clamp_min = CONFIG.get("CLAMP_MIN", -10.0)
-    clamp_max = CONFIG.get("CLAMP_MAX", 10.0)
-    meta_agent = MetaTransformerRL(
-        ensemble=ensemble,
-        lr=1e-3,
-        value_range=(clamp_min, clamp_max),
-        target_range=(clamp_min, clamp_max),
-    )
-    meta_th = threading.Thread(
-        target=lambda: meta_control_loop(
-            ensemble,
-            ds,
-            meta_agent,
-            ensemble.hp,
-            ensemble.indicator_hparams,
-        ),
-        daemon=True,
-    )
-    meta_th.start()
+        device = get_device()
 
-    validate_th = threading.Thread(
-        target=lambda: validate_and_gate(csv_path, CONFIG), daemon=True
-    )
-    validate_th.start()
+        csv_path = CONFIG["CSV_PATH"]
+        if not os.path.isabs(csv_path):
+            here = os.path.dirname(os.path.abspath(__file__))
+            csv_path = os.path.join(here, csv_path)
 
-    # ---------------------- start feature-ingest thread ---------------------
-    import artibot.feature_ingest as _fi
-
-    ingest_th = threading.Thread(target=_fi.start_worker, daemon=True)
-    ingest_th.start()
-
-    def _bg_init() -> None:
-        if SKIP_SENTIMENT:
-            init_done.set()
+        indicator_hp = IndicatorHyperparams(
+            rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
+        )
+        data = load_csv_hourly(csv_path, cfg=DEFAULT_CFG)
+        if not data:
+            logging.error("No usable CSV data found")
             progress_q.put(("DONE", ""))
             return
-        progress_q.put((0.0, "Downloading historical sentiment + macro data…"))
-        try:
-            import tools.backfill_gdelt as _bf
 
-            _bf.main(progress_cb=lambda pct, msg: progress_q.put((pct, msg)))
-        finally:
-            init_done.set()
-            progress_q.put(("DONE", ""))
+        temp_ds = HourlyDataset(
+            data,
+            seq_len=24,
+            indicator_hparams=indicator_hp,
+            atr_threshold_k=getattr(indicator_hp, "atr_threshold_k", 1.5),
+            train_mode=False,
+        )
+        n_features = temp_ds[0][0].shape[1]
 
-    threading.Thread(target=_bg_init, daemon=True).start()
+        progress_q.put((5.0, "Running hyperparameter search…"))
+        best = run_hpo()
+        ensemble = build_model(device=device, n_features=n_features, **best)
+        ensemble.indicator_hparams = indicator_hp
+        ensemble.hp = HyperParams(indicator_hp=indicator_hp)
 
-    TradingGUI(root, ensemble, weights_path, connector, dev=dev_mode)
+        weights_dir = os.path.abspath(
+            os.path.expanduser(CONFIG.get("WEIGHTS_DIR", "weights"))
+        )
+        os.makedirs(weights_dir, exist_ok=True)
+        weights_path = os.path.join(weights_dir, "best.pt")
+        use_prev_weights = bool(
+            opts.get("use_prev_weights", defaults["use_prev_weights"])
+        )
+        if os.path.isfile(weights_path) and use_prev_weights:
+            ensemble.load_best_weights(weights_path)
+
+        init_done = threading.Event()
+        train_th = threading.Thread(
+            target=csv_training_thread,
+            args=(
+                ensemble,
+                data,
+                stop_event,
+                CONFIG,
+                use_prev_weights,
+                None,
+                weights_path,
+            ),
+            kwargs={"debug_anomaly": dev_mode, "init_event": init_done},
+            daemon=True,
+        )
+        train_th.start()
+
+        poll_interval = CONFIG.get("LIVE_POLL_INTERVAL", 60)
+        live_path = os.path.join(os.path.dirname(weights_path), "live_model.pt")
+        live_feed_th = threading.Thread(
+            target=phemex_live_thread,
+            args=(connector, stop_event, poll_interval, ensemble, live_path),
+            daemon=True,
+        )
+        live_feed_th.start()
+
+        ds = HourlyDataset(
+            data,
+            seq_len=24,
+            indicator_hparams=ensemble.indicator_hparams,
+            atr_threshold_k=getattr(ensemble.indicator_hparams, "atr_threshold_k", 1.5),
+            train_mode=False,
+        )
+        clamp_min = CONFIG.get("CLAMP_MIN", -10.0)
+        clamp_max = CONFIG.get("CLAMP_MAX", 10.0)
+        meta_agent = MetaTransformerRL(
+            ensemble=ensemble,
+            lr=1e-3,
+            value_range=(clamp_min, clamp_max),
+            target_range=(clamp_min, clamp_max),
+        )
+        meta_th = threading.Thread(
+            target=lambda: meta_control_loop(
+                ensemble,
+                ds,
+                meta_agent,
+                ensemble.hp,
+                ensemble.indicator_hparams,
+            ),
+            daemon=True,
+        )
+        meta_th.start()
+
+        validate_th = threading.Thread(
+            target=lambda: validate_and_gate(csv_path, CONFIG), daemon=True
+        )
+        validate_th.start()
+
+        import artibot.feature_ingest as _fi
+
+        ingest_th = threading.Thread(target=_fi.start_worker, daemon=True)
+        ingest_th.start()
+
+        def _bg_init() -> None:
+            if SKIP_SENTIMENT:
+                init_done.set()
+                progress_q.put(("DONE", ""))
+                return
+            progress_q.put((0.0, "Downloading historical sentiment + macro data…"))
+            try:
+                import tools.backfill_gdelt as _bf
+
+                _bf.main(progress_cb=lambda pct, msg: progress_q.put((pct, msg)))
+            finally:
+                init_done.set()
+                progress_q.put(("DONE", ""))
+
+        threading.Thread(target=_bg_init, daemon=True).start()
+
+        root.after(
+            0,
+            lambda: TradingGUI(root, ensemble, weights_path, connector, dev=dev_mode),
+        )
+
+    init_th = threading.Thread(target=setup_worker, daemon=True)
+    init_th.start()
 
     logging.info("Tkinter dashboard starting on main thread…")
 
@@ -405,8 +420,11 @@ def main() -> None:
         logging.exception("Tkinter mainloop failed: %s", exc)
 
     stop_event.set()
+    if init_th.is_alive():
+        init_th.join()
     for th in (train_th, live_feed_th, meta_th, validate_th):
-        th.join()
+        if th is not None:
+            th.join()
 
 
 if __name__ == "__main__":
