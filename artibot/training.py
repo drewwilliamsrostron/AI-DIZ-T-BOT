@@ -842,7 +842,7 @@ def objective(trial: optuna.trial.Trial) -> float:
         update_globals=False,
     )
     metrics = robust_backtest(model, data)
-    return -metrics.get("sharpe", 0.0)
+    return -metrics.get("composite_reward", 0.0)
 
 
 def run_hpo() -> dict:
