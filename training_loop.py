@@ -14,6 +14,7 @@ def train_step(model, optimizer, scheduler, batch):
     optimizer.zero_grad()
     out = model(x)
     loss = torch.nn.functional.cross_entropy(out, y)
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
     loss.backward()
     optimizer.step()  # update weights first
     if scheduler is not None:
