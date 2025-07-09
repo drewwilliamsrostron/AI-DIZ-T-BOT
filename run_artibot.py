@@ -12,6 +12,7 @@ from __future__ import annotations
 from artibot.environment import ensure_dependencies
 from artibot.utils.torch_threads import set_threads
 from artibot.gui import startup_options_dialog
+from artibot.ensemble import EnsembleModel
 import artibot.globals as G
 
 import os
@@ -159,6 +160,29 @@ CONFIG = load_master_config()
 DEFAULT_CFG = load_default_config()
 
 
+def build_model(
+    *,
+    device: object,
+    n_features: int,
+    lr: float = 1e-3,
+    entropy_beta: float | None = None,
+) -> "EnsembleModel":
+    """Return an :class:`EnsembleModel` configured with HPO params."""
+
+    model = EnsembleModel(
+        device=device,
+        n_models=2,
+        lr=lr,
+        weight_decay=0.0,
+        n_features=n_features,
+        total_steps=10000,
+        grad_accum_steps=4,
+    )
+    if entropy_beta is not None:
+        model.entropy_beta = entropy_beta
+    return model
+
+
 def main() -> None:
     """Prompt for startup options and run the trading bot."""
 
@@ -203,7 +227,6 @@ def main() -> None:
 
     from artibot.utils import setup_logging
     from artibot.core.device import get_device
-    from artibot.ensemble import EnsembleModel
     from artibot.dataset import HourlyDataset, load_csv_hourly
     from artibot.hyperparams import HyperParams, IndicatorHyperparams
     from artibot.training import (
@@ -274,15 +297,10 @@ def main() -> None:
     print(f"[MAIN] Dataset final feature dim: {temp_ds.get_feature_dimension()}")
     n_features = temp_ds[0][0].shape[1]
 
-    ensemble = EnsembleModel(
-        device=device,
-        n_models=2,
-        lr=1e-3,
-        weight_decay=0.0,
-        n_features=n_features,
-        total_steps=10000,
-        grad_accum_steps=4,
-    )
+    from artibot.training import run_hpo
+
+    best = run_hpo()
+    ensemble = build_model(device=device, n_features=n_features, **best)
     ensemble.indicator_hparams = indicator_hp
     ensemble.hp = HyperParams(indicator_hp=indicator_hp)
     weights_dir = os.path.abspath(
