@@ -76,6 +76,9 @@ def pytest_configure(config):
                     out = np.minimum(out, max)
                 return out
 
+            def unsqueeze(self, axis):
+                return np.expand_dims(self, axis).view(FakeTensor)
+
             def size(self, dim=None):
                 return self.shape if dim is None else self.shape[dim]
 
@@ -89,11 +92,13 @@ def pytest_configure(config):
         torch_mod.zeros = lambda *s, **k: FakeTensor(
             np.zeros(s if len(s) > 1 else s[0])
         )
+        torch_mod.arange = lambda *a, **k: FakeTensor(np.arange(*a, **k))
         torch_mod.zeros_like = lambda x: FakeTensor(np.zeros_like(x))
         torch_mod.randn = lambda *s: FakeTensor(np.random.randn(*s))
         torch_mod.manual_seed = np.random.seed
         torch_mod.is_tensor = lambda x: isinstance(x, np.ndarray)
         torch_mod.float32 = np.float32
+        torch_mod.float = np.float32
         nn_mod = types.ModuleType("torch.nn")
         nn_mod.Module = FakeModule
         nn_mod.Parameter = FakeTensor
@@ -123,7 +128,12 @@ def pytest_configure(config):
         optim_mod.lr_scheduler = lr_sched
         torch_mod.optim = optim_mod
         torch_mod.no_grad = contextlib.nullcontext
-        torch_mod.device = type("device", (), {})
+
+        class Device:
+            def __init__(self, typ="cpu", *a, **k):
+                self.type = typ
+
+        torch_mod.device = Device
         torch_mod.set_num_threads = lambda n: None
         torch_mod.set_num_interop_threads = lambda n: None
         torch_mod.Tensor = FakeTensor
@@ -132,9 +142,31 @@ def pytest_configure(config):
         data_mod.Dataset = object
         data_mod.DataLoader = object
         data_mod.TensorDataset = object
+        data_mod.random_split = lambda ds, lens: (ds, ds)
+        tb_mod = types.ModuleType("torch.utils.tensorboard")
+
+        class DummyWriter:
+            def __init__(self, *a, **k):
+                pass
+
+            def add_scalar(self, *a, **k):
+                pass
+
+            def add_scalars(self, *a, **k):
+                pass
+
+            def flush(self):
+                pass
+
+            def close(self):
+                pass
+
+        tb_mod.SummaryWriter = DummyWriter
         utils_mod.data = data_mod
+        utils_mod.tensorboard = tb_mod
         utils_mod.__spec__ = ModuleSpec("torch.utils", loader=None)
         data_mod.__spec__ = ModuleSpec("torch.utils.data", loader=None)
+        tb_mod.__spec__ = ModuleSpec("torch.utils.tensorboard", loader=None)
         torch_mod.utils = utils_mod
         torch_mod.inf = float("inf")
         torch_mod.isfinite = np.isfinite
@@ -143,9 +175,19 @@ def pytest_configure(config):
         amp_mod.GradScaler = object
         amp_mod.autocast = contextlib.nullcontext
         cuda_mod.amp = amp_mod
+        cuda_mod.is_available = lambda: False
+        back_cuda = types.ModuleType("torch.backends.cuda")
+        back_cuda.enable_flash_sdp = lambda *a, **k: None
+        back_cuda.is_flash_attention_available = lambda: False
+        back_cuda.flash_sdp_enabled = lambda: False
+        backends_mod = types.ModuleType("torch.backends")
+        backends_mod.cuda = back_cuda
         cuda_mod.__spec__ = ModuleSpec("torch.cuda", loader=None)
         amp_mod.__spec__ = ModuleSpec("torch.cuda.amp", loader=None)
+        back_cuda.__spec__ = ModuleSpec("torch.backends.cuda", loader=None)
+        backends_mod.__spec__ = ModuleSpec("torch.backends", loader=None)
         torch_mod.cuda = cuda_mod
+        torch_mod.backends = backends_mod
         sys.modules["torch"] = torch_mod
         sys.modules["torch.nn"] = nn_mod
         sys.modules["torch.nn.functional"] = fn_mod
@@ -153,6 +195,7 @@ def pytest_configure(config):
         sys.modules["torch.optim.lr_scheduler"] = lr_sched
         sys.modules["torch.utils"] = utils_mod
         sys.modules["torch.utils.data"] = data_mod
+        sys.modules["torch.utils.tensorboard"] = tb_mod
         sys.modules["torch.cuda"] = cuda_mod
         sys.modules["torch.cuda.amp"] = amp_mod
 
@@ -184,6 +227,31 @@ def pytest_configure(config):
         sk.impute = impute_mod
         sys.modules["sklearn"] = sk
         sys.modules["sklearn.impute"] = impute_mod
+
+    if "optuna" not in sys.modules:
+        optuna = types.ModuleType("optuna")
+        trial_mod = types.ModuleType("optuna.trial")
+        trial_mod.Trial = object
+        optuna.trial = trial_mod
+        optuna.create_study = lambda *a, **k: types.SimpleNamespace(
+            optimize=lambda *a, **k: None, best_params={}
+        )
+        optuna.__spec__ = ModuleSpec("optuna", loader=None)
+        trial_mod.__spec__ = ModuleSpec("optuna.trial", loader=None)
+        sys.modules["optuna"] = optuna
+        sys.modules["optuna.trial"] = trial_mod
+
+    if "psutil" not in sys.modules:
+        psutil = types.ModuleType("psutil")
+        psutil.cpu_percent = lambda *a, **k: 0.0
+        psutil.virtual_memory = lambda: types.SimpleNamespace(percent=0.0)
+        sys.modules["psutil"] = psutil
+
+    if "requests" not in sys.modules:
+        req = types.ModuleType("requests")
+        req.RequestException = Exception
+        req.get = lambda *a, **k: types.SimpleNamespace(json=lambda: {})
+        sys.modules["requests"] = req
 
     if "matplotlib" not in sys.modules:
         matplotlib = types.ModuleType("matplotlib")
