@@ -677,6 +677,12 @@ class TradingGUI:
             val_y = pd.Series(val_y).ewm(span=10).mean().tolist()
         if val_x:
             self.ax_loss.plot(val_x, val_y, label="Val", marker="x")
+
+        all_losses = train_vals + val_y
+        if all_losses:
+            self.ax_loss.set_ylim(min(all_losses), max(all_losses))
+            self.ax_loss.relim()
+            self.ax_loss.autoscale_view()
         self.ax_loss.set_title("Loss")
         handles, labels = self.ax_loss.get_legend_handles_labels()
         if labels:
