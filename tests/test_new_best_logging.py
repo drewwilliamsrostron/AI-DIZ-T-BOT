@@ -78,6 +78,9 @@ def test_new_best_logging(monkeypatch, caplog):
     G.global_sharpe = 1.2
     G.global_max_drawdown = -0.1
 
+    # Skip epoch 0 spam by starting after the first step
+    ens.train_steps = 1
+
     caplog.set_level(logging.INFO)
     ens.train_one_epoch(dl, dl, [])
 
