@@ -460,10 +460,8 @@ class TradingGUI:
 
         self.best_stats = ttk.LabelFrame(self.info, text="Best Stats")
         self.best_stats.grid(row=5, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
-        self.best_sharpe_label = ttk.Label(self.best_stats, text="Best Sharpe: N/A")
-        self.best_sharpe_label.grid(row=0, column=0, sticky="w")
         self.best_drawdown_label = ttk.Label(self.best_stats, text="Best Max DD: N/A")
-        self.best_drawdown_label.grid(row=0, column=1, sticky="w")
+        self.best_drawdown_label.grid(row=0, column=0, sticky="w")
         self.best_netprofit_label = ttk.Label(self.best_stats, text="Best Net Pct: N/A")
         self.best_netprofit_label.grid(row=1, column=0, sticky="w")
         self.best_trades_label = ttk.Label(self.best_stats, text="Best Trades: N/A")
@@ -864,7 +862,6 @@ class TradingGUI:
         self.current_avg_win_label.config(text=f"Avg Win: {G.global_avg_win:.3f}")
         self.current_avg_loss_label.config(text=f"Avg Loss: {G.global_avg_loss:.3f}")
 
-        self.best_sharpe_label.config(text=f"Best Sharpe: {G.global_best_sharpe:.2f}")
         self.best_drawdown_label.config(
             text=f"Best Max DD: {G.global_best_drawdown:.3f}"
         )

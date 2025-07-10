@@ -357,7 +357,6 @@ class EnsembleModel(nn.Module):
         )
         if update_globals and current_result["composite_reward"] > best:
             G.global_best_composite_reward = current_result["composite_reward"]
-            G.global_best_sharpe = max(G.global_best_sharpe, current_result["sharpe"])
             self.best_state_dicts = [m.state_dict() for m in self.models]
             self.save_best_weights(self.weights_path)
             md5 = ""
@@ -677,7 +676,6 @@ class EnsembleModel(nn.Module):
         # track best net
         if update_globals and current_result["net_pct"] > G.global_best_net_pct:
             G.global_best_equity_curve = current_result["equity_curve"]
-            G.global_best_sharpe = current_result["sharpe"]
             G.global_best_drawdown = current_result["max_drawdown"]
             G.global_best_net_pct = current_result["net_pct"]
             G.global_best_num_trades = trades_now
@@ -842,7 +840,6 @@ class EnsembleModel(nn.Module):
                 if data_full and len(data_full) > 24:
                     loaded_result = robust_backtest(self, data_full)
                     G.global_best_equity_curve = loaded_result["equity_curve"]
-                    G.global_best_sharpe = loaded_result["sharpe"]
                     G.global_best_drawdown = loaded_result["max_drawdown"]
                     G.global_best_net_pct = loaded_result["net_pct"]
                     G.global_best_num_trades = loaded_result["trades"]
