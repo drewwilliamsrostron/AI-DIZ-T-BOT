@@ -48,7 +48,7 @@ def test_csv_thread_uses_config(monkeypatch):
     assert called.get("pinned") is True
 
 
-def test_persistent_workers_enabled(monkeypatch):
+def test_persistent_workers_disabled_when_zero(monkeypatch):
     monkeypatch.setattr(os, "cpu_count", lambda: 2)
     called = {}
 
@@ -80,5 +80,5 @@ def test_persistent_workers_enabled(monkeypatch):
     stop = threading.Event()
     csv_training_thread(ens, data, stop, {}, use_prev_weights=False, max_epochs=1)
 
-    assert called.get("persistent") is True
+    assert called.get("persistent") is None
     assert called.get("pinned") is True

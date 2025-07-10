@@ -45,7 +45,10 @@ if "openai" in sys.modules and getattr(sys.modules["openai"], "__spec__", None) 
 # --------------------------------------------------------------------------- #
 # caching objects
 # --------------------------------------------------------------------------- #
-_IMPUTER = KNNImputer(n_neighbors=5)
+try:
+    _IMPUTER = KNNImputer(n_neighbors=5) if callable(KNNImputer) else None
+except Exception:
+    _IMPUTER = None
 
 
 # --------------------------------------------------------------------------- #
@@ -258,7 +261,8 @@ def build_features(
     validate_features(feats, enabled_mask=mask)
 
     feats = np.nan_to_num(feats, nan=0.0, posinf=0.0, neginf=0.0)
-    feats[:, mask] = _IMPUTER.fit_transform(feats[:, mask])
+    if _IMPUTER is not None:
+        feats[:, mask] = _IMPUTER.fit_transform(feats[:, mask])
     feats = zero_disabled(feats, mask)
     feats = rolling_zscore(feats, window=50, mask=mask)
     feats = zero_disabled(feats, mask)

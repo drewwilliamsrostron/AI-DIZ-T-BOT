@@ -102,14 +102,17 @@ def rebuild_loader(
         del old_loader
         gc.collect()
 
-    return torch.utils.data.DataLoader(
-        dataset,
-        batch_size=batch_size,
-        shuffle=shuffle,
-        num_workers=num_workers,
-        persistent_workers=True,
-        pin_memory=True,
-    )
+    loader_kwargs = {
+        "dataset": dataset,
+        "batch_size": batch_size,
+        "shuffle": shuffle,
+        "num_workers": num_workers,
+        "pin_memory": True,
+    }
+    if num_workers > 0:
+        loader_kwargs["persistent_workers"] = True
+
+    return torch.utils.data.DataLoader(**loader_kwargs)
 
 
 def profile_data_copy(
