@@ -704,12 +704,13 @@ class EnsembleModel(nn.Module):
                 initial_balance=100.0,
             )
             G.global_best_monthly_stats_table = best_monthly
-            update_best(
-                self.train_steps,
-                cur_reward,
-                current_result["net_pct"],
-                self.weights_path,
-            )
+            if self.train_steps > 0:
+                update_best(
+                    self.train_steps,
+                    cur_reward,
+                    current_result["net_pct"],
+                    self.weights_path,
+                )
 
         mean_ent = float(torch.tensor(self.entropies).mean()) if self.entropies else 0.0
         mean_mp = float(torch.tensor(self.max_probs).mean()) if self.max_probs else 0.0
