@@ -358,6 +358,16 @@ class EnsembleModel(nn.Module):
         if update_globals and current_result["composite_reward"] > best:
             G.global_best_composite_reward = current_result["composite_reward"]
             G.global_best_sharpe = max(G.global_best_sharpe, current_result["sharpe"])
+            G.global_best_equity_curve = current_result["equity_curve"]
+            G.global_best_drawdown = current_result["max_drawdown"]
+            G.global_best_net_pct = current_result["net_pct"]
+            G.global_best_num_trades = current_result["trades"]
+            G.global_best_win_rate = current_result["win_rate"]
+            G.global_best_profit_factor = current_result["profit_factor"]
+            G.global_best_avg_win = current_result.get("avg_win", 0.0)
+            G.global_best_avg_loss = current_result.get("avg_loss", 0.0)
+            G.global_best_inactivity_penalty = current_result["inactivity_penalty"]
+            G.global_best_days_in_profit = current_result["days_in_profit"]
             self.best_state_dicts = [m.state_dict() for m in self.models]
             self.save_best_weights(self.weights_path)
             md5 = ""
