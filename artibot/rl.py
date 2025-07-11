@@ -220,8 +220,9 @@ class MetaTransformerRL:
                 b_logits = torch.zeros((1, len(self.toggle_keys)))
                 g_mean = torch.zeros((1, len(self.gauss_keys)))
 
-        # clamp logits to avoid NaN in Categorical
+        # clamp logits and strip NaN/Inf to avoid errors in ``Categorical``
         p_logits = p_logits.clamp(-10.0, 10.0)
+        p_logits = torch.nan_to_num(p_logits, nan=0.0, posinf=10.0, neginf=-10.0)
 
         eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * (
             self.eps_decay**self.steps
@@ -331,8 +332,9 @@ class MetaTransformerRL:
         else:
             p_logits, val_s = out
 
-        # clamp logits to avoid NaN in Categorical
+        # clamp logits and replace NaN/Inf before constructing ``Categorical``
         p_logits = p_logits.clamp(-10.0, 10.0)
+        p_logits = torch.nan_to_num(p_logits, nan=0.0, posinf=10.0, neginf=-10.0)
         dist = torch.distributions.Categorical(logits=p_logits)
         a = (
             torch.tensor([action_idx], device=self.device)
