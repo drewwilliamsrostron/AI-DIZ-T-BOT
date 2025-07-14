@@ -408,6 +408,11 @@ class EnsembleModel(nn.Module):
                 device=self.device,
             )
         )
+        advantage = torch.tensor(
+            current_result["composite_reward"] - baseline,
+            dtype=torch.float32,
+            device=self.device,
+        )
         total_loss = 0.0
         nb = 0
         for m in self.models:
@@ -443,6 +448,8 @@ class EnsembleModel(nn.Module):
                         self.entropies.append(getattr(model, "last_entropy", 0.0))
                         self.max_probs.append(getattr(model, "last_max_prob", 0.0))
                         ce_loss = self.criterion(logits, by)
+                        log_probs = F.log_softmax(logits, dim=1)
+                        act_lp = log_probs.gather(1, by.view(-1, 1)).squeeze(1)
                         if not torch.isfinite(pred_reward).all():
                             logging.error(
                                 "Non‑finite pred_reward detected at step %s",
@@ -460,9 +467,11 @@ class EnsembleModel(nn.Module):
                             r_loss = self.mse_loss_fn(
                                 pred_reward, scaled_target.expand_as(pred_reward)
                             )
+                            rl_loss = -(advantage * act_lp.mean())
                         else:
                             r_loss = torch.tensor(0.0, device=self.device)
-                        loss = ce_loss + self.reward_loss_weight * r_loss
+                            rl_loss = torch.tensor(0.0, device=self.device)
+                        loss = ce_loss + self.reward_loss_weight * r_loss + rl_loss
                         if not torch.isfinite(loss).all():
                             logging.error(
                                 "Non‑finite loss detected at step %s", self.train_steps
