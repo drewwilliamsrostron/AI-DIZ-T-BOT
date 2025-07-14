@@ -463,10 +463,17 @@ class EnsembleModel(nn.Module):
                             r_loss = self.mse_loss_fn(
                                 pred_reward, scaled_target.expand_as(pred_reward)
                             )
+                            logp = (
+                                F.log_softmax(logits, dim=1)
+                                .gather(1, by.unsqueeze(1))
+                                .squeeze(1)
+                            )
+                            pg_loss = -scaled_target * logp.mean()
                         else:
                             r_loss = torch.tensor(0.0, device=self.device)
+                            pg_loss = torch.tensor(0.0, device=self.device)
                         r_vals.append(float(r_loss))
-                        loss = ce_loss + self.reward_loss_weight * r_loss
+                        loss = ce_loss + self.reward_loss_weight * (r_loss + pg_loss)
                         if not torch.isfinite(loss).all():
                             logging.error(
                                 "Non‑finite loss detected at step %s", self.train_steps
