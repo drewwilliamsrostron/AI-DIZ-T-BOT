@@ -386,6 +386,17 @@ def csv_training_thread(
                 extra=log_obj,
             )
 
+            # Trace reward against loss and entropy for debugging
+            logging.info(
+                "REWARD_TRACE",
+                extra={
+                    "epoch": ensemble.train_steps,
+                    "reward": last_reward,
+                    "loss": tl,
+                    "entropy": attn_entropy,
+                },
+            )
+
             from artibot.hyperparams import RISK_FILTER, WARMUP_STEPS
 
             if G.get_warmup_step() >= WARMUP_STEPS:
@@ -549,6 +560,8 @@ def csv_training_thread(
                     "net_pct": G.global_net_pct,
                     "lr": lr_now,
                     "equity": equity,
+                    "reward": G.global_composite_reward,
+                    "entropy": attn_entropy,
                 },
             )
             writer.add_scalar("Loss/train", tl, ensemble.train_steps)
