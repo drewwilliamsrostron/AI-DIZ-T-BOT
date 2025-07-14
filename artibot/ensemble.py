@@ -442,14 +442,20 @@ class EnsembleModel(nn.Module):
                     )
 
                 losses = []
+                ce_vals: list[float] = []
+                r_vals: list[float] = []
                 with ctx, torch.autograd.set_detect_anomaly(True):
                     for model in self.models:
                         logits, _, pred_reward = model(bx.clone())
                         self.entropies.append(getattr(model, "last_entropy", 0.0))
                         self.max_probs.append(getattr(model, "last_max_prob", 0.0))
                         ce_loss = self.criterion(logits, by)
+
                         log_probs = F.log_softmax(logits, dim=1)
                         act_lp = log_probs.gather(1, by.view(-1, 1)).squeeze(1)
+
+                        ce_vals.append(float(ce_loss))
+
                         if not torch.isfinite(pred_reward).all():
                             logging.error(
                                 "Non‑finite pred_reward detected at step %s",
@@ -467,11 +473,13 @@ class EnsembleModel(nn.Module):
                             r_loss = self.mse_loss_fn(
                                 pred_reward, scaled_target.expand_as(pred_reward)
                             )
+
                             rl_loss = -(advantage * act_lp.mean())
                         else:
                             r_loss = torch.tensor(0.0, device=self.device)
                             rl_loss = torch.tensor(0.0, device=self.device)
                         loss = ce_loss + self.reward_loss_weight * r_loss + rl_loss
+
                         if not torch.isfinite(loss).all():
                             logging.error(
                                 "Non‑finite loss detected at step %s", self.train_steps
@@ -487,6 +495,8 @@ class EnsembleModel(nn.Module):
                 if not losses:
                     continue
 
+                debug_ce = float(np.mean(ce_vals)) if ce_vals else 0.0
+                debug_r = float(np.mean(r_vals)) if r_vals else 0.0
                 total_batch_loss = torch.stack(losses).sum() / self.grad_accum_steps
                 self.scaler.scale(total_batch_loss).backward()
 
@@ -496,6 +506,16 @@ class EnsembleModel(nn.Module):
                         zip(self.models, self.optimizers)
                     ):
                         self.scaler.unscale_(opt_)
+                        if idx_m == 0:
+                            g = model.fc.weight.grad
+                            g_norm = g.abs().mean().item() if g is not None else 0.0
+                            logging.debug(
+                                "GRAD_CHECK step=%d ce_loss=%.6f r_loss=%.6f grad=%.6f",
+                                self.train_steps,
+                                debug_ce,
+                                debug_r,
+                                g_norm,
+                            )
                         torch.nn.utils.clip_grad_norm_(
                             self.models[idx_m].parameters(), 1.0
                         )
