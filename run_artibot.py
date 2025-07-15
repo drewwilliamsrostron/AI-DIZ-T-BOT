@@ -278,9 +278,10 @@ def main() -> None:
     live_feed_th: threading.Thread | None = None
     meta_th: threading.Thread | None = None
     validate_th: threading.Thread | None = None
+    done_sent = False
 
     def setup_worker() -> None:
-        nonlocal train_th, live_feed_th, meta_th, validate_th
+        nonlocal train_th, live_feed_th, meta_th, validate_th, done_sent
         from artibot.training import run_hpo
 
         device = get_device()
@@ -328,6 +329,13 @@ def main() -> None:
         )
         if os.path.isfile(weights_path) and use_prev_weights:
             ensemble.load_best_weights(weights_path)
+
+        progress_q.put(("DONE", ""))
+        done_sent = True
+        root.after(
+            0,
+            lambda: TradingGUI(root, ensemble, weights_path, connector, dev=dev_mode),
+        )
 
         init_done = threading.Event()
         train_th = threading.Thread(
@@ -393,9 +401,12 @@ def main() -> None:
         ingest_th.start()
 
         def _bg_init() -> None:
+            nonlocal done_sent
             if SKIP_SENTIMENT:
                 init_done.set()
-                progress_q.put(("DONE", ""))
+                if not done_sent:
+                    progress_q.put(("DONE", ""))
+                    done_sent = True
                 return
             progress_q.put((0.0, "Downloading historical sentiment + macro data…"))
             try:
@@ -404,14 +415,11 @@ def main() -> None:
                 _bf.main(progress_cb=lambda pct, msg: progress_q.put((pct, msg)))
             finally:
                 init_done.set()
-                progress_q.put(("DONE", ""))
+                if not done_sent:
+                    progress_q.put(("DONE", ""))
+                    done_sent = True
 
         threading.Thread(target=_bg_init, daemon=True).start()
-
-        root.after(
-            0,
-            lambda: TradingGUI(root, ensemble, weights_path, connector, dev=dev_mode),
-        )
 
     init_th = threading.Thread(target=setup_worker, daemon=True)
     init_th.start()
