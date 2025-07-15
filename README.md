@@ -179,7 +179,8 @@ Start the bot and follow the prompt to choose live or sandbox mode:
 ```bash
 python run_artibot.py
 ```
-The Tkinter dashboard opens automatically. The bot performs a quick
+The Tkinter dashboard opens automatically. Use `--no-tune` to skip the
+initial hyperparameter search. The bot performs a quick
 backtest on startup. A nuclear key gates trading until the mean Sharpe
 and profit factor exceed the configured thresholds.  On recent
 versions you'll also be prompted to **skip the historical sentiment

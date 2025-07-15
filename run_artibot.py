@@ -188,8 +188,10 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dev", action="store_true")
+    parser.add_argument("--no-tune", action="store_true", help="skip Optuna search")
     args, _ = parser.parse_known_args()
     dev_mode = args.dev
+    no_tune = args.no_tune
 
     defaults = {
         "skip_sentiment": False,
@@ -306,8 +308,12 @@ def main() -> None:
         )
         n_features = temp_ds[0][0].shape[1]
 
-        progress_q.put((5.0, "Running hyperparameter search…"))
-        best = run_hpo()
+        if no_tune:
+            progress_q.put((5.0, "Skipping hyperparameter search…"))
+            best = {}
+        else:
+            progress_q.put((5.0, "Running hyperparameter search…"))
+            best = run_hpo()
         ensemble = build_model(device=device, n_features=n_features, **best)
         ensemble.indicator_hparams = indicator_hp
         ensemble.hp = HyperParams(indicator_hp=indicator_hp)

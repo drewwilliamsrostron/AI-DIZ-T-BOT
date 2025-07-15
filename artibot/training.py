@@ -834,8 +834,8 @@ def objective(trial: optuna.trial.Trial) -> float:
     """Objective for Optuna optimisation."""
 
     params = {
-        "lr": trial.suggest_loguniform("lr", 1e-5, 1e-2),
-        "entropy_beta": trial.suggest_loguniform("entropy_beta", 1e-4, 5e-3),
+        "lr": trial.suggest_float("lr", 1e-5, 1e-2, log=True),
+        "entropy_beta": trial.suggest_float("entropy_beta", 1e-4, 5e-3, log=True),
     }
     data = load_csv_hourly("Gemini_BTCUSD_1h.csv")
     if not data:
@@ -853,7 +853,7 @@ def objective(trial: optuna.trial.Trial) -> float:
         stop,
         {"ADAPT_TO_LIVE": False},
         use_prev_weights=False,
-        max_epochs=1,
+        max_epochs=10,
         update_globals=False,
     )
     metrics = robust_backtest(model, data)
