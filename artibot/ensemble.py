@@ -310,82 +310,128 @@ class EnsembleModel(nn.Module):
             ``train_loss`` and ``val_loss`` (``None`` when no ``dl_val``).
         """
         # mutate shared state on the globals module
-
-        # ---------------- START merged block ----------------
-        # --- ❶  Build parameter grid -------------------------------------------------
-        sma_opts        = [10, 20]
-        rsi_opts        = [9, 14]
-        macd_fast_opts  = [12, 16]
-        macd_slow_opts  = [26, 30]
-        macd_sig_opts   = [9, 12]
-        ema_opts        = [20, 50]
-        atr_opts        = [14, 21]
-        vortex_opts     = [14, 21]
-        cmf_opts        = [20, 30]
-        donchian_opts   = [20, 30]
-        kijun_opts      = [26, 34]
-        tenkan_opts     = [9, 12]
-        disp_opts       = [26, 52]
-        conf_opts       = [self.hp.conf_threshold, self.hp.conf_threshold * 1.5]
-        sl_mults        = [1.0, 1.5]
-        tp_mults        = [1.0, 1.5]
-
-        param_sets = list(
-            product(
-                sma_opts, rsi_opts,
-                macd_fast_opts, macd_slow_opts, macd_sig_opts,
-                ema_opts,
-                atr_opts, vortex_opts, cmf_opts,
-                donchian_opts,
-                kijun_opts, tenkan_opts, disp_opts,
-                conf_opts,
-                sl_mults, tp_mults,
-            )
-        )
-
+        sweep_every = int(os.environ.get("SWEEP_EVERY", "1"))
+        run_sweep = sweep_every > 0 and self.train_steps % sweep_every == 1
         best_result: dict | None = None
-        best_cfg:    dict | None = None
+        best_cfg: dict | None = None
+        if run_sweep:
 
-        # --- ❷  Sweep the grid --------------------------------------------------------
-        for cfg in param_sets:
-            (
-                sma_period, rsi_period,
-                macd_fast, macd_slow, macd_sig,
-                ema_period,
-                atr_period, vortex_period, cmf_period,
-                donchian_period,
-                kijun_period, tenkan_period, disp_period,
-                conf,
-                sl_mult, tp_mult,
-            ) = cfg
+            # ---------------- START merged block ----------------
+            # --- ❶  Build parameter grid -------------------------------------------------
+            sma_opts = [10, 20]
+            rsi_opts = [9, 14]
+            macd_fast_opts = [12, 16]
+            macd_slow_opts = [26, 30]
+            macd_sig_opts = [9, 12]
+            ema_opts = [20, 50]
+            atr_opts = [14, 21]
+            vortex_opts = [14, 21]
+            cmf_opts = [20, 30]
+            donchian_opts = [20, 30]
+            kijun_opts = [26, 34]
+            tenkan_opts = [9, 12]
+            disp_opts = [26, 52]
+            conf_opts = [self.hp.conf_threshold, self.hp.conf_threshold * 1.5]
+            sl_mults = [1.0, 1.5]
+            tp_mults = [1.0, 1.5]
 
-            # apply to indicator hyper-params
-            hp = self.indicator_hparams
-            hp.sma_period       = sma_period
-            hp.rsi_period       = rsi_period
-            hp.macd_fast        = macd_fast
-            hp.macd_slow        = macd_slow
-            hp.macd_signal      = macd_sig
-            hp.ema_period       = ema_period
-            hp.atr_period       = atr_period
-            hp.vortex_period    = vortex_period
-            hp.cmf_period       = cmf_period
-            hp.donchian_period  = donchian_period
-            hp.kijun_period     = kijun_period
-            hp.tenkan_period    = tenkan_period
-            hp.displacement     = disp_period
+            param_sets = list(
+                product(
+                    sma_opts,
+                    rsi_opts,
+                    macd_fast_opts,
+                    macd_slow_opts,
+                    macd_sig_opts,
+                    ema_opts,
+                    atr_opts,
+                    vortex_opts,
+                    cmf_opts,
+                    donchian_opts,
+                    kijun_opts,
+                    tenkan_opts,
+                    disp_opts,
+                    conf_opts,
+                    sl_mults,
+                    tp_mults,
+                )
+            )
 
-            self.hp.conf_threshold = conf
-            sl = self.hp.sl * sl_mult
-            tp = self.hp.tp * tp_mult
-            G.update_trade_params(sl, tp)
+            # --- ❷  Sweep the grid --------------------------------------------------------
+            for cfg in param_sets:
+                (
+                    sma_period,
+                    rsi_period,
+                    macd_fast,
+                    macd_slow,
+                    macd_sig,
+                    ema_period,
+                    atr_period,
+                    vortex_period,
+                    cmf_period,
+                    donchian_period,
+                    kijun_period,
+                    tenkan_period,
+                    disp_period,
+                    conf,
+                    sl_mult,
+                    tp_mult,
+                ) = cfg
 
-            result = robust_backtest(self, data_full)      # no “features” arg inside sweep
+                # apply to indicator hyper-params
+                hp = self.indicator_hparams
+                hp.sma_period = sma_period
+                hp.rsi_period = rsi_period
+                hp.macd_fast = macd_fast
+                hp.macd_slow = macd_slow
+                hp.macd_signal = macd_sig
+                hp.ema_period = ema_period
+                hp.atr_period = atr_period
+                hp.vortex_period = vortex_period
+                hp.cmf_period = cmf_period
+                hp.donchian_period = donchian_period
+                hp.kijun_period = kijun_period
+                hp.tenkan_period = tenkan_period
+                hp.displacement = disp_period
 
-            logging.info(
-                "SWEEP_CFG",
-                extra={
-                    "cfg": {
+                self.hp.conf_threshold = conf
+                sl = self.hp.sl * sl_mult
+                tp = self.hp.tp * tp_mult
+                G.update_trade_params(sl, tp)
+
+                result = robust_backtest(
+                    self, data_full
+                )  # no “features” arg inside sweep
+
+                logging.info(
+                    "SWEEP_CFG",
+                    extra={
+                        "cfg": {
+                            "sma": sma_period,
+                            "rsi": rsi_period,
+                            "macd_fast": macd_fast,
+                            "macd_slow": macd_slow,
+                            "macd_sig": macd_sig,
+                            "ema": ema_period,
+                            "atr": atr_period,
+                            "vortex": vortex_period,
+                            "cmf": cmf_period,
+                            "donchian": donchian_period,
+                            "kijun": kijun_period,
+                            "tenkan": tenkan_period,
+                            "disp": disp_period,
+                            "conf": conf,
+                            "sl": sl,
+                            "tp": tp,
+                        },
+                        "reward": result.get("composite_reward", 0.0),
+                    },
+                )
+
+                if best_result is None or result.get(
+                    "composite_reward", 0.0
+                ) > best_result.get("composite_reward", 0.0):
+                    best_result = result
+                    best_cfg = {
                         "sma": sma_period,
                         "rsi": rsi_period,
                         "macd_fast": macd_fast,
@@ -402,52 +448,24 @@ class EnsembleModel(nn.Module):
                         "conf": conf,
                         "sl": sl,
                         "tp": tp,
-                    },
-                    "reward": result.get("composite_reward", 0.0),
-                },
-            )
-
-            if (
-                best_result is None
-                or result.get("composite_reward", 0.0)
-                > best_result.get("composite_reward", 0.0)
-            ):
-                best_result = result
-                best_cfg = {
-                    "sma": sma_period,
-                    "rsi": rsi_period,
-                    "macd_fast": macd_fast,
-                    "macd_slow": macd_slow,
-                    "macd_sig": macd_sig,
-                    "ema": ema_period,
-                    "atr": atr_period,
-                    "vortex": vortex_period,
-                    "cmf": cmf_period,
-                    "donchian": donchian_period,
-                    "kijun": kijun_period,
-                    "tenkan": tenkan_period,
-                    "disp": disp_period,
-                    "conf": conf,
-                    "sl": sl,
-                    "tp": tp,
-                }
+                    }
 
         # --- ❸  Re-apply best config & run final back-test ---------------------------
         if best_cfg is not None:
             hp = self.indicator_hparams
-            hp.sma_period       = best_cfg["sma"]
-            hp.rsi_period       = best_cfg["rsi"]
-            hp.macd_fast        = best_cfg["macd_fast"]
-            hp.macd_slow        = best_cfg["macd_slow"]
-            hp.macd_signal      = best_cfg["macd_sig"]
-            hp.ema_period       = best_cfg["ema"]
-            hp.atr_period       = best_cfg["atr"]
-            hp.vortex_period    = best_cfg["vortex"]
-            hp.cmf_period       = best_cfg["cmf"]
-            hp.donchian_period  = best_cfg["donchian"]
-            hp.kijun_period     = best_cfg["kijun"]
-            hp.tenkan_period    = best_cfg["tenkan"]
-            hp.displacement     = best_cfg["disp"]
+            hp.sma_period = best_cfg["sma"]
+            hp.rsi_period = best_cfg["rsi"]
+            hp.macd_fast = best_cfg["macd_fast"]
+            hp.macd_slow = best_cfg["macd_slow"]
+            hp.macd_signal = best_cfg["macd_sig"]
+            hp.ema_period = best_cfg["ema"]
+            hp.atr_period = best_cfg["atr"]
+            hp.vortex_period = best_cfg["vortex"]
+            hp.cmf_period = best_cfg["cmf"]
+            hp.donchian_period = best_cfg["donchian"]
+            hp.kijun_period = best_cfg["kijun"]
+            hp.tenkan_period = best_cfg["tenkan"]
+            hp.displacement = best_cfg["disp"]
             self.hp.conf_threshold = best_cfg["conf"]
             G.update_trade_params(best_cfg["sl"], best_cfg["tp"])
 
@@ -456,10 +474,10 @@ class EnsembleModel(nn.Module):
         )
 
         # --- ❹  Push to globals & ping GUI ------------------------------------------
-        G.global_equity_curve     = current_result["equity_curve"]
+        G.global_equity_curve = current_result["equity_curve"]
         G.global_backtest_profit.append(current_result["net_pct"])
-        G.global_sharpe           = current_result["sharpe"]
-        G.global_profit_factor    = current_result["profit_factor"]
+        G.global_sharpe = current_result["sharpe"]
+        G.global_profit_factor = current_result["profit_factor"]
         G.gui_event.set()
         # ---------------- END merged block ----------------
 
