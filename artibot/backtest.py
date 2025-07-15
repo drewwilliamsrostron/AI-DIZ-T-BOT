@@ -302,7 +302,6 @@ def robust_backtest(
         }
 
     LEVERAGE = 2  # reduce draw-down pressure
-    min_hold_seconds = G.global_min_hold_seconds
     commission_rate = 0.0006  # 0.06 % taker fee (Phemex) ✓
     FUNDING_RATE = 0.0001
     device = ensemble.device
@@ -382,7 +381,6 @@ def robust_backtest(
         "take_profit": 0.0,
         "entry_time": None,
     }
-    last_exit_t = None
 
     sl_m = avg_params["sl_multiplier"].item()
     tp_m = avg_params["tp_multiplier"].item()
@@ -425,7 +423,6 @@ def robust_backtest(
                     exit_reason = "Signal reversal"
                     exit_condition = True
             if exit_condition:
-                last_exit_t = cur_t
                 if pos["side"] == "long":
                     exit_price = _price_with_noise("sell", exit_price)
                     proceeds = pos["size"] * exit_price
@@ -481,42 +478,38 @@ def robust_backtest(
                     "entry_time": None,
                 }
         if pos["size"] == 0 and pred in (0, 1):
-            if last_exit_t is not None and (cur_t - last_exit_t) < min_hold_seconds:
-                pass
-            else:
-                atr_val = atr_i if not np.isnan(atr_i) else 1.0
-                atr_val = max(1.0, atr_val)
-                fill_p = _price_with_noise("buy" if pred == 0 else "sell", cur_p)
-                st_dist = sl_m * atr_val
-                tp_val = (
-                    fill_p + tp_m * atr_val if pred == 0 else fill_p - tp_m * atr_val
+            atr_val = atr_i if not np.isnan(atr_i) else 1.0
+            atr_val = max(1.0, atr_val)
+            fill_p = _price_with_noise("buy" if pred == 0 else "sell", cur_p)
+            st_dist = sl_m * atr_val
+            tp_val = fill_p + tp_m * atr_val if pred == 0 else fill_p - tp_m * atr_val
+            pos_sz = risk.position_size(bal, rf, st_dist, fill_p, LEVERAGE)
+            if pos_sz <= 0:
+                pos_sz = 1.0
+            comm_entry = pos_sz * fill_p * commission_rate
+            bal -= comm_entry
+            if pred == 0:
+                pos.update(
+                    {
+                        "size": pos_sz,
+                        "side": "long",
+                        "entry_price": fill_p,
+                        "stop_loss": fill_p - st_dist,
+                        "take_profit": tp_val,
+                        "entry_time": cur_t,
+                    }
                 )
-                pos_sz = risk.position_size(bal, rf, st_dist, fill_p, LEVERAGE)
-                if pos_sz > 0:
-                    comm_entry = pos_sz * fill_p * commission_rate
-                    bal -= comm_entry
-                    if pred == 0:
-                        pos.update(
-                            {
-                                "size": pos_sz,
-                                "side": "long",
-                                "entry_price": fill_p,
-                                "stop_loss": fill_p - st_dist,
-                                "take_profit": tp_val,
-                                "entry_time": cur_t,
-                            }
-                        )
-                    else:
-                        pos.update(
-                            {
-                                "size": -pos_sz,
-                                "side": "short",
-                                "entry_price": fill_p,
-                                "stop_loss": fill_p + st_dist,
-                                "take_profit": tp_val,
-                                "entry_time": cur_t,
-                            }
-                        )
+            else:
+                pos.update(
+                    {
+                        "size": -pos_sz,
+                        "side": "short",
+                        "entry_price": fill_p,
+                        "stop_loss": fill_p + st_dist,
+                        "take_profit": tp_val,
+                        "entry_time": cur_t,
+                    }
+                )
         curr_eq = bal
         if pos["size"] != 0:
             if pos["side"] == "long":
