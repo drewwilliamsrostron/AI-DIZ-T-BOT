@@ -311,13 +311,14 @@ class EnsembleModel(nn.Module):
         """
         # mutate shared state on the globals module
 
-        # ---------------- START merged block ----------------
-
+        sweep_every = int(os.environ.get("SWEEP_EVERY", "1"))
+        run_sweep = sweep_every > 0 and self.train_steps % sweep_every == 1
         best_result: dict | None = None
         best_cfg: dict | None = None
+        if run_sweep:
 
-        if self.train_steps == 1:
-            # --- ❶  Build parameter grid --------------------------------------
+            # ---------------- START merged block ----------------
+            # --- ❶  Build parameter grid -------------------------------------------------
             sma_opts = [10, 20]
             rsi_opts = [9, 14]
             macd_fast_opts = [12, 16]
@@ -354,7 +355,6 @@ class EnsembleModel(nn.Module):
                     sl_mults,
                     tp_mults,
                 )
-
             )
 
 

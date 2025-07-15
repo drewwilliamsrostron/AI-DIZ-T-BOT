@@ -256,3 +256,5 @@ Phemex bars and retrieves GDELT articles with retry logic. FinBERT weights downl
 Hugging Face hub and are cached under ``~/.cache/artibot/finbert`` so sentiment
 lookups stay fast offline.
 Set ``NO_HEAVY=1`` to skip the bulky GDELT download entirely.
+Set ``SWEEP_EVERY`` to control how often the heavy indicator sweep runs.
+A value of ``1`` (default) sweeps on the first epoch only.
