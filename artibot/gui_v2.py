@@ -272,6 +272,8 @@ class TradingGUI:
         self.after_id: Optional[str] = None
         self.update_interval = 1000
         self.root.after_idle(self.update_dashboard)
+        # poll for refresh events triggered by worker threads
+        self.root.after(100, self._poll_gui_event)
         self.root.after(10000, self.refresh_stats)
 
     # ------------------------------------------------------------------
@@ -649,6 +651,13 @@ class TradingGUI:
         if val[-1] > train[-1]:
             return "validation loss above training - watch for overfitting"
         return "training loss above validation - model learning"
+
+    def _poll_gui_event(self) -> None:
+        """Update dashboard when the worker event is set."""
+        if G.gui_event.is_set():
+            G.gui_event.clear()
+            self.root.after_idle(self.update_dashboard)
+        self.root.after(100, self._poll_gui_event)
 
     def update_dashboard(self) -> None:  # noqa: C901 - full dashboard update
         if self.after_id is not None:

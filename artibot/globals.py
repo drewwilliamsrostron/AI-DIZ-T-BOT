@@ -178,6 +178,8 @@ global_phemex_data = []
 global_days_in_profit = 0.0
 global_validation_summary = {}
 live_bars_queue = Queue()
+# New event to trigger GUI refreshes
+gui_event = threading.Event()
 live_sharpe_history = collections.deque(maxlen=1000)
 live_drawdown_history = collections.deque(maxlen=1000)
 trading_paused = False
