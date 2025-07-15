@@ -542,7 +542,7 @@ def csv_training_thread(
                             ensemble.indicator_hparams,
                             with_scaled=True,
                         )
-                        ensemble.train_one_epoch(
+                        tl, vl = ensemble.train_one_epoch(
                             dl_train,
                             dl_val,
                             train_data,
@@ -550,6 +550,11 @@ def csv_training_thread(
                             features=train_indicators,
                             update_globals=update_globals,
                         )
+                        G.global_training_loss.append(tl)
+                        G.global_validation_loss.append(vl)
+                        writer.add_scalar("Loss/train", tl, ensemble.train_steps)
+                        if vl is not None:
+                            writer.add_scalar("Loss/val", vl, ensemble.train_steps)
 
             equity = G.global_equity_curve[-1][1] if G.global_equity_curve else 0.0
             logging.info(
