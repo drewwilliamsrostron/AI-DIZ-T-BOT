@@ -311,6 +311,11 @@ class EnsembleModel(nn.Module):
         # mutate shared state on the globals module
 
         current_result = robust_backtest(self, data_full, indicators=features)
+        G.global_equity_curve = current_result["equity_curve"]
+        G.global_backtest_profit.append(current_result["net_pct"])
+        G.global_sharpe = current_result["sharpe"]
+        G.global_profit_factor = current_result["profit_factor"]
+        G.gui_event.set()
         if data_full:
             assert len(data_full[0]) >= 5, "Expect raw OHLCV rows"
 
@@ -881,6 +886,11 @@ class EnsembleModel(nn.Module):
                     m.load_state_dict(sd, strict=False)
                 if data_full and len(data_full) > 24:
                     loaded_result = robust_backtest(self, data_full)
+                    G.global_equity_curve = loaded_result["equity_curve"]
+                    G.global_backtest_profit.append(loaded_result["net_pct"])
+                    G.global_sharpe = loaded_result["sharpe"]
+                    G.global_profit_factor = loaded_result["profit_factor"]
+                    G.gui_event.set()
                     G.global_best_equity_curve = loaded_result["equity_curve"]
                     G.global_best_drawdown = loaded_result["max_drawdown"]
                     G.global_best_net_pct = loaded_result["net_pct"]

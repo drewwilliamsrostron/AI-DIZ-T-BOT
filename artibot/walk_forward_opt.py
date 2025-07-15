@@ -13,6 +13,7 @@ from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from .ensemble import EnsembleModel
 from .training import csv_training_thread
 from .backtest import robust_backtest
+import artibot.globals as G
 
 
 # ---------------------------------------------------------------------------
@@ -65,6 +66,11 @@ class EnsembleEstimator(BaseEstimator):
             raise RuntimeError("Estimator not fitted")
         df = pd.concat([X.reset_index(drop=True), y.reset_index(drop=True)], axis=1)
         metrics = robust_backtest(self.model_, df.values.tolist())
+        G.global_equity_curve = metrics["equity_curve"]
+        G.global_backtest_profit.append(metrics["net_pct"])
+        G.global_sharpe = metrics["sharpe"]
+        G.global_profit_factor = metrics["profit_factor"]
+        G.gui_event.set()
         return float(metrics.get("net_pct", 0.0))
 
 
@@ -96,6 +102,11 @@ def walk_forward_opt(data: pd.DataFrame) -> List[Dict[str, Any]]:
         )
 
         metrics = robust_backtest(best_est.model_, test_df.values.tolist())
+        G.global_equity_curve = metrics["equity_curve"]
+        G.global_backtest_profit.append(metrics["net_pct"])
+        G.global_sharpe = metrics["sharpe"]
+        G.global_profit_factor = metrics["profit_factor"]
+        G.gui_event.set()
         logging.info(
             "Window %d-%d  params=%s  net_pct=%.2f",
             start,
