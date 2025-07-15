@@ -22,7 +22,7 @@ try:
 
     nvmlInit()
     _NVML = True
-except ImportError:  # pragma: no cover - optional dep
+except Exception:  # pragma: no cover - optional dep or NVML not present
     _NVML = False
 
 _HANDLE = None
