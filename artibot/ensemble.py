@@ -310,6 +310,7 @@ class EnsembleModel(nn.Module):
             ``train_loss`` and ``val_loss`` (``None`` when no ``dl_val``).
         """
         # mutate shared state on the globals module
+
         sweep_every = int(os.environ.get("SWEEP_EVERY", "1"))
         run_sweep = sweep_every > 0 and self.train_steps % sweep_every == 1
         best_result: dict | None = None
@@ -355,6 +356,7 @@ class EnsembleModel(nn.Module):
                     tp_mults,
                 )
             )
+
 
             # --- ❷  Sweep the grid --------------------------------------------------------
             for cfg in param_sets:
@@ -432,6 +434,7 @@ class EnsembleModel(nn.Module):
                 ) > best_result.get("composite_reward", 0.0):
                     best_result = result
                     best_cfg = {
+
                         "sma": sma_period,
                         "rsi": rsi_period,
                         "macd_fast": macd_fast,
@@ -448,7 +451,9 @@ class EnsembleModel(nn.Module):
                         "conf": conf,
                         "sl": sl,
                         "tp": tp,
+
                     }
+
 
         # --- ❸  Re-apply best config & run final back-test ---------------------------
         if best_cfg is not None:
