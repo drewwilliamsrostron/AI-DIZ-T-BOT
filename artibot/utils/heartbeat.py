@@ -22,7 +22,9 @@ try:
 
     nvmlInit()
     _NVML = True
+
 except Exception:  # pragma: no cover - optional dep or missing library
+
     _NVML = False
 
 _HANDLE = None
