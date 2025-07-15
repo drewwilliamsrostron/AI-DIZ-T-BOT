@@ -402,8 +402,8 @@ def main() -> None:
 
         def _bg_init() -> None:
             nonlocal done_sent
+            init_done.set()  # unblock training immediately
             if SKIP_SENTIMENT:
-                init_done.set()
                 if not done_sent:
                     progress_q.put(("DONE", ""))
                     done_sent = True
@@ -414,7 +414,6 @@ def main() -> None:
 
                 _bf.main(progress_cb=lambda pct, msg: progress_q.put((pct, msg)))
             finally:
-                init_done.set()
                 if not done_sent:
                     progress_q.put(("DONE", ""))
                     done_sent = True

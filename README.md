@@ -186,7 +186,8 @@ and profit factor exceed the configured thresholds.  On recent
 versions you'll also be prompted to **skip the historical sentiment
 pull** if GDELT is slow. Answer `yes` to set the environment variable
 `NO_HEAVY=1` and continue without downloading several gigabytes of
-data.
+data. The backfill now runs in the background so the GUI and training
+start immediately.
 
 Run a short training session without the GUI:
 
