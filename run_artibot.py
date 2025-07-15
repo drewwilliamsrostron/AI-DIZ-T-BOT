@@ -399,9 +399,11 @@ def main() -> None:
         ingest_th.start()
 
         def _bg_init() -> None:
+
             if SKIP_SENTIMENT:
                 init_done.set()
                 progress_q.put((0.0, "Skipping sentiment pull; continuing…"))
+
                 return
             progress_q.put((0.0, "Downloading historical sentiment + macro data…"))
             try:
@@ -409,7 +411,9 @@ def main() -> None:
 
                 _bf.main(progress_cb=lambda pct, msg: progress_q.put((pct, msg)))
             finally:
+
                 init_done.set()
+
 
         threading.Thread(target=_bg_init, daemon=True).start()
 

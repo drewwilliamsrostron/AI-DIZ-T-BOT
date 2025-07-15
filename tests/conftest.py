@@ -251,7 +251,28 @@ def pytest_configure(config):
         req = types.ModuleType("requests")
         req.RequestException = Exception
         req.get = lambda *a, **k: types.SimpleNamespace(json=lambda: {})
+
+        class _DummySession:
+            def __init__(self, *a, **k):
+                pass
+
+            def get(self, *a, **k):
+                return types.SimpleNamespace(json=lambda: {})
+
+        req.Session = _DummySession
+        util_mod = types.SimpleNamespace(default_user_agent=lambda *a, **k: "")
+        req.utils = util_mod
+        exc_mod = types.SimpleNamespace(
+            HTTPError=Exception,
+            Timeout=Exception,
+            TooManyRedirects=Exception,
+            RequestException=Exception,
+            ConnectionError=Exception,
+        )
+        req.exceptions = exc_mod
         sys.modules["requests"] = req
+        sys.modules["requests.utils"] = util_mod
+        sys.modules["requests.exceptions"] = exc_mod
 
     if "matplotlib" not in sys.modules:
         matplotlib = types.ModuleType("matplotlib")
