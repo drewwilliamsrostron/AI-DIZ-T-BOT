@@ -298,6 +298,29 @@ def csv_training_thread(
             )
             final_loss = tl
 
+            if ensemble.train_steps == 1:
+                train_indicators = compute_indicators(
+                    train_data,
+                    ensemble.indicator_hparams,
+                    with_scaled=True,
+                )
+                ds_train = HourlyDataset(
+                    train_data,
+                    seq_len=24,
+                    indicator_hparams=ensemble.indicator_hparams,
+                    atr_threshold_k=getattr(
+                        ensemble.indicator_hparams, "atr_threshold_k", 1.5
+                    ),
+                    train_mode=True,
+                )
+                dl_train = rebuild_loader(
+                    dl_train,
+                    ds_train,
+                    batch_size=512,
+                    shuffle=True,
+                    num_workers=workers,
+                )
+
             status_msg = (
                 f"Epoch {ensemble.train_steps}/{max_epochs} – loss {tl:.4f}"
                 if max_epochs
