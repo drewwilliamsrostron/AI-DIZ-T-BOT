@@ -357,7 +357,6 @@ class EnsembleModel(nn.Module):
                 )
             )
 
-
             # --- ❷  Sweep the grid --------------------------------------------------------
             for cfg in param_sets:
                 (
@@ -434,7 +433,6 @@ class EnsembleModel(nn.Module):
                 ) > best_result.get("composite_reward", 0.0):
                     best_result = result
                     best_cfg = {
-
                         "sma": sma_period,
                         "rsi": rsi_period,
                         "macd_fast": macd_fast,
@@ -451,9 +449,7 @@ class EnsembleModel(nn.Module):
                         "conf": conf,
                         "sl": sl,
                         "tp": tp,
-
                     }
-
 
         # --- ❸  Re-apply best config & run final back-test ---------------------------
         if best_cfg is not None:
