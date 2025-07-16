@@ -212,18 +212,18 @@ def csv_training_thread(
             atr_threshold_k=getattr(ensemble.indicator_hparams, "atr_threshold_k", 1.5),
             train_mode=True,
         )
-        if len(ds_full) < 10:
-            logging.warning("Not enough data in CSV => exiting.")
-            G.set_status("Training", "CSV data insufficient")
-            return
         if use_prev_weights:
             ensemble.load_best_weights(weights_path, data_full=train_data)
-        if len(ds_full) > 10:
-            n_total = len(ds_full)
+
+        n_total = len(ds_full)
+        if n_total >= 10:
             n_train = int(n_total * 0.9)
             n_val = n_total - n_train
             ds_train, ds_val = random_split(ds_full, [n_train, n_val])
         else:
+            logging.warning(
+                "Dataset too small for validation split (%d samples)", n_total
+            )
             ds_train = ds_full
             ds_val = None
 
@@ -552,47 +552,58 @@ def csv_training_thread(
                         ),
                         train_mode=True,
                     )
-                    if len(ds_updated) > 10:
-                        nt_ = len(ds_updated)
+                    nt_ = len(ds_updated)
+                    if nt_ >= 10:
                         ntr_ = int(nt_ * 0.9)
                         nv_ = nt_ - ntr_
                         ds_tr_, ds_val_ = random_split(ds_updated, [ntr_, nv_])
-                        logging.info(
-                            "DATALOADER",
-                            extra={"workers": workers, "device": ensemble.device.type},
+                    else:
+                        logging.warning(
+                            "Dataset too small for validation split during live adapt (%d samples)",
+                            nt_,
                         )
-                        dl_train = rebuild_loader(
-                            dl_train,
-                            ds_tr_,
-                            batch_size=512,
-                            shuffle=True,
-                            num_workers=workers,
-                        )
-                        dl_val = rebuild_loader(
+                        ds_tr_ = ds_updated
+                        ds_val_ = None
+                    logging.info(
+                        "DATALOADER",
+                        extra={"workers": workers, "device": ensemble.device.type},
+                    )
+                    dl_train = rebuild_loader(
+                        dl_train,
+                        ds_tr_,
+                        batch_size=512,
+                        shuffle=True,
+                        num_workers=workers,
+                    )
+                    dl_val = (
+                        rebuild_loader(
                             dl_val,
                             ds_val_,
                             batch_size=512,
                             shuffle=False,
                             num_workers=workers,
                         )
-                        train_indicators = compute_indicators(
-                            train_data,
-                            ensemble.indicator_hparams,
-                            with_scaled=True,
-                        )
-                        tl, vl = ensemble.train_one_epoch(
-                            dl_train,
-                            dl_val,
-                            train_data,
-                            stop_event,
-                            features=train_indicators,
-                            update_globals=update_globals,
-                        )
-                        G.global_training_loss.append(tl)
-                        G.global_validation_loss.append(vl)
-                        writer.add_scalar("Loss/train", tl, ensemble.train_steps)
-                        if vl is not None:
-                            writer.add_scalar("Loss/val", vl, ensemble.train_steps)
+                        if ds_val_ is not None
+                        else dl_val
+                    )
+                    train_indicators = compute_indicators(
+                        train_data,
+                        ensemble.indicator_hparams,
+                        with_scaled=True,
+                    )
+                    tl, vl = ensemble.train_one_epoch(
+                        dl_train,
+                        dl_val,
+                        train_data,
+                        stop_event,
+                        features=train_indicators,
+                        update_globals=update_globals,
+                    )
+                    G.global_training_loss.append(tl)
+                    G.global_validation_loss.append(vl)
+                    writer.add_scalar("Loss/train", tl, ensemble.train_steps)
+                    if vl is not None:
+                        writer.add_scalar("Loss/val", vl, ensemble.train_steps)
 
             equity = G.global_equity_curve[-1][1] if G.global_equity_curve else 0.0
             logging.info(
