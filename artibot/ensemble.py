@@ -509,14 +509,16 @@ class EnsembleModel(nn.Module):
             current_result["trade_details"],
             initial_balance=100.0,
         )
+        logging.info("YEARLY_STATS rows=%d", len(dfy))
         if update_globals:
             G.global_yearly_stats_table = table_str
 
-        _, monthly_table = compute_monthly_stats(
+        dfm, monthly_table = compute_monthly_stats(
             current_result["equity_curve"],
             current_result["trade_details"],
             initial_balance=100.0,
         )
+        logging.info("MONTHLY_STATS rows=%d", len(dfm))
         if update_globals:
             G.global_monthly_stats_table = monthly_table
 
