@@ -667,6 +667,16 @@ class EnsembleModel(nn.Module):
                     "; ".join(reasons) if reasons else "NK gate conditions not met"
                 )
                 logging.info("NOT_PROMOTED: %s", reason_str)
+                short_reason = "criteria not met"
+                if pf_value < min_profit_factor:
+                    short_reason = "profit factor below 1.5"
+                elif reward_val < min_reward:
+                    short_reason = "reward below threshold"
+                elif max_dd < max_drawdown_lim:
+                    short_reason = "drawdown exceeds limit"
+                elif entropy < min_entropy:
+                    short_reason = "low entropy"
+                G.set_status("Training", f"Not promoted: {short_reason}")
 
         # (4) We'll define an extended state for the meta-agent,
         # but that happens in meta_control_loop.
