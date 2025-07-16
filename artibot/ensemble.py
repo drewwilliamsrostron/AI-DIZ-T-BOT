@@ -539,18 +539,23 @@ class EnsembleModel(nn.Module):
             self, data_full, indicators=features
         )
 
+        ignore_result = current_result.get("trades", 0) == 0
+        if ignore_result:
+            logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
+
         # --- ❹  Push to globals & ping GUI ------------------------------------------
-        G.global_equity_curve = current_result["equity_curve"]
-        G.global_backtest_profit.append(current_result["net_pct"])
-        G.global_sharpe = current_result["sharpe"]
-        G.global_profit_factor = current_result["profit_factor"]
-        G.gui_event.set()
+        if not ignore_result:
+            G.global_equity_curve = current_result["equity_curve"]
+            G.global_backtest_profit.append(current_result["net_pct"])
+            G.global_sharpe = current_result["sharpe"]
+            G.global_profit_factor = current_result["profit_factor"]
+            G.gui_event.set()
         # ---------------- END merged block ----------------
 
         if data_full:
             assert len(data_full[0]) >= 5, "Expect raw OHLCV rows"
 
-        if update_globals:
+        if update_globals and not ignore_result:
             G.global_equity_curve = current_result["equity_curve"]
             G.global_backtest_profit.append(current_result["effective_net_pct"])
             G.global_inactivity_penalty = current_result["inactivity_penalty"]
@@ -595,7 +600,11 @@ class EnsembleModel(nn.Module):
             if G.global_best_composite_reward is not None
             else float("-inf")
         )
-        if update_globals and current_result["composite_reward"] > best:
+        if (
+            update_globals
+            and not ignore_result
+            and current_result["composite_reward"] > best
+        ):
             G.global_best_composite_reward = current_result["composite_reward"]
 
             G.global_best_sharpe = current_result["sharpe"]
@@ -802,7 +811,7 @@ class EnsembleModel(nn.Module):
                         zip(self.models, self.optimizers)
                     ):
                         self.scaler.unscale_(opt_)
-                        if idx_m == 0:
+                        if idx_m == 0 and hasattr(model, "fc"):
                             g = model.fc.weight.grad
                             g_norm = g.abs().mean().item() if g is not None else 0.0
                             logging.debug(
