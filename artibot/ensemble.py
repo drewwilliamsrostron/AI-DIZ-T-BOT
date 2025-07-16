@@ -1213,6 +1213,20 @@ class EnsembleModel(nn.Module):
                     G.global_sharpe = loaded_result["sharpe"]
                     G.global_profit_factor = loaded_result["profit_factor"]
                     G.gui_event.set()
+                    G.global_max_drawdown = loaded_result["max_drawdown"]
+                    G.global_net_pct = loaded_result["net_pct"]
+                    G.global_num_trades = loaded_result["trades"]
+                    G.global_win_rate = loaded_result["win_rate"]
+                    G.global_avg_trade_duration = loaded_result["avg_trade_duration"]
+                    G.global_avg_win = loaded_result.get("avg_win", 0.0)
+                    G.global_avg_loss = loaded_result.get("avg_loss", 0.0)
+                    G.global_inactivity_penalty = loaded_result["inactivity_penalty"]
+                    G.global_composite_reward = loaded_result["composite_reward"]
+                    G.global_days_without_trading = loaded_result[
+                        "days_without_trading"
+                    ]
+                    G.global_trade_details = loaded_result["trade_details"]
+                    G.global_days_in_profit = loaded_result["days_in_profit"]
                     G.global_best_equity_curve = loaded_result["equity_curve"]
                     G.global_best_drawdown = loaded_result["max_drawdown"]
                     G.global_best_net_pct = loaded_result["net_pct"]
@@ -1240,6 +1254,7 @@ class EnsembleModel(nn.Module):
                         loaded_result["trade_details"],
                         initial_balance=100.0,
                     )
+                    G.global_yearly_stats_table = best_table
                     G.global_best_yearly_stats_table = best_table
 
                     _, best_monthly = compute_monthly_stats(
@@ -1247,6 +1262,7 @@ class EnsembleModel(nn.Module):
                         loaded_result["trade_details"],
                         initial_balance=100.0,
                     )
+                    G.global_monthly_stats_table = best_monthly
                     G.global_best_monthly_stats_table = best_monthly
             except Exception:
                 pass
