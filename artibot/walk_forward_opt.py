@@ -66,11 +66,10 @@ class EnsembleEstimator(BaseEstimator):
             raise RuntimeError("Estimator not fitted")
         df = pd.concat([X.reset_index(drop=True), y.reset_index(drop=True)], axis=1)
         metrics = robust_backtest(self.model_, df.values.tolist())
-        G.global_equity_curve = metrics["equity_curve"]
-        G.global_backtest_profit.append(metrics["net_pct"])
-        G.global_sharpe = metrics["sharpe"]
-        G.global_profit_factor = metrics["profit_factor"]
-        G.gui_event.set()
+        if metrics.get("trades", 0) == 0:
+            logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
+        else:
+            G.push_backtest_metrics(metrics)
         return float(metrics.get("net_pct", 0.0))
 
 
@@ -102,11 +101,10 @@ def walk_forward_opt(data: pd.DataFrame) -> List[Dict[str, Any]]:
         )
 
         metrics = robust_backtest(best_est.model_, test_df.values.tolist())
-        G.global_equity_curve = metrics["equity_curve"]
-        G.global_backtest_profit.append(metrics["net_pct"])
-        G.global_sharpe = metrics["sharpe"]
-        G.global_profit_factor = metrics["profit_factor"]
-        G.gui_event.set()
+        if metrics.get("trades", 0) == 0:
+            logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
+        else:
+            G.push_backtest_metrics(metrics)
         logging.info(
             "Window %d-%d  params=%s  net_pct=%.2f",
             start,

@@ -136,11 +136,7 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
         if metrics.get("trades", 0) == 0:
             logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
         else:
-            G.global_equity_curve = metrics["equity_curve"]
-            G.global_backtest_profit.append(metrics["net_pct"])
-            G.global_sharpe = metrics["sharpe"]
-            G.global_profit_factor = metrics["profit_factor"]
-            G.gui_event.set()
+            G.push_backtest_metrics(metrics)
         results.append(metrics)
     return results
 

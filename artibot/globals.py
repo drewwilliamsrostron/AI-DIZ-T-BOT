@@ -475,3 +475,41 @@ def sync_globals(hp, ind_hp) -> None:
         global_short_frac = hp.short_frac
         gross_long_usd = global_long_frac * live_equity
         gross_short_usd = global_short_frac * live_equity
+
+
+def push_backtest_metrics(result: dict) -> None:
+    """Update global performance metrics from a backtest result."""
+    global global_equity_curve
+    global global_backtest_profit
+    global global_inactivity_penalty
+    global global_composite_reward
+    global global_days_without_trading
+    global global_trade_details
+    global global_days_in_profit
+    global global_sharpe
+    global global_max_drawdown
+    global global_net_pct
+    global global_num_trades
+    global global_win_rate
+    global global_profit_factor
+    global global_avg_trade_duration
+    global global_avg_win
+    global global_avg_loss
+    with state_lock:
+        global_equity_curve = result["equity_curve"]
+        global_backtest_profit.append(result["net_pct"])
+        global_inactivity_penalty = result["inactivity_penalty"]
+        global_composite_reward = result["composite_reward"]
+        global_days_without_trading = result["days_without_trading"]
+        global_trade_details = result["trade_details"]
+        global_days_in_profit = result["days_in_profit"]
+        global_sharpe = result["sharpe"]
+        global_max_drawdown = result["max_drawdown"]
+        global_net_pct = result["net_pct"]
+        global_num_trades = result["trades"]
+        global_win_rate = result["win_rate"]
+        global_profit_factor = result["profit_factor"]
+        global_avg_trade_duration = result["avg_trade_duration"]
+        global_avg_win = result.get("avg_win", 0.0)
+        global_avg_loss = result.get("avg_loss", 0.0)
+    gui_event.set()
