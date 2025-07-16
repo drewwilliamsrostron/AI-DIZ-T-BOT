@@ -918,8 +918,8 @@ def objective(trial: optuna.trial.Trial) -> float:
 
 def run_hpo(n_trials: int = 50) -> dict:
     """Run Bayesian hyper-parameter search with Optuna."""
-
     logging.info(">>> ENTERING DEFCON 5: Hyperparameter Search")
+    G.set_defcon("DEFCON 5 \u2013 Hyperparameter Search")
     logging.info(">>> Starting Sweep: 0 of %d", n_trials)
     G.set_status("DEFCON 5: Hyperparameter Search", "starting")
     study = optuna.create_study(direction="minimize")
@@ -939,8 +939,8 @@ def run_hpo(n_trials: int = 50) -> dict:
 
 def walk_forward_backtest(data: list, train_window: int, test_horizon: int) -> list:
     """Perform walk-forward validation across ``data``."""
-
     logging.info(">>> ENTERING DEFCON 4: Walk Forward Evaluation")
+    G.set_defcon("DEFCON 4 \u2013 Walk Forward Evaluation")
     results: list = []
     n_folds = max(1, (len(data) - train_window - test_horizon) // test_horizon + 1)
     fold_idx = 1

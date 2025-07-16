@@ -11,6 +11,13 @@ def test_set_status_and_full():
     assert G.get_status_full() == ("Working", "epoch 3")
 
 
+def test_set_defcon_sets_event():
+    G.gui_event.clear()
+    G.set_defcon("DEFCON 5 – Hyperparameter Search")
+    assert G.current_defcon.startswith("DEFCON 5")
+    assert G.gui_event.is_set()
+
+
 def test_weight_dialog_default(monkeypatch):
     tk_stub = types.SimpleNamespace(
         messagebox=types.SimpleNamespace(askyesno=lambda *a, **k: True),
