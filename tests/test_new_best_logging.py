@@ -37,7 +37,7 @@ def test_new_best_logging(monkeypatch, caplog):
             "inactivity_penalty": 0.0,
             "composite_reward": 10.0,
             "days_without_trading": 0,
-            "trade_details": [],
+            "trade_details": [0],
             "days_in_profit": 0.0,
             "sharpe": 1.0,
             "max_drawdown": -0.1,
@@ -55,17 +55,23 @@ def test_new_best_logging(monkeypatch, caplog):
 
     monkeypatch.setattr("artibot.ensemble.robust_backtest", dummy_backtest)
     monkeypatch.setattr("artibot.ensemble.compute_yearly_stats", dummy_stats)
+    import artibot.constants as const
 
-    ens = EnsembleModel(device=device, n_models=1)
+    monkeypatch.setattr(const, "FEATURE_DIMENSION", 8)
+    import artibot.model as model
+
+    monkeypatch.setattr(model, "FEATURE_DIMENSION", 8)
+
+    ens = EnsembleModel(device=device, n_models=1, n_features=8)
 
     class DummyModel(torch.nn.Module):
         def __init__(self):
             super().__init__()
-            self.w = torch.nn.Parameter(torch.zeros(8, 3))
+            self.fc = torch.nn.Linear(8, 3)
 
         def forward(self, x):
             batch = x.size(0)
-            logits = x.mean(dim=1) @ self.w
+            logits = x.mean(dim=1) @ self.fc.weight.T
             return logits, SimpleNamespace(), torch.zeros(batch)
 
     ens.models = [DummyModel().to(device)]
