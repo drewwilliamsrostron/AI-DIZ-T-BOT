@@ -535,6 +535,8 @@ class EnsembleModel(nn.Module):
             G.update_trade_params(best_cfg["sl"], best_cfg["tp"])
 
         # Run a back-test with the best parameters found (or current settings)
+        logging.info(">>> ENTERING DEFCON 3: Full Backtest")
+        logging.info(">>> Using current best hyperparams")
         current_result = best_result or robust_backtest(
             self, data_full, indicators=features
         )
@@ -641,6 +643,9 @@ class EnsembleModel(nn.Module):
                     shutil.copy(self.weights_path, live_path)
                     G.set_live_weights_updated(True)
                     logging.info("PROMOTED_TO_LIVE_MODEL hash=%s", md5)
+                    logging.info(
+                        "PROMOTION: Model meets Nuclear Key criteria, ready to trade."
+                    )
                 except Exception as exc:
                     logging.error("Live weight copy failed: %s", exc)
             else:

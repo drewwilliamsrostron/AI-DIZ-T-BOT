@@ -923,11 +923,18 @@ def objective(trial: optuna.trial.Trial) -> float:
 def run_hpo(n_trials: int = 50) -> dict:
     """Run Bayesian hyper-parameter search with Optuna."""
 
+    logging.info(">>> ENTERING DEFCON 5: Hyperparameter Search")
+    logging.info(">>> Starting Sweep: 0 of %d", n_trials)
     G.set_status("DEFCON 5: Hyperparameter Search", "starting")
     study = optuna.create_study(direction="minimize")
     for idx in range(1, n_trials + 1):
         G.set_status("DEFCON 5: Hyperparameter Search", f"Trial {idx}/{n_trials}")
         study.optimize(objective, n_trials=1, timeout=3600)
+        params = study.trials[-1].params if study.trials else {}
+        param_str = ", ".join(f"{k}={v}" for k, v in params.items())
+        logging.info(
+            "--- Hyperparam Set %d/%d --- Indicator combo: %s", idx, n_trials, param_str
+        )
     best = study.best_params
     G.global_best_lr = best.get("lr")
     G.global_best_wd = best.get("entropy_beta")
@@ -937,8 +944,22 @@ def run_hpo(n_trials: int = 50) -> dict:
 def walk_forward_backtest(data: list, train_window: int, test_horizon: int) -> list:
     """Perform walk-forward validation across ``data``."""
 
+    logging.info(">>> ENTERING DEFCON 4: Walk Forward Evaluation")
     results: list = []
+    n_folds = max(1, (len(data) - train_window - test_horizon) // test_horizon + 1)
+    fold_idx = 1
     for start in range(0, len(data) - train_window - test_horizon, test_horizon):
+        end = start + train_window + test_horizon
+        start_dt = pd.to_datetime(data[start][0], unit="s").strftime("%Y-%m")
+        end_dt = pd.to_datetime(data[end - 1][0], unit="s").strftime("%Y-%m")
+        logging.info(
+            "Fold %d of %d - Period: %s to %s",
+            fold_idx,
+            n_folds,
+            start_dt,
+            end_dt,
+        )
+        fold_idx += 1
         train_slice = data[start : start + train_window]
         test_slice = data[start + train_window : start + train_window + test_horizon]
         model = EnsembleModel(device=get_device(), n_models=1)
