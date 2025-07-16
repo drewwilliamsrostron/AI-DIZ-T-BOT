@@ -574,7 +574,8 @@ class EnsembleModel(nn.Module):
             current_result["trade_details"],
             initial_balance=100.0,
         )
-        logging.info("YEARLY_STATS rows=%d", len(dfy))
+        rows = len(dfy) if dfy is not None else 0
+        logging.info("YEARLY_STATS rows=%d", rows)
         if update_globals:
             G.global_yearly_stats_table = table_str
 
@@ -583,7 +584,8 @@ class EnsembleModel(nn.Module):
             current_result["trade_details"],
             initial_balance=100.0,
         )
-        logging.info("MONTHLY_STATS rows=%d", len(dfm))
+        rows_m = len(dfm) if dfm is not None else 0
+        logging.info("MONTHLY_STATS rows=%d", rows_m)
         if update_globals:
             G.global_monthly_stats_table = monthly_table
 
@@ -898,9 +900,9 @@ class EnsembleModel(nn.Module):
 
                 G.set_status("Warning: attention entropy < 0.5", "")
 
-            if cur_reward > self.best_composite_reward:
+            if cur_reward > self.best_composite_reward and trades_now > 0:
                 if reject_if_risky(
-                    G.global_sharpe,
+                    cur_reward,
                     G.global_max_drawdown,
                     attn_entropy,
                 ):
