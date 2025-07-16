@@ -6,28 +6,26 @@ meta-agent updates. Worker threads communicate short messages via
 ``set_status`` or ``status_sleep``.
 """
 
+import collections
+import json
+import os
+import threading
+
 # Imports
 ###############################################################################
 import time
-import threading
 from queue import Queue
-import collections
-import numpy as np
+
 import matplotlib
-import os
+import numpy as np
 import torch
-import json
 
 matplotlib.use("TkAgg")
 
-try:
-    pass
-except Exception:  # fallback for torch<2.2
-    pass
-import openai
-
 # Reduce default logging to warnings only
 import logging
+
+import openai
 
 logging.basicConfig(
     level=logging.WARNING, format="%(asctime)s [%(levelname)s] %(message)s"
@@ -38,18 +36,22 @@ client = openai  # alias
 UI_SCALE = 1.0
 
 ###############################################################################
+# Tunable hyperparameters (updated by the RL agent)
+###############################################################################
+
+###############################################################################
 # Global Hyperparameters and Starting Values
 ###############################################################################
-global_SL_multiplier = 5
-global_TP_multiplier = 5
-global_ATR_period = 50
-global_VORTEX_period = 14
-global_CMF_period = 20
-global_use_ATR = True
-global_use_VORTEX = True
-global_use_CMF = True
-global_RSI_period = 9
-global_SMA_period = 10
+global_SL_multiplier = 5  # stop-loss multiplier
+global_TP_multiplier = 5  # take-profit multiplier
+global_ATR_period = 50  # ATR indicator lookback
+global_VORTEX_period = 14  # vortex indicator lookback
+global_CMF_period = 20  # Chaikin MF lookback
+global_use_ATR = True  # legacy toggle, unused
+global_use_VORTEX = True  # legacy toggle, unused
+global_use_CMF = True  # legacy toggle, unused
+global_RSI_period = 9  # RSI lookback
+global_SMA_period = 10  # SMA lookback
 global_MACD_fast = 12
 global_MACD_slow = 26
 global_MACD_signal = 9
@@ -58,32 +60,33 @@ global_DONCHIAN_period = 20
 global_KIJUN_period = 26
 global_TENKAN_period = 9
 global_DISPLACEMENT = 26
-global_use_RSI = True
-global_use_SMA = True
-global_use_MACD = True
-global_use_EMA = True
-global_use_DONCHIAN = False
-global_use_KIJUN = False
-global_use_TENKAN = False
-global_use_DISPLACEMENT = False
-risk_fraction = 0.03
-GLOBAL_THRESHOLD = 5e-5
-global_min_hold_seconds = 1800
+global_use_RSI = True  # legacy toggle, unused
+global_use_SMA = True  # legacy toggle, unused
+global_use_MACD = True  # legacy toggle, unused
+global_use_EMA = True  # legacy toggle, unused
+global_use_DONCHIAN = False  # legacy toggle, unused
+global_use_KIJUN = False  # legacy toggle, unused
+global_use_TENKAN = False  # legacy toggle, unused
+global_use_DISPLACEMENT = False  # legacy toggle, unused
+risk_fraction = 0.03  # fraction of equity to risk per trade
+GLOBAL_THRESHOLD = 5e-5  # minimal allowed loss
+global_min_hold_seconds = 1800  # enforced trade hold time
 
 # Maximum exposure per side and total gross exposure
-MAX_SIDE_EXPOSURE_PCT = 0.10
-MAX_GROSS_PCT = 0.12
+MAX_SIDE_EXPOSURE_PCT = 0.10  # max long or short allocation
+MAX_GROSS_PCT = 0.12  # total exposure cap
 
 # Number of CPU threads reserved for PyTorch and DataLoader workers
-cpu_limit = max(1, os.cpu_count() - 2)
+cpu_limit = max(1, os.cpu_count() - 2)  # reserved CPU threads
 
 # Desired long/short fractions controlled by the meta agent
-global_long_frac = 0.0
-global_short_frac = 0.0
+global_long_frac = 0.0  # fraction of equity allocated to longs
+global_short_frac = 0.0  # fraction of equity allocated to shorts
 # Gross USD value of each leg based on ``live_equity``
-gross_long_usd = 0.0
-gross_short_usd = 0.0
+gross_long_usd = 0.0  # computed from long_frac * equity
+gross_short_usd = 0.0  # computed from short_frac * equity
 
+# Snapshot of the best-performing hyperparameters
 global_best_params = {
     "SL_multiplier": global_SL_multiplier,
     "TP_multiplier": global_TP_multiplier,
@@ -93,31 +96,31 @@ global_best_params = {
 }
 
 # Global performance metrics:
-global_sharpe = 0.0
-global_max_drawdown = 0.0
-global_net_pct = 0.0
+global_sharpe = 0.0  # rolling Sharpe ratio
+global_max_drawdown = 0.0  # worst equity drop
+global_net_pct = 0.0  # cumulative profit %
 global_num_trades = 0
 global_win_rate = 0.0
 global_profit_factor = 0.0
 global_avg_trade_duration = 0.0
 global_avg_win = 0.0
 global_avg_loss = 0.0
-global_inactivity_penalty = None
-global_composite_reward = None
+global_inactivity_penalty = None  # RL penalty when idle
+global_composite_reward = None  # most recent composite reward
 global_composite_reward_ema = 0.0
 global_days_without_trading = None
-global_trade_details = []
-global_holdout_sharpe = 0.0
-global_holdout_max_drawdown = 0.0
+global_trade_details = []  # list of trade dicts
+global_holdout_sharpe = 0.0  # validation Sharpe
+global_holdout_max_drawdown = 0.0  # validation DD
 
 # timeline ring buffer (keep last 300 bars ≈ 12.5 days on 1-h data)
-timeline_depth = 300
+timeline_depth = 300  # approx 12 days on 1h data
 timeline_index = 0
 timeline_ind_on = np.zeros((timeline_depth, 6), dtype=np.uint8)
 timeline_trades = np.zeros(timeline_depth, dtype=np.uint8)  # 1 = in market
 
 # Global best performance stats:
-global_best_equity_curve = []
+global_best_equity_curve = []  # list of floats
 global_best_sharpe = 0.0
 global_best_drawdown = 0.0
 global_best_net_pct = 0.0
@@ -133,8 +136,8 @@ global_best_composite_reward = float("-inf")
 global_best_days_in_profit = None
 
 # Global best hyperparameters:
-global_best_lr = None
-global_best_wd = None
+global_best_lr = None  # best learning rate so far
+global_best_wd = None  # best weight decay so far
 
 global_yearly_stats_table = ""
 global_best_yearly_stats_table = ""
@@ -142,88 +145,88 @@ global_monthly_stats_table = ""
 global_best_monthly_stats_table = ""
 
 # Flags controlling components of the composite reward
-use_net_term = True
-use_sharpe_term = True
-use_drawdown_term = True
-use_trade_term = True
-use_profit_days_term = True
-risk_filter_enabled = True
+use_net_term = True  # include net profit in reward
+use_sharpe_term = True  # include Sharpe ratio
+use_drawdown_term = True  # include drawdown term
+use_trade_term = True  # include trade count
+use_profit_days_term = True  # include days in profit
+risk_filter_enabled = True  # training loss gating
 
 ###############################################################################
 # GPT Memories (unchanged)
 ###############################################################################
-gpt_memory_squirtle = []
-gpt_memory_wartorttle = []
-gpt_memory_bigmanblastoise = []
-gpt_memory_moneymaker = []
+gpt_memory_squirtle = []  # short-term
+gpt_memory_wartorttle = []  # medium-term
+gpt_memory_bigmanblastoise = []  # long-term
+gpt_memory_moneymaker = []  # profit-focused
 
 ###############################################################################
 # Additional global variables for meta agent logs
 ###############################################################################
-global_ai_adjustments_log = "No adjustments yet"
-global_ai_adjustments = ""
-global_ai_confidence = None
-epoch_count = 0
-global_step = 0
-global_current_prediction = None
+global_ai_adjustments_log = "No adjustments yet"  # printable log string
+global_ai_adjustments = ""  # latest tweak summary
+global_ai_confidence = None  # RL confidence
+epoch_count = 0  # training epochs completed
+global_step = 0  # mini-batches seen
+global_current_prediction = None  # latest model output
 global_training_loss = []
 global_validation_loss = []
 global_backtest_profit = []
 global_equity_curve = []
-global_attention_weights_history = []
+global_attention_weights_history = []  # per-step attention snapshots
 global_attention_entropy_history = []
 # Most recent attention weights averaged across heads
-global_last_attention: list[list[float]] | None = None
+global_last_attention: list[list[float]] | None = None  # averaged heads
 global_phemex_data = []
 global_days_in_profit = 0.0
 global_validation_summary = {}
-live_bars_queue = Queue()
+live_bars_queue = Queue()  # feed of recent bars
 # New event to trigger GUI refreshes
 gui_event = threading.Event()
-live_sharpe_history = collections.deque(maxlen=1000)
+live_sharpe_history = collections.deque(maxlen=1000)  # GUI plot cache
 live_drawdown_history = collections.deque(maxlen=1000)
-trading_paused = False
+trading_paused = False  # hot pause flag
 
 # When ``True`` orders are routed to the Phemex testnet
-use_sandbox = True
+use_sandbox = True  # True for testnet
 
 # gating flag
-nuclear_key_enabled = False
+nuclear_key_enabled = False  # gating flag
 # Set to ``True`` when the GUI bypasses the nuclear key gate
-nuke_armed = False
+nuke_armed = False  # GUI override
 
 # Simple status indicator updated by threads
 
-global_primary_status = "Initializing..."
+global_primary_status = "Initializing..."  # displayed in GUI
 global_secondary_status = ""
 global_progress_pct = 0.0
 
 # Flag toggled by GUI when user enables live trading
-live_trading_enabled = False
+live_trading_enabled = False  # set via GUI toggle
 
 # Live account info updated by the trading loop
-global_account_stats: dict = {}
+global_account_stats: dict = {}  # cached exchange balance
 global_position_side: str | None = None
 global_position_size: float = 0.0
-start_equity: float = 0.0
+start_equity: float = 0.0  # baseline when session started
 live_equity: float = 0.0
 live_trade_count: int = 0
 
 # Production risk flag toggled after sufficient trade history
-PROD_RISK = False
+PROD_RISK = False  # True once sufficient history accumulated
 
 # Flag toggled by training thread when new live weights are ready
-live_weights_updated: bool = False
+live_weights_updated: bool = False  # set when new weights available
 
 # When ``False`` worker threads pause their main loops
-bot_running: bool = True
+bot_running: bool = True  # pause flag for workers
 
 # Singleton hedge book managing open long/short legs
-hedge_book = None
+hedge_book = None  # populated with HedgeBook instance
 
 
 # Protect shared state across threads
-state_lock = threading.Lock()
+state_lock = threading.Lock()  # guards shared state
 # New: lock used when mutating model parameters
 model_lock = threading.Lock()
 

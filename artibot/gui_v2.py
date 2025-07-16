@@ -10,23 +10,22 @@ from typing import Optional
 
 import numpy as np
 
-
 try:
     import pandas as pd
 except Exception:  # pragma: no cover - optional dependency
     pd = None
 
 
-import artibot.globals as G
-from .metrics import nuclear_key_condition
-from .live_risk import update_auto_pause
-
 import tkinter as tk
 from tkinter import ttk
 
-
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+import artibot.globals as G
+
+from .live_risk import update_auto_pause
+from .metrics import nuclear_key_condition
 
 if hasattr(plt, "style"):
     plt.style.use("dark_background")
@@ -360,16 +359,6 @@ class TradingGUI:
         self.frame_trades = ttk.Frame(self.notebook)
         self.notebook.add(self.frame_trades, text="Trades")
         cols = ("Date", "Side", "Size", "Entry", "Exit", "PnL")
-
-        self.trade_tree = ttk.Treeview(
-            self.frame_trades, columns=cols, show="headings", height=10
-        )
-        for c in cols:
-            self.trade_tree.heading(c, text=c)
-            self.trade_tree.column(c, anchor=tk.CENTER)
-        vsb = ttk.Scrollbar(
-            self.frame_trades, orient="vertical", command=self.trade_tree.yview
-        )
 
         self.trade_tree = ttk.Treeview(
             self.frame_trades, columns=cols, show="headings", height=10
