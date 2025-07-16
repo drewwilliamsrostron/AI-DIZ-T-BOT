@@ -674,26 +674,25 @@ class TradingGUI:
 
         # Loss and equity
         self.ax_loss.clear()
-        n = min(len(G.global_training_loss), len(G.global_validation_loss))
+        n = max(len(G.global_training_loss), len(G.global_validation_loss))
         x = range(1, n + 1)
 
-        train_vals = list(G.global_training_loss[:n])
+        train_vals = list(G.global_training_loss)
         if pd is not None and train_vals:
             train_vals = pd.Series(train_vals).ewm(span=10).mean().tolist()
-        self.ax_loss.plot(x, train_vals, label="Train", marker="o")
+        train_vals = train_vals[:n]
+        self.ax_loss.plot(x[: len(train_vals)], train_vals, label="Train", marker="o")
 
-        val_x = []
-        val_y = []
-        for idx, v in enumerate(G.global_validation_loss[:n]):
-            if v is not None:
-                val_x.append(idx + 1)
-                val_y.append(v)
-        if pd is not None and val_y:
-            val_y = pd.Series(val_y).ewm(span=10).mean().tolist()
-        if val_x:
-            self.ax_loss.plot(val_x, val_y, label="Val", marker="x")
+        val_vals = [np.nan if v is None else v for v in G.global_validation_loss]
+        val_vals = val_vals[:n]
+        if pd is not None and any(not np.isnan(v) for v in val_vals):
+            val_vals = pd.Series(val_vals).ewm(span=10).mean().tolist()
+        if any(not np.isnan(v) for v in val_vals):
+            self.ax_loss.plot(x[: len(val_vals)], val_vals, label="Val", marker="x")
 
-        all_losses = train_vals + val_y
+        all_losses = [v for v in train_vals if not np.isnan(v)] + [
+            v for v in val_vals if not np.isnan(v)
+        ]
         if all_losses:
             self.ax_loss.set_ylim(min(all_losses), max(all_losses))
             self.ax_loss.relim()
@@ -808,13 +807,15 @@ class TradingGUI:
 
         # Text pages
         self.yearly_text.delete("1.0", tk.END)
-        if G.global_best_yearly_stats_table:
-            self.yearly_text.insert(tk.END, G.global_best_yearly_stats_table)
+        table = G.global_best_yearly_stats_table or G.global_yearly_stats_table
+        if table:
+            self.yearly_text.insert(tk.END, table)
         else:
             self.yearly_text.insert(tk.END, "No yearly data")
         self.monthly_text.delete("1.0", tk.END)
-        if G.global_best_monthly_stats_table:
-            self.monthly_text.insert(tk.END, G.global_best_monthly_stats_table)
+        table_m = G.global_best_monthly_stats_table or G.global_monthly_stats_table
+        if table_m:
+            self.monthly_text.insert(tk.END, table_m)
         else:
             self.monthly_text.insert(tk.END, "No monthly data")
 

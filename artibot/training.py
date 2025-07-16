@@ -216,7 +216,14 @@ def csv_training_thread(
             return
         if use_prev_weights:
             ensemble.load_best_weights(weights_path, data_full=train_data)
-        ds_train = ds_full
+        if len(ds_full) > 10:
+            n_total = len(ds_full)
+            n_train = int(n_total * 0.9)
+            n_val = n_total - n_train
+            ds_train, ds_val = random_split(ds_full, [n_train, n_val])
+        else:
+            ds_train = ds_full
+            ds_val = None
 
         train_indicators = compute_indicators(
             train_data,
@@ -231,7 +238,13 @@ def csv_training_thread(
         dl_train = rebuild_loader(
             None, ds_train, batch_size=512, shuffle=True, num_workers=workers
         )
-        dl_val = None
+        dl_val = (
+            rebuild_loader(
+                None, ds_val, batch_size=512, shuffle=False, num_workers=workers
+            )
+            if ds_val is not None
+            else None
+        )
         if config.get("PROFILE", False):
             profile_data_copy(dl_train, ensemble.device)
         steps_per_epoch = len(dl_train)
