@@ -235,7 +235,7 @@ class TradingGUI:
     def __init__(
         self,
         root: tk.Tk,
-        ensemble,
+        ensemble: Optional[object] = None,
         weights_path: str | None = None,
         connector=None,
         *,
@@ -275,6 +275,14 @@ class TradingGUI:
         # poll for refresh events triggered by worker threads
         self.root.after(100, self._poll_gui_event)
         self.root.after(10000, self.refresh_stats)
+
+    def set_ensemble(self, ensemble: object, weights_path: str | None = None) -> None:
+        """Attach ``ensemble`` to the GUI and update labels."""
+        self.ensemble = ensemble
+        if weights_path is not None:
+            self.weights_path = weights_path
+            basename = os.path.basename(weights_path)
+            self.weights_label.config(text=f"Weights: {basename}")
 
     # ------------------------------------------------------------------
     # Layout builders
@@ -834,7 +842,10 @@ class TradingGUI:
             pos = "None"
         self.position_label.config(text=f"Position: {pos}")
 
-        current_lr = self.ensemble.optimizers[0].param_groups[0]["lr"]
+        if self.ensemble is not None:
+            current_lr = self.ensemble.optimizers[0].param_groups[0]["lr"]
+        else:
+            current_lr = 0.0
 
         self.best_lr_label.config(
             text=f"Best LR: {G.global_best_lr if G.global_best_lr else current_lr:.2e}"

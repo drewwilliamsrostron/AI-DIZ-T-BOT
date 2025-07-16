@@ -246,8 +246,8 @@ def main() -> None:
     hb_interval = DEFAULT_CFG.get("logging", {}).get("heartbeat_interval", 120)
     heartbeat.start(interval=hb_interval)
     root = tk.Tk()
-    progress_q: Queue[tuple[float, str] | tuple[str, str]] = Queue()
-    _launch_loading(root, progress_q)
+    gui: TradingGUI = TradingGUI(root, None, None, None, dev=dev_mode)
+    G.set_status("DEFCON 5: Hyperparameter Search", "initializing")
 
     G.set_cpu_limit(int(opts.get("threads", defaults["threads"])))
     G.start_equity = 0.0
@@ -261,6 +261,7 @@ def main() -> None:
     logging.info("Trading mode: %s", mode)
 
     connector = PhemexConnector(CONFIG)
+    gui.connector = connector
     try:
         stats = connector.get_account_stats()
         logging.info("ACCOUNT_BALANCE %s", json.dumps(stats))
@@ -296,7 +297,7 @@ def main() -> None:
         data = load_csv_hourly(csv_path, cfg=DEFAULT_CFG)
         if not data:
             logging.error("No usable CSV data found")
-            progress_q.put(("DONE", ""))
+            G.set_status("Init", "CSV data missing")
             return
 
         temp_ds = HourlyDataset(
@@ -309,10 +310,10 @@ def main() -> None:
         n_features = temp_ds[0][0].shape[1]
 
         if no_tune:
-            progress_q.put((5.0, "Skipping hyperparameter search…"))
+            G.set_status("DEFCON 5: Hyperparameter Search", "skipped")
             best = {}
         else:
-            progress_q.put((5.0, "Running hyperparameter search…"))
+            G.set_status("DEFCON 5: Hyperparameter Search", "")
             best = run_hpo()
         ensemble = build_model(device=device, n_features=n_features, **best)
         ensemble.indicator_hparams = indicator_hp
@@ -329,11 +330,7 @@ def main() -> None:
         if os.path.isfile(weights_path) and use_prev_weights:
             ensemble.load_best_weights(weights_path)
 
-        progress_q.put(("DONE", ""))
-        root.after(
-            0,
-            lambda: TradingGUI(root, ensemble, weights_path, connector, dev=dev_mode),
-        )
+        root.after(0, lambda: gui.set_ensemble(ensemble, weights_path))
 
         init_done = threading.Event()
         train_th = threading.Thread(
@@ -351,6 +348,7 @@ def main() -> None:
             daemon=True,
         )
         train_th.start()
+        G.set_status("DEFCON 4: Training in Progress", "")
 
         poll_interval = CONFIG.get("LIVE_POLL_INTERVAL", 60)
         live_path = os.path.join(os.path.dirname(weights_path), "live_model.pt")
@@ -402,18 +400,16 @@ def main() -> None:
 
             if SKIP_SENTIMENT:
                 init_done.set()
-                progress_q.put((0.0, "Skipping sentiment pull; continuing…"))
-
+                G.set_status("Init", "Skipping sentiment pull")
                 return
-            progress_q.put((0.0, "Downloading historical sentiment + macro data…"))
+
+            G.set_status("Init", "Downloading sentiment data")
             try:
                 import tools.backfill_gdelt as _bf
 
-                _bf.main(progress_cb=lambda pct, msg: progress_q.put((pct, msg)))
+                _bf.main(progress_cb=lambda pct, msg: None)
             finally:
-
                 init_done.set()
-
 
         threading.Thread(target=_bg_init, daemon=True).start()
 
