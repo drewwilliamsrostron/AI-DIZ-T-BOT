@@ -696,9 +696,8 @@ if __name__ == "__main__":
         max_epochs=1,
     )
     result = robust_backtest(ens, data)
-    G.global_equity_curve = result["equity_curve"]
-    G.global_backtest_profit.append(result["net_pct"])
-    G.global_sharpe = result["sharpe"]
-    G.global_profit_factor = result["profit_factor"]
-    G.gui_event.set()
+    if result.get("trades", 0) == 0:
+        logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
+    else:
+        G.push_backtest_metrics(result)
     print(result)

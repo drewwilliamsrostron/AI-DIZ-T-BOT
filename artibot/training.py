@@ -912,11 +912,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     if metrics.get("trades", 0) == 0:
         logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
     else:
-        G.global_equity_curve = metrics["equity_curve"]
-        G.global_backtest_profit.append(metrics["net_pct"])
-        G.global_sharpe = metrics["sharpe"]
-        G.global_profit_factor = metrics["profit_factor"]
-        G.gui_event.set()
+        G.push_backtest_metrics(metrics)
     return -metrics.get("composite_reward", 0.0)
 
 
@@ -947,10 +943,6 @@ def walk_forward_backtest(data: list, train_window: int, test_horizon: int) -> l
         if metrics.get("trades", 0) == 0:
             logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
         else:
-            G.global_equity_curve = metrics["equity_curve"]
-            G.global_backtest_profit.append(metrics["net_pct"])
-            G.global_sharpe = metrics["sharpe"]
-            G.global_profit_factor = metrics["profit_factor"]
-            G.gui_event.set()
+            G.push_backtest_metrics(metrics)
         results.append(metrics)
     return results

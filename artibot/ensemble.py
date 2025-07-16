@@ -467,6 +467,11 @@ class EnsembleModel(nn.Module):
                     self, data_full
                 )  # no “features” arg inside sweep
 
+                if result.get("trades", 0) == 0:
+                    logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
+                else:
+                    G.push_backtest_metrics(result)
+
                 logging.info(
                     "SWEEP_CFG",
                     extra={
@@ -545,11 +550,7 @@ class EnsembleModel(nn.Module):
 
         # --- ❹  Push to globals & ping GUI ------------------------------------------
         if not ignore_result:
-            G.global_equity_curve = current_result["equity_curve"]
-            G.global_backtest_profit.append(current_result["net_pct"])
-            G.global_sharpe = current_result["sharpe"]
-            G.global_profit_factor = current_result["profit_factor"]
-            G.gui_event.set()
+            G.push_backtest_metrics(current_result)
         # ---------------- END merged block ----------------
 
         if data_full:
