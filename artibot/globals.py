@@ -201,6 +201,7 @@ nuke_armed = False  # GUI override
 global_primary_status = "Initializing..."  # displayed in GUI
 global_secondary_status = ""
 global_progress_pct = 0.0
+current_defcon: str = ""
 
 # Flag toggled by GUI when user enables live trading
 live_trading_enabled = False  # set via GUI toggle
@@ -253,6 +254,14 @@ def set_status(msg: str, secondary: str | None = None) -> None:
         global_primary_status = msg
         if secondary is not None:
             global_secondary_status = secondary
+
+
+def set_defcon(label: str) -> None:
+    """Update :data:`current_defcon` and notify the GUI."""
+    global current_defcon
+    with state_lock:
+        current_defcon = label
+    gui_event.set()
 
 
 def get_status() -> str:

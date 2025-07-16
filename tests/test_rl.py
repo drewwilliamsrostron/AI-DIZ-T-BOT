@@ -56,6 +56,12 @@ def load_rl_module():
     stub.timeline_index = 0
     stub.timeline_ind_on = np.zeros((stub.timeline_depth, 6), dtype=np.uint8)
     stub.timeline_trades = np.zeros(stub.timeline_depth, dtype=np.uint8)
+    stub.current_defcon = ""
+
+    def set_defcon(label: str) -> None:
+        stub.current_defcon = label
+
+    stub.set_defcon = set_defcon
     sys.modules["artibot.globals"] = stub
 
     base = Path(__file__).resolve().parent.parent / "artibot"
