@@ -888,13 +888,17 @@ def objective(trial: optuna.trial.Trial) -> float:
     return -metrics.get("composite_reward", 0.0)
 
 
-def run_hpo() -> dict:
+def run_hpo(n_trials: int = 50) -> dict:
     """Run Bayesian hyper-parameter search with Optuna."""
 
+    G.set_status("DEFCON 5: Hyperparameter Search", "starting")
     study = optuna.create_study(direction="minimize")
-    study.optimize(objective, n_trials=50, timeout=3600)
+    for idx in range(1, n_trials + 1):
+        G.set_status("DEFCON 5: Hyperparameter Search", f"Trial {idx}/{n_trials}")
+        study.optimize(objective, n_trials=1, timeout=3600)
     best = study.best_params
-    print("Best hyperparams:", best)
+    G.global_best_lr = best.get("lr")
+    G.global_best_wd = best.get("entropy_beta")
     return best
 
 
