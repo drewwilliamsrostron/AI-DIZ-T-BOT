@@ -309,6 +309,13 @@ class TradingGUI:
 
     def _build_notebook(self) -> None:
         """Create notebook pages for plots and tables."""
+        # Status label displayed below the tabs with the current phase
+        self.phase_var = tk.StringVar(value="Ready")
+        self.phase_label = ttk.Label(
+            self.main, textvariable=self.phase_var, justify="left"
+        )
+        self.phase_label.pack(anchor="w", padx=5, pady=2)
+
         self.notebook = ttk.Notebook(self.main)
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
@@ -925,6 +932,7 @@ class TradingGUI:
 
         primary, secondary = G.get_status_full()
         nk_state = "ARMED" if G.nuke_armed else "SAFE"
+        self.phase_var.set(f"{primary}\n{secondary}")
         self.status_var.set(f"{primary} | NK {nk_state} \n{secondary}")
         self.progress["value"] = G.global_progress_pct
 
