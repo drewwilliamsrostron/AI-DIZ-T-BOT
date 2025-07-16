@@ -1,3 +1,5 @@
+# Ensemble model handling and training utilities.
+# Includes optimisation logic and RL loss composition.
 """Model ensemble used during training and prediction."""
 
 # ruff: noqa: F403, F405
@@ -48,7 +50,23 @@ from .feature_manager import validate_and_align_features
 
 
 def update_best(epoch: int, reward: float, net_pct: float, best_ckpt_path: str) -> None:
-    """Log a NEW_BEST event with key metrics."""
+    """Log a ``NEW_BEST`` event.
+
+    Parameters
+    ----------
+    epoch:
+        Current epoch number.
+    reward:
+        Composite reward achieved this epoch.
+    net_pct:
+        Net profit percentage from the latest backtest.
+    best_ckpt_path:
+        File path where the best weights were saved.
+
+    Returns
+    -------
+    None
+    """
 
     logging.info(
         "NEW_BEST  epoch=%d  reward=%.3f  net_pct=%.2f  saved %s",
@@ -66,7 +84,24 @@ def reject_if_risky(
     *,
     thresholds: dict | None = None,
 ) -> bool:
-    """Return ``True`` when metrics breach the configured risk limits."""
+    """Check reward metrics against the risk filter.
+
+    Parameters
+    ----------
+    reward:
+        Composite reward value to evaluate.
+    max_dd:
+        Maximum drawdown from the latest backtest.
+    entropy:
+        Mean attention entropy for the epoch.
+    thresholds:
+        Optional dictionary with ``MIN_REWARD`` and ``MAX_DRAWDOWN`` limits.
+
+    Returns
+    -------
+    bool
+        ``True`` when metrics breach the configured risk limits.
+    """
 
     if not G.is_risk_filter_enabled():
         return False
@@ -100,7 +135,26 @@ def nuclear_key_gate(
     *,
     thresholds: dict | None = None,
 ) -> bool:
-    """Return ``True`` when trading is allowed based on the nuclear key state."""
+    """Evaluate whether trading should be enabled.
+
+    Parameters
+    ----------
+    reward:
+        Composite reward from the current epoch.
+    max_dd:
+        Maximum drawdown value.
+    entropy:
+        Attention entropy from the models.
+    profit_factor:
+        Profit factor computed from backtests.
+    thresholds:
+        Optional overrides for the NK gate limits.
+
+    Returns
+    -------
+    bool
+        ``True`` when trading is allowed based on the nuclear key state.
+    """
 
     if thresholds is None:
         try:  # lazy import avoids circular dependency
@@ -127,7 +181,13 @@ def nuclear_key_gate(
 
 
 def nk_gate_passes() -> bool:
-    """Return ``True`` when the current metrics pass the NK gate."""
+    """Shortcut helper using global metrics.
+
+    Returns
+    -------
+    bool
+        ``True`` when the current metrics pass the NK gate.
+    """
     entropy = (
         float(G.global_attention_entropy_history[-1])
         if G.global_attention_entropy_history
@@ -309,8 +369,11 @@ class EnsembleModel(nn.Module):
         tuple[float, Optional[float]]
             ``train_loss`` and ``val_loss`` (``None`` when no ``dl_val``).
         """
-        # mutate shared state on the globals module
+        # Mutate shared state on the globals module so the GUI sees progress
 
+        # ------------------------------------------------------------------
+        # Optional indicator sweep to tune hyperparameters at runtime
+        # ------------------------------------------------------------------
         sweep_every = int(os.environ.get("SWEEP_EVERY", "1"))
         run_sweep = sweep_every > 0 and self.train_steps % sweep_every == 1
         best_result: dict | None = None
@@ -359,6 +422,7 @@ class EnsembleModel(nn.Module):
 
             # --- ❷  Sweep the grid --------------------------------------------------------
             for cfg in param_sets:
+                # Try each configuration and record the best metrics
                 (
                     sma_period,
                     rsi_period,
@@ -470,6 +534,7 @@ class EnsembleModel(nn.Module):
             self.hp.conf_threshold = best_cfg["conf"]
             G.update_trade_params(best_cfg["sl"], best_cfg["tp"])
 
+        # Run a back-test with the best parameters found (or current settings)
         current_result = best_result or robust_backtest(
             self, data_full, indicators=features
         )
@@ -593,6 +658,7 @@ class EnsembleModel(nn.Module):
         # Serialise updates with meta-control thread
         with G.model_lock:
             accum_counter = 0
+            # Main mini-batch training loop
             for batch_idx, (batch_x, batch_y) in enumerate(dl_train):
                 G.inc_step()
                 G.bump_warmup()
@@ -938,6 +1004,7 @@ class EnsembleModel(nn.Module):
         self.entropies.clear()
         self.max_probs.clear()
         self.rejection_count_this_epoch = 0
+        # Return average training and validation loss for this epoch
         return train_loss, val_loss
 
     def evaluate_val_loss(self, dl_val: DataLoader) -> float:
@@ -1025,9 +1092,27 @@ class EnsembleModel(nn.Module):
             return idxs.cpu(), confs.cpu(), dummy_t
 
     def optimize_models(self, dummy_input):
+        """Placeholder for optional optimisation passes.
+
+        Parameters
+        ----------
+        dummy_input:
+            Example input tensor used to trace the model.
+
+        Returns
+        -------
+        None
+        """
         pass
 
     def save_best_weights(self, path: str | None = None) -> None:
+        """Persist the best-performing weights to disk.
+
+        Parameters
+        ----------
+        path:
+            Destination filepath. Defaults to ``self.weights_path``.
+        """
         if not self.best_state_dicts:
             return
         if path is None:
@@ -1041,6 +1126,7 @@ class EnsembleModel(nn.Module):
         )
 
     def load_best_weights(self, path: str | None = None, data_full=None) -> None:
+        """Load weights from ``path`` and optionally refresh metrics."""
         if path is None:
             path = self.weights_path
         if os.path.isfile(path):

@@ -1,3 +1,5 @@
+# Tkinter dashboard for live monitoring of Artibot.
+# Shows training metrics, trade history and account status.
 """Modernized Artibot GUI using ttk widgets and dark mode."""
 
 from __future__ import annotations
@@ -307,6 +309,7 @@ class TradingGUI:
         self._build_footer()
 
     def _build_notebook(self) -> None:
+        """Create notebook pages for plots and tables."""
         self.notebook = ttk.Notebook(self.main)
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
@@ -412,6 +415,7 @@ class TradingGUI:
         mscroll.pack(side=tk.RIGHT, fill=tk.Y)
 
     def _build_sidebar(self) -> None:
+        """Create the right-hand panel with stats and controls."""
         self.info = ttk.LabelFrame(self.sidebar, text="Performance")
         self.info.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
@@ -628,6 +632,7 @@ class TradingGUI:
             self.force_nk_chk.pack(side=tk.LEFT, padx=2)
 
     def _build_footer(self) -> None:
+        """Create the footer with status labels and progress bar."""
         disclaimer = ttk.Label(
             self.footer, text="NOT INVESTMENT ADVICE!", foreground="orange"
         )
@@ -652,6 +657,7 @@ class TradingGUI:
     # Data refresh utilities
     # ------------------------------------------------------------------
     def _loss_comment(self) -> str:
+        """Return a short comment about the loss curves."""
         train = list(G.global_training_loss)
         val = [v for v in G.global_validation_loss if v is not None]
         if not train or not val:
@@ -668,6 +674,7 @@ class TradingGUI:
         self.root.after(100, self._poll_gui_event)
 
     def update_dashboard(self) -> None:  # noqa: C901 - full dashboard update
+        """Redraw all dashboard widgets from shared global state."""
         if self.after_id is not None:
             self.root.after_cancel(self.after_id)
             self.after_id = None
@@ -942,6 +949,7 @@ class TradingGUI:
         if G.live_trading_enabled:
             self.nuclear_button.config(text="Live Trading ON")
 
+        # Evaluate the nuclear key condition using current metrics
         allowed = nuclear_key_condition(
             G.global_sharpe, G.global_max_drawdown, G.global_profit_factor
         )
@@ -949,6 +957,7 @@ class TradingGUI:
         if not allowed or not should_enable_live_trading():
             self.nuclear_button.config(state=tk.DISABLED)
 
+        # Auto-disable trading when performance drops too low
         update_auto_pause(G.global_sharpe, G.global_max_drawdown)
 
         self.after_id = self.root.after(self.update_interval, self.update_dashboard)
@@ -957,6 +966,7 @@ class TradingGUI:
     # External API methods
     # ------------------------------------------------------------------
     def update_position(self, side: str, size: float, entry: float) -> None:
+        """Update position labels after a trade changes."""
         self.label_side["text"] = side
         self.label_size["text"] = f"{size:.0f}"
         self.label_entry["text"] = f"{entry:.2f}"
@@ -970,6 +980,7 @@ class TradingGUI:
             self.btn_sell["state"] = "disabled"
 
     def refresh_stats(self) -> None:
+        """Poll the exchange for position updates every 10s."""
         if not self.connector:
             return
         side, sz, entry = _fetch_position(self.connector.exchange)
@@ -977,6 +988,7 @@ class TradingGUI:
         self.root.after(10000, self.refresh_stats)
 
     def log_trade(self, msg: str) -> None:
+        """Append ``msg`` to the trade log list box."""
         logging.info(msg)
 
         if hasattr(self, "ai_log_list"):
@@ -987,12 +999,15 @@ class TradingGUI:
                 pass
 
     def on_test_buy(self) -> None:
+        """Execute a simulated BUY trade."""
         self.on_test_trade("buy")
 
     def on_test_sell(self) -> None:
+        """Execute a simulated SELL trade."""
         self.on_test_trade("sell")
 
     def on_test_trade(self, side: str) -> None:
+        """Open and auto-close a small test trade."""
         if not self.connector:
             return
         try:
@@ -1026,16 +1041,19 @@ class TradingGUI:
             self.log_trade(f"[TEST-ERROR] {e}")
 
     def enable_live_trading(self) -> None:
+        """Activate live trading and disable the NK button."""
         G.live_trading_enabled = True
         logging.info("LIVE_TRADING_ENABLED")
         G.set_status("Live trading enabled", "Use caution")
         self.nuclear_button.config(state=tk.DISABLED)
 
     def close_trade(self) -> None:
+        """Signal that the current position should be closed."""
         logging.info("BUTTON Close Active Trade clicked")
         self.close_requested = True
 
     def edit_trade(self) -> None:
+        """Open a dialog to adjust SL/TP multipliers."""
         win = tk.Toplevel(self.root)
         win.title("Edit Trade")
         ttk.Label(win, text="SL Multiplier:").grid(row=0, column=0, padx=5, pady=5)
@@ -1054,6 +1072,7 @@ class TradingGUI:
         )
 
     def adjust_cpu_limit(self) -> None:
+        """Allow the user to set the maximum training threads."""
         win = tk.Toplevel(self.root)
         win.title("CPU Limit")
         ttk.Label(win, text="Threads:").grid(row=0, column=0, padx=5, pady=5)
@@ -1071,6 +1090,7 @@ class TradingGUI:
         )
 
     def manual_validate(self) -> None:
+        """Run validation in a worker thread."""
         self.validation_label.config(text="Validating...")
         self.validate_button.config(state="disabled")
 
@@ -1094,12 +1114,14 @@ class TradingGUI:
         threading.Thread(target=_run, daemon=True).start()
 
     def toggle_bot(self) -> None:
+        """Pause or resume the training loop."""
         running = G.is_bot_running()
         G.set_bot_running(not running)
         new_text = "Pause Bot" if not running else "Resume Bot"
         self.run_button.config(text=new_text)
 
     def update_composite_flags(self) -> None:
+        """Propagate reward-term checkboxes to global flags."""
 
         G.use_net_term = bool(self.use_net_var.get())
         G.use_sharpe_term = bool(self.use_sharpe_var.get())
@@ -1108,6 +1130,7 @@ class TradingGUI:
         G.use_profit_days_term = bool(self.use_days_var.get())
 
     def on_toggle_force_nk(self) -> None:
+        """Manually arm or disarm the nuclear key."""
         G.nuke_armed = bool(self.force_nk_var.get())
 
 
