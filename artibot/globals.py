@@ -134,6 +134,7 @@ global_best_inactivity_penalty = None
 
 global_best_composite_reward = float("-inf")
 global_best_days_in_profit = None
+global_best_trade_details = []  # list of trades from the best run
 
 # Global best hyperparameters:
 global_best_lr = None  # best learning rate so far

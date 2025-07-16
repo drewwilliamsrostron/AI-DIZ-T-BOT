@@ -598,17 +598,23 @@ class EnsembleModel(nn.Module):
         if update_globals and current_result["composite_reward"] > best:
             G.global_best_composite_reward = current_result["composite_reward"]
 
-            G.global_best_sharpe = max(G.global_best_sharpe, current_result["sharpe"])
+            G.global_best_sharpe = current_result["sharpe"]
             G.global_best_equity_curve = current_result["equity_curve"]
             G.global_best_drawdown = current_result["max_drawdown"]
             G.global_best_net_pct = current_result["net_pct"]
             G.global_best_num_trades = current_result["trades"]
             G.global_best_win_rate = current_result["win_rate"]
             G.global_best_profit_factor = current_result["profit_factor"]
+            G.global_best_avg_trade_duration = current_result["avg_trade_duration"]
             G.global_best_avg_win = current_result.get("avg_win", 0.0)
             G.global_best_avg_loss = current_result.get("avg_loss", 0.0)
+            G.global_best_trade_details = current_result["trade_details"]
             G.global_best_inactivity_penalty = current_result["inactivity_penalty"]
             G.global_best_days_in_profit = current_result["days_in_profit"]
+            G.global_best_lr = self.optimizers[0].param_groups[0]["lr"]
+            G.global_best_wd = self.optimizers[0].param_groups[0].get("weight_decay", 0)
+            G.global_best_yearly_stats_table = table_str
+            G.global_best_monthly_stats_table = monthly_table
             self.best_state_dicts = [m.state_dict() for m in self.models]
             self.save_best_weights(self.weights_path)
             md5 = ""
@@ -1015,6 +1021,8 @@ class EnsembleModel(nn.Module):
             G.global_best_avg_trade_duration = current_result["avg_trade_duration"]
             G.global_best_avg_win = current_result.get("avg_win", 0.0)
             G.global_best_avg_loss = current_result.get("avg_loss", 0.0)
+            G.global_best_trade_details = current_result["trade_details"]
+            G.global_best_sharpe = current_result["sharpe"]
             G.global_best_inactivity_penalty = current_result["inactivity_penalty"]
             G.global_best_composite_reward = cur_reward
             G.global_best_days_in_profit = current_result["days_in_profit"]
@@ -1207,6 +1215,8 @@ class EnsembleModel(nn.Module):
                     ]
                     G.global_best_avg_win = loaded_result.get("avg_win", 0.0)
                     G.global_best_avg_loss = loaded_result.get("avg_loss", 0.0)
+                    G.global_best_trade_details = loaded_result["trade_details"]
+                    G.global_best_sharpe = loaded_result["sharpe"]
                     G.global_best_inactivity_penalty = loaded_result[
                         "inactivity_penalty"
                     ]
