@@ -949,6 +949,14 @@ class EnsembleModel(nn.Module):
                         },
                     )
             else:
+                if trades_now == 0:
+                    logging.info("NOT_PROMOTED: trades = 0")
+                else:
+                    logging.info(
+                        "NOT_PROMOTED: composite_reward=%.1f < %.1f",
+                        cur_reward,
+                        self.best_composite_reward,
+                    )
                 self.patience_counter += 1
                 # If net improvements are small => bigger patience
                 # If average improvement >=1 => shorter patience

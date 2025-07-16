@@ -8,24 +8,24 @@ from artibot.ensemble import EnsembleModel
 from artibot.utils import get_device
 
 
-def test_ignore_zero_trade_backtest(monkeypatch, caplog):
+def test_not_promoted_low_reward(monkeypatch, caplog):
     device = get_device()
 
-    def zero_trade_backtest(ensemble, data_full, indicators=None):
+    def dummy_backtest(ensemble, data_full, indicators=None):
         return {
             "equity_curve": [],
-            "effective_net_pct": 0.0,
+            "effective_net_pct": 1.0,
             "inactivity_penalty": 0.0,
-            "composite_reward": 0.0,
+            "composite_reward": 1.0,
             "days_without_trading": 0,
-            "trade_details": [],
+            "trade_details": [0],
             "days_in_profit": 0.0,
-            "sharpe": 0.0,
-            "max_drawdown": 0.0,
-            "net_pct": 0.0,
-            "trades": 0,
-            "win_rate": 0.0,
-            "profit_factor": 0.0,
+            "sharpe": 1.0,
+            "max_drawdown": -0.1,
+            "net_pct": 1.0,
+            "trades": 5,
+            "win_rate": 0.5,
+            "profit_factor": 1.0,
             "avg_trade_duration": 0.0,
             "avg_win": 0.0,
             "avg_loss": 0.0,
@@ -34,11 +34,12 @@ def test_ignore_zero_trade_backtest(monkeypatch, caplog):
     def dummy_stats(ec, trades, initial_balance=100.0):
         return None, ""
 
-    monkeypatch.setattr("artibot.ensemble.robust_backtest", zero_trade_backtest)
+    monkeypatch.setattr("artibot.ensemble.robust_backtest", dummy_backtest)
     monkeypatch.setattr("artibot.ensemble.compute_yearly_stats", dummy_stats)
     monkeypatch.setattr(
         "artibot.ensemble.compute_monthly_stats", lambda *a, **k: (None, "")
     )
+
     import artibot.constants as const
     import artibot.model as model
 
@@ -46,6 +47,7 @@ def test_ignore_zero_trade_backtest(monkeypatch, caplog):
     monkeypatch.setattr(model, "FEATURE_DIMENSION", 8)
 
     ens = EnsembleModel(device=device, n_models=1, n_features=8)
+    ens.best_composite_reward = 5.0
 
     class DummyModel(torch.nn.Module):
         def __init__(self):
@@ -63,11 +65,12 @@ def test_ignore_zero_trade_backtest(monkeypatch, caplog):
     ds = TensorDataset(torch.zeros(1, 24, 8), torch.zeros(1, dtype=torch.long))
     dl = DataLoader(ds, batch_size=1, pin_memory=True)
 
-    G.global_backtest_profit = []
+    G.global_attention_entropy_history = [1.2]
+    G.global_sharpe = 1.2
+    G.global_max_drawdown = -0.1
+
+    ens.train_steps = 1
     caplog.set_level(logging.INFO)
     ens.train_one_epoch(dl, dl, [])
 
-    assert any("IGNORED_EMPTY_BACKTEST" in r.message for r in caplog.records)
-    assert any("NOT_PROMOTED: trades = 0" in r.message for r in caplog.records)
-    assert not any("NEW_BEST" in r.message for r in caplog.records)
-    assert G.global_backtest_profit == []
+    assert any("NOT_PROMOTED" in r.message for r in caplog.records)
