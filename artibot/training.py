@@ -1,3 +1,5 @@
+# Threaded training loop and exchange polling utilities.
+# Handles CSV backtesting and live data fetching.
 """Background CSV training thread and exchange connector."""
 
 # ruff: noqa: F403, F405
@@ -693,6 +695,7 @@ class PhemexConnector:
     """Thin wrapper around ccxt for polling Phemex."""
 
     def __init__(self, config):
+        """Create a connector using API credentials from ``config``."""
         # Symbol is currently fixed for simplicity
         self.symbol = "BTCUSD"
         api_conf = config.get("API", {})
@@ -741,6 +744,7 @@ class PhemexConnector:
         self.exchange.load_markets()
 
     def _handle_err(self, exc: Exception) -> bool:
+        """Return ``True`` when ``exc`` is a maintenance message."""
         msg = str(exc)
         if "39998" in msg:
             if self._last_code != 39998:
@@ -767,6 +771,7 @@ class PhemexConnector:
         return {"total": totals}
 
     def fetch_latest_bars(self, limit=100):
+        """Return the most recent OHLCV bars from Phemex."""
         logging.debug(
             "fetch_ohlcv -> %s tf=%s limit=%s",
             self.symbol,
