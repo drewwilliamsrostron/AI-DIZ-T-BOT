@@ -50,7 +50,7 @@ from .feature_manager import validate_and_align_features
 
 
 def update_best(epoch: int, reward: float, net_pct: float, best_ckpt_path: str) -> None:
-    """Log a ``NEW_BEST`` event.
+    """Log a ``NEW_BEST_CANDIDATE`` event.
 
     Parameters
     ----------
@@ -69,7 +69,7 @@ def update_best(epoch: int, reward: float, net_pct: float, best_ckpt_path: str) 
     """
 
     logging.info(
-        "NEW_BEST  epoch=%d  reward=%.3f  net_pct=%.2f  saved %s",
+        "NEW_BEST_CANDIDATE  epoch=%d  reward=%.3f  net_pct=%.2f  saved %s",
         epoch,
         reward,
         net_pct,
@@ -623,11 +623,50 @@ class EnsembleModel(nn.Module):
                 try:
                     shutil.copy(self.weights_path, live_path)
                     G.set_live_weights_updated(True)
-                    logging.info("PROMOTED_BEST hash=%s", md5)
+                    logging.info("PROMOTED_TO_LIVE_MODEL hash=%s", md5)
                 except Exception as exc:
                     logging.error("Live weight copy failed: %s", exc)
             else:
-                logging.info("NEW_BEST held")
+                try:
+                    from .bot_app import CONFIG
+
+                    thresholds = CONFIG.get("RISK_FILTER", CONFIG)
+                except Exception:
+                    thresholds = {}
+
+                min_entropy = float(thresholds.get("MIN_ENTROPY", 1.0))
+                min_reward = float(thresholds.get("MIN_REWARD", -1.0))
+                max_drawdown_lim = float(thresholds.get("MAX_DRAWDOWN", -0.30))
+                min_profit_factor = 1.5
+
+                entropy = (
+                    float(G.global_attention_entropy_history[-1])
+                    if G.global_attention_entropy_history
+                    else 0.0
+                )
+                reward_val = G.global_composite_reward
+                pf_value = G.global_profit_factor
+                max_dd = G.global_max_drawdown
+
+                reasons = []
+                if pf_value < min_profit_factor:
+                    reasons.append(
+                        f"profit factor {pf_value:.2f} < {min_profit_factor:.2f}"
+                    )
+                if reward_val < min_reward:
+                    reasons.append(
+                        f"composite reward {reward_val:.1f} < threshold {min_reward:.1f}"
+                    )
+                if max_dd < max_drawdown_lim:
+                    reasons.append(
+                        f"max drawdown {abs(max_dd) * 100:.0f}% exceeds {abs(max_drawdown_lim) * 100:.0f}% limit"
+                    )
+                if entropy < min_entropy:
+                    reasons.append(f"entropy {entropy:.2f} < {min_entropy:.2f}")
+                reason_str = (
+                    "; ".join(reasons) if reasons else "NK gate conditions not met"
+                )
+                logging.info("NOT_PROMOTED: %s", reason_str)
 
         # (4) We'll define an extended state for the meta-agent,
         # but that happens in meta_control_loop.
@@ -873,7 +912,7 @@ class EnsembleModel(nn.Module):
                     self.best_state_dicts = [m.state_dict() for m in self.models]
                     self.save_best_weights()
                     logging.info(
-                        "NEW_BEST",
+                        "NEW_BEST_CANDIDATE",
                         extra={
                             "epoch": self.train_steps,
                             "sharpe": G.global_sharpe,
