@@ -1049,7 +1049,7 @@ class EnsembleModel(nn.Module):
             G.global_best_trade_details = current_result["trade_details"]
             G.global_best_sharpe = current_result["sharpe"]
             G.global_best_inactivity_penalty = current_result["inactivity_penalty"]
-            G.global_best_composite_reward = cur_reward
+            G.global_best_composite_reward = current_result["composite_reward"]
             G.global_best_days_in_profit = current_result["days_in_profit"]
             G.global_best_lr = self.optimizers[0].param_groups[0]["lr"]
             G.global_best_wd = self.optimizers[0].param_groups[0].get("weight_decay", 0)
@@ -1066,10 +1066,12 @@ class EnsembleModel(nn.Module):
                 initial_balance=100.0,
             )
             G.global_best_monthly_stats_table = best_monthly
+            self.best_state_dicts = [m.state_dict() for m in self.models]
+            self.save_best_weights(self.weights_path)
             if self.train_steps > 0:
                 update_best(
                     self.train_steps,
-                    cur_reward,
+                    current_result["composite_reward"],
                     current_result["net_pct"],
                     self.weights_path,
                 )
