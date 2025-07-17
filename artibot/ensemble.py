@@ -627,6 +627,12 @@ class EnsembleModel(nn.Module):
             G.global_best_monthly_stats_table = monthly_table
             self.best_state_dicts = [m.state_dict() for m in self.models]
             self.save_best_weights(self.weights_path)
+            logging.info(
+                "SAVED_BEST_WEIGHTS epoch=%d reward=%.2f path=%s",
+                self.train_steps,
+                current_result["composite_reward"],
+                self.weights_path,
+            )
             md5 = ""
             try:
                 with open(self.weights_path, "rb") as f:
@@ -921,6 +927,12 @@ class EnsembleModel(nn.Module):
                 G.global_best_monthly_stats_table = monthly_table
                 self.best_state_dicts = [m.state_dict() for m in self.models]
                 self.save_best_weights(self.weights_path)
+                logging.info(
+                    "SAVED_BEST_WEIGHTS epoch=%d reward=%.2f path=%s",
+                    self.train_steps,
+                    current_result["composite_reward"],
+                    self.weights_path,
+                )
 
             # Apply penalties for low trade count or negative net after tracking
             # the raw reward.  These penalties influence patience and rejection
@@ -977,6 +989,12 @@ class EnsembleModel(nn.Module):
                     self.patience_counter = 0
                     self.best_state_dicts = [m.state_dict() for m in self.models]
                     self.save_best_weights()
+                    logging.info(
+                        "SAVED_BEST_WEIGHTS epoch=%d reward=%.2f path=%s",
+                        self.train_steps,
+                        current_result["composite_reward"],
+                        self.weights_path,
+                    )
                     logging.info(
                         "NEW_BEST_CANDIDATE",
                         extra={
@@ -1101,14 +1119,17 @@ class EnsembleModel(nn.Module):
             G.global_best_monthly_stats_table = best_monthly
             self.best_state_dicts = [m.state_dict() for m in self.models]
             self.save_best_weights(self.weights_path)
+            logging.info(
+                "SAVED_BEST_WEIGHTS epoch=%d reward=%.2f path=%s",
+                self.train_steps,
+                current_result["composite_reward"],
+                self.weights_path,
+            )
             if self.train_steps > 0:
                 update_best(
                     self.train_steps,
-
                     current_result["composite_reward"],
-
                     raw_reward,
-
                     current_result["net_pct"],
                     self.weights_path,
                 )
