@@ -151,7 +151,7 @@ use_sharpe_term = True  # include Sharpe ratio
 use_drawdown_term = True  # include drawdown term
 use_trade_term = True  # include trade count
 use_profit_days_term = True  # include days in profit
-risk_filter_enabled = True  # training loss gating
+risk_filter_enabled = False  # training loss gating disabled by default
 
 ###############################################################################
 # GPT Memories (unchanged)
