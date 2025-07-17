@@ -598,11 +598,9 @@ class EnsembleModel(nn.Module):
             G.global_monthly_stats_table = monthly_table
 
         # update live weights when the composite reward improves
-        best = (
-            G.global_best_composite_reward
-            if G.global_best_composite_reward is not None
-            else float("-inf")
-        )
+        # ``global_best_composite_reward`` defaults to ``-inf`` so a separate
+        # ``None`` check is unnecessary
+        best = G.global_best_composite_reward
         if (
             update_globals
             and not ignore_result
