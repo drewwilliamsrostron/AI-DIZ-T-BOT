@@ -633,7 +633,7 @@ class EnsembleModel(nn.Module):
                     md5 = hashlib.md5(f.read()).hexdigest()
             except Exception:
                 md5 = ""
-            promote = G.nuke_armed or nk_gate_passes()
+            promote = G.use_sandbox or G.nuke_armed or nk_gate_passes()
             if promote:
                 live_path = os.path.join(
                     os.path.dirname(self.weights_path), "live_model.pt"
@@ -647,7 +647,7 @@ class EnsembleModel(nn.Module):
                     )
                 except Exception as exc:
                     logging.error("Live weight copy failed: %s", exc)
-            else:
+            elif not G.use_sandbox:
                 try:
                     from .bot_app import CONFIG
 
@@ -697,7 +697,7 @@ class EnsembleModel(nn.Module):
                     short_reason = "drawdown exceeds limit"
                 elif entropy < min_entropy:
                     short_reason = "low entropy"
-                G.set_status("Training", f"Not promoted: {short_reason}")
+                G.set_status("Training", f"Live trading locked by NK: {short_reason}")
 
         # (4) We'll define an extended state for the meta-agent,
         # but that happens in meta_control_loop.
@@ -1104,11 +1104,8 @@ class EnsembleModel(nn.Module):
             if self.train_steps > 0:
                 update_best(
                     self.train_steps,
-
                     current_result["composite_reward"],
-
                     raw_reward,
-
                     current_result["net_pct"],
                     self.weights_path,
                 )
