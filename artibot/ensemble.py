@@ -922,20 +922,8 @@ class EnsembleModel(nn.Module):
                 self.best_state_dicts = [m.state_dict() for m in self.models]
                 self.save_best_weights(self.weights_path)
 
-            # Apply penalties for low trade count or negative net after tracking
-            # the raw reward.  These penalties influence patience and rejection
-            # decisions but do not affect best-weight promotion.
+            # Use the raw reward directly without heavy trade count penalties
             cur_reward = raw_reward
-            if trades_now == 0:
-                # Reduced penalty for complete inactivity
-                cur_reward -= 50
-            elif trades_now < 5:
-                # small graduated penalty per missing trade
-                cur_reward -= 10 * (5 - trades_now)
-
-            # negative net => smaller penalty
-            if current_result["net_pct"] < 0:
-                cur_reward -= 50  # previously 2000 -> 500
 
             # (3) Dynamic Patience => measure improvement
             # We'll track the last 10 net profits
@@ -1066,8 +1054,11 @@ class EnsembleModel(nn.Module):
                                 )
                         self.patience_counter = 0
 
-        # track best net
-        if update_globals and current_result["net_pct"] > G.global_best_net_pct:
+        # update best metrics when composite reward improves
+        if (
+            update_globals
+            and current_result["composite_reward"] > G.global_best_composite_reward
+        ):
             G.global_best_equity_curve = current_result["equity_curve"]
             G.global_best_drawdown = current_result["max_drawdown"]
             G.global_best_net_pct = current_result["net_pct"]
@@ -1081,7 +1072,7 @@ class EnsembleModel(nn.Module):
             G.global_best_sharpe = current_result["sharpe"]
             G.global_best_inactivity_penalty = current_result["inactivity_penalty"]
 
-            G.global_best_composite_reward = raw_reward
+            G.global_best_composite_reward = current_result["composite_reward"]
 
             G.global_best_days_in_profit = current_result["days_in_profit"]
             G.global_best_lr = self.optimizers[0].param_groups[0]["lr"]
@@ -1104,11 +1095,7 @@ class EnsembleModel(nn.Module):
             if self.train_steps > 0:
                 update_best(
                     self.train_steps,
-
                     current_result["composite_reward"],
-
-                    raw_reward,
-
                     current_result["net_pct"],
                     self.weights_path,
                 )
