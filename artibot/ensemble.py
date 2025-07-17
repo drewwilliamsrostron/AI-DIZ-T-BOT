@@ -955,38 +955,39 @@ class EnsembleModel(nn.Module):
                 G.set_status("Warning: attention entropy < 0.5", "")
 
             if cur_reward > self.best_composite_reward and trades_now > 0:
-                if reject_if_risky(
-                    cur_reward,
-                    G.global_max_drawdown,
-                    attn_entropy,
-                ):
-                    self.rejection_count_this_epoch += 1
-                    logging.info(
-                        "REJECTED by risk filter",
-                        extra={
-                            "epoch": self.train_steps,
-                            "sharpe": G.global_sharpe,
-                            "max_dd": G.global_max_drawdown,
-                            "attn_entropy": attn_entropy,
-                            "lr": self.optimizers[0].param_groups[0]["lr"],
-                        },
-                    )
-                    G.set_status("Risk", "Epoch rejected")
-                else:
-                    self.best_composite_reward = cur_reward
-                    self.patience_counter = 0
-                    self.best_state_dicts = [m.state_dict() for m in self.models]
-                    self.save_best_weights()
-                    logging.info(
-                        "NEW_BEST_CANDIDATE",
-                        extra={
-                            "epoch": self.train_steps,
-                            "sharpe": G.global_sharpe,
-                            "max_dd": G.global_max_drawdown,
-                            "attn_entropy": attn_entropy,
-                            "lr": self.optimizers[0].param_groups[0]["lr"],
-                        },
-                    )
+                # Disable risk-based rejection of epoch improvements
+                # if reject_if_risky(
+                #     cur_reward,
+                #     G.global_max_drawdown,
+                #     attn_entropy,
+                # ):
+                #     self.rejection_count_this_epoch += 1
+                #     logging.info(
+                #         "REJECTED by risk filter",
+                #         extra={
+                #             "epoch": self.train_steps,
+                #             "sharpe": G.global_sharpe,
+                #             "max_dd": G.global_max_drawdown,
+                #             "attn_entropy": attn_entropy,
+                #             "lr": self.optimizers[0].param_groups[0]["lr"],
+                #         },
+                #     )
+                #     G.set_status("Risk", "Epoch rejected")
+                # else:
+                self.best_composite_reward = cur_reward
+                self.patience_counter = 0
+                self.best_state_dicts = [m.state_dict() for m in self.models]
+                self.save_best_weights()
+                logging.info(
+                    "NEW_BEST_CANDIDATE",
+                    extra={
+                        "epoch": self.train_steps,
+                        "sharpe": G.global_sharpe,
+                        "max_dd": G.global_max_drawdown,
+                        "attn_entropy": attn_entropy,
+                        "lr": self.optimizers[0].param_groups[0]["lr"],
+                    },
+                )
             else:
                 if trades_now == 0:
                     logging.info("NOT_PROMOTED: trades = 0")
@@ -1104,11 +1105,8 @@ class EnsembleModel(nn.Module):
             if self.train_steps > 0:
                 update_best(
                     self.train_steps,
-
                     current_result["composite_reward"],
-
                     raw_reward,
-
                     current_result["net_pct"],
                     self.weights_path,
                 )
