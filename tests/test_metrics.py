@@ -23,8 +23,6 @@ def load_metrics():
     globals_stub = types.ModuleType("artibot.globals")
     globals_stub.pd = pd
     globals_stub.np = np
-    globals_stub.set_defcon = lambda *a, **k: None
-    globals_stub.current_defcon = ""
     sys.modules["artibot.globals"] = globals_stub
 
     spec = importlib.util.spec_from_file_location("artibot.metrics", METRICS_PATH)

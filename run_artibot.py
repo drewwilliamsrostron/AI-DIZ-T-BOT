@@ -308,7 +308,7 @@ def main() -> None:
             train_mode=False,
         )
         n_features = temp_ds[0][0].shape[1]
-        G.set_defcon("DEFCON 5 \u2013 Hyperparameter Search")
+
         if no_tune:
             G.set_status("DEFCON 5: Hyperparameter Search", "skipped")
             best = {}
