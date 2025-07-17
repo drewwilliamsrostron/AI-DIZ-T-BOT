@@ -932,12 +932,8 @@ class TradingGUI:
 
         primary, secondary = G.get_status_full()
         nk_state = "ARMED" if G.nuke_armed else "SAFE"
-        if G.current_defcon:
-            self.phase_var.set(G.current_defcon)
-            self.status_var.set(f"NK {nk_state}\n{secondary}")
-        else:
-            self.phase_var.set(f"{primary}\n{secondary}")
-            self.status_var.set(f"{primary} | NK {nk_state} \n{secondary}")
+        self.phase_var.set(f"{primary}\n{secondary}")
+        self.status_var.set(f"{primary} | NK {nk_state} \n{secondary}")
         self.progress["value"] = G.global_progress_pct
 
         _ = G.live_equity - G.start_equity
@@ -1045,7 +1041,6 @@ class TradingGUI:
         """Activate live trading and disable the NK button."""
         G.live_trading_enabled = True
         logging.info("LIVE_TRADING_ENABLED")
-        G.set_defcon("DEFCON 1 \u2013 LIVE TRADE ACTIVE")
         G.set_status("Live trading enabled", "Use caution")
         self.nuclear_button.config(state=tk.DISABLED)
 
