@@ -872,6 +872,7 @@ def save_checkpoint():
         "gpt_memory_bigmanblastoise": G.gpt_memory_bigmanblastoise,
         "gpt_memory_moneymaker": G.gpt_memory_moneymaker,
         "global_attention_weights_history": G.global_attention_weights_history,
+        "best_reward": G.global_best_composite_reward,
     }
     with open("checkpoint.json", "w") as f:
         json.dump(checkpoint, f, indent=2)
