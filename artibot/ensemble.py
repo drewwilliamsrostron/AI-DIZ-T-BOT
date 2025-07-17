@@ -541,7 +541,6 @@ class EnsembleModel(nn.Module):
 
         # Run a back-test with the best parameters found (or current settings)
         logging.info(">>> ENTERING DEFCON 3: Full Backtest")
-        G.set_defcon("DEFCON 3 \u2013 Full Dataset Backtest")
         logging.info(">>> Using current best hyperparams")
         current_result = best_result or robust_backtest(
             self, data_full, indicators=features
@@ -648,7 +647,6 @@ class EnsembleModel(nn.Module):
                     logging.info(
                         "PROMOTION: Model meets Nuclear Key criteria, ready to trade."
                     )
-                    G.set_defcon("DEFCON 2 \u2013 Ready to Trade (NK Safe)")
                 except Exception as exc:
                     logging.error("Live weight copy failed: %s", exc)
             else:
