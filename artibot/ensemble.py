@@ -602,7 +602,7 @@ class EnsembleModel(nn.Module):
         # ``None`` check is unnecessary
         best = G.global_best_composite_reward
         if (
-            update_globals
+            current_result.get("full_data_run", False)
             and not ignore_result
             and current_result["composite_reward"] > best
         ):
@@ -1117,7 +1117,6 @@ class EnsembleModel(nn.Module):
                 update_best(
                     self.train_steps,
                     current_result["composite_reward"],
-
                     current_result["net_pct"],
                     self.weights_path,
                 )

@@ -16,7 +16,7 @@ from .utils import (
     zero_disabled,
     rolling_zscore,
 )
-from .dataset import trailing_sma, HourlyDataset
+from .dataset import trailing_sma, HourlyDataset, DATA_START, DATA_END
 from .hyperparams import IndicatorHyperparams
 from . import indicators
 
@@ -250,6 +250,9 @@ def robust_backtest(
     cols = np.asarray(data_full).shape[1]
     if cols < 5 or cols > 6:
         raise ValueError("robust_backtest expects raw OHLCV rows")
+
+    start_date = int(data_full[0][0]) if len(data_full) else 0
+    end_date = int(data_full[-1][0]) if len(data_full) else 0
 
     # Log incoming feature dimension for debugging
     print(f"[BACKTEST] Input feature dimension: {data_full.shape[1]}")
@@ -658,6 +661,8 @@ def robust_backtest(
         "avg_trade_duration": avg_duration,
         "avg_win": avg_win,
         "avg_loss": avg_loss,
+        # flag promoting results from a complete dataset span
+        "full_data_run": start_date == DATA_START and end_date == DATA_END,
     }
 
 

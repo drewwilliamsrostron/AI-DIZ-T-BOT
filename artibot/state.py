@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import logging
 from typing import Any
 
 import artibot.globals as G
@@ -31,6 +32,10 @@ def load(path: str | os.PathLike = "checkpoint.json") -> dict[str, Any]:
         return {}
 
     G.global_best_composite_reward = state.get("best_reward", float("-inf"))
+    if not state.get("global_best_full_data", False):
+        logging.info(
+            "Checkpoint best came from partial data; will be replaced once a full-data run beats it."
+        )
     return state
 
 
