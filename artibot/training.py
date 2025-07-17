@@ -18,7 +18,7 @@ import os
 from pathlib import Path
 
 from .dataset import HourlyDataset, trailing_sma, load_csv_hourly
-from .ensemble import reject_if_risky, EnsembleModel
+from .ensemble import reject_if_risky, EnsembleModel, update_best
 from .backtest import robust_backtest, compute_indicators
 from .core.device import get_device
 from .utils import heartbeat
@@ -873,6 +873,7 @@ def save_checkpoint():
         "gpt_memory_moneymaker": G.gpt_memory_moneymaker,
         "global_attention_weights_history": G.global_attention_weights_history,
         "best_reward": G.global_best_composite_reward,
+        "global_best_full_data": True,  # by construction
     }
     with open("checkpoint.json", "w") as f:
         json.dump(checkpoint, f, indent=2)
@@ -935,6 +936,30 @@ def run_hpo(n_trials: int = 50) -> dict:
     best = study.best_params
     G.global_best_lr = best.get("lr")
     G.global_best_wd = best.get("entropy_beta")
+    # Verify on the whole dataset so the result can be promoted
+    data = load_csv_hourly("Gemini_BTCUSD_1h.csv")
+    model = EnsembleModel(device=get_device(), n_models=1, lr=best.get("lr", 1e-4))
+    model.entropy_beta = best.get("entropy_beta", 1e-4)
+    quick_fit(model, data, epochs=1)
+    full_result = robust_backtest(model, data)
+    if full_result.get("trades", 0) == 0:
+        logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
+    else:
+        if (
+            full_result.get("full_data_run", False)
+            and full_result["composite_reward"] > G.global_best_composite_reward
+        ):
+            G.global_best_composite_reward = full_result["composite_reward"]
+            G.global_best_net_pct = full_result["net_pct"]
+            G.global_best_sharpe = full_result["sharpe"]
+            G.global_best_equity_curve = full_result["equity_curve"]
+            model.save_best_weights(model.weights_path)
+            update_best(
+                0,
+                full_result["composite_reward"],
+                full_result["net_pct"],
+                model.weights_path,
+            )
     return best
 
 

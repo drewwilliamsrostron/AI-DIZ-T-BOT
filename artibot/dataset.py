@@ -51,6 +51,12 @@ except Exception:
     _IMPUTER = None
 
 
+# ---------------- dataset range constants ---------------- #
+# These are populated when ``load_csv_hourly`` successfully loads a file.
+DATA_START: int | None = None
+DATA_END: int | None = None
+
+
 # --------------------------------------------------------------------------- #
 # NamedTuple – per-bar trade parameters
 # --------------------------------------------------------------------------- #
@@ -148,7 +154,12 @@ def load_csv_hourly(csv_path: str, *, cfg: dict | None = None) -> list[list[floa
     arr = arr[np.isfinite(arr).all(axis=1)]
     arr = np.nan_to_num(arr, nan=0.0, posinf=0.0, neginf=0.0)
 
-    return arr[np.argsort(arr[:, 0])].tolist()
+    arr = arr[np.argsort(arr[:, 0])]
+    if arr.size:
+        global DATA_START, DATA_END
+        DATA_START = int(arr[0, 0])
+        DATA_END = int(arr[-1, 0])
+    return arr.tolist()
 
 
 # --------------------------------------------------------------------------- #
