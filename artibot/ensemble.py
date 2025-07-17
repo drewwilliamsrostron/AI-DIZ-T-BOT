@@ -889,8 +889,43 @@ class EnsembleModel(nn.Module):
 
             # (2) Adjust Reward Penalties => less harsh for zero trades/ negative net
             trades_now = len(current_result["trade_details"])
-            cur_reward = current_result["composite_reward"]
+            raw_reward = current_result["composite_reward"]
 
+            # ------------------------------------------------------------------
+            # Update global best metrics using the raw (unpenalised) reward
+            # ------------------------------------------------------------------
+            if (
+                update_globals
+                and trades_now > 0
+                and raw_reward > G.global_best_composite_reward
+            ):
+                G.global_best_composite_reward = raw_reward
+                G.global_best_sharpe = current_result["sharpe"]
+                G.global_best_equity_curve = current_result["equity_curve"]
+                G.global_best_drawdown = current_result["max_drawdown"]
+                G.global_best_net_pct = current_result["net_pct"]
+                G.global_best_num_trades = trades_now
+                G.global_best_win_rate = current_result["win_rate"]
+                G.global_best_profit_factor = current_result["profit_factor"]
+                G.global_best_avg_trade_duration = current_result["avg_trade_duration"]
+                G.global_best_avg_win = current_result.get("avg_win", 0.0)
+                G.global_best_avg_loss = current_result.get("avg_loss", 0.0)
+                G.global_best_trade_details = current_result["trade_details"]
+                G.global_best_inactivity_penalty = current_result["inactivity_penalty"]
+                G.global_best_days_in_profit = current_result["days_in_profit"]
+                G.global_best_lr = self.optimizers[0].param_groups[0]["lr"]
+                G.global_best_wd = (
+                    self.optimizers[0].param_groups[0].get("weight_decay", 0)
+                )
+                G.global_best_yearly_stats_table = table_str
+                G.global_best_monthly_stats_table = monthly_table
+                self.best_state_dicts = [m.state_dict() for m in self.models]
+                self.save_best_weights(self.weights_path)
+
+            # Apply penalties for low trade count or negative net after tracking
+            # the raw reward.  These penalties influence patience and rejection
+            # decisions but do not affect best-weight promotion.
+            cur_reward = raw_reward
             if trades_now == 0:
                 # Reduced penalty for complete inactivity
                 cur_reward -= 50
@@ -1045,7 +1080,7 @@ class EnsembleModel(nn.Module):
             G.global_best_trade_details = current_result["trade_details"]
             G.global_best_sharpe = current_result["sharpe"]
             G.global_best_inactivity_penalty = current_result["inactivity_penalty"]
-            G.global_best_composite_reward = cur_reward
+            G.global_best_composite_reward = raw_reward
             G.global_best_days_in_profit = current_result["days_in_profit"]
             G.global_best_lr = self.optimizers[0].param_groups[0]["lr"]
             G.global_best_wd = self.optimizers[0].param_groups[0].get("weight_decay", 0)
@@ -1065,7 +1100,7 @@ class EnsembleModel(nn.Module):
             if self.train_steps > 0:
                 update_best(
                     self.train_steps,
-                    cur_reward,
+                    raw_reward,
                     current_result["net_pct"],
                     self.weights_path,
                 )
