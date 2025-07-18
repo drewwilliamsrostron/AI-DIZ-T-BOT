@@ -73,7 +73,8 @@ def test_robust_backtest_simple(monkeypatch):
     result = robust_backtest(DummyEnsemble(), data)
     assert result["trades"] == 1
     assert round(result["net_pct"], 2) == 0.93
-    assert result["composite_reward"] == pytest.approx(4.25474, rel=1e-3)
+    # Composite reward should heavily penalise draw-downs.
+    assert result["composite_reward"] == pytest.approx(2.19581, rel=1e-3)
 
 
 def test_robust_backtest_unbounded_reward(monkeypatch):
@@ -88,7 +89,8 @@ def test_robust_backtest_unbounded_reward(monkeypatch):
         for i in range(50)
     ]
     result = robust_backtest(DummyEnsemble(), data)
-    assert result["composite_reward"] > 100
+    # Large draw-downs should yield a strongly negative reward.
+    assert result["composite_reward"] < 0
 
 
 def test_backtest_with_precomputed_features(monkeypatch):
