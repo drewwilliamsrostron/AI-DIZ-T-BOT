@@ -316,10 +316,12 @@ def robust_backtest(
     # threshold = ensemble.dynamic_threshold if ensemble.dynamic_threshold is not None else GLOBAL_THRESHOLD
     # or pass it in the function signature.
 
-    # (9) Composite Reward: alpha=3.0, beta=0.5, gamma=0.8, delta=0.1
-    alpha = 3.0
+    # (9) Composite Reward: alpha=2.0, beta=0.5, gamma=4.0, delta=0.1
+    # Tuned so draw-down heavily penalises performance while profit
+    # still plays a role. Sharpe and trade-count terms remain intact.
+    alpha = 2.0
     beta = 0.5
-    gamma = 0.8
+    gamma = 4.0
     delta = 0.1
 
     def _price_with_noise(side: str, price: float) -> float:
@@ -637,8 +639,9 @@ def robust_backtest(
     if G.use_sharpe_term:
         composite_reward += beta * shr_score * 2
     if G.use_drawdown_term:
-        dd_term = float(np.clip(1 - abs(mdd), -1.0, 1.0))
-        composite_reward += gamma * dd_term
+        # Penalise large draw-downs exponentially beyond 10%.
+        dd_pen = np.exp(max(abs(mdd) - 0.10, 0) * 10) - 1
+        composite_reward -= gamma * dd_pen
     if G.use_trade_term:
         composite_reward += trade_term * 3
     if G.use_profit_days_term:
