@@ -545,6 +545,14 @@ class EnsembleModel(nn.Module):
         current_result = best_result or robust_backtest(
             self, data_full, indicators=features
         )
+        span_days = 0
+        if data_full:
+            try:
+                start_ts = int(data_full[0][0])
+                end_ts = int(data_full[-1][0])
+                span_days = (end_ts - start_ts) // 86400
+            except Exception:
+                span_days = 0
 
         ignore_result = current_result.get("trades", 0) == 0
         if ignore_result:
@@ -606,6 +614,11 @@ class EnsembleModel(nn.Module):
             and not ignore_result
             and current_result["composite_reward"] > best
         ):
+            logging.info(
+                "\u2705 PROMOTED: full_data_run=True, span=%d days, reward=%.2f",
+                span_days,
+                current_result["composite_reward"],
+            )
             G.global_best_composite_reward = current_result["composite_reward"]
 
             G.global_best_sharpe = current_result["sharpe"]
@@ -704,6 +717,14 @@ class EnsembleModel(nn.Module):
                 elif entropy < min_entropy:
                     short_reason = "low entropy"
                 G.set_status("Training", f"Live trading locked by NK: {short_reason}")
+
+        else:
+            logging.info(
+                "\u274C SKIPPED: full_data_run=%s, span=%d days, reward=%.2f",
+                current_result.get("full_data_run", False),
+                span_days,
+                current_result["composite_reward"],
+            )
 
         # (4) We'll define an extended state for the meta-agent,
         # but that happens in meta_control_loop.

@@ -56,8 +56,10 @@ def test_save_best_weights_logging(monkeypatch, caplog):
     monkeypatch.setattr("artibot.ensemble.robust_backtest", dummy_backtest)
     monkeypatch.setattr("artibot.ensemble.compute_yearly_stats", dummy_stats)
     import artibot.constants as const
+
     monkeypatch.setattr(const, "FEATURE_DIMENSION", 8)
     import artibot.model as model
+
     monkeypatch.setattr(model, "FEATURE_DIMENSION", 8)
 
     ens = EnsembleModel(device=device, n_models=1, n_features=8)
