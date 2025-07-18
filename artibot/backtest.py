@@ -16,7 +16,7 @@ from .utils import (
     zero_disabled,
     rolling_zscore,
 )
-from .dataset import trailing_sma, HourlyDataset, DATA_START, DATA_END
+from .dataset import trailing_sma, HourlyDataset
 from .hyperparams import IndicatorHyperparams
 from . import indicators
 
@@ -662,7 +662,8 @@ def robust_backtest(
         "avg_win": avg_win,
         "avg_loss": avg_loss,
         # flag promoting results from a complete dataset span
-        "full_data_run": start_date == DATA_START and end_date == DATA_END,
+        # (1337 days or more qualifies as a full data run)
+        "full_data_run": (end_date - start_date) >= 1337 * 86400,
     }
 
 
