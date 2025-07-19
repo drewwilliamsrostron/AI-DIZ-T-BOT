@@ -68,6 +68,41 @@ def format_trade_details(trades: list[dict], limit: int = 50) -> str:
     return out_df.to_string(index=False, float_format=lambda x: f"{x:.2f}")
 
 
+def _active_indicators() -> str:
+    """Return comma-separated names of enabled indicators."""
+    names = []
+    if G.global_use_SMA:
+        names.append("SMA")
+    if G.global_use_RSI:
+        names.append("RSI")
+    if G.global_use_MACD:
+        names.append("MACD")
+    if G.global_use_EMA:
+        names.append("EMA")
+    if G.global_use_ATR:
+        names.append("ATR")
+    if G.global_use_VORTEX:
+        names.append("VORTEX")
+    if G.global_use_CMF:
+        names.append("CMF")
+    if G.global_use_DONCHIAN:
+        names.append("DONCHIAN")
+    if G.global_use_KIJUN:
+        names.append("KIJUN")
+    if G.global_use_TENKAN:
+        names.append("TENKAN")
+    if G.global_use_DISPLACEMENT:
+        names.append("DISP")
+    return ", ".join(names) if names else "None"
+
+
+def _trade_counts(trades: list[dict]) -> tuple[int, int]:
+    """Return ``(long_count, short_count)`` from trade details."""
+    long_c = sum(1 for t in trades if t.get("side") == "long")
+    short_c = sum(1 for t in trades if t.get("side") == "short")
+    return long_c, short_c
+
+
 def should_enable_live_trading() -> bool:
     """Return ``True`` when validation and live metrics meet risk limits."""
     sharpe = G.global_holdout_sharpe
@@ -433,6 +468,10 @@ class TradingGUI:
         self.best_wd_label = ttk.Label(self.info, text="Weight Decay: N/A")
         self.best_wd_label.grid(row=3, column=1, sticky="w", padx=5, pady=2)
 
+        self.info.columnconfigure(0, weight=1)
+        self.info.columnconfigure(1, weight=1)
+        self.info.columnconfigure(2, weight=1)
+
         self.current_stats = ttk.LabelFrame(self.info, text="Current Stats")
         self.current_stats.grid(
             row=4, column=0, columnspan=2, sticky="ew", padx=5, pady=5
@@ -468,6 +507,19 @@ class TradingGUI:
         self.current_composite_label = ttk.Label(self.current_stats, text="Comp: N/A")
         self.current_composite_label.grid(row=5, column=0, columnspan=2, sticky="w")
 
+        self.current_params = ttk.LabelFrame(self.info, text="Current Params")
+        self.current_params.grid(row=4, column=2, sticky="nsew", padx=5, pady=5)
+        self.curr_ind_label = ttk.Label(self.current_params, text="Indicators: N/A")
+        self.curr_ind_label.grid(row=0, column=0, columnspan=2, sticky="w")
+        self.curr_sl_label = ttk.Label(self.current_params, text="SL: N/A")
+        self.curr_sl_label.grid(row=1, column=0, sticky="w")
+        self.curr_tp_label = ttk.Label(self.current_params, text="TP: N/A")
+        self.curr_tp_label.grid(row=1, column=1, sticky="w")
+        self.curr_long_label = ttk.Label(self.current_params, text="Long Trades: 0")
+        self.curr_long_label.grid(row=2, column=0, sticky="w")
+        self.curr_short_label = ttk.Label(self.current_params, text="Short Trades: 0")
+        self.curr_short_label.grid(row=2, column=1, sticky="w")
+
         self.best_stats = ttk.LabelFrame(self.info, text="Best Stats")
         self.best_stats.grid(row=5, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
         self.best_drawdown_label = ttk.Label(self.best_stats, text="Best Max DD: N/A")
@@ -494,6 +546,19 @@ class TradingGUI:
         self.best_inactivity_label.grid(row=4, column=1, sticky="w")
         self.best_composite_label = ttk.Label(self.best_stats, text="Best Comp: N/A")
         self.best_composite_label.grid(row=5, column=0, columnspan=2, sticky="w")
+
+        self.best_params = ttk.LabelFrame(self.info, text="Best Params")
+        self.best_params.grid(row=5, column=2, sticky="nsew", padx=5, pady=5)
+        self.best_ind_label = ttk.Label(self.best_params, text="Indicators: N/A")
+        self.best_ind_label.grid(row=0, column=0, columnspan=2, sticky="w")
+        self.best_sl_label = ttk.Label(self.best_params, text="SL: N/A")
+        self.best_sl_label.grid(row=1, column=0, sticky="w")
+        self.best_tp_label = ttk.Label(self.best_params, text="TP: N/A")
+        self.best_tp_label.grid(row=1, column=1, sticky="w")
+        self.best_long_label = ttk.Label(self.best_params, text="Long Trades: 0")
+        self.best_long_label.grid(row=2, column=0, sticky="w")
+        self.best_short_label = ttk.Label(self.best_params, text="Short Trades: 0")
+        self.best_short_label.grid(row=2, column=1, sticky="w")
 
         self.validation_label = ttk.Label(self.info, text="Validation: N/A")
         self.validation_label.grid(
@@ -892,6 +957,14 @@ class TradingGUI:
         self.current_avg_win_label.config(text=f"Avg Win: {G.global_avg_win:.3f}")
         self.current_avg_loss_label.config(text=f"Avg Loss: {G.global_avg_loss:.3f}")
 
+        inds = _active_indicators()
+        self.curr_ind_label.config(text=f"Indicators: {inds}")
+        self.curr_sl_label.config(text=f"SL: {G.global_SL_multiplier}")
+        self.curr_tp_label.config(text=f"TP: {G.global_TP_multiplier}")
+        long_c, short_c = _trade_counts(G.global_trade_details)
+        self.curr_long_label.config(text=f"Long Trades: {long_c}")
+        self.curr_short_label.config(text=f"Short Trades: {short_c}")
+
         self.best_drawdown_label.config(
             text=f"Best Max DD: {G.global_best_drawdown:.3f}"
         )
@@ -929,6 +1002,16 @@ class TradingGUI:
         self.best_avg_loss_label.config(
             text=f"Best Avg Loss: {G.global_best_avg_loss:.3f}"
         )
+        self.best_ind_label.config(text=f"Indicators: {inds}")
+        self.best_sl_label.config(
+            text=f"SL: {G.global_best_params.get('SL_multiplier', 'N/A')}"
+        )
+        self.best_tp_label.config(
+            text=f"TP: {G.global_best_params.get('TP_multiplier', 'N/A')}"
+        )
+        long_b, short_b = _trade_counts(G.global_best_trade_details)
+        self.best_long_label.config(text=f"Long Trades: {long_b}")
+        self.best_short_label.config(text=f"Short Trades: {short_b}")
 
         primary, secondary = G.get_status_full()
         nk_state = "ARMED" if G.nuke_armed else "SAFE"
