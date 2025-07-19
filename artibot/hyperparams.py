@@ -54,14 +54,6 @@ class HyperParams:
     use_momentum: bool = bool(_CONFIG.get("USE_MOMENTUM", False))
     use_bbw: bool = bool(_CONFIG.get("USE_BBW", False))
 
-    auto_lr: bool = bool(_CONFIG.get("AUTO_LR", True))
-    lr_min: float = float(_CONFIG.get("LR_MIN", 1e-7))
-    lr_max: float = float(_CONFIG.get("LR_MAX", 1e-1))
-    lr_probe_steps: int = int(_CONFIG.get("LR_PROBE_STEPS", 100))
-    lr_probe_samples: int = int(_CONFIG.get("LR_PROBE_SAMPLES", 2048))
-    epochs: int = int(_CONFIG.get("EPOCHS", 30))
-    batch_size: int = int(_CONFIG.get("BATCH_SIZE", 512))
-
     def __post_init__(self) -> None:
         if self.indicator_hp is None:
             self.indicator_hp = IndicatorHyperparams()
