@@ -53,6 +53,13 @@ class HyperParams:
     use_atr: bool = bool(_CONFIG.get("USE_ATR", True))
     use_momentum: bool = bool(_CONFIG.get("USE_MOMENTUM", False))
     use_bbw: bool = bool(_CONFIG.get("USE_BBW", False))
+        # Auto LR finder hyperparameters
+    auto_lr: bool = True
+    lr_min: float = 1e-7
+    lr_max: float = 1e-1
+    lr_probe_steps: int = 100
+    lr_probe_samples: int = 2048
+
 
     def __post_init__(self) -> None:
         if self.indicator_hp is None:
