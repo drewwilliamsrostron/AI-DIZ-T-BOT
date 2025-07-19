@@ -31,6 +31,11 @@ import json
 import torch
 import multiprocessing
 import gc
+import math
+from artibot.lr_finder import find_optimal_lr
+from torch.utils.data import Subset
+import torch.nn as nn
+import random
 
 
 def quick_fit(model: EnsembleModel, data: list[list[float]], epochs: int = 1) -> None:
@@ -233,6 +238,37 @@ def csv_training_thread(
             with_scaled=True,
         )
 
+        hp = ensemble.hp
+        device = ensemble.device
+        # ------------------------------------------------------------
+        # Automatic LR finder
+        # ------------------------------------------------------------
+        if hp.auto_lr:
+            logging.info("\ud83d\udd0d  Running LR-finder probe \u2026")
+            sample_sz = min(hp.lr_probe_samples, len(ds_train))
+            probe_idx = random.sample(range(len(ds_train)), sample_sz)
+            probe_ds = Subset(ds_train, probe_idx)
+
+            probe_model = ensemble.models[0].to(device)
+            probe_loss = nn.MSELoss()
+
+            lr_suggest, _ = find_optimal_lr(
+                probe_model,
+                probe_loss,
+                probe_ds,
+                hp,
+                min_lr=hp.lr_min,
+                max_lr=hp.lr_max,
+                num_iter=hp.lr_probe_steps,
+                device=device,
+            )
+            logging.info(f"\u2192 Suggested base LR = {lr_suggest:.2e}")
+            hp.learning_rate = lr_suggest
+
+            for opt in ensemble.optimizers:
+                for pg in opt.param_groups:
+                    pg["lr"] = lr_suggest
+
         workers = int(config.get("NUM_WORKERS", 0))
         logging.info(
             "DATALOADER", extra={"workers": workers, "device": ensemble.device.type}
@@ -261,18 +297,20 @@ def csv_training_thread(
             1, 24, ensemble.models[0].input_dim, device=ensemble.device
         )
         ensemble.optimize_models(dummy_input)
-        lr_base = ensemble.optimizers[0].param_groups[0]["lr"]
+        if max_epochs is not None:
+            hp.epochs = max_epochs
         schedulers = []
-        one_cycle = getattr(torch.optim.lr_scheduler, "OneCycleLR", None)
-        if callable(one_cycle) and getattr(one_cycle, "__name__", "") == "OneCycleLR":
-            schedulers = [
-                one_cycle(
-                    opt,
-                    max_lr=lr_base * 10,
-                    total_steps=max_epochs or 30,
-                )
-                for opt in ensemble.optimizers
-            ]
+        total_steps = hp.epochs * math.ceil(len(ds_train) / hp.batch_size)
+        for opt in ensemble.optimizers:
+            scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                optimizer=opt,
+                max_lr=hp.learning_rate,
+                total_steps=total_steps,
+                pct_start=0.3,
+                anneal_strategy="cos",
+                div_factor=1e3,
+            )
+            schedulers.append(scheduler)
 
         trade_count_series: list[float] = []
         days_in_profit_series: list[float] = []
