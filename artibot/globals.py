@@ -20,7 +20,10 @@ import matplotlib
 import numpy as np
 import torch
 
-matplotlib.use("TkAgg")
+if os.environ.get("HEADLESS") or os.environ.get("MPLBACKEND") == "Agg":
+    matplotlib.use("Agg")
+else:
+    matplotlib.use("TkAgg")
 
 # Reduce default logging to warnings only
 import logging

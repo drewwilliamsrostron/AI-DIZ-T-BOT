@@ -22,6 +22,11 @@ from artibot.utils import get_device, setup_logging
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--summary", action="store_true")
+    parser.add_argument(
+        "--learning_rate",
+        type=float,
+        help="Override default LR (HyperParams)",
+    )
     args = parser.parse_args()
 
     setup_logging()
@@ -39,17 +44,20 @@ def main() -> None:
         train_mode=False,
     )
     n_features = ds_tmp[0][0].shape[1]
+    hp = HyperParams(indicator_hp=indicator_hp)
+    if args.learning_rate:
+        hp.learning_rate = args.learning_rate
     ensemble = EnsembleModel(
         device=get_device(),
         n_models=1,
-        lr=1e-4,
+        lr=hp.learning_rate,
         weight_decay=1e-4,
         n_features=n_features,
         total_steps=2000,
         grad_accum_steps=4,
     )
     ensemble.indicator_hparams = indicator_hp
-    ensemble.hp = HyperParams(indicator_hp=indicator_hp)
+    ensemble.hp = hp
     if hasattr(torch, "set_float32_matmul_precision"):
         torch.set_float32_matmul_precision("high")
     if hasattr(torch, "compile"):
@@ -64,12 +72,15 @@ def main() -> None:
         max_epochs=10,
     )
     data_path = "Gemini_BTCUSD_1h.csv"
-    result = run_backtest(ensemble, data_path)
-    arr = np.array(data[:500], dtype=np.float64)
-    mean_range = (arr[:, 2] - arr[:, 3]).mean()
-    logging.info(
-        json.dumps({"reward": result["composite_reward"], "range": mean_range})
-    )
+    try:
+        result = run_backtest(ensemble, data_path)
+        arr = np.array(data[:500], dtype=np.float64)
+        mean_range = (arr[:, 2] - arr[:, 3]).mean()
+        logging.info(
+            json.dumps({"reward": result["composite_reward"], "range": mean_range})
+        )
+    except Exception as e:
+        logging.warning(f"Backtest failed: {e}")
 
     if args.summary:
         with open("bot.log") as f, open("smoke_summary.log", "w") as out:

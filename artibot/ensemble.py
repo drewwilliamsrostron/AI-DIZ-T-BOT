@@ -241,6 +241,8 @@ class EnsembleModel(nn.Module):
             rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
         )
         self.hp = HyperParams(indicator_hp=self.indicator_hparams)
+        if lr is not None:
+            self.hp.learning_rate = lr
 
         # Determine the feature dimension either from the caller or fall back
         # to the package constant.  This allows the ensemble to align its input
@@ -260,7 +262,7 @@ class EnsembleModel(nn.Module):
         print("[DEBUG] Model moved to device")
         from . import hyperparams as _hp
 
-        lr = max(lr, _hp.LR_MIN)
+        lr = max(self.hp.learning_rate, _hp.LR_MIN)
         self.optimizers = [
             optim.AdamW(
                 m.parameters(),
