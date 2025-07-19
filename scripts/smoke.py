@@ -17,6 +17,10 @@ from artibot.hyperparams import HyperParams, IndicatorHyperparams
 from artibot.training import csv_training_thread
 from backtest import run_backtest
 from artibot.utils import get_device, setup_logging
+from artibot.lr_finder import find_optimal_lr
+import torch.nn as nn
+from torch.utils.data import Subset
+
 
 
 def main() -> None:
@@ -49,7 +53,33 @@ def main() -> None:
         hp.learning_rate = args.learning_rate
     ensemble = EnsembleModel(
         device=get_device(),
-        n_models=1,
+        
+            # Automatic LR finder
+    if hp.auto_lr and not args.learning_rate:
+        print("\U0001F50D  Running LR finder probe …")
+        probe_samples = min(hp.lr_probe_samples, len(ds_tmp))
+        sample_indices = list(range(probe_samples))
+        sample_set = Subset(ds_tmp, sample_indices)
+        tmp_ensemble = EnsembleModel(
+            device=get_device(),
+            n_models=1,
+            lr=hp.learning_rate,
+            weight_decay=1e-4,
+            n_features=n_features,
+            total_steps=hp.lr_probe_steps,
+            grad_accum_steps=1,
+        )
+        tmp_model = tmp_ensemble.models[0]
+        loss_fn = nn.MSELoss()
+        suggested_lr, _ = find_optimal_lr(
+            tmp_model, loss_fn, sample_set, hp,
+            min_lr=hp.lr_min, max_lr=hp.lr_max,
+            num_iter=hp.lr_probe_steps,
+            device=get_device()
+        )
+        print(f"\u2192 Suggested base LR = {suggested_lr:.2e}")
+        hp.learning_rate = suggested_lr
+n_models=1,
         lr=hp.learning_rate,
         weight_decay=1e-4,
         n_features=n_features,
