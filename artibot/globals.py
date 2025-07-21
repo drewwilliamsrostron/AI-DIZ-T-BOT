@@ -85,6 +85,9 @@ cpu_limit = max(1, os.cpu_count() - 2)  # reserved CPU threads
 # Desired long/short fractions controlled by the meta agent
 global_long_frac = 0.0  # fraction of equity allocated to longs
 global_short_frac = 0.0  # fraction of equity allocated to shorts
+# Current learning rate and weight decay
+global_lr = 0.0
+global_wd = 0.0
 # Gross USD value of each leg based on ``live_equity``
 gross_long_usd = 0.0  # computed from long_frac * equity
 gross_short_usd = 0.0  # computed from short_frac * equity
@@ -93,9 +96,34 @@ gross_short_usd = 0.0  # computed from short_frac * equity
 global_best_params = {
     "SL_multiplier": global_SL_multiplier,
     "TP_multiplier": global_TP_multiplier,
-    "ATR_period": global_ATR_period,
-    "risk_fraction": risk_fraction,
-    "learning_rate": 1e-4,
+    "long_frac": global_long_frac,
+    "short_frac": global_short_frac,
+    "lr": global_lr,
+    "wd": global_wd,
+    "sma_period": global_SMA_period,
+    "sma_active": global_use_SMA,
+    "rsi_period": global_RSI_period,
+    "rsi_active": global_use_RSI,
+    "macd_fast": global_MACD_fast,
+    "macd_slow": global_MACD_slow,
+    "macd_signal": global_MACD_signal,
+    "macd_active": global_use_MACD,
+    "atr_period": global_ATR_period,
+    "atr_active": global_use_ATR,
+    "vortex_period": global_VORTEX_period,
+    "vortex_active": global_use_VORTEX,
+    "cmf_period": global_CMF_period,
+    "cmf_active": global_use_CMF,
+    "ema_period": global_EMA_period,
+    "ema_active": global_use_EMA,
+    "donchian_period": global_DONCHIAN_period,
+    "donchian_active": global_use_DONCHIAN,
+    "kijun_period": global_KIJUN_period,
+    "kijun_active": global_use_KIJUN,
+    "tenkan_period": global_TENKAN_period,
+    "tenkan_active": global_use_TENKAN,
+    "displacement": global_DISPLACEMENT,
+    "disp_active": global_use_DISPLACEMENT,
 }
 
 # Global performance metrics:
@@ -446,6 +474,7 @@ def sync_globals(hp, ind_hp) -> None:
     global global_use_EMA, global_use_DONCHIAN
     global global_use_KIJUN, global_use_TENKAN, global_use_DISPLACEMENT
     global global_long_frac, global_short_frac
+    global global_lr, global_wd
     global gross_long_usd, gross_short_usd
     with state_lock:
         global_SL_multiplier = hp.sl
@@ -476,6 +505,8 @@ def sync_globals(hp, ind_hp) -> None:
         global_use_DISPLACEMENT = ind_hp.use_displacement
         global_long_frac = hp.long_frac
         global_short_frac = hp.short_frac
+        global_lr = hp.learning_rate
+        global_wd = hp.weight_decay
         gross_long_usd = global_long_frac * live_equity
         gross_short_usd = global_short_frac * live_equity
 
