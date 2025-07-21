@@ -103,6 +103,90 @@ def _trade_counts(trades: list[dict]) -> tuple[int, int]:
     return long_c, short_c
 
 
+def _format_params(use_best: bool) -> str:
+    """Return formatted hyperparameter summary."""
+    if use_best:
+        params = G.global_best_params or {}
+        lr = G.global_best_lr if G.global_best_lr is not None else 0.0
+        wd = G.global_best_wd if G.global_best_wd is not None else 0.0
+    else:
+        params = {
+            "SL_multiplier": G.global_SL_multiplier,
+            "TP_multiplier": G.global_TP_multiplier,
+            "long_frac": G.global_long_frac,
+            "short_frac": G.global_short_frac,
+            "lr": G.global_lr,
+            "wd": G.global_wd,
+            "sma_period": G.global_SMA_period,
+            "sma_active": G.global_use_SMA,
+            "rsi_period": G.global_RSI_period,
+            "rsi_active": G.global_use_RSI,
+            "macd_fast": G.global_MACD_fast,
+            "macd_slow": G.global_MACD_slow,
+            "macd_signal": G.global_MACD_signal,
+            "macd_active": G.global_use_MACD,
+            "atr_period": G.global_ATR_period,
+            "atr_active": G.global_use_ATR,
+            "vortex_period": G.global_VORTEX_period,
+            "vortex_active": G.global_use_VORTEX,
+            "cmf_period": G.global_CMF_period,
+            "cmf_active": G.global_use_CMF,
+            "ema_period": G.global_EMA_period,
+            "ema_active": G.global_use_EMA,
+            "donchian_period": G.global_DONCHIAN_period,
+            "donchian_active": G.global_use_DONCHIAN,
+            "kijun_period": G.global_KIJUN_period,
+            "kijun_active": G.global_use_KIJUN,
+            "tenkan_period": G.global_TENKAN_period,
+            "tenkan_active": G.global_use_TENKAN,
+            "displacement": G.global_DISPLACEMENT,
+            "disp_active": G.global_use_DISPLACEMENT,
+        }
+        lr = G.global_lr
+        wd = G.global_wd
+
+    lines = [
+        f"LR: {lr:.6f}",
+        f"WD: {wd:.6f}",
+        f"Long Frac: {params.get('long_frac', 0):.3f}",
+        f"Short Frac: {params.get('short_frac', 0):.3f}",
+    ]
+    lines.append(
+        f"SMA: {'ON' if params.get('sma_active') else 'OFF'} (p{params.get('sma_period')})"
+    )
+    lines.append(
+        f"RSI: {'ON' if params.get('rsi_active') else 'OFF'} (p{params.get('rsi_period')})"
+    )
+    lines.append(
+        f"MACD: {'ON' if params.get('macd_active') else 'OFF'} (f{params.get('macd_fast')}/s{params.get('macd_slow')}/sig{params.get('macd_signal')})"
+    )
+    lines.append(
+        f"ATR: {'ON' if params.get('atr_active') else 'OFF'} (p{params.get('atr_period')})"
+    )
+    lines.append(
+        f"VORTEX: {'ON' if params.get('vortex_active') else 'OFF'} (p{params.get('vortex_period')})"
+    )
+    lines.append(
+        f"CMF: {'ON' if params.get('cmf_active') else 'OFF'} (p{params.get('cmf_period')})"
+    )
+    lines.append(
+        f"EMA: {'ON' if params.get('ema_active') else 'OFF'} (p{params.get('ema_period')})"
+    )
+    lines.append(
+        f"DON: {'ON' if params.get('donchian_active') else 'OFF'} (p{params.get('donchian_period')})"
+    )
+    lines.append(
+        f"KIJ: {'ON' if params.get('kijun_active') else 'OFF'} (p{params.get('kijun_period')})"
+    )
+    lines.append(
+        f"TEN: {'ON' if params.get('tenkan_active') else 'OFF'} (p{params.get('tenkan_period')})"
+    )
+    lines.append(
+        f"DISP: {'ON' if params.get('disp_active') else 'OFF'} (p{params.get('displacement')})"
+    )
+    return "\n".join(lines)
+
+
 def should_enable_live_trading() -> bool:
     """Return ``True`` when validation and live metrics meet risk limits."""
     sharpe = G.global_holdout_sharpe
@@ -519,6 +603,13 @@ class TradingGUI:
         self.curr_long_label.grid(row=2, column=0, sticky="w")
         self.curr_short_label = ttk.Label(self.current_params, text="Short Trades: 0")
         self.curr_short_label.grid(row=2, column=1, sticky="w")
+        self.curr_params_details = tk.Text(
+            self.current_params, height=10, width=28, wrap="word"
+        )
+        self.curr_params_details.grid(row=3, column=0, columnspan=2, sticky="nsew")
+        self.current_params.rowconfigure(3, weight=1)
+        self.current_params.columnconfigure(0, weight=1)
+        self.current_params.columnconfigure(1, weight=1)
 
         self.best_stats = ttk.LabelFrame(self.info, text="Best Stats")
         self.best_stats.grid(row=5, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
@@ -559,6 +650,13 @@ class TradingGUI:
         self.best_long_label.grid(row=2, column=0, sticky="w")
         self.best_short_label = ttk.Label(self.best_params, text="Short Trades: 0")
         self.best_short_label.grid(row=2, column=1, sticky="w")
+        self.best_params_details = tk.Text(
+            self.best_params, height=10, width=28, wrap="word"
+        )
+        self.best_params_details.grid(row=3, column=0, columnspan=2, sticky="nsew")
+        self.best_params.rowconfigure(3, weight=1)
+        self.best_params.columnconfigure(0, weight=1)
+        self.best_params.columnconfigure(1, weight=1)
 
         self.validation_label = ttk.Label(self.info, text="Validation: N/A")
         self.validation_label.grid(
@@ -964,6 +1062,8 @@ class TradingGUI:
         long_c, short_c = _trade_counts(G.global_trade_details)
         self.curr_long_label.config(text=f"Long Trades: {long_c}")
         self.curr_short_label.config(text=f"Short Trades: {short_c}")
+        self.curr_params_details.delete("1.0", tk.END)
+        self.curr_params_details.insert(tk.END, _format_params(False))
 
         self.best_drawdown_label.config(
             text=f"Best Max DD: {G.global_best_drawdown:.3f}"
@@ -1012,6 +1112,8 @@ class TradingGUI:
         long_b, short_b = _trade_counts(G.global_best_trade_details)
         self.best_long_label.config(text=f"Long Trades: {long_b}")
         self.best_short_label.config(text=f"Short Trades: {short_b}")
+        self.best_params_details.delete("1.0", tk.END)
+        self.best_params_details.insert(tk.END, _format_params(True))
 
         primary, secondary = G.get_status_full()
         nk_state = "ARMED" if G.nuke_armed else "SAFE"

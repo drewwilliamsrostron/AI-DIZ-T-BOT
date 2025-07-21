@@ -56,6 +56,9 @@ ACTION_SPACE = {
 
 ACTION_KEYS = list(ACTION_SPACE.keys())
 
+# track previous parameter state for logging
+_prev_param_state: dict[str, object] = {}
+
 
 ###############################################################################
 # NEW: A bigger action space that includes adjusting RSI, SMA, MACD + threshold
@@ -569,6 +572,13 @@ class MetaTransformerRL:
                     group["weight_decay"] = hyperparams.mutate_lr(
                         old_wd, float(act["d_wd"])
                     )
+            # sync learning rate and weight decay with hyperparams and globals
+            hp.learning_rate = self.ensemble.optimizers[0].param_groups[0]["lr"]
+            hp.weight_decay = (
+                self.ensemble.optimizers[0].param_groups[0].get("weight_decay", 0.0)
+            )
+            G.global_lr = hp.learning_rate
+            G.global_wd = hp.weight_decay
 
         act_str = ", ".join(
             f"{k}={v:+.2f}" if isinstance(v, float) else f"{k}={v}"
@@ -608,6 +618,59 @@ class MetaTransformerRL:
         )
         G.timeline_trades[i] = 1 if (hp.long_frac > 0 or hp.short_frac > 0) else 0
         G.timeline_index += 1
+
+        # build full parameter snapshot
+        curr_state = {
+            "SL_multiplier": hp.sl,
+            "TP_multiplier": hp.tp,
+            "long_frac": hp.long_frac,
+            "short_frac": hp.short_frac,
+            "lr": G.global_lr,
+            "wd": G.global_wd,
+            "sma_period": ind.sma_period,
+            "sma_active": ind.use_sma,
+            "rsi_period": ind.rsi_period,
+            "rsi_active": ind.use_rsi,
+            "macd_fast": ind.macd_fast,
+            "macd_slow": ind.macd_slow,
+            "macd_signal": ind.macd_signal,
+            "macd_active": ind.use_macd,
+            "atr_period": ind.atr_period,
+            "atr_active": ind.use_atr,
+            "vortex_period": ind.vortex_period,
+            "vortex_active": ind.use_vortex,
+            "cmf_period": ind.cmf_period,
+            "cmf_active": ind.use_cmf,
+            "ema_period": ind.ema_period,
+            "ema_active": ind.use_ema,
+            "donchian_period": ind.donchian_period,
+            "donchian_active": ind.use_donchian,
+            "kijun_period": ind.kijun_period,
+            "kijun_active": ind.use_kijun,
+            "tenkan_period": ind.tenkan_period,
+            "tenkan_active": ind.use_tenkan,
+            "displacement": ind.displacement,
+            "disp_active": ind.use_displacement,
+        }
+
+        import json as _json
+
+        global _prev_param_state
+        if curr_state != _prev_param_state:
+            logging.info("CURRENT_PARAMS %s", _json.dumps(curr_state, sort_keys=True))
+            G.global_ai_adjustments_log += "\nCURRENT_PARAMS " + _json.dumps(
+                curr_state, sort_keys=True
+            )
+            _prev_param_state = curr_state
+
+        if (
+            G.global_composite_reward is not None
+            and G.global_composite_reward > G.global_best_composite_reward
+        ):
+            G.global_best_composite_reward = G.global_composite_reward
+            G.global_best_params = curr_state.copy()
+            G.global_best_lr = G.global_lr
+            G.global_best_wd = G.global_wd
 
 
 ###############################################################################

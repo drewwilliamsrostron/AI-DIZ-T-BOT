@@ -196,6 +196,9 @@ TOGGLE_INDEX = {
     "toggle_disp": 11,
 }
 
+# allow indicator toggles through the meta action filter
+ALLOWED_META_ACTIONS.update(TOGGLE_INDEX.keys())
+
 
 def mutate_lr(old: float, delta: float) -> float:
     """Return ``old`` adjusted by ``delta`` within safe bounds."""
