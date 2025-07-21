@@ -30170,3 +30170,1020 @@
 {"time": "2025-07-18 20:44:14,165", "level": "INFO", "msg": "YEARLY_STATS rows=11"}
 {"time": "2025-07-18 20:44:14,539", "level": "INFO", "msg": "MONTHLY_STATS rows=113"}
 {"time": "2025-07-18 20:44:14,540", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=True, span=3409 days, reward=-103845937170696536717939238240256.00"}
+{"time": "2025-07-22 00:36:44,176", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Tue Jul 22 00:36:44 2025\", \"cpu\": \"0.0%\", \"mem\": \"35.8%\"}"}
+{"time": "2025-07-22 00:36:44,527", "level": "INFO", "msg": "Trading mode: SANDBOX"}
+{"time": "2025-07-22 00:36:47,664", "level": "INFO", "msg": "ACCOUNT_BALANCE {\"total\": {\"USDT\": 65658.46374403}}"}
+{"time": "2025-07-22 00:36:47,666", "level": "INFO", "msg": "Tkinter dashboard starting on main thread\u2026"}
+{"time": "2025-07-22 00:36:48,660", "level": "INFO", "msg": ">>> ENTERING DEFCON 5: Hyperparameter Search"}
+{"time": "2025-07-22 00:36:48,663", "level": "INFO", "msg": ">>> Starting Sweep: 0 of 50"}
+{"time": "2025-07-22 00:36:51,242", "level": "INFO", "msg": ">>> ENTERING DEFCON 4: Walk Forward Evaluation"}
+{"time": "2025-07-22 00:36:51,251", "level": "INFO", "msg": "Fold 1 of 101 - Period: 2015-10 to 2016-11"}
+{"time": "2025-07-22 00:36:51,405", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:36:51,406", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:36:51,444", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:36:51,461", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:36:51,772", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:36:51,812", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:36:51,853", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-22422.82"}
+{"time": "2025-07-22 00:36:59,023", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -5.2102234621057315, "max_dd": -0.9623072578387284, "attn_entropy": 3.1769094078976865, "lr": 0.0005}
+{"time": "2025-07-22 00:36:59,023", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1768269538879395, 'mean_max_prob': 0.047718264162540436, 'rejections': 0}"}
+{"time": "2025-07-22 00:36:59,041", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:36:59,043", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:36:59,081", "level": "INFO", "msg": "Fold 2 of 101 - Period: 2015-11 to 2016-12"}
+{"time": "2025-07-22 00:36:59,674", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:36:59,754", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:37:00,002", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:37:00,020", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:37:00,341", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:37:00,379", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:37:00,380", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-11700.31"}
+{"time": "2025-07-22 00:37:07,594", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.951206587047647, "max_dd": -0.8966193283526849, "attn_entropy": 3.1765870633168927, "lr": 0.0005}
+{"time": "2025-07-22 00:37:07,594", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.176004409790039, 'mean_max_prob': 0.04841993376612663, 'rejections': 0}"}
+{"time": "2025-07-22 00:37:07,616", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:37:07,618", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:37:07,694", "level": "INFO", "msg": "Fold 3 of 101 - Period: 2015-12 to 2016-12"}
+{"time": "2025-07-22 00:37:08,241", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:37:08,244", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:37:08,585", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:37:08,603", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:37:09,275", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:37:09,305", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:37:09,305", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-31046.69"}
+{"time": "2025-07-22 00:37:16,451", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -9.365507219459962, "max_dd": -0.9950622558858065, "attn_entropy": 3.176577852452992, "lr": 0.0005}
+{"time": "2025-07-22 00:37:16,452", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.177128553390503, 'mean_max_prob': 0.050114113837480545, 'rejections': 0}"}
+{"time": "2025-07-22 00:37:16,471", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:37:16,473", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:37:16,540", "level": "INFO", "msg": "Fold 4 of 101 - Period: 2016-01 to 2017-01"}
+{"time": "2025-07-22 00:37:16,592", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:37:16,593", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:37:16,629", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:37:16,770", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:37:17,811", "level": "INFO", "msg": "YEARLY_STATS rows=1"}
+{"time": "2025-07-22 00:37:17,889", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:37:17,918", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-31783.49"}
+{"time": "2025-07-22 00:37:25,206", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -11.068741223509807, "max_dd": -0.9974207742691142, "attn_entropy": 3.1765142071242622, "lr": 0.0005}
+{"time": "2025-07-22 00:37:25,207", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1766772270202637, 'mean_max_prob': 0.05098181590437889, 'rejections': 0}"}
+{"time": "2025-07-22 00:37:25,225", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:37:25,227", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:37:25,306", "level": "INFO", "msg": "Fold 5 of 101 - Period: 2016-02 to 2017-03"}
+{"time": "2025-07-22 00:37:25,821", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:37:25,822", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:37:26,213", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:37:26,232", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:37:26,585", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:37:26,624", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:37:26,645", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-6929.29"}
+{"time": "2025-07-22 00:37:33,534", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.6287375279405163, "max_dd": -0.8434289558548109, "attn_entropy": 3.1766963324371718, "lr": 0.0005}
+{"time": "2025-07-22 00:37:33,535", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.17692232131958, 'mean_max_prob': 0.05028272047638893, 'rejections': 0}"}
+{"time": "2025-07-22 00:37:33,553", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:37:33,554", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:37:33,609", "level": "INFO", "msg": "Fold 6 of 101 - Period: 2016-03 to 2017-03"}
+{"time": "2025-07-22 00:37:33,660", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:37:33,662", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:37:33,702", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:37:33,769", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:37:34,842", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:37:34,881", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:37:34,928", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-28600.19"}
+{"time": "2025-07-22 00:37:42,258", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -7.786480837087871, "max_dd": -0.9868056435978335, "attn_entropy": 3.176566020505353, "lr": 0.0005}
+{"time": "2025-07-22 00:37:42,259", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.175967216491699, 'mean_max_prob': 0.048721957951784134, 'rejections': 0}"}
+{"time": "2025-07-22 00:37:42,277", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:37:42,279", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:37:42,312", "level": "INFO", "msg": "Fold 7 of 101 - Period: 2016-04 to 2017-04"}
+{"time": "2025-07-22 00:37:42,864", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:37:42,866", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:37:43,218", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:37:43,234", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:37:43,513", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:37:43,547", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:37:43,586", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-31753.88"}
+{"time": "2025-07-22 00:37:51,822", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -9.578527058714466, "max_dd": -0.9973272131379936, "attn_entropy": 3.1765150029313545, "lr": 0.0005}
+{"time": "2025-07-22 00:37:51,822", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1760330200195312, 'mean_max_prob': 0.04919571429491043, 'rejections': 0}"}
+{"time": "2025-07-22 00:37:51,840", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:37:51,842", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:37:51,909", "level": "INFO", "msg": "Fold 8 of 101 - Period: 2016-05 to 2017-05"}
+{"time": "2025-07-22 00:37:52,401", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:37:52,403", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:37:52,736", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:37:52,819", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:37:53,350", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:37:53,386", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:37:53,430", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-28799.46"}
+{"time": "2025-07-22 00:38:00,459", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -7.54328623485526, "max_dd": -0.9875043269848193, "attn_entropy": 3.176391764623298, "lr": 0.0005}
+{"time": "2025-07-22 00:38:00,460", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1765832901000977, 'mean_max_prob': 0.047952231019735336, 'rejections': 0}"}
+{"time": "2025-07-22 00:38:00,480", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:00,482", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:00,549", "level": "INFO", "msg": "Fold 9 of 101 - Period: 2016-06 to 2017-06"}
+{"time": "2025-07-22 00:38:01,106", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:38:01,113", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:38:01,685", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:01,701", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:02,160", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:38:02,407", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:38:02,474", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-30331.45"}
+{"time": "2025-07-22 00:38:09,045", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -8.470960016339381, "max_dd": -0.992718402490796, "attn_entropy": 3.1764828230647733, "lr": 0.0005}
+{"time": "2025-07-22 00:38:09,046", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1771862506866455, 'mean_max_prob': 0.04742084816098213, 'rejections': 0}"}
+{"time": "2025-07-22 00:38:09,064", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:09,065", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:09,120", "level": "INFO", "msg": "Fold 10 of 101 - Period: 2016-07 to 2017-07"}
+{"time": "2025-07-22 00:38:09,175", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:38:09,175", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:38:09,637", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:09,675", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:10,551", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:38:10,585", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:38:10,619", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-30777.10"}
+{"time": "2025-07-22 00:38:17,747", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -8.212425774855612, "max_dd": -0.9941857938494969, "attn_entropy": 3.176113810708968, "lr": 0.0005}
+{"time": "2025-07-22 00:38:17,748", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1744749546051025, 'mean_max_prob': 0.054494708776474, 'rejections': 0}"}
+{"time": "2025-07-22 00:38:17,766", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:17,767", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:17,890", "level": "INFO", "msg": "Fold 11 of 101 - Period: 2016-08 to 2017-08"}
+{"time": "2025-07-22 00:38:17,945", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:38:17,945", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:38:17,982", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:18,001", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:19,120", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:38:19,158", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:38:19,207", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=112.44"}
+{"time": "2025-07-22 00:38:26,108", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": 1.1199808139464003, "max_dd": -0.3036710140160356, "attn_entropy": 3.1760203111167242, "lr": 0.0005}
+{"time": "2025-07-22 00:38:26,109", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.176396608352661, 'mean_max_prob': 0.05204349383711815, 'rejections': 0}"}
+{"time": "2025-07-22 00:38:26,127", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:26,129", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:26,202", "level": "INFO", "msg": "Fold 12 of 101 - Period: 2016-09 to 2017-09"}
+{"time": "2025-07-22 00:38:26,753", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:38:26,757", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:38:27,092", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:27,110", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:27,687", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:38:27,714", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:38:27,715", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-4651.00"}
+{"time": "2025-07-22 00:38:34,561", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.620217226391424, "max_dd": -0.8026195821598883, "attn_entropy": 3.175860875759646, "lr": 0.0005}
+{"time": "2025-07-22 00:38:34,562", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1758954524993896, 'mean_max_prob': 0.051587652415037155, 'rejections': 0}"}
+{"time": "2025-07-22 00:38:34,579", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:34,580", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:34,656", "level": "INFO", "msg": "Fold 13 of 101 - Period: 2016-10 to 2017-10"}
+{"time": "2025-07-22 00:38:34,855", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:38:34,856", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:38:35,336", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:35,446", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:35,848", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:38:35,884", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:38:35,924", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=362.74"}
+{"time": "2025-07-22 00:38:42,859", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": 2.5810539326565656, "max_dd": -0.1699009442989659, "attn_entropy": 3.1761599904296545, "lr": 0.0005}
+{"time": "2025-07-22 00:38:42,860", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1757237911224365, 'mean_max_prob': 0.04902767017483711, 'rejections': 0}"}
+{"time": "2025-07-22 00:38:42,877", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:42,879", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:42,954", "level": "INFO", "msg": "Fold 14 of 101 - Period: 2016-11 to 2017-11"}
+{"time": "2025-07-22 00:38:43,427", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:38:43,439", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:38:43,640", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:43,756", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:44,187", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Tue Jul 22 00:38:44 2025\", \"cpu\": \"13.3%\", \"mem\": \"37.2%\"}"}
+{"time": "2025-07-22 00:38:44,255", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:38:44,302", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:38:44,344", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-12270.97"}
+{"time": "2025-07-22 00:38:51,082", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.5212981106009575, "max_dd": -0.9014378571542017, "attn_entropy": 3.176197746395841, "lr": 0.0005}
+{"time": "2025-07-22 00:38:51,083", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1765663623809814, 'mean_max_prob': 0.04886842891573906, 'rejections': 0}"}
+{"time": "2025-07-22 00:38:51,101", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:51,104", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:51,171", "level": "INFO", "msg": "Fold 15 of 101 - Period: 2016-12 to 2017-12"}
+{"time": "2025-07-22 00:38:51,702", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:38:51,714", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:38:52,045", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:52,063", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:52,490", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:38:52,529", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:38:52,529", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-10924.72"}
+{"time": "2025-07-22 00:38:59,441", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.215511589708758, "max_dd": -0.8896601911982452, "attn_entropy": 3.1757474809882784, "lr": 0.0005}
+{"time": "2025-07-22 00:38:59,441", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1744704246520996, 'mean_max_prob': 0.05088026821613312, 'rejections': 0}"}
+{"time": "2025-07-22 00:38:59,459", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:59,461", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:38:59,568", "level": "INFO", "msg": "Fold 16 of 101 - Period: 2016-12 to 2018-01"}
+{"time": "2025-07-22 00:38:59,622", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:38:59,623", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:38:59,659", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:38:59,677", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:39:00,873", "level": "INFO", "msg": "YEARLY_STATS rows=1"}
+{"time": "2025-07-22 00:39:00,922", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:39:00,923", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-2894.06"}
+{"time": "2025-07-22 00:39:08,503", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -1.589507936208995, "max_dd": -0.7538821349624932, "attn_entropy": 3.1759012890710676, "lr": 0.0005}
+{"time": "2025-07-22 00:39:08,504", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.176783323287964, 'mean_max_prob': 0.04826919734477997, 'rejections': 0}"}
+{"time": "2025-07-22 00:39:08,525", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:39:08,527", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:39:08,581", "level": "INFO", "msg": "Fold 17 of 101 - Period: 2017-01 to 2018-02"}
+{"time": "2025-07-22 00:39:08,780", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:39:08,781", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:39:09,271", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:39:09,377", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:39:09,890", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:39:09,930", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:39:09,931", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-6220.25"}
+{"time": "2025-07-22 00:39:18,518", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.5649442974352668, "max_dd": -0.8323008778188487, "attn_entropy": 3.1753703557591884, "lr": 0.0005}
+{"time": "2025-07-22 00:39:18,622", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1745991706848145, 'mean_max_prob': 0.055805329233407974, 'rejections': 0}"}
+{"time": "2025-07-22 00:39:18,761", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:39:18,765", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:39:18,815", "level": "INFO", "msg": "Fold 18 of 101 - Period: 2017-03 to 2018-03"}
+{"time": "2025-07-22 00:39:19,018", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:39:19,019", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:39:19,680", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:39:19,780", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:39:20,359", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:39:20,395", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:39:20,396", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-1208.23"}
+{"time": "2025-07-22 00:39:28,010", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -1.5022144735568328, "max_dd": -0.6602838431958743, "attn_entropy": 3.1761255994009217, "lr": 0.0005}
+{"time": "2025-07-22 00:39:28,011", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1771209239959717, 'mean_max_prob': 0.046902477741241455, 'rejections': 0}"}
+{"time": "2025-07-22 00:39:28,030", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:39:28,032", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:39:28,079", "level": "INFO", "msg": "Fold 19 of 101 - Period: 2017-03 to 2018-04"}
+{"time": "2025-07-22 00:39:28,659", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:39:28,662", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:39:29,031", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:39:29,049", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:39:29,580", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:39:29,805", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:39:29,878", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-23192.29"}
+{"time": "2025-07-22 00:39:37,344", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -5.274686957881027, "max_dd": -0.9657067966879338, "attn_entropy": 3.1757058470585933, "lr": 0.0005}
+{"time": "2025-07-22 00:39:37,345", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.175149440765381, 'mean_max_prob': 0.053054507821798325, 'rejections': 0}"}
+{"time": "2025-07-22 00:39:37,781", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:39:37,806", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:39:38,037", "level": "INFO", "msg": "Fold 20 of 101 - Period: 2017-04 to 2018-05"}
+{"time": "2025-07-22 00:39:38,351", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:39:38,352", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:39:38,931", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:39:39,029", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:39:39,579", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:39:39,652", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:39:39,724", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-21160.57"}
+{"time": "2025-07-22 00:39:47,073", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -5.010435224406137, "max_dd": -0.9564698455282198, "attn_entropy": 3.1760471451278023, "lr": 0.0005}
+{"time": "2025-07-22 00:39:47,074", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.176342248916626, 'mean_max_prob': 0.05188800394535065, 'rejections': 0}"}
+{"time": "2025-07-22 00:39:47,093", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:39:47,094", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:39:47,132", "level": "INFO", "msg": "Fold 21 of 101 - Period: 2017-05 to 2018-06"}
+{"time": "2025-07-22 00:39:47,854", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:39:47,856", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:39:48,237", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:39:48,404", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:39:49,366", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:39:49,565", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:39:49,681", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-4381.98"}
+{"time": "2025-07-22 00:39:56,950", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.566015001708438, "max_dd": -0.796339411200397, "attn_entropy": 3.1760354369023434, "lr": 0.0005}
+{"time": "2025-07-22 00:39:56,951", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1768884658813477, 'mean_max_prob': 0.0486665703356266, 'rejections': 0}"}
+{"time": "2025-07-22 00:39:56,969", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:39:56,970", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:39:57,014", "level": "INFO", "msg": "Fold 22 of 101 - Period: 2017-06 to 2018-07"}
+{"time": "2025-07-22 00:39:57,600", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:39:57,602", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:39:57,792", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:39:58,040", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:39:58,711", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:39:58,752", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:39:58,753", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-555.95"}
+{"time": "2025-07-22 00:40:05,990", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -0.28402282756873715, "max_dd": -0.5871124232804379, "attn_entropy": 3.176522736974581, "lr": 0.0005}
+{"time": "2025-07-22 00:40:05,991", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.176623821258545, 'mean_max_prob': 0.05037064477801323, 'rejections': 0}"}
+{"time": "2025-07-22 00:40:06,010", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:40:06,011", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:40:06,054", "level": "INFO", "msg": "Fold 23 of 101 - Period: 2017-07 to 2018-08"}
+{"time": "2025-07-22 00:40:06,616", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:40:06,618", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:40:06,992", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:40:07,011", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:40:07,572", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:40:07,610", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:40:07,611", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-17907.77"}
+{"time": "2025-07-22 00:40:15,370", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -4.637707751456231, "max_dd": -0.939639454637205, "attn_entropy": 3.1767240213490253, "lr": 0.0005}
+{"time": "2025-07-22 00:40:15,371", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.177002429962158, 'mean_max_prob': 0.048191674053668976, 'rejections': 0}"}
+{"time": "2025-07-22 00:40:15,387", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:40:15,389", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:40:15,431", "level": "INFO", "msg": "Fold 24 of 101 - Period: 2017-08 to 2018-09"}
+{"time": "2025-07-22 00:40:16,066", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:40:16,073", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:40:16,262", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:40:16,499", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:40:17,509", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:40:17,553", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:40:17,555", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-3029.04"}
+{"time": "2025-07-22 00:40:24,094", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.9331973270570337, "max_dd": -0.7580473753155142, "attn_entropy": 3.176658556886538, "lr": 0.0005}
+{"time": "2025-07-22 00:40:24,094", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1765456199645996, 'mean_max_prob': 0.049099307507276535, 'rejections': 0}"}
+{"time": "2025-07-22 00:40:24,110", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:40:24,112", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:40:24,156", "level": "INFO", "msg": "Fold 25 of 101 - Period: 2017-09 to 2018-10"}
+{"time": "2025-07-22 00:40:24,209", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:40:24,209", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:40:24,654", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:40:24,688", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:40:25,270", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:40:25,315", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:40:25,318", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-1529.48"}
+{"time": "2025-07-22 00:40:31,716", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -1.7221583701463135, "max_dd": -0.6866809915743322, "attn_entropy": 3.1767545081882167, "lr": 0.0005}
+{"time": "2025-07-22 00:40:31,717", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1768739223480225, 'mean_max_prob': 0.04835551604628563, 'rejections': 0}"}
+{"time": "2025-07-22 00:40:31,733", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:40:31,735", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:40:31,782", "level": "INFO", "msg": "Fold 26 of 101 - Period: 2017-10 to 2018-11"}
+{"time": "2025-07-22 00:40:32,281", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:40:32,284", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:40:32,563", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:40:32,580", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:40:32,875", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:40:32,970", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:40:33,061", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-10541.87"}
+{"time": "2025-07-22 00:40:39,343", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.6226447639080073, "max_dd": -0.8860176275366004, "attn_entropy": 3.1766067435054466, "lr": 0.0005}
+{"time": "2025-07-22 00:40:39,343", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.176591634750366, 'mean_max_prob': 0.04743219166994095, 'rejections': 0}"}
+{"time": "2025-07-22 00:40:39,359", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:40:39,360", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:40:39,399", "level": "INFO", "msg": "Fold 27 of 101 - Period: 2017-11 to 2018-12"}
+{"time": "2025-07-22 00:40:39,452", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:40:39,453", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:40:39,490", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:40:39,555", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:40:40,468", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:40:40,505", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:40:40,505", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-5284.39"}
+{"time": "2025-07-22 00:40:44,212", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Tue Jul 22 00:40:44 2025\", \"cpu\": \"14.5%\", \"mem\": \"37.2%\"}"}
+{"time": "2025-07-22 00:40:46,591", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.581782564283823, "max_dd": -0.8156996266146992, "attn_entropy": 3.1765520166493184, "lr": 0.0005}
+{"time": "2025-07-22 00:40:46,592", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1765387058258057, 'mean_max_prob': 0.053279224783182144, 'rejections': 0}"}
+{"time": "2025-07-22 00:40:46,608", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:40:46,610", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:40:46,656", "level": "INFO", "msg": "Fold 28 of 101 - Period: 2017-12 to 2019-01"}
+{"time": "2025-07-22 00:40:47,137", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:40:47,147", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:40:47,426", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:40:47,440", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:40:47,951", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:40:48,107", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:40:48,176", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-26015.49"}
+{"time": "2025-07-22 00:40:54,417", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -6.712970762044854, "max_dd": -0.9772729039375809, "attn_entropy": 3.1762934866117676, "lr": 0.0005}
+{"time": "2025-07-22 00:40:54,418", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1761281490325928, 'mean_max_prob': 0.04822232574224472, 'rejections': 0}"}
+{"time": "2025-07-22 00:40:54,434", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:40:54,436", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:40:54,498", "level": "INFO", "msg": "Fold 29 of 101 - Period: 2018-01 to 2019-02"}
+{"time": "2025-07-22 00:40:54,551", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:40:54,551", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:40:54,589", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:40:54,701", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:40:55,604", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:40:55,640", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:40:55,695", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-13019.30"}
+{"time": "2025-07-22 00:41:01,829", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.6872311113776073, "max_dd": -0.9074257159608778, "attn_entropy": 3.1750245624778417, "lr": 0.0005}
+{"time": "2025-07-22 00:41:01,829", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.172696352005005, 'mean_max_prob': 0.05774400383234024, 'rejections': 0}"}
+{"time": "2025-07-22 00:41:01,846", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:01,847", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:01,880", "level": "INFO", "msg": "Fold 30 of 101 - Period: 2018-02 to 2019-03"}
+{"time": "2025-07-22 00:41:01,932", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:41:01,933", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:41:02,023", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:02,410", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:03,127", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:41:03,415", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:41:03,457", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-23497.94"}
+{"time": "2025-07-22 00:41:09,300", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -5.959585675385538, "max_dd": -0.9670252417645717, "attn_entropy": 3.1742449757882207, "lr": 0.0005}
+{"time": "2025-07-22 00:41:09,300", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1744441986083984, 'mean_max_prob': 0.051932625472545624, 'rejections': 0}"}
+{"time": "2025-07-22 00:41:09,317", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:09,319", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:09,373", "level": "INFO", "msg": "Fold 31 of 101 - Period: 2018-03 to 2019-04"}
+{"time": "2025-07-22 00:41:09,428", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:41:09,429", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:41:09,879", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:09,925", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:10,425", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:41:10,468", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:41:10,501", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-13980.11"}
+{"time": "2025-07-22 00:41:16,809", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.9582702924687734, "max_dd": -0.9146228139335828, "attn_entropy": 3.1744574920619275, "lr": 0.0005}
+{"time": "2025-07-22 00:41:16,810", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1764817237854004, 'mean_max_prob': 0.04809378832578659, 'rejections': 0}"}
+{"time": "2025-07-22 00:41:16,826", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:16,828", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:16,865", "level": "INFO", "msg": "Fold 32 of 101 - Period: 2018-04 to 2019-05"}
+{"time": "2025-07-22 00:41:17,352", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:41:17,353", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:41:17,665", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:17,680", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:17,966", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:41:18,007", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:41:18,008", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-6614.69"}
+{"time": "2025-07-22 00:41:24,248", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.4371264450281394, "max_dd": -0.8385623942232622, "attn_entropy": 3.1751482312167436, "lr": 0.0005}
+{"time": "2025-07-22 00:41:24,249", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.174426794052124, 'mean_max_prob': 0.05028621852397919, 'rejections': 0}"}
+{"time": "2025-07-22 00:41:24,265", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:24,266", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:24,311", "level": "INFO", "msg": "Fold 33 of 101 - Period: 2018-05 to 2019-06"}
+{"time": "2025-07-22 00:41:24,364", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:41:24,365", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:41:24,757", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:24,801", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:25,630", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:41:25,660", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:41:25,695", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-29265.97"}
+{"time": "2025-07-22 00:41:31,877", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -7.829907571807083, "max_dd": -0.989121244409995, "attn_entropy": 3.1757364994285253, "lr": 0.0005}
+{"time": "2025-07-22 00:41:31,878", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1768009662628174, 'mean_max_prob': 0.04835866391658783, 'rejections': 0}"}
+{"time": "2025-07-22 00:41:31,893", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:31,895", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:31,928", "level": "INFO", "msg": "Fold 34 of 101 - Period: 2018-06 to 2019-07"}
+{"time": "2025-07-22 00:41:31,983", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:41:31,984", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:41:32,413", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:32,452", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:32,986", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:41:33,021", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:41:33,022", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-26427.07"}
+{"time": "2025-07-22 00:41:39,442", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -6.579328851885947, "max_dd": -0.9788531047769331, "attn_entropy": 3.175989135503321, "lr": 0.0005}
+{"time": "2025-07-22 00:41:39,443", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.176926612854004, 'mean_max_prob': 0.048095181584358215, 'rejections': 0}"}
+{"time": "2025-07-22 00:41:39,460", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:39,462", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:39,501", "level": "INFO", "msg": "Fold 35 of 101 - Period: 2018-07 to 2019-08"}
+{"time": "2025-07-22 00:41:39,554", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:41:39,555", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:41:40,035", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:40,061", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:40,623", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:41:40,655", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:41:40,689", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-16503.83"}
+{"time": "2025-07-22 00:41:46,856", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -4.574430254044292, "max_dd": -0.931393503598256, "attn_entropy": 3.176594725846796, "lr": 0.0005}
+{"time": "2025-07-22 00:41:46,856", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1765003204345703, 'mean_max_prob': 0.04813624173402786, 'rejections': 0}"}
+{"time": "2025-07-22 00:41:46,872", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:46,874", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:46,907", "level": "INFO", "msg": "Fold 36 of 101 - Period: 2018-08 to 2019-09"}
+{"time": "2025-07-22 00:41:47,373", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:41:47,377", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:41:47,691", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:47,705", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:48,042", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:41:48,073", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:41:48,074", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-20099.88"}
+{"time": "2025-07-22 00:41:54,484", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -5.559649345853785, "max_dd": -0.951281772178997, "attn_entropy": 3.1762193942918624, "lr": 0.0005}
+{"time": "2025-07-22 00:41:54,485", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.175218343734741, 'mean_max_prob': 0.054888758808374405, 'rejections': 0}"}
+{"time": "2025-07-22 00:41:54,501", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:54,503", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:54,538", "level": "INFO", "msg": "Fold 37 of 101 - Period: 2018-09 to 2019-10"}
+{"time": "2025-07-22 00:41:54,591", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:41:54,591", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:41:54,627", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:41:54,711", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:41:55,658", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:41:55,864", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:41:55,952", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-2066.24"}
+{"time": "2025-07-22 00:42:02,014", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.3904167181408367, "max_dd": -0.717692515248853, "attn_entropy": 3.176000775524452, "lr": 0.0005}
+{"time": "2025-07-22 00:42:02,015", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1762218475341797, 'mean_max_prob': 0.049815863370895386, 'rejections': 0}"}
+{"time": "2025-07-22 00:42:02,030", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:42:02,032", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:42:02,071", "level": "INFO", "msg": "Fold 38 of 101 - Period: 2018-10 to 2019-11"}
+{"time": "2025-07-22 00:42:02,548", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:42:02,552", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:42:02,858", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:42:02,875", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:42:03,211", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:42:03,251", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:42:03,252", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-3648.96"}
+{"time": "2025-07-22 00:42:09,469", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.5214853509212034, "max_dd": -0.7773290722451499, "attn_entropy": 3.174447297283485, "lr": 0.0005}
+{"time": "2025-07-22 00:42:09,470", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1717147827148438, 'mean_max_prob': 0.054218441247940063, 'rejections': 0}"}
+{"time": "2025-07-22 00:42:09,487", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:42:09,488", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:42:09,536", "level": "INFO", "msg": "Fold 39 of 101 - Period: 2018-11 to 2019-12"}
+{"time": "2025-07-22 00:42:09,589", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:42:09,590", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:42:10,036", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:42:10,078", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:42:10,834", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:42:10,868", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:42:10,925", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=360 days, reward=-12878.61"}
+{"time": "2025-07-22 00:42:17,407", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -4.0354871937326875, "max_dd": -0.9063099991026701, "attn_entropy": 3.174320257816836, "lr": 0.0005}
+{"time": "2025-07-22 00:42:17,408", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.175177812576294, 'mean_max_prob': 0.050767991691827774, 'rejections': 0}"}
+{"time": "2025-07-22 00:42:17,425", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:42:17,426", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:42:17,461", "level": "INFO", "msg": "Fold 40 of 101 - Period: 2018-12 to 2020-01"}
+{"time": "2025-07-22 00:42:17,992", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:42:17,992", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:42:18,270", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:42:18,285", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:42:18,576", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:42:18,613", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:42:18,725", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=360 days, reward=-12883.85"}
+{"time": "2025-07-22 00:42:26,292", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -4.152561201211734, "max_dd": -0.9063672499426495, "attn_entropy": 3.1741486899340896, "lr": 0.0005}
+{"time": "2025-07-22 00:42:26,293", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1749560832977295, 'mean_max_prob': 0.050908129662275314, 'rejections': 0}"}
+{"time": "2025-07-22 00:42:26,764", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:42:26,777", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:42:27,042", "level": "INFO", "msg": "Fold 41 of 101 - Period: 2019-01 to 2020-02"}
+{"time": "2025-07-22 00:42:27,488", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:42:27,489", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:42:27,981", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:42:28,080", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:42:28,624", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:42:28,705", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:42:28,730", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=360 days, reward=-23882.30"}
+{"time": "2025-07-22 00:42:37,462", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -6.090739523728717, "max_dd": -0.9686594793185223, "attn_entropy": 3.1749404375041275, "lr": 0.0005}
+{"time": "2025-07-22 00:42:37,463", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1745810508728027, 'mean_max_prob': 0.05015678331255913, 'rejections': 0}"}
+{"time": "2025-07-22 00:42:37,482", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:42:37,484", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:42:37,527", "level": "INFO", "msg": "Fold 42 of 101 - Period: 2019-02 to 2020-03"}
+{"time": "2025-07-22 00:42:38,142", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:42:38,143", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:42:38,519", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:42:38,537", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:42:39,232", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:42:39,271", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:42:39,272", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=360 days, reward=-30951.26"}
+{"time": "2025-07-22 00:42:44,267", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Tue Jul 22 00:42:44 2025\", \"cpu\": \"14.2%\", \"mem\": \"37.6%\"}"}
+{"time": "2025-07-22 00:42:46,843", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -9.077559368851144, "max_dd": -0.9947525814822924, "attn_entropy": 3.1750369681629538, "lr": 0.0005}
+{"time": "2025-07-22 00:42:46,845", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1758201122283936, 'mean_max_prob': 0.05079314112663269, 'rejections': 0}"}
+{"time": "2025-07-22 00:42:46,863", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:42:46,865", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:42:46,906", "level": "INFO", "msg": "Fold 43 of 101 - Period: 2019-03 to 2020-04"}
+{"time": "2025-07-22 00:42:47,467", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:42:47,476", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:42:47,859", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:42:47,878", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:42:48,270", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:42:48,315", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:42:48,368", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=360 days, reward=-16216.88"}
+{"time": "2025-07-22 00:42:55,755", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -4.661979629347829, "max_dd": -0.9296182543451903, "attn_entropy": 3.175228418026492, "lr": 0.0005}
+{"time": "2025-07-22 00:42:55,756", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1755006313323975, 'mean_max_prob': 0.05189523473381996, 'rejections': 0}"}
+{"time": "2025-07-22 00:42:55,777", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:42:55,778", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:42:55,874", "level": "INFO", "msg": "Fold 44 of 101 - Period: 2019-04 to 2020-05"}
+{"time": "2025-07-22 00:42:56,482", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:42:56,483", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:42:56,854", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:42:56,872", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:42:57,094", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:42:57,137", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:42:57,138", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=360 days, reward=-8532.80"}
+{"time": "2025-07-22 00:43:05,835", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.599166909827691, "max_dd": -0.8645269231557158, "attn_entropy": 3.1755036343845724, "lr": 0.0005}
+{"time": "2025-07-22 00:43:05,836", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1756603717803955, 'mean_max_prob': 0.048757243901491165, 'rejections': 0}"}
+{"time": "2025-07-22 00:43:05,855", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:43:05,856", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:43:05,922", "level": "INFO", "msg": "Fold 45 of 101 - Period: 2019-05 to 2020-06"}
+{"time": "2025-07-22 00:43:06,517", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:43:06,518", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:43:07,041", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:43:07,057", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:43:07,433", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:43:07,610", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:43:07,692", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=360 days, reward=-6140.60"}
+{"time": "2025-07-22 00:43:14,927", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.7730580579069466, "max_dd": -0.8311008110282996, "attn_entropy": 3.1759333356787263, "lr": 0.0005}
+{"time": "2025-07-22 00:43:14,928", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.177000045776367, 'mean_max_prob': 0.04867717623710632, 'rejections': 0}"}
+{"time": "2025-07-22 00:43:14,948", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:43:15,133", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:43:15,518", "level": "INFO", "msg": "Fold 46 of 101 - Period: 2019-06 to 2020-07"}
+{"time": "2025-07-22 00:43:15,930", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:43:15,930", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:43:16,451", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:43:16,481", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:43:16,978", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:43:17,023", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:43:17,075", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=360 days, reward=-743.61"}
+{"time": "2025-07-22 00:43:25,319", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -1.7210427327937767, "max_dd": -0.6056436984100815, "attn_entropy": 3.176399642739593, "lr": 0.0005}
+{"time": "2025-07-22 00:43:25,323", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1768174171447754, 'mean_max_prob': 0.047921743243932724, 'rejections': 0}"}
+{"time": "2025-07-22 00:43:25,428", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:43:25,449", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:43:25,817", "level": "INFO", "msg": "Fold 47 of 101 - Period: 2019-07 to 2020-08"}
+{"time": "2025-07-22 00:43:26,392", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:43:26,400", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:43:26,766", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:43:26,786", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:43:27,256", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:43:27,294", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:43:27,295", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=360 days, reward=-19926.10"}
+{"time": "2025-07-22 00:43:35,234", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -5.583004601817516, "max_dd": -0.9504062411306279, "attn_entropy": 3.176181478074267, "lr": 0.0005}
+{"time": "2025-07-22 00:43:35,236", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.175279140472412, 'mean_max_prob': 0.051689889281988144, 'rejections': 0}"}
+{"time": "2025-07-22 00:43:35,661", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:43:35,675", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:43:35,934", "level": "INFO", "msg": "Fold 48 of 101 - Period: 2019-08 to 2020-09"}
+{"time": "2025-07-22 00:43:36,229", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:43:36,230", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:43:36,884", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:43:36,918", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:43:37,665", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:43:37,993", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:43:38,033", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=360 days, reward=-17090.18"}
+{"time": "2025-07-22 00:43:45,118", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -5.06561194107586, "max_dd": -0.9349174466381732, "attn_entropy": 3.175397260784879, "lr": 0.0005}
+{"time": "2025-07-22 00:43:45,119", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1745991706848145, 'mean_max_prob': 0.052298445254564285, 'rejections': 0}"}
+{"time": "2025-07-22 00:43:45,145", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:43:45,147", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:43:45,182", "level": "INFO", "msg": "Fold 49 of 101 - Period: 2019-09 to 2020-10"}
+{"time": "2025-07-22 00:43:45,766", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:43:45,769", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:43:46,135", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:43:46,151", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:43:46,315", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:43:46,353", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:43:46,354", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=360 days, reward=-2082.93"}
+{"time": "2025-07-22 00:43:54,691", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.2438834399940446, "max_dd": -0.7191208906871913, "attn_entropy": 3.175433005860522, "lr": 0.0005}
+{"time": "2025-07-22 00:43:54,692", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1767795085906982, 'mean_max_prob': 0.049654942005872726, 'rejections': 0}"}
+{"time": "2025-07-22 00:43:54,712", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:43:54,714", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:43:54,743", "level": "INFO", "msg": "Fold 50 of 101 - Period: 2019-10 to 2020-11"}
+{"time": "2025-07-22 00:43:54,800", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:43:54,801", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:43:55,212", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:43:55,287", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:43:55,954", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:43:55,996", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:43:55,997", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=360 days, reward=-9525.35"}
+{"time": "2025-07-22 00:44:03,433", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.82322012587414, "max_dd": -0.87572468924995, "attn_entropy": 3.175879400712623, "lr": 0.0005}
+{"time": "2025-07-22 00:44:03,434", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1762304306030273, 'mean_max_prob': 0.05094726011157036, 'rejections': 0}"}
+{"time": "2025-07-22 00:44:03,453", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:44:03,455", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:44:03,505", "level": "INFO", "msg": "Fold 51 of 101 - Period: 2019-11 to 2020-12"}
+{"time": "2025-07-22 00:44:04,232", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:44:04,241", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:44:04,499", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:44:04,514", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:44:04,860", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:44:04,909", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:44:04,972", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=360 days, reward=-3369.17"}
+{"time": "2025-07-22 00:44:12,367", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.605385800641625, "max_dd": -0.7690343783092256, "attn_entropy": 3.175978891167938, "lr": 0.0005}
+{"time": "2025-07-22 00:44:12,368", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.174964666366577, 'mean_max_prob': 0.05808200687170029, 'rejections': 0}"}
+{"time": "2025-07-22 00:44:12,386", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:44:12,388", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:44:12,434", "level": "INFO", "msg": "Fold 52 of 101 - Period: 2019-12 to 2021-01"}
+{"time": "2025-07-22 00:44:12,983", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:44:12,984", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:44:13,376", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:44:13,401", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:44:13,801", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:44:13,844", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:44:13,863", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=360 days, reward=-12152.75"}
+{"time": "2025-07-22 00:44:21,334", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.882401847120969, "max_dd": -0.9004407397914611, "attn_entropy": 3.1754930936437096, "lr": 0.0005}
+{"time": "2025-07-22 00:44:21,335", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.175936698913574, 'mean_max_prob': 0.05236683040857315, 'rejections': 0}"}
+{"time": "2025-07-22 00:44:21,353", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:44:21,355", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:44:21,403", "level": "INFO", "msg": "Fold 53 of 101 - Period: 2020-01 to 2021-02"}
+{"time": "2025-07-22 00:44:22,050", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:44:22,051", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:44:22,401", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:44:22,417", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:44:22,801", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:44:22,851", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:44:22,903", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-8732.31"}
+{"time": "2025-07-22 00:44:30,322", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.658948606860916, "max_dd": -0.866905240414088, "attn_entropy": 3.1753828825268147, "lr": 0.0005}
+{"time": "2025-07-22 00:44:30,323", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1756887435913086, 'mean_max_prob': 0.049335017800331116, 'rejections': 0}"}
+{"time": "2025-07-22 00:44:30,341", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:44:30,343", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:44:30,391", "level": "INFO", "msg": "Fold 54 of 101 - Period: 2020-02 to 2021-03"}
+{"time": "2025-07-22 00:44:30,449", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:44:30,449", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:44:30,488", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:44:30,575", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:44:31,666", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:44:31,708", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:44:31,709", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-3408.48"}
+{"time": "2025-07-22 00:44:39,015", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.810931484357009, "max_dd": -0.7705954298978742, "attn_entropy": 3.175711611424014, "lr": 0.0005}
+{"time": "2025-07-22 00:44:39,016", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1757373809814453, 'mean_max_prob': 0.052560821175575256, 'rejections': 0}"}
+{"time": "2025-07-22 00:44:39,033", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:44:39,035", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:44:39,081", "level": "INFO", "msg": "Fold 55 of 101 - Period: 2020-03 to 2021-04"}
+{"time": "2025-07-22 00:44:39,653", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:44:39,664", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:44:40,033", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:44:40,050", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:44:40,357", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:44:40,402", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:44:40,402", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-574.59"}
+{"time": "2025-07-22 00:44:44,277", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Tue Jul 22 00:44:44 2025\", \"cpu\": \"15.6%\", \"mem\": \"37.7%\"}"}
+{"time": "2025-07-22 00:44:47,858", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -1.2511293647346984, "max_dd": -0.5781412361015067, "attn_entropy": 3.1761597083292896, "lr": 0.0005}
+{"time": "2025-07-22 00:44:47,859", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.177063465118408, 'mean_max_prob': 0.048054520040750504, 'rejections': 0}"}
+{"time": "2025-07-22 00:44:47,879", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:44:47,881", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:44:47,928", "level": "INFO", "msg": "Fold 56 of 101 - Period: 2020-04 to 2021-05"}
+{"time": "2025-07-22 00:44:48,526", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:44:48,527", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:44:48,868", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:44:48,884", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:44:49,238", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:44:49,280", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:44:49,281", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-4003.09"}
+{"time": "2025-07-22 00:44:56,771", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.612656363344368, "max_dd": -0.787028235156441, "attn_entropy": 3.1761723876848067, "lr": 0.0005}
+{"time": "2025-07-22 00:44:56,772", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1755568981170654, 'mean_max_prob': 0.04973519593477249, 'rejections': 0}"}
+{"time": "2025-07-22 00:44:56,791", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:44:56,792", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:44:56,845", "level": "INFO", "msg": "Fold 57 of 101 - Period: 2020-05 to 2021-06"}
+{"time": "2025-07-22 00:44:57,471", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:44:57,477", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:44:57,820", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:44:58,079", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:44:58,916", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:44:58,959", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:44:58,960", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-7977.74"}
+{"time": "2025-07-22 00:45:06,238", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -4.127128150305252, "max_dd": -0.8576869419973976, "attn_entropy": 3.176537006582021, "lr": 0.0005}
+{"time": "2025-07-22 00:45:06,239", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1766858100891113, 'mean_max_prob': 0.04787807911634445, 'rejections': 0}"}
+{"time": "2025-07-22 00:45:06,258", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:45:06,260", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:45:06,306", "level": "INFO", "msg": "Fold 58 of 101 - Period: 2020-06 to 2021-07"}
+{"time": "2025-07-22 00:45:06,363", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:45:06,363", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:45:06,545", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:45:06,739", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:45:07,584", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:45:07,629", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:45:07,681", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-5647.18"}
+{"time": "2025-07-22 00:45:15,103", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.293983143222632, "max_dd": -0.8224091684026864, "attn_entropy": 3.176140994855016, "lr": 0.0005}
+{"time": "2025-07-22 00:45:15,103", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1760900020599365, 'mean_max_prob': 0.05133173614740372, 'rejections': 0}"}
+{"time": "2025-07-22 00:45:15,122", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:45:15,124", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:45:15,692", "level": "INFO", "msg": "Fold 59 of 101 - Period: 2020-07 to 2021-08"}
+{"time": "2025-07-22 00:45:16,155", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:45:16,156", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:45:16,699", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:45:16,729", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:45:17,349", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:45:17,393", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:45:17,440", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-185.67"}
+{"time": "2025-07-22 00:45:24,942", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -1.0122833102939128, "max_dd": -0.4254300037184344, "attn_entropy": 3.176139523301422, "lr": 0.0005}
+{"time": "2025-07-22 00:45:24,942", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1760807037353516, 'mean_max_prob': 0.05439075827598572, 'rejections': 0}"}
+{"time": "2025-07-22 00:45:24,962", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:45:24,963", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:45:25,008", "level": "INFO", "msg": "Fold 60 of 101 - Period: 2020-08 to 2021-09"}
+{"time": "2025-07-22 00:45:25,064", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:45:25,065", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:45:25,615", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:45:25,658", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:45:26,296", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:45:26,340", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:45:26,390", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-3148.57"}
+{"time": "2025-07-22 00:45:33,709", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.8186991959400616, "max_dd": -0.762028595373619, "attn_entropy": 3.175769265804812, "lr": 0.0005}
+{"time": "2025-07-22 00:45:33,710", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1757848262786865, 'mean_max_prob': 0.04919573664665222, 'rejections': 0}"}
+{"time": "2025-07-22 00:45:33,728", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:45:33,729", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:45:33,774", "level": "INFO", "msg": "Fold 61 of 101 - Period: 2020-09 to 2021-10"}
+{"time": "2025-07-22 00:45:34,383", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:45:34,387", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:45:34,739", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:45:34,755", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:45:35,167", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:45:35,341", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:45:35,379", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-10347.87"}
+{"time": "2025-07-22 00:45:42,655", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -4.277725522913786, "max_dd": -0.884142813469337, "attn_entropy": 3.1758529218603666, "lr": 0.0005}
+{"time": "2025-07-22 00:45:42,657", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1762168407440186, 'mean_max_prob': 0.053917624056339264, 'rejections': 0}"}
+{"time": "2025-07-22 00:45:42,676", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:45:42,678", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:45:42,724", "level": "INFO", "msg": "Fold 62 of 101 - Period: 2020-10 to 2021-11"}
+{"time": "2025-07-22 00:45:42,782", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:45:42,783", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:45:43,286", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:45:43,325", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:45:44,035", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:45:44,072", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:45:44,073", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-10590.83"}
+{"time": "2025-07-22 00:45:51,470", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -4.2373571014675315, "max_dd": -0.8864871926583877, "attn_entropy": 3.1762593689130982, "lr": 0.0005}
+{"time": "2025-07-22 00:45:51,471", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.177264928817749, 'mean_max_prob': 0.046514589339494705, 'rejections': 0}"}
+{"time": "2025-07-22 00:45:51,489", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:45:51,490", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:45:51,539", "level": "INFO", "msg": "Fold 63 of 101 - Period: 2020-11 to 2021-12"}
+{"time": "2025-07-22 00:45:52,111", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:45:52,116", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:45:52,525", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:45:52,543", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:45:52,921", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:45:53,005", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:45:53,074", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-2417.10"}
+{"time": "2025-07-22 00:46:00,364", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.521264895429413, "max_dd": -0.7343630400117701, "attn_entropy": 3.1766717480755577, "lr": 0.0005}
+{"time": "2025-07-22 00:46:00,365", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1765758991241455, 'mean_max_prob': 0.0504329539835453, 'rejections': 0}"}
+{"time": "2025-07-22 00:46:00,384", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:46:00,385", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:46:00,432", "level": "INFO", "msg": "Fold 64 of 101 - Period: 2020-12 to 2022-01"}
+{"time": "2025-07-22 00:46:00,489", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:46:00,490", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:46:01,068", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:46:01,102", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:46:01,817", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:46:01,856", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:46:01,857", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-8238.12"}
+{"time": "2025-07-22 00:46:09,335", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -4.158918734249093, "max_dd": -0.8609493400117617, "attn_entropy": 3.1769097460160385, "lr": 0.0005}
+{"time": "2025-07-22 00:46:09,336", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.177246332168579, 'mean_max_prob': 0.04924989119172096, 'rejections': 0}"}
+{"time": "2025-07-22 00:46:09,355", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:46:09,357", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:46:09,400", "level": "INFO", "msg": "Fold 65 of 101 - Period: 2021-01 to 2022-02"}
+{"time": "2025-07-22 00:46:09,985", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:46:09,988", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:46:10,357", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:46:10,372", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:46:10,725", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:46:10,769", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:46:10,801", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-748.69"}
+{"time": "2025-07-22 00:46:18,135", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -1.5341564448812832, "max_dd": -0.6077894561765076, "attn_entropy": 3.1769304576934854, "lr": 0.0005}
+{"time": "2025-07-22 00:46:18,136", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1768698692321777, 'mean_max_prob': 0.04819195717573166, 'rejections': 0}"}
+{"time": "2025-07-22 00:46:18,154", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:46:18,156", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:46:18,202", "level": "INFO", "msg": "Fold 66 of 101 - Period: 2021-02 to 2022-03"}
+{"time": "2025-07-22 00:46:18,260", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:46:18,261", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:46:18,955", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:46:18,991", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:46:19,691", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:46:19,917", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:46:20,012", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-1881.39"}
+{"time": "2025-07-22 00:46:26,985", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.3514622174519557, "max_dd": -0.7079940780424124, "attn_entropy": 3.176924136705992, "lr": 0.0005}
+{"time": "2025-07-22 00:46:26,986", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1769115924835205, 'mean_max_prob': 0.04993325471878052, 'rejections': 0}"}
+{"time": "2025-07-22 00:46:27,004", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:46:27,006", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:46:27,053", "level": "INFO", "msg": "Fold 67 of 101 - Period: 2021-03 to 2022-04"}
+{"time": "2025-07-22 00:46:27,523", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:46:27,527", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:46:27,774", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:46:27,902", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:46:28,463", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:46:28,601", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:46:28,641", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-10325.93"}
+{"time": "2025-07-22 00:46:35,920", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -4.048510582014041, "max_dd": -0.8839344603567667, "attn_entropy": 3.176748613459018, "lr": 0.0005}
+{"time": "2025-07-22 00:46:35,922", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1765966415405273, 'mean_max_prob': 0.047305017709732056, 'rejections': 0}"}
+{"time": "2025-07-22 00:46:35,940", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:46:35,942", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:46:36,087", "level": "INFO", "msg": "Fold 68 of 101 - Period: 2021-04 to 2022-05"}
+{"time": "2025-07-22 00:46:36,143", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:46:36,145", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:46:36,636", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:46:36,674", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:46:38,241", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:46:38,281", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:46:38,282", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-8536.47"}
+{"time": "2025-07-22 00:46:44,287", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Tue Jul 22 00:46:44 2025\", \"cpu\": \"16.0%\", \"mem\": \"37.8%\"}"}
+{"time": "2025-07-22 00:46:45,821", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -4.0227148362988165, "max_dd": -0.8645780091872983, "attn_entropy": 3.176318529843836, "lr": 0.0005}
+{"time": "2025-07-22 00:46:45,822", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.175602674484253, 'mean_max_prob': 0.053750067949295044, 'rejections': 0}"}
+{"time": "2025-07-22 00:46:46,406", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:46:46,418", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:46:46,628", "level": "INFO", "msg": "Fold 69 of 101 - Period: 2021-05 to 2022-06"}
+{"time": "2025-07-22 00:46:46,989", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:46:46,990", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:46:47,527", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:46:47,557", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:46:48,202", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:46:48,351", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:46:48,410", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-14498.88"}
+{"time": "2025-07-22 00:46:55,698", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -4.518650201581316, "max_dd": -0.91831559271361, "attn_entropy": 3.176222178509905, "lr": 0.0005}
+{"time": "2025-07-22 00:46:55,699", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.176459312438965, 'mean_max_prob': 0.04882163554430008, 'rejections': 0}"}
+{"time": "2025-07-22 00:46:55,718", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:46:55,720", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:46:55,756", "level": "INFO", "msg": "Fold 70 of 101 - Period: 2021-06 to 2022-07"}
+{"time": "2025-07-22 00:46:55,810", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:46:55,811", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:46:56,341", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:46:56,383", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:46:56,964", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:46:57,051", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:46:57,182", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-7059.21"}
+{"time": "2025-07-22 00:47:04,552", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.5662540893483725, "max_dd": -0.8452091421230902, "attn_entropy": 3.1763037274561814, "lr": 0.0005}
+{"time": "2025-07-22 00:47:04,672", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1764471530914307, 'mean_max_prob': 0.04900364950299263, 'rejections': 0}"}
+{"time": "2025-07-22 00:47:05,046", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:47:05,059", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:47:05,470", "level": "INFO", "msg": "Fold 71 of 101 - Period: 2021-07 to 2022-08"}
+{"time": "2025-07-22 00:47:06,056", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:47:06,057", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:47:06,408", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:47:06,494", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:47:06,899", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:47:07,086", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:47:07,124", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-4208.41"}
+{"time": "2025-07-22 00:47:14,584", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.688929081254118, "max_dd": -0.7922652242618342, "attn_entropy": 3.176693314313441, "lr": 0.0005}
+{"time": "2025-07-22 00:47:14,584", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1771554946899414, 'mean_max_prob': 0.0473574735224247, 'rejections': 0}"}
+{"time": "2025-07-22 00:47:14,609", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:47:14,610", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:47:14,659", "level": "INFO", "msg": "Fold 72 of 101 - Period: 2021-08 to 2022-09"}
+{"time": "2025-07-22 00:47:14,716", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:47:14,717", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:47:15,284", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:47:15,320", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:47:16,054", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:47:16,138", "level": "INFO", "msg": "MONTHLY_STATS rows=13"}
+{"time": "2025-07-22 00:47:16,170", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-13147.60"}
+{"time": "2025-07-22 00:47:23,499", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -4.285529769286067, "max_dd": -0.9084135951427126, "attn_entropy": 3.176827042783498, "lr": 0.0005}
+{"time": "2025-07-22 00:47:23,500", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.176936149597168, 'mean_max_prob': 0.046711597591638565, 'rejections': 0}"}
+{"time": "2025-07-22 00:47:23,519", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:47:23,521", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:47:23,565", "level": "INFO", "msg": "Fold 73 of 101 - Period: 2021-09 to 2022-10"}
+{"time": "2025-07-22 00:47:23,621", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:47:23,622", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:47:24,203", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:47:24,235", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:47:25,149", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:47:25,185", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:47:25,186", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-6407.23"}
+{"time": "2025-07-22 00:47:32,725", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.564583573493752, "max_dd": -0.8352990473500963, "attn_entropy": 3.176737282445876, "lr": 0.0005}
+{"time": "2025-07-22 00:47:32,726", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1762030124664307, 'mean_max_prob': 0.04826604574918747, 'rejections': 0}"}
+{"time": "2025-07-22 00:47:32,744", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:47:32,746", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:47:32,787", "level": "INFO", "msg": "Fold 74 of 101 - Period: 2021-10 to 2022-10"}
+{"time": "2025-07-22 00:47:33,397", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:47:33,398", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:47:33,749", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:47:33,767", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:47:34,132", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:47:34,173", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:47:34,224", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-4591.16"}
+{"time": "2025-07-22 00:47:42,989", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.7426950908349697, "max_dd": -0.8012162269693386, "attn_entropy": 3.176408385293408, "lr": 0.0005}
+{"time": "2025-07-22 00:47:42,990", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.175962448120117, 'mean_max_prob': 0.051701419055461884, 'rejections': 0}"}
+{"time": "2025-07-22 00:47:43,010", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:47:43,012", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:47:43,048", "level": "INFO", "msg": "Fold 75 of 101 - Period: 2021-11 to 2022-11"}
+{"time": "2025-07-22 00:47:43,700", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:47:43,701", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:47:44,096", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:47:44,110", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:47:44,371", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:47:44,411", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:47:44,481", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-7005.83"}
+{"time": "2025-07-22 00:47:53,217", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.5545228720998816, "max_dd": -0.8444302488836046, "attn_entropy": 3.175643661618009, "lr": 0.0005}
+{"time": "2025-07-22 00:47:53,218", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1743743419647217, 'mean_max_prob': 0.052029211074113846, 'rejections': 0}"}
+{"time": "2025-07-22 00:47:53,240", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:47:53,242", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:47:53,288", "level": "INFO", "msg": "Fold 76 of 101 - Period: 2021-12 to 2022-12"}
+{"time": "2025-07-22 00:47:53,345", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:47:53,345", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:47:53,902", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:47:53,945", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:47:54,668", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:47:54,790", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:47:54,909", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-3564.41"}
+{"time": "2025-07-22 00:48:03,554", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.9564000407608377, "max_dd": -0.774935172718396, "attn_entropy": 3.175842847653478, "lr": 0.0005}
+{"time": "2025-07-22 00:48:03,556", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.176623582839966, 'mean_max_prob': 0.048254162073135376, 'rejections': 0}"}
+{"time": "2025-07-22 00:48:03,578", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:48:03,579", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:48:03,644", "level": "INFO", "msg": "Fold 77 of 101 - Period: 2022-01 to 2023-01"}
+{"time": "2025-07-22 00:48:04,269", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:48:04,273", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:48:04,873", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:48:04,900", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:48:05,264", "level": "INFO", "msg": "YEARLY_STATS rows=1"}
+{"time": "2025-07-22 00:48:05,407", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:48:05,447", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-20791.37"}
+{"time": "2025-07-22 00:48:14,030", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -5.457819506175121, "max_dd": -0.9546941609205557, "attn_entropy": 3.1760259563577167, "lr": 0.0005}
+{"time": "2025-07-22 00:48:14,031", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1760005950927734, 'mean_max_prob': 0.05201730504631996, 'rejections': 0}"}
+{"time": "2025-07-22 00:48:14,049", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:48:14,051", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:48:14,094", "level": "INFO", "msg": "Fold 78 of 101 - Period: 2022-02 to 2023-02"}
+{"time": "2025-07-22 00:48:14,741", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:48:14,742", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:48:15,154", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:48:15,171", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:48:15,480", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:48:15,572", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:48:15,621", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-358.37"}
+{"time": "2025-07-22 00:48:23,334", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -1.073721226595857, "max_dd": -0.5256202102293114, "attn_entropy": 3.1763204962861527, "lr": 0.0005}
+{"time": "2025-07-22 00:48:23,335", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.176250696182251, 'mean_max_prob': 0.0486585795879364, 'rejections': 0}"}
+{"time": "2025-07-22 00:48:23,355", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:48:23,357", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:48:23,908", "level": "INFO", "msg": "Fold 79 of 101 - Period: 2022-03 to 2023-03"}
+{"time": "2025-07-22 00:48:24,334", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:48:24,334", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:48:24,949", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:48:25,031", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:48:25,667", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:48:25,705", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:48:25,706", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-1585.86"}
+{"time": "2025-07-22 00:48:33,685", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.284575385701595, "max_dd": -0.6894461670742792, "attn_entropy": 3.1763452958203082, "lr": 0.0005}
+{"time": "2025-07-22 00:48:33,686", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1763525009155273, 'mean_max_prob': 0.0484406054019928, 'rejections': 0}"}
+{"time": "2025-07-22 00:48:34,165", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:48:34,180", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:48:34,449", "level": "INFO", "msg": "Fold 80 of 101 - Period: 2022-04 to 2023-04"}
+{"time": "2025-07-22 00:48:34,781", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:48:34,782", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:48:35,296", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:48:35,349", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:48:36,060", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:48:36,101", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:48:36,147", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-2387.57"}
+{"time": "2025-07-22 00:48:44,317", "level": "INFO", "msg": "{\"event\": \"HEARTBEAT\", \"ts\": \"Tue Jul 22 00:48:44 2025\", \"cpu\": \"16.9%\", \"mem\": \"38.8%\"}"}
+{"time": "2025-07-22 00:48:45,138", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -2.6185433645550487, "max_dd": -0.7331616999456017, "attn_entropy": 3.1766123651600613, "lr": 0.0005}
+{"time": "2025-07-22 00:48:45,139", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.177175521850586, 'mean_max_prob': 0.04895062744617462, 'rejections': 0}"}
+{"time": "2025-07-22 00:48:45,159", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:48:45,160", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:48:45,212", "level": "INFO", "msg": "Fold 81 of 101 - Period: 2022-05 to 2023-05"}
+{"time": "2025-07-22 00:48:45,271", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:48:45,272", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:48:45,997", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:48:46,043", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:48:46,908", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:48:47,098", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:48:47,142", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-30675.71"}
+{"time": "2025-07-22 00:48:56,023", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -8.58948136645526, "max_dd": -0.9938533805497622, "attn_entropy": 3.1764520257704687, "lr": 0.0005}
+{"time": "2025-07-22 00:48:56,024", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1755945682525635, 'mean_max_prob': 0.05091254040598869, 'rejections': 0}"}
+{"time": "2025-07-22 00:48:56,045", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:48:56,046", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:48:56,082", "level": "INFO", "msg": "Fold 82 of 101 - Period: 2022-06 to 2023-06"}
+{"time": "2025-07-22 00:48:56,670", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:48:56,675", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:48:57,095", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:48:57,112", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:48:57,361", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:48:57,402", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:48:57,402", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-7802.61"}
+{"time": "2025-07-22 00:49:06,468", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -3.958443377173063, "max_dd": -0.8554202169568318, "attn_entropy": 3.176302918450757, "lr": 0.0005}
+{"time": "2025-07-22 00:49:06,468", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.1764798164367676, 'mean_max_prob': 0.04733585566282272, 'rejections': 0}"}
+{"time": "2025-07-22 00:49:06,487", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:49:06,489", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:49:06,523", "level": "INFO", "msg": "Fold 83 of 101 - Period: 2022-07 to 2023-07"}
+{"time": "2025-07-22 00:49:07,107", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:49:07,116", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:49:07,516", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:49:07,535", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:49:07,735", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:49:07,912", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:49:07,981", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-8255.76"}
+{"time": "2025-07-22 00:49:15,590", "level": "INFO", "msg": "NEW_BEST_CANDIDATE", "epoch": 0, "sharpe": -4.071042640130815, "max_dd": -0.8611701234912679, "attn_entropy": 3.1757086757248634, "lr": 0.0005}
+{"time": "2025-07-22 00:49:15,652", "level": "INFO", "msg": "{'event': 'EPOCH_SUMMARY', 'epoch': 0, 'mean_entropy': 3.17474365234375, 'mean_max_prob': 0.05264860764145851, 'rejections': 0}"}
+{"time": "2025-07-22 00:49:16,046", "level": "INFO", "msg": "[TRACE] backtest window shape=(697, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:49:16,063", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([697, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:49:16,303", "level": "INFO", "msg": "Fold 84 of 101 - Period: 2022-08 to 2023-08"}
+{"time": "2025-07-22 00:49:16,717", "level": "INFO", "msg": ">>> ENTERING DEFCON 3: Full Backtest"}
+{"time": "2025-07-22 00:49:16,719", "level": "INFO", "msg": ">>> Using current best hyperparams"}
+{"time": "2025-07-22 00:49:17,159", "level": "INFO", "msg": "[TRACE] backtest window shape=(8617, 24, 16) (rule-engine expects 6 core bars)"}
+{"time": "2025-07-22 00:49:17,264", "level": "INFO", "msg": "[TRACE] model.predict() tensor shape=torch.Size([8617, 24, 16])  |  model.input_features=16"}
+{"time": "2025-07-22 00:49:17,795", "level": "INFO", "msg": "YEARLY_STATS rows=2"}
+{"time": "2025-07-22 00:49:17,835", "level": "INFO", "msg": "MONTHLY_STATS rows=12"}
+{"time": "2025-07-22 00:49:17,885", "level": "INFO", "msg": "\u274c SKIPPED: full_data_run=False, span=359 days, reward=-4549.57"}
