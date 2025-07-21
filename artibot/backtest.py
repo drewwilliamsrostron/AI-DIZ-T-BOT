@@ -92,74 +92,46 @@ def compute_indicators(
     for c in raw[:, 1:6].T:
         add_feat(c, True)
 
-    if indicator_hp.use_sma:
-        sma_arr = trailing_sma(closes, sma_period)
-    else:
-        sma_arr = np.zeros_like(closes)
+    sma_arr = trailing_sma(closes, sma_period)
     add_feat(sma_arr, indicator_hp.use_sma)
 
-    if indicator_hp.use_rsi:
-        rsi_arr = talib.RSI(closes, timeperiod=rsi_period)
-    else:
-        rsi_arr = np.zeros_like(closes)
+    rsi_arr = talib.RSI(closes, timeperiod=rsi_period)
     add_feat(rsi_arr, indicator_hp.use_rsi)
 
-    if indicator_hp.use_macd:
-        macd_arr, _sig, _hist = talib.MACD(
-            closes,
-            fastperiod=fast_macd,
-            slowperiod=slow_macd,
-            signalperiod=sig_macd,
-        )
-    else:
-        macd_arr = np.zeros_like(closes)
+    macd_arr, _sig, _hist = talib.MACD(
+        closes,
+        fastperiod=fast_macd,
+        slowperiod=slow_macd,
+        signalperiod=sig_macd,
+    )
     add_feat(macd_arr, indicator_hp.use_macd)
 
-    if indicator_hp.use_ema:
-        ema_arr = indicators.ema(closes, period=getattr(indicator_hp, "ema_period", 20))
-    else:
-        ema_arr = np.zeros_like(closes)
+    ema_arr = indicators.ema(closes, period=getattr(indicator_hp, "ema_period", 20))
     add_feat(ema_arr, indicator_hp.use_ema)
 
     ema50_arr = indicators.ema(closes, period=50)
     add_feat(ema50_arr, True)
 
-    if indicator_hp.use_atr:
-        atr_arr = indicators.atr(highs, lows, closes, period=indicator_hp.atr_period)
-    else:
-        atr_arr = np.zeros_like(closes)
+    atr_arr = indicators.atr(highs, lows, closes, period=indicator_hp.atr_period)
     add_feat(atr_arr, indicator_hp.use_atr)
 
-    if indicator_hp.use_vortex:
-        vp, vn = indicators.vortex(
-            highs, lows, closes, period=getattr(indicator_hp, "vortex_period", 14)
-        )
-    else:
-        vp = np.zeros_like(closes)
-        vn = np.zeros_like(closes)
+    vp, vn = indicators.vortex(
+        highs, lows, closes, period=getattr(indicator_hp, "vortex_period", 14)
+    )
     add_feat(vp, indicator_hp.use_vortex)
     add_feat(vn, indicator_hp.use_vortex)
 
-    if indicator_hp.use_cmf:
-        cmf_arr = indicators.cmf(
-            highs, lows, closes, volume, period=getattr(indicator_hp, "cmf_period", 20)
-        )
-    else:
-        cmf_arr = np.zeros_like(closes)
+    cmf_arr = indicators.cmf(
+        highs, lows, closes, volume, period=getattr(indicator_hp, "cmf_period", 20)
+    )
     add_feat(cmf_arr, indicator_hp.use_cmf)
 
-    if indicator_hp.use_donchian:
-        _up, _lo, mid = indicators.donchian(
-            highs, lows, period=getattr(indicator_hp, "donchian_period", 20)
-        )
-    else:
-        mid = np.zeros_like(closes)
+    _up, _lo, mid = indicators.donchian(
+        highs, lows, period=getattr(indicator_hp, "donchian_period", 20)
+    )
     add_feat(mid, indicator_hp.use_donchian)
 
-    if use_ichimoku or getattr(indicator_hp, "use_tenkan", False):
-        tenkan, _kijun, _a, _b = indicators.ichimoku(highs, lows)
-    else:
-        tenkan = np.zeros_like(closes)
+    tenkan, _kijun, _a, _b = indicators.ichimoku(highs, lows)
     add_feat(tenkan, bool(use_ichimoku or getattr(indicator_hp, "use_tenkan", False)))
 
     EXPECTED_DIM = 16
