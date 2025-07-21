@@ -216,6 +216,9 @@ def mutate_lr(old: float, delta: float) -> float:
 
 
 def should_freeze_features(step: int) -> bool:
-    """Return ``True`` when indicator features should stay fixed."""
+    """Return ``True`` when indicator features should stay fixed.
 
-    return step >= WARMUP_STEPS
+    Warm-up gating has been removed so this now always returns ``False``.
+    """
+
+    return False
