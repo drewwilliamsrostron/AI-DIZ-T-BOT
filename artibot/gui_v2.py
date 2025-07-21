@@ -68,31 +68,63 @@ def format_trade_details(trades: list[dict], limit: int = 50) -> str:
     return out_df.to_string(index=False, float_format=lambda x: f"{x:.2f}")
 
 
-def _active_indicators() -> str:
-    """Return comma-separated names of enabled indicators."""
+def _active_indicators(params: dict | None = None) -> str:
+    """Return comma-separated names of enabled indicators.
+
+    If ``params`` is provided, use the on/off flags in that mapping instead of
+    the current global state.  This allows displaying indicator status for the
+    best parameter set.
+    """
+
+    if params is None:
+        use_sma = G.global_use_SMA
+        use_rsi = G.global_use_RSI
+        use_macd = G.global_use_MACD
+        use_ema = G.global_use_EMA
+        use_atr = G.global_use_ATR
+        use_vortex = G.global_use_VORTEX
+        use_cmf = G.global_use_CMF
+        use_don = G.global_use_DONCHIAN
+        use_kijun = G.global_use_KIJUN
+        use_tenkan = G.global_use_TENKAN
+        use_disp = G.global_use_DISPLACEMENT
+    else:
+        use_sma = params.get("sma_active", False)
+        use_rsi = params.get("rsi_active", False)
+        use_macd = params.get("macd_active", False)
+        use_ema = params.get("ema_active", False)
+        use_atr = params.get("atr_active", False)
+        use_vortex = params.get("vortex_active", False)
+        use_cmf = params.get("cmf_active", False)
+        use_don = params.get("donchian_active", False)
+        use_kijun = params.get("kijun_active", False)
+        use_tenkan = params.get("tenkan_active", False)
+        use_disp = params.get("disp_active", False)
+
     names = []
-    if G.global_use_SMA:
+    if use_sma:
         names.append("SMA")
-    if G.global_use_RSI:
+    if use_rsi:
         names.append("RSI")
-    if G.global_use_MACD:
+    if use_macd:
         names.append("MACD")
-    if G.global_use_EMA:
+    if use_ema:
         names.append("EMA")
-    if G.global_use_ATR:
+    if use_atr:
         names.append("ATR")
-    if G.global_use_VORTEX:
+    if use_vortex:
         names.append("VORTEX")
-    if G.global_use_CMF:
+    if use_cmf:
         names.append("CMF")
-    if G.global_use_DONCHIAN:
+    if use_don:
         names.append("DONCHIAN")
-    if G.global_use_KIJUN:
+    if use_kijun:
         names.append("KIJUN")
-    if G.global_use_TENKAN:
+    if use_tenkan:
         names.append("TENKAN")
-    if G.global_use_DISPLACEMENT:
+    if use_disp:
         names.append("DISP")
+
     return ", ".join(names) if names else "None"
 
 
@@ -1065,55 +1097,79 @@ class TradingGUI:
         self.curr_params_details.delete("1.0", tk.END)
         self.curr_params_details.insert(tk.END, _format_params(False))
 
-        self.best_drawdown_label.config(
-            text=f"Best Max DD: {G.global_best_drawdown:.3f}"
-        )
-        self.best_netprofit_label.config(
-            text=f"Best Net Pct: {G.global_best_net_pct:.2f}"
-        )
-        self.best_trades_label.config(text=f"Best Trades: {G.global_best_num_trades}")
-        if G.global_best_inactivity_penalty is not None:
-            self.best_inactivity_label.config(
-                text=f"Best Inact: {G.global_best_inactivity_penalty:.2f}"
+        has_best = bool(G.global_best_trade_details) or G.global_best_sharpe != 0.0
+
+        if has_best:
+            inds_best = _active_indicators(G.global_best_params)
+            self.best_drawdown_label.config(
+                text=f"Best Max DD: {G.global_best_drawdown:.3f}"
             )
+            self.best_netprofit_label.config(
+                text=f"Best Net Pct: {G.global_best_net_pct:.2f}"
+            )
+            self.best_trades_label.config(
+                text=f"Best Trades: {G.global_best_num_trades}"
+            )
+            if G.global_best_inactivity_penalty is not None:
+                self.best_inactivity_label.config(
+                    text=f"Best Inact: {G.global_best_inactivity_penalty:.2f}"
+                )
+            else:
+                self.best_inactivity_label.config(text="Best Inactivity Penalty: N/A")
+            if G.global_best_composite_reward is not None:
+                self.best_composite_label.config(
+                    text=f"Best Comp: {G.global_best_composite_reward:.2f}"
+                )
+            else:
+                self.best_composite_label.config(text="Best Composite: N/A")
+            if G.global_best_days_in_profit is not None:
+                self.best_days_profit_label.config(
+                    text=f"Best Days in Profit: {G.global_best_days_in_profit:.2f}"
+                )
+            else:
+                self.best_days_profit_label.config(text="Best Days in Profit: N/A")
+            self.best_winrate_label.config(
+                text=f"Best Win Rate: {G.global_best_win_rate:.2f}"
+            )
+            self.best_profit_factor_label.config(
+                text=f"Best Profit Factor: {G.global_best_profit_factor:.2f}"
+            )
+            self.best_avg_win_label.config(
+                text=f"Best Avg Win: {G.global_best_avg_win:.3f}"
+            )
+            self.best_avg_loss_label.config(
+                text=f"Best Avg Loss: {G.global_best_avg_loss:.3f}"
+            )
+            self.best_ind_label.config(text=f"Indicators: {inds_best}")
+            self.best_sl_label.config(
+                text=f"SL: {G.global_best_params.get('SL_multiplier', 'N/A')}"
+            )
+            self.best_tp_label.config(
+                text=f"TP: {G.global_best_params.get('TP_multiplier', 'N/A')}"
+            )
+            long_b, short_b = _trade_counts(G.global_best_trade_details)
+            self.best_long_label.config(text=f"Long Trades: {long_b}")
+            self.best_short_label.config(text=f"Short Trades: {short_b}")
+            self.best_params_details.delete("1.0", tk.END)
+            self.best_params_details.insert(tk.END, _format_params(True))
         else:
+            self.best_drawdown_label.config(text="Best Max DD: N/A")
+            self.best_netprofit_label.config(text="Best Net Pct: N/A")
+            self.best_trades_label.config(text="Best Trades: N/A")
             self.best_inactivity_label.config(text="Best Inactivity Penalty: N/A")
-        if G.global_best_composite_reward is not None:
-            self.best_composite_label.config(
-                text=f"Best Comp: {G.global_best_composite_reward:.2f}"
-            )
-        else:
             self.best_composite_label.config(text="Best Composite: N/A")
-        if G.global_best_days_in_profit is not None:
-            self.best_days_profit_label.config(
-                text=f"Best Days in Profit: {G.global_best_days_in_profit:.2f}"
-            )
-        else:
             self.best_days_profit_label.config(text="Best Days in Profit: N/A")
-        self.best_winrate_label.config(
-            text=f"Best Win Rate: {G.global_best_win_rate:.2f}"
-        )
-        self.best_profit_factor_label.config(
-            text=f"Best Profit Factor: {G.global_best_profit_factor:.2f}"
-        )
-        self.best_avg_win_label.config(
-            text=f"Best Avg Win: {G.global_best_avg_win:.3f}"
-        )
-        self.best_avg_loss_label.config(
-            text=f"Best Avg Loss: {G.global_best_avg_loss:.3f}"
-        )
-        self.best_ind_label.config(text=f"Indicators: {inds}")
-        self.best_sl_label.config(
-            text=f"SL: {G.global_best_params.get('SL_multiplier', 'N/A')}"
-        )
-        self.best_tp_label.config(
-            text=f"TP: {G.global_best_params.get('TP_multiplier', 'N/A')}"
-        )
-        long_b, short_b = _trade_counts(G.global_best_trade_details)
-        self.best_long_label.config(text=f"Long Trades: {long_b}")
-        self.best_short_label.config(text=f"Short Trades: {short_b}")
-        self.best_params_details.delete("1.0", tk.END)
-        self.best_params_details.insert(tk.END, _format_params(True))
+            self.best_winrate_label.config(text="Best Win Rate: N/A")
+            self.best_profit_factor_label.config(text="Best Profit Factor: N/A")
+            self.best_avg_win_label.config(text="Best Avg Win: N/A")
+            self.best_avg_loss_label.config(text="Best Avg Loss: N/A")
+            self.best_ind_label.config(text="Indicators: N/A")
+            self.best_sl_label.config(text="SL: N/A")
+            self.best_tp_label.config(text="TP: N/A")
+            self.best_long_label.config(text="Long Trades: 0")
+            self.best_short_label.config(text="Short Trades: 0")
+            self.best_params_details.delete("1.0", tk.END)
+            self.best_params_details.insert(tk.END, "(No best parameters yet)")
 
         primary, secondary = G.get_status_full()
         nk_state = "ARMED" if G.nuke_armed else "SAFE"
