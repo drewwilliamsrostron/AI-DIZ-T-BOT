@@ -185,6 +185,19 @@ ALLOWED_META_ACTIONS = {
     "d_short_frac",
     "d_lr",
     "d_wd",
+    # allow indicator toggles so the meta agent can explore all combinations
+    "toggle_sma",
+    "toggle_rsi",
+    "toggle_macd",
+    "toggle_atr",
+    "toggle_vortex",
+    "toggle_cmf",
+    "toggle_ichimoku",
+    "toggle_ema",
+    "toggle_donchian",
+    "toggle_kijun",
+    "toggle_tenkan",
+    "toggle_disp",
 }
 
 # mapping from toggle actions to mask indices
