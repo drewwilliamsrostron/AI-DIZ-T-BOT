@@ -189,41 +189,30 @@ def generate_fixed_features(
     volume = data_np[:, 5].astype(np.float64)
     opens = data_np[:, 1].astype(np.float64)
 
-    def zeros():
-        return np.zeros_like(closes, dtype=np.float64)
-
     from .indicators import ema, atr, vortex, cmf, donchian, ichimoku
 
-    sma = trailing_sma(closes, hp.sma_period) if hp.use_sma else zeros()
-    rsi = talib.RSI(closes, timeperiod=hp.rsi_period) if hp.use_rsi else zeros()
-    macd, _, _ = (
-        talib.MACD(
-            closes,
-            fastperiod=hp.macd_fast,
-            slowperiod=hp.macd_slow,
-            signalperiod=hp.macd_signal,
-        )
-        if hp.use_macd
-        else (zeros(), zeros(), zeros())
+    # Compute every indicator upfront so toggling on new features can immediately
+    # use historical values.  Feature masks will zero-out anything disabled.
+
+    sma = trailing_sma(closes, hp.sma_period)
+    rsi = talib.RSI(closes, timeperiod=hp.rsi_period)
+    macd, _, _ = talib.MACD(
+        closes,
+        fastperiod=hp.macd_fast,
+        slowperiod=hp.macd_slow,
+        signalperiod=hp.macd_signal,
     )
-    ema20 = ema(closes, period=hp.ema_period) if hp.use_ema else zeros()
+    ema20 = ema(closes, period=hp.ema_period)
     ema50 = ema(closes, period=50)
-    atr_vals = atr(highs, lows, closes, period=hp.atr_period) if hp.use_atr else zeros()
-    if hp.use_vortex:
-        vp, vn = vortex(highs, lows, closes, period=hp.vortex_period)
-    else:
-        vp, vn = zeros(), zeros()
-    cmf_v = (
-        cmf(highs, lows, closes, volume, period=hp.cmf_period)
-        if hp.use_cmf
-        else zeros()
+    atr_vals = atr(highs, lows, closes, period=hp.atr_period)
+    vp, vn = vortex(highs, lows, closes, period=hp.vortex_period)
+    cmf_v = cmf(highs, lows, closes, volume, period=hp.cmf_period)
+    don_mid = donchian(highs, lows, period=hp.donchian_period)[2]
+    ichi_tenkan = (
+        ichimoku(highs, lows)[0]
+        if use_ichimoku
+        else np.zeros_like(closes, dtype=np.float64)
     )
-    don_mid = (
-        donchian(highs, lows, period=hp.donchian_period)[2]
-        if hp.use_donchian
-        else zeros()
-    )
-    ichi_tenkan = ichimoku(highs, lows)[0] if use_ichimoku else zeros()
 
     feats = np.column_stack(
         [
