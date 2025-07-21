@@ -75,21 +75,21 @@ class HyperParams:
 class IndicatorHyperparams:
     """Periods and toggles for optional indicators."""
 
-    use_sma: bool = True
+    use_sma: bool = False
     sma_period: int = 10
-    use_rsi: bool = True
+    use_rsi: bool = False
     rsi_period: int = 9
-    use_macd: bool = True
+    use_macd: bool = False
     macd_fast: int = 12
     macd_slow: int = 26
     macd_signal: int = 9
-    use_atr: bool = True
+    use_atr: bool = False
     atr_period: int = 14
     use_vortex: bool = False
     vortex_period: int = 14
     use_cmf: bool = False
     cmf_period: int = 20
-    use_ema: bool = True
+    use_ema: bool = False
     ema_period: int = 20
     use_donchian: bool = False
     donchian_period: int = 20
@@ -99,9 +99,9 @@ class IndicatorHyperparams:
     tenkan_period: int = 9
     use_displacement: bool = False
     displacement: int = 26
-    use_sentiment: bool = True
-    use_macro: bool = True
-    use_rvol: bool = True
+    use_sentiment: bool = False
+    use_macro: bool = False
+    use_rvol: bool = False
 
     def __post_init__(self) -> None:
         mapping = {
