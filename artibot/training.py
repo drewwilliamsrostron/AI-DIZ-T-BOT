@@ -17,8 +17,10 @@ import threading
 import os
 from pathlib import Path
 
+from dataclasses import fields
 from .dataset import HourlyDataset, trailing_sma, load_csv_hourly
 from .ensemble import reject_if_risky, EnsembleModel, update_best
+from .hyperparams import IndicatorHyperparams
 from .backtest import robust_backtest, compute_indicators
 from .core.device import get_device
 from .utils import heartbeat
@@ -884,6 +886,37 @@ def save_checkpoint():
 ###############################################################################
 
 
+def _trial_indicator_params(trial: optuna.trial.Trial) -> IndicatorHyperparams:
+    """Return indicator hyper-parameters suggested by ``trial``."""
+
+    ranges = {
+        "SMA_PERIOD": (5, 50),
+        "RSI_PERIOD": (2, 50),
+        "MACD_FAST": (5, 50),
+        "MACD_SLOW": (5, 50),
+        "MACD_SIGNAL": (5, 50),
+        "ATR_PERIOD": (5, 50),
+        "VORTEX_PERIOD": (5, 50),
+        "CMF_PERIOD": (5, 50),
+        "EMA_PERIOD": (5, 50),
+        "DONCHIAN_PERIOD": (5, 50),
+        "KIJUN_PERIOD": (5, 50),
+        "TENKAN_PERIOD": (5, 50),
+        "DISPLACEMENT": (2, 50),
+    }
+
+    params = {}
+    for f in fields(IndicatorHyperparams):
+        key = f.name.upper()
+        if f.name.startswith("use_"):
+            params[f.name] = trial.suggest_categorical(key, [True, False])
+        elif key in ranges:
+            low, high = ranges[key]
+            params[f.name] = trial.suggest_int(key, low, high)
+
+    return IndicatorHyperparams(**params)
+
+
 def objective(trial: optuna.trial.Trial) -> float:
     """Objective for Optuna optimisation."""
 
@@ -891,15 +924,24 @@ def objective(trial: optuna.trial.Trial) -> float:
         "lr": trial.suggest_float("lr", 1e-5, 1e-2, log=True),
         "entropy_beta": trial.suggest_float("entropy_beta", 1e-4, 5e-3, log=True),
     }
+    indicator_hp = _trial_indicator_params(trial)
+
     data = load_csv_hourly("Gemini_BTCUSD_1h.csv")
     if not data:
         return 0.0
-    ds_tmp = HourlyDataset(data, seq_len=24, train_mode=True)
+    ds_tmp = HourlyDataset(
+        data,
+        seq_len=24,
+        indicator_hparams=indicator_hp,
+        atr_threshold_k=getattr(indicator_hp, "atr_threshold_k", 1.5),
+        train_mode=True,
+    )
     n_features = ds_tmp[0][0].shape[1]
     model = EnsembleModel(
         device=get_device(), n_models=1, lr=params["lr"], n_features=n_features
     )
     model.entropy_beta = params["entropy_beta"]
+    model.indicator_hparams = indicator_hp
     stop = threading.Event()
     csv_training_thread(
         model,
@@ -936,10 +978,26 @@ def run_hpo(n_trials: int = 50) -> dict:
     best = study.best_params
     G.global_best_lr = best.get("lr")
     G.global_best_wd = best.get("entropy_beta")
+
+    param_map = {f.name.upper(): f.name for f in fields(IndicatorHyperparams)}
+    ind_params = {param_map[k]: v for k, v in best.items() if k in param_map}
+    indicator_hp = IndicatorHyperparams(**ind_params)
+
     # Verify on the whole dataset so the result can be promoted
     data = load_csv_hourly("Gemini_BTCUSD_1h.csv")
-    model = EnsembleModel(device=get_device(), n_models=1, lr=best.get("lr", 1e-4))
+    ds_tmp = HourlyDataset(
+        data,
+        seq_len=24,
+        indicator_hparams=indicator_hp,
+        atr_threshold_k=getattr(indicator_hp, "atr_threshold_k", 1.5),
+        train_mode=True,
+    )
+    n_features = ds_tmp[0][0].shape[1]
+    model = EnsembleModel(
+        device=get_device(), n_models=1, lr=best.get("lr", 1e-4), n_features=n_features
+    )
     model.entropy_beta = best.get("entropy_beta", 1e-4)
+    model.indicator_hparams = indicator_hp
     quick_fit(model, data, epochs=1)
     full_result = robust_backtest(model, data)
     if full_result.get("trades", 0) == 0:

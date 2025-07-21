@@ -659,9 +659,7 @@ if __name__ == "__main__":
     ds_tmp = HourlyDataset(
         data,
         seq_len=24,
-        indicator_hparams=IndicatorHyperparams(
-            rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
-        ),
+        indicator_hparams=IndicatorHyperparams(),
         atr_threshold_k=1.5,
         train_mode=False,
     )

@@ -237,9 +237,8 @@ class EnsembleModel(nn.Module):
         device = torch.device(device) if device is not None else get_device()
         self.device = device
         self.weights_path = weights_path
-        self.indicator_hparams = IndicatorHyperparams(
-            rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
-        )
+        # use config defaults for all indicator settings
+        self.indicator_hparams = IndicatorHyperparams()
         self.hp = HyperParams(indicator_hp=self.indicator_hparams)
         if lr is not None:
             self.hp.learning_rate = lr

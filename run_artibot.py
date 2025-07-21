@@ -12,6 +12,7 @@ from __future__ import annotations
 from artibot.environment import ensure_dependencies
 from artibot.utils.torch_threads import set_threads
 from artibot.gui import startup_options_dialog
+from dataclasses import fields
 from artibot.ensemble import EnsembleModel
 import artibot.globals as G
 
@@ -291,14 +292,23 @@ def main() -> None:
             here = os.path.dirname(os.path.abspath(__file__))
             csv_path = os.path.join(here, csv_path)
 
-        indicator_hp = IndicatorHyperparams(
-            rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
-        )
         data = load_csv_hourly(csv_path, cfg=DEFAULT_CFG)
         if not data:
             logging.error("No usable CSV data found")
             G.set_status("Init", "CSV data missing")
             return
+
+        if no_tune:
+            G.set_status("DEFCON 5: Hyperparameter Search", "skipped")
+            best = {}
+            indicator_hp = IndicatorHyperparams()
+        else:
+            G.set_status("DEFCON 5: Hyperparameter Search", "")
+            best = run_hpo()
+
+        param_map = {f.name.upper(): f.name for f in fields(IndicatorHyperparams)}
+        ind_params = {param_map[k]: v for k, v in best.items() if k in param_map}
+        indicator_hp = IndicatorHyperparams(**ind_params)
 
         temp_ds = HourlyDataset(
             data,
@@ -309,13 +319,14 @@ def main() -> None:
         )
         n_features = temp_ds[0][0].shape[1]
 
-        if no_tune:
-            G.set_status("DEFCON 5: Hyperparameter Search", "skipped")
-            best = {}
-        else:
-            G.set_status("DEFCON 5: Hyperparameter Search", "")
-            best = run_hpo()
-        ensemble = build_model(device=device, n_features=n_features, **best)
+        lr = best.get("lr", 1e-3)
+        entropy_beta = best.get("entropy_beta")
+        ensemble = build_model(
+            device=device,
+            n_features=n_features,
+            lr=lr,
+            entropy_beta=entropy_beta,
+        )
         ensemble.indicator_hparams = indicator_hp
         ensemble.hp = HyperParams(indicator_hp=indicator_hp)
 
