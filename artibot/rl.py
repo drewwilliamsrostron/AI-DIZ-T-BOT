@@ -550,10 +550,6 @@ class MetaTransformerRL:
             hp.long_frac *= scale
             hp.short_frac *= scale
 
-        # enforce required indicators
-        indicator_hp.use_sma = True
-        indicator_hp.use_cmf = True
-
         if self.ensemble is not None:
             for opt in self.ensemble.optimizers:
                 group = opt.param_groups[0]
