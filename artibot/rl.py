@@ -3,7 +3,6 @@
 # ruff: noqa: F403, F405
 
 import artibot.globals as G
-import artibot.globals as globals
 import artibot.hyperparams as hyperparams
 from .hyperparams import HyperParams, IndicatorHyperparams
 from .model import PositionalEncoding
@@ -302,8 +301,6 @@ class MetaTransformerRL:
                 or action_name.endswith("_period")
                 or action_name.endswith("_frac")
             ):
-                continue
-            if globals.get_trade_count() < 1000 and action_name.startswith("toggle_"):
                 continue
             if action_name not in hyperparams.ALLOWED_META_ACTIONS:
                 continue
