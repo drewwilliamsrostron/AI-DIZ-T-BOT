@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 import artibot.globals as G
 
@@ -104,35 +104,28 @@ class IndicatorHyperparams:
     use_rvol: bool = False
 
     def __post_init__(self) -> None:
+        """Override defaults with any ``USE_*`` or period values in the config."""
         mapping = {
-            "use_sma": "USE_SMA",
             "sma_period": "SMA_PERIOD",
-            "use_rsi": "USE_RSI",
             "rsi_period": "RSI_PERIOD",
-            "use_macd": "USE_MACD",
             "macd_fast": "MACD_FAST",
             "macd_slow": "MACD_SLOW",
             "macd_signal": "MACD_SIGNAL",
-            "use_atr": "USE_ATR",
             "atr_period": "ATR_PERIOD",
-            "use_vortex": "USE_VORTEX",
             "vortex_period": "VORTEX_PERIOD",
-            "use_cmf": "USE_CMF",
             "cmf_period": "CMF_PERIOD",
-            "use_ema": "USE_EMA",
             "ema_period": "EMA_PERIOD",
-            "use_donchian": "USE_DONCHIAN",
             "donchian_period": "DONCHIAN_PERIOD",
-            "use_kijun": "USE_KIJUN",
             "kijun_period": "KIJUN_PERIOD",
-            "use_tenkan": "USE_TENKAN",
             "tenkan_period": "TENKAN_PERIOD",
-            "use_displacement": "USE_DISPLACEMENT",
             "displacement": "DISPLACEMENT",
-            "use_sentiment": "USE_SENTIMENT",
-            "use_macro": "USE_MACRO",
-            "use_rvol": "USE_RVOL",
         }
+
+        # automatically include every ``use_*`` flag
+        for field in fields(self):
+            if field.name.startswith("use_"):
+                mapping[field.name] = field.name.upper()
+
         for attr, key in mapping.items():
             if key in _CONFIG:
                 cur = getattr(self, attr)
