@@ -5,7 +5,7 @@ from artibot.rl import MetaTransformerRL
 from artibot.ensemble import EnsembleModel
 
 
-def test_actions_filtered_after_warmup(monkeypatch):
+def test_actions_apply_after_warmup(monkeypatch):
     ens = EnsembleModel(device=torch.device("cpu"), n_models=1)
     agent = MetaTransformerRL(ens)
     hp_inst = hp.HyperParams()
@@ -14,5 +14,5 @@ def test_actions_filtered_after_warmup(monkeypatch):
     period = ihp.sma_period
     monkeypatch.setattr(G, "get_warmup_step", lambda: hp.WARMUP_STEPS)
     agent.apply_action(hp_inst, ihp, {"toggle_sma": 1, "d_sma_period": 5})
-    assert ihp.use_sma == sma_flag
-    assert ihp.sma_period == period
+    assert ihp.use_sma != sma_flag
+    assert ihp.sma_period == period + 5
