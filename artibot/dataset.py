@@ -208,11 +208,7 @@ def generate_fixed_features(
     vp, vn = vortex(highs, lows, closes, period=hp.vortex_period)
     cmf_v = cmf(highs, lows, closes, volume, period=hp.cmf_period)
     don_mid = donchian(highs, lows, period=hp.donchian_period)[2]
-    ichi_tenkan = (
-        ichimoku(highs, lows)[0]
-        if use_ichimoku
-        else np.zeros_like(closes, dtype=np.float64)
-    )
+    ichi_tenkan = ichimoku(highs, lows)[0]
 
     feats = np.column_stack(
         [
