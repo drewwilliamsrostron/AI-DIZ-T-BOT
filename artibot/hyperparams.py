@@ -57,6 +57,11 @@ class HyperParams:
     def __post_init__(self) -> None:
         if self.indicator_hp is None:
             self.indicator_hp = IndicatorHyperparams()
+        # propagate top-level ``use_*`` flags to the indicator dataclass so that
+        # global defaults reflect the desired startup state
+        for f in fields(self.indicator_hp):
+            if f.name.startswith("use_") and hasattr(self, f.name):
+                setattr(self.indicator_hp, f.name, getattr(self, f.name))
         self.long_frac = max(0.0, min(self.long_frac, G.MAX_SIDE_EXPOSURE_PCT))
         self.short_frac = max(0.0, min(self.short_frac, G.MAX_SIDE_EXPOSURE_PCT))
         G.sync_globals(self, self.indicator_hp)
