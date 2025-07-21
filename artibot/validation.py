@@ -79,9 +79,7 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
     data = sanitize_features(raw_data)
     device = get_device()
 
-    indicator_hp = IndicatorHyperparams(
-        rsi_period=14, sma_period=10, macd_fast=12, macd_slow=26, macd_signal=9
-    )
+    indicator_hp = IndicatorHyperparams()
     ds_tmp = HourlyDataset(
         data,
         seq_len=24,
