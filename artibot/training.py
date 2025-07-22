@@ -73,7 +73,9 @@ def quick_fit(model: EnsembleModel, data: list[list[float]], epochs: int = 1) ->
     )
 
     for _ in range(epochs):
-        model.train_one_epoch(dl_train, dl_val, data, update_globals=False)
+        tl, vl = model.train_one_epoch(dl_train, dl_val, data, update_globals=False)
+        G.global_training_loss.append(tl)
+        G.global_validation_loss.append(vl if dl_val is not None else 0.0)
 
 
 logger = logging.getLogger(__name__)
@@ -387,10 +389,7 @@ def csv_training_thread(
                 G.global_holdout_sharpe = 0.0
                 G.global_holdout_max_drawdown = 0.0
             G.global_training_loss.append(tl)
-            if vl is not None:
-                G.global_validation_loss.append(vl)
-            else:
-                G.global_validation_loss.append(None)
+            G.global_validation_loss.append(vl if vl is not None else 0.0)
             smoothed_loss = smooth(G.global_training_loss)
             eq_vals = [b for _, b in G.global_equity_curve]
             smoothed_equity = smooth(eq_vals)
@@ -633,7 +632,7 @@ def csv_training_thread(
                         update_globals=update_globals,
                     )
                     G.global_training_loss.append(tl)
-                    G.global_validation_loss.append(vl)
+                    G.global_validation_loss.append(vl if vl is not None else 0.0)
                     writer.add_scalar("Loss/train", tl, ensemble.train_steps)
                     if vl is not None:
                         writer.add_scalar("Loss/val", vl, ensemble.train_steps)
