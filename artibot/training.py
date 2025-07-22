@@ -36,18 +36,44 @@ import gc
 
 
 def quick_fit(model: EnsembleModel, data: list[list[float]], epochs: int = 1) -> None:
-    """Train ``model`` on ``data`` for a small number of epochs."""
+    """Train ``model`` on ``data`` for a small number of epochs.
 
-    ds = HourlyDataset(
+    The final 20%% of samples are held out as a validation set for unbiased
+    evaluation during these quick fits.
+    """
+
+    ds_full = HourlyDataset(
         data,
         seq_len=24,
         indicator_hparams=model.indicator_hparams,
         atr_threshold_k=getattr(model.indicator_hparams, "atr_threshold_k", 1.5),
         train_mode=True,
     )
-    dl = torch.utils.data.DataLoader(ds, batch_size=512, shuffle=True, num_workers=0)
+
+    n_total = len(ds_full)
+    if n_total >= 10:
+        n_train = int(n_total * 0.8)
+        train_idx = list(range(n_train))
+        val_idx = list(range(n_train, n_total))
+        ds_train = torch.utils.data.Subset(ds_full, train_idx)
+        ds_val = torch.utils.data.Subset(ds_full, val_idx)
+    else:
+        ds_train = ds_full
+        ds_val = None
+
+    dl_train = torch.utils.data.DataLoader(
+        ds_train, batch_size=512, shuffle=True, num_workers=0
+    )
+    dl_val = (
+        torch.utils.data.DataLoader(
+            ds_val, batch_size=512, shuffle=False, num_workers=0
+        )
+        if ds_val is not None
+        else None
+    )
+
     for _ in range(epochs):
-        model.train_one_epoch(dl, None, data, update_globals=False)
+        model.train_one_epoch(dl_train, dl_val, data, update_globals=False)
 
 
 logger = logging.getLogger(__name__)
@@ -169,6 +195,8 @@ def csv_training_thread(
 
     ``max_epochs`` stops the loop after N iterations when set.  When
     ``debug_anomaly`` is ``True`` PyTorch's autograd anomaly detection is enabled.
+    The last 20% of the dataset is held out for validation so the GUI can
+    display an unbiased loss curve.
 
     TODO: add granular ``set_status`` calls for each major step and
     integrate more gating checks.
@@ -177,7 +205,6 @@ def csv_training_thread(
     import traceback
 
     import numpy as np
-    from torch.utils.data import random_split
 
     if debug_anomaly:
         torch.autograd.set_detect_anomaly(True)
@@ -219,9 +246,11 @@ def csv_training_thread(
 
         n_total = len(ds_full)
         if n_total >= 10:
-            n_train = int(n_total * 0.9)
-            n_val = n_total - n_train
-            ds_train, ds_val = random_split(ds_full, [n_train, n_val])
+            n_train = int(n_total * 0.8)
+            train_idx = list(range(n_train))
+            val_idx = list(range(n_train, n_total))
+            ds_train = torch.utils.data.Subset(ds_full, train_idx)
+            ds_val = torch.utils.data.Subset(ds_full, val_idx)
         else:
             logging.warning(
                 "Dataset too small for validation split (%d samples)", n_total
@@ -556,9 +585,11 @@ def csv_training_thread(
                     )
                     nt_ = len(ds_updated)
                     if nt_ >= 10:
-                        ntr_ = int(nt_ * 0.9)
-                        nv_ = nt_ - ntr_
-                        ds_tr_, ds_val_ = random_split(ds_updated, [ntr_, nv_])
+                        ntr_ = int(nt_ * 0.8)
+                        idx_tr = list(range(ntr_))
+                        idx_val = list(range(ntr_, nt_))
+                        ds_tr_ = torch.utils.data.Subset(ds_updated, idx_tr)
+                        ds_val_ = torch.utils.data.Subset(ds_updated, idx_val)
                     else:
                         logging.warning(
                             "Dataset too small for validation split during live adapt (%d samples)",
