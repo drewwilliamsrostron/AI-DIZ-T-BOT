@@ -232,6 +232,7 @@ class EnsembleModel(nn.Module):
         n_features: int | None = None,
         total_steps: int = 10000,
         grad_accum_steps: int = 1,
+        delayed_reward_epochs: int = 0,
     ) -> None:
         super().__init__()
         device = torch.device(device) if device is not None else get_device()
@@ -291,7 +292,7 @@ class EnsembleModel(nn.Module):
         self.reward_loss_weight = 0.05
         self.max_reward_loss_weight = 0.2
         self.patience = 0
-        self.delayed_reward_epochs = 0
+        self.delayed_reward_epochs = delayed_reward_epochs
 
         # per-epoch attention stats
         self.entropies: list[float] = []
@@ -893,6 +894,22 @@ class EnsembleModel(nn.Module):
                     )
                     nb += 1
                     accum_counter = 0
+
+            # Flush any remaining gradients
+            if accum_counter > 0:
+                for model, opt_ in zip(self.models, self.optimizers):
+                    self.scaler.unscale_(opt_)
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                    try:
+                        self.scaler.step(opt_)
+                    except AssertionError:
+                        opt_.step()
+                        self.scaler = GradScaler(enabled=False)
+                    else:
+                        self.scaler.update()
+                    opt_.zero_grad()
+                accum_counter = 0
+
             train_loss = total_loss / nb
 
             val_loss = self.evaluate_val_loss(dl_val) if dl_val else None
