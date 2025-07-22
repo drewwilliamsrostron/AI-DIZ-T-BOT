@@ -433,30 +433,38 @@ class MetaTransformerRL:
 
         if act.get("toggle_sma"):
             indicator_hp.use_sma = not indicator_hp.use_sma
+            logging.info("TOGGLE SMA -> %s", "ON" if indicator_hp.use_sma else "OFF")
             if self.ensemble is not None and "toggle_sma" in hyperparams.TOGGLE_INDEX:
                 self.ensemble.feature_mask[hyperparams.TOGGLE_INDEX["toggle_sma"]].xor_(
                     1
                 )
         if act.get("toggle_rsi"):
             indicator_hp.use_rsi = not indicator_hp.use_rsi
+            logging.info("TOGGLE RSI -> %s", "ON" if indicator_hp.use_rsi else "OFF")
             if self.ensemble is not None and "toggle_rsi" in hyperparams.TOGGLE_INDEX:
                 self.ensemble.feature_mask[hyperparams.TOGGLE_INDEX["toggle_rsi"]].xor_(
                     1
                 )
         if act.get("toggle_macd"):
             indicator_hp.use_macd = not indicator_hp.use_macd
+            logging.info("TOGGLE MACD -> %s", "ON" if indicator_hp.use_macd else "OFF")
             if self.ensemble is not None and "toggle_macd" in hyperparams.TOGGLE_INDEX:
                 self.ensemble.feature_mask[
                     hyperparams.TOGGLE_INDEX["toggle_macd"]
                 ].xor_(1)
         if act.get("toggle_atr"):
             indicator_hp.use_atr = not indicator_hp.use_atr
+            logging.info("TOGGLE ATR -> %s", "ON" if indicator_hp.use_atr else "OFF")
             if self.ensemble is not None and "toggle_atr" in hyperparams.TOGGLE_INDEX:
                 self.ensemble.feature_mask[hyperparams.TOGGLE_INDEX["toggle_atr"]].xor_(
                     1
                 )
         if act.get("toggle_vortex"):
             indicator_hp.use_vortex = not indicator_hp.use_vortex
+            logging.info(
+                "TOGGLE VORTEX -> %s",
+                "ON" if indicator_hp.use_vortex else "OFF",
+            )
             if (
                 self.ensemble is not None
                 and "toggle_vortex" in hyperparams.TOGGLE_INDEX
@@ -466,6 +474,7 @@ class MetaTransformerRL:
                 ].xor_(1)
         if act.get("toggle_cmf"):
             indicator_hp.use_cmf = not indicator_hp.use_cmf
+            logging.info("TOGGLE CMF -> %s", "ON" if indicator_hp.use_cmf else "OFF")
             if self.ensemble is not None and "toggle_cmf" in hyperparams.TOGGLE_INDEX:
                 self.ensemble.feature_mask[hyperparams.TOGGLE_INDEX["toggle_cmf"]].xor_(
                     1
@@ -483,6 +492,11 @@ class MetaTransformerRL:
             if act.get(key):
                 cur = getattr(indicator_hp, flag)
                 setattr(indicator_hp, flag, not cur)
+                logging.info(
+                    "TOGGLE %s -> %s",
+                    key.split("_")[1].upper(),
+                    "ON" if not cur else "OFF",
+                )
                 if self.ensemble is not None and key in hyperparams.TOGGLE_INDEX:
                     idx = hyperparams.TOGGLE_INDEX[key]
                     self.ensemble.feature_mask[idx].xor_(1)
@@ -662,6 +676,35 @@ class MetaTransformerRL:
                 curr_state, sort_keys=True
             )
             _prev_param_state = curr_state
+            active_list: list[str] = []
+            if curr_state.get("sma_active"):
+                active_list.append(f"SMA(p{curr_state.get('sma_period')})")
+            if curr_state.get("rsi_active"):
+                active_list.append(f"RSI(p{curr_state.get('rsi_period')})")
+            if curr_state.get("macd_active"):
+                active_list.append(
+                    f"MACD(f{curr_state.get('macd_fast')}/s{curr_state.get('macd_slow')}/sig{curr_state.get('macd_signal')})"
+                )
+            if curr_state.get("atr_active"):
+                active_list.append(f"ATR(p{curr_state.get('atr_period')})")
+            if curr_state.get("vortex_active"):
+                active_list.append(f"VORTEX(p{curr_state.get('vortex_period')})")
+            if curr_state.get("cmf_active"):
+                active_list.append(f"CMF(p{curr_state.get('cmf_period')})")
+            if curr_state.get("ema_active"):
+                active_list.append(f"EMA(p{curr_state.get('ema_period')})")
+            if curr_state.get("donchian_active"):
+                active_list.append(f"DONCHIAN(p{curr_state.get('donchian_period')})")
+            if curr_state.get("kijun_active"):
+                active_list.append(f"KIJUN(p{curr_state.get('kijun_period')})")
+            if curr_state.get("tenkan_active"):
+                active_list.append(f"TENKAN(p{curr_state.get('tenkan_period')})")
+            if curr_state.get("disp_active"):
+                active_list.append(f"DISP(p{curr_state.get('displacement')})")
+            logging.info(
+                "ACTIVE_INDICATORS now: %s",
+                ", ".join(active_list) if active_list else "None",
+            )
 
         if (
             G.global_composite_reward is not None
