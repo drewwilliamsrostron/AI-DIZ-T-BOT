@@ -69,12 +69,7 @@ def format_trade_details(trades: list[dict], limit: int = 50) -> str:
 
 
 def _active_indicators(params: dict | None = None) -> str:
-    """Return comma-separated names of enabled indicators.
-
-    If ``params`` is provided, use the on/off flags in that mapping instead of
-    the current global state.  This allows displaying indicator status for the
-    best parameter set.
-    """
+    """Return comma-separated indicator names with periods."""
 
     if params is None:
         use_sma = G.global_use_SMA
@@ -103,27 +98,58 @@ def _active_indicators(params: dict | None = None) -> str:
 
     names = []
     if use_sma:
-        names.append("SMA")
+        period = params.get("sma_period") if params is not None else G.global_SMA_period
+        names.append(f"SMA(p{period})")
     if use_rsi:
-        names.append("RSI")
+        period = params.get("rsi_period") if params is not None else G.global_RSI_period
+        names.append(f"RSI(p{period})")
     if use_macd:
-        names.append("MACD")
+        fast = params.get("macd_fast") if params is not None else G.global_MACD_fast
+        slow = params.get("macd_slow") if params is not None else G.global_MACD_slow
+        signal = (
+            params.get("macd_signal") if params is not None else G.global_MACD_signal
+        )
+        names.append(f"MACD(f{fast}/s{slow}/sig{signal})")
     if use_ema:
-        names.append("EMA")
+        period = params.get("ema_period") if params is not None else G.global_EMA_period
+        names.append(f"EMA(p{period})")
     if use_atr:
-        names.append("ATR")
+        period = params.get("atr_period") if params is not None else G.global_ATR_period
+        names.append(f"ATR(p{period})")
     if use_vortex:
-        names.append("VORTEX")
+        period = (
+            params.get("vortex_period")
+            if params is not None
+            else G.global_VORTEX_period
+        )
+        names.append(f"VORTEX(p{period})")
     if use_cmf:
-        names.append("CMF")
+        period = params.get("cmf_period") if params is not None else G.global_CMF_period
+        names.append(f"CMF(p{period})")
     if use_don:
-        names.append("DONCHIAN")
+        period = (
+            params.get("donchian_period")
+            if params is not None
+            else G.global_DONCHIAN_period
+        )
+        names.append(f"DONCHIAN(p{period})")
     if use_kijun:
-        names.append("KIJUN")
+        period = (
+            params.get("kijun_period") if params is not None else G.global_KIJUN_period
+        )
+        names.append(f"KIJUN(p{period})")
     if use_tenkan:
-        names.append("TENKAN")
+        period = (
+            params.get("tenkan_period")
+            if params is not None
+            else G.global_TENKAN_period
+        )
+        names.append(f"TENKAN(p{period})")
     if use_disp:
-        names.append("DISP")
+        period = (
+            params.get("displacement") if params is not None else G.global_DISPLACEMENT
+        )
+        names.append(f"DISP(p{period})")
 
     return ", ".join(names) if names else "None"
 
@@ -133,90 +159,6 @@ def _trade_counts(trades: list[dict]) -> tuple[int, int]:
     long_c = sum(1 for t in trades if t.get("side") == "long")
     short_c = sum(1 for t in trades if t.get("side") == "short")
     return long_c, short_c
-
-
-def _format_params(use_best: bool) -> str:
-    """Return formatted hyperparameter summary."""
-    if use_best:
-        params = G.global_best_params or {}
-        lr = G.global_best_lr if G.global_best_lr is not None else 0.0
-        wd = G.global_best_wd if G.global_best_wd is not None else 0.0
-    else:
-        params = {
-            "SL_multiplier": G.global_SL_multiplier,
-            "TP_multiplier": G.global_TP_multiplier,
-            "long_frac": G.global_long_frac,
-            "short_frac": G.global_short_frac,
-            "lr": G.global_lr,
-            "wd": G.global_wd,
-            "sma_period": G.global_SMA_period,
-            "sma_active": G.global_use_SMA,
-            "rsi_period": G.global_RSI_period,
-            "rsi_active": G.global_use_RSI,
-            "macd_fast": G.global_MACD_fast,
-            "macd_slow": G.global_MACD_slow,
-            "macd_signal": G.global_MACD_signal,
-            "macd_active": G.global_use_MACD,
-            "atr_period": G.global_ATR_period,
-            "atr_active": G.global_use_ATR,
-            "vortex_period": G.global_VORTEX_period,
-            "vortex_active": G.global_use_VORTEX,
-            "cmf_period": G.global_CMF_period,
-            "cmf_active": G.global_use_CMF,
-            "ema_period": G.global_EMA_period,
-            "ema_active": G.global_use_EMA,
-            "donchian_period": G.global_DONCHIAN_period,
-            "donchian_active": G.global_use_DONCHIAN,
-            "kijun_period": G.global_KIJUN_period,
-            "kijun_active": G.global_use_KIJUN,
-            "tenkan_period": G.global_TENKAN_period,
-            "tenkan_active": G.global_use_TENKAN,
-            "displacement": G.global_DISPLACEMENT,
-            "disp_active": G.global_use_DISPLACEMENT,
-        }
-        lr = G.global_lr
-        wd = G.global_wd
-
-    lines = [
-        f"LR: {lr:.6f}",
-        f"WD: {wd:.6f}",
-        f"Long Frac: {params.get('long_frac', 0):.3f}",
-        f"Short Frac: {params.get('short_frac', 0):.3f}",
-    ]
-    lines.append(
-        f"SMA: {'ON' if params.get('sma_active') else 'OFF'} (p{params.get('sma_period')})"
-    )
-    lines.append(
-        f"RSI: {'ON' if params.get('rsi_active') else 'OFF'} (p{params.get('rsi_period')})"
-    )
-    lines.append(
-        f"MACD: {'ON' if params.get('macd_active') else 'OFF'} (f{params.get('macd_fast')}/s{params.get('macd_slow')}/sig{params.get('macd_signal')})"
-    )
-    lines.append(
-        f"ATR: {'ON' if params.get('atr_active') else 'OFF'} (p{params.get('atr_period')})"
-    )
-    lines.append(
-        f"VORTEX: {'ON' if params.get('vortex_active') else 'OFF'} (p{params.get('vortex_period')})"
-    )
-    lines.append(
-        f"CMF: {'ON' if params.get('cmf_active') else 'OFF'} (p{params.get('cmf_period')})"
-    )
-    lines.append(
-        f"EMA: {'ON' if params.get('ema_active') else 'OFF'} (p{params.get('ema_period')})"
-    )
-    lines.append(
-        f"DON: {'ON' if params.get('donchian_active') else 'OFF'} (p{params.get('donchian_period')})"
-    )
-    lines.append(
-        f"KIJ: {'ON' if params.get('kijun_active') else 'OFF'} (p{params.get('kijun_period')})"
-    )
-    lines.append(
-        f"TEN: {'ON' if params.get('tenkan_active') else 'OFF'} (p{params.get('tenkan_period')})"
-    )
-    lines.append(
-        f"DISP: {'ON' if params.get('disp_active') else 'OFF'} (p{params.get('displacement')})"
-    )
-    return "\n".join(lines)
 
 
 def should_enable_live_trading() -> bool:
@@ -579,11 +521,6 @@ class TradingGUI:
         self.position_label = ttk.Label(self.info, text="Position: None")
         self.position_label.grid(row=2, column=1, sticky="w", padx=5, pady=2)
 
-        self.best_lr_label = ttk.Label(self.info, text="Best LR: N/A")
-        self.best_lr_label.grid(row=3, column=0, sticky="w", padx=5, pady=2)
-        self.best_wd_label = ttk.Label(self.info, text="Weight Decay: N/A")
-        self.best_wd_label.grid(row=3, column=1, sticky="w", padx=5, pady=2)
-
         self.info.columnconfigure(0, weight=1)
         self.info.columnconfigure(1, weight=1)
         self.info.columnconfigure(2, weight=1)
@@ -635,13 +572,16 @@ class TradingGUI:
         self.curr_long_label.grid(row=2, column=0, sticky="w")
         self.curr_short_label = ttk.Label(self.current_params, text="Short Trades: 0")
         self.curr_short_label.grid(row=2, column=1, sticky="w")
-        self.curr_params_details = tk.Text(
-            self.current_params, height=10, width=28, wrap="word"
+        self.curr_lr_label = ttk.Label(self.current_params, text="LR: N/A")
+        self.curr_lr_label.grid(row=3, column=0, sticky="w")
+        self.curr_wd_label = ttk.Label(self.current_params, text="WD: N/A")
+        self.curr_wd_label.grid(row=3, column=1, sticky="w")
+        self.curr_longfrac_label = ttk.Label(self.current_params, text="Long Frac: N/A")
+        self.curr_longfrac_label.grid(row=4, column=0, sticky="w")
+        self.curr_shortfrac_label = ttk.Label(
+            self.current_params, text="Short Frac: N/A"
         )
-        self.curr_params_details.grid(row=3, column=0, columnspan=2, sticky="nsew")
-        self.current_params.rowconfigure(3, weight=1)
-        self.current_params.columnconfigure(0, weight=1)
-        self.current_params.columnconfigure(1, weight=1)
+        self.curr_shortfrac_label.grid(row=4, column=1, sticky="w")
 
         self.best_stats = ttk.LabelFrame(self.info, text="Best Stats")
         self.best_stats.grid(row=5, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
@@ -682,13 +622,14 @@ class TradingGUI:
         self.best_long_label.grid(row=2, column=0, sticky="w")
         self.best_short_label = ttk.Label(self.best_params, text="Short Trades: 0")
         self.best_short_label.grid(row=2, column=1, sticky="w")
-        self.best_params_details = tk.Text(
-            self.best_params, height=10, width=28, wrap="word"
-        )
-        self.best_params_details.grid(row=3, column=0, columnspan=2, sticky="nsew")
-        self.best_params.rowconfigure(3, weight=1)
-        self.best_params.columnconfigure(0, weight=1)
-        self.best_params.columnconfigure(1, weight=1)
+        self.best_lr_label = ttk.Label(self.best_params, text="LR: N/A")
+        self.best_lr_label.grid(row=3, column=0, sticky="w")
+        self.best_wd_label = ttk.Label(self.best_params, text="WD: N/A")
+        self.best_wd_label.grid(row=3, column=1, sticky="w")
+        self.best_longfrac_label = ttk.Label(self.best_params, text="Long Frac: N/A")
+        self.best_longfrac_label.grid(row=4, column=0, sticky="w")
+        self.best_shortfrac_label = ttk.Label(self.best_params, text="Short Frac: N/A")
+        self.best_shortfrac_label.grid(row=4, column=1, sticky="w")
 
         self.validation_label = ttk.Label(self.info, text="Validation: N/A")
         self.validation_label.grid(
@@ -1046,13 +987,6 @@ class TradingGUI:
         else:
             current_lr = 0.0
 
-        self.best_lr_label.config(
-            text=f"Best LR: {G.global_best_lr if G.global_best_lr else current_lr:.2e}"
-        )
-        self.best_wd_label.config(
-            text=f"Weight Decay: {G.global_best_wd if G.global_best_wd else 'N/A'}"
-        )
-
         if G.global_validation_summary:
             sharpe = G.global_validation_summary.get("mean_sharpe", 0.0)
             enabled = G.nuclear_key_enabled
@@ -1094,8 +1028,10 @@ class TradingGUI:
         long_c, short_c = _trade_counts(G.global_trade_details)
         self.curr_long_label.config(text=f"Long Trades: {long_c}")
         self.curr_short_label.config(text=f"Short Trades: {short_c}")
-        self.curr_params_details.delete("1.0", tk.END)
-        self.curr_params_details.insert(tk.END, _format_params(False))
+        self.curr_lr_label.config(text=f"LR: {G.global_lr:.6f}")
+        self.curr_wd_label.config(text=f"WD: {G.global_wd:.6f}")
+        self.curr_longfrac_label.config(text=f"Long Frac: {G.global_long_frac:.3f}")
+        self.curr_shortfrac_label.config(text=f"Short Frac: {G.global_short_frac:.3f}")
 
         has_best = bool(G.global_best_trade_details) or G.global_best_sharpe != 0.0
 
@@ -1150,8 +1086,20 @@ class TradingGUI:
             long_b, short_b = _trade_counts(G.global_best_trade_details)
             self.best_long_label.config(text=f"Long Trades: {long_b}")
             self.best_short_label.config(text=f"Short Trades: {short_b}")
-            self.best_params_details.delete("1.0", tk.END)
-            self.best_params_details.insert(tk.END, _format_params(True))
+            if G.global_best_lr is not None:
+                self.best_lr_label.config(text=f"LR: {G.global_best_lr:.6f}")
+            else:
+                self.best_lr_label.config(text=f"LR: {current_lr:.6f}")
+            if G.global_best_wd is not None:
+                self.best_wd_label.config(text=f"WD: {G.global_best_wd:.6f}")
+            else:
+                self.best_wd_label.config(text="WD: N/A")
+            self.best_longfrac_label.config(
+                text=f"Long Frac: {G.global_best_params.get('long_frac', 0):.3f}"
+            )
+            self.best_shortfrac_label.config(
+                text=f"Short Frac: {G.global_best_params.get('short_frac', 0):.3f}"
+            )
         else:
             self.best_drawdown_label.config(text="Best Max DD: N/A")
             self.best_netprofit_label.config(text="Best Net Pct: N/A")
@@ -1168,8 +1116,10 @@ class TradingGUI:
             self.best_tp_label.config(text="TP: N/A")
             self.best_long_label.config(text="Long Trades: 0")
             self.best_short_label.config(text="Short Trades: 0")
-            self.best_params_details.delete("1.0", tk.END)
-            self.best_params_details.insert(tk.END, "(No best parameters yet)")
+            self.best_lr_label.config(text=f"LR: {current_lr:.6f}")
+            self.best_wd_label.config(text="WD: N/A")
+            self.best_longfrac_label.config(text="Long Frac: 0.000")
+            self.best_shortfrac_label.config(text="Short Frac: 0.000")
 
         primary, secondary = G.get_status_full()
         nk_state = "ARMED" if G.nuke_armed else "SAFE"
