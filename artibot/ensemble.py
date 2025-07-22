@@ -745,10 +745,12 @@ class EnsembleModel(nn.Module):
                 device=self.device,
             )
         )
-        advantage = torch.tensor(
-            current_result["composite_reward"] - baseline,
-            dtype=torch.float32,
-            device=self.device,
+        raw_advantage = current_result["composite_reward"] - baseline
+        # Scale the advantage to avoid exploding RL losses when a backtest
+        # returns an unusually large composite reward.  ``tanh`` keeps the value
+        # bounded within ``[-1, 1]`` so ``rl_loss`` stays numerically stable.
+        advantage = torch.tanh(
+            torch.tensor(raw_advantage / 50.0, dtype=torch.float32, device=self.device)
         )
         total_loss = 0.0
         nb = 0
@@ -782,6 +784,7 @@ class EnsembleModel(nn.Module):
                 losses = []
                 ce_vals: list[float] = []
                 r_vals: list[float] = []
+                skip_batch = False
                 with ctx, torch.autograd.set_detect_anomaly(True):
                     for model in self.models:
                         logits, _, pred_reward = model(bx.clone())
@@ -816,6 +819,16 @@ class EnsembleModel(nn.Module):
                         else:
                             r_loss = torch.tensor(0.0, device=self.device)
                             rl_loss = torch.tensor(0.0, device=self.device)
+
+                        if batch_idx < 3:
+                            logging.info(
+                                "DBG_LOSSES batch=%d ce=%.6f r=%.6f rl=%.6f",
+                                batch_idx,
+                                ce_loss.item(),
+                                r_loss.item(),
+                                rl_loss.item(),
+                            )
+
                         loss = ce_loss + self.reward_loss_weight * r_loss + rl_loss
 
                         if not torch.isfinite(loss).all():
@@ -823,14 +836,21 @@ class EnsembleModel(nn.Module):
                                 "Non‑finite loss detected at step %s", self.train_steps
                             )
                             logging.error(
-                                "ce_loss=%s reward_loss=%s",
+                                "ce_loss=%s reward_loss=%s rl_loss=%s",
                                 ce_loss.item(),
                                 r_loss.item(),
+                                rl_loss.item(),
                             )
-                            continue
-                        losses.append(loss)
+                            skip_batch = True
+                            break
 
-                if not losses:
+                        losses.append(loss)
+                        r_vals.append(float(r_loss))
+
+                if skip_batch or not losses:
+                    accum_counter = 0
+                    for opt in self.optimizers:
+                        opt.zero_grad()
                     continue
 
                 debug_ce = float(np.mean(ce_vals)) if ce_vals else 0.0
