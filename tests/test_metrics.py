@@ -120,3 +120,13 @@ def test_compute_trade_metrics_basic():
     assert res["win_rate"] == 0.5
     assert res["profit_factor"] == pytest.approx(2.0)
     assert res["avg_duration"] == 15
+
+
+def test_summarise_net_positions():
+    seq = [0, 10, 10, -5, -5, 0, 15]
+    res = metrics.summarise_net_positions(seq)
+    assert res["flips"] == 2
+    assert res["max_long"] == 15
+    assert res["max_short"] == -5
+    assert res["avg_exposure"] == pytest.approx(45 / 7)
+    assert res["time_in_market_pct"] == pytest.approx(5 / 7 * 100)

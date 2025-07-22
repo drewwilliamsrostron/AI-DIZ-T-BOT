@@ -30,13 +30,23 @@ def test_optimizer_steps_with_grad_accum(monkeypatch):
         }
 
     monkeypatch.setattr("artibot.ensemble.robust_backtest", dummy_backtest)
-    monkeypatch.setattr("artibot.ensemble.compute_yearly_stats", lambda *a, **k: (None, ""))
-    monkeypatch.setattr("artibot.ensemble.compute_monthly_stats", lambda *a, **k: (None, ""))
+    monkeypatch.setattr(
+        "artibot.ensemble.compute_yearly_stats", lambda *a, **k: (None, "")
+    )
+    monkeypatch.setattr(
+        "artibot.ensemble.compute_monthly_stats", lambda *a, **k: (None, "")
+    )
 
     monkeypatch.setattr(const, "FEATURE_DIMENSION", 8)
     monkeypatch.setattr(model, "FEATURE_DIMENSION", 8)
 
-    ens = EnsembleModel(device=device, n_models=1, n_features=8, grad_accum_steps=2, delayed_reward_epochs=0)
+    ens = EnsembleModel(
+        device=device,
+        n_models=1,
+        n_features=8,
+        grad_accum_steps=2,
+        delayed_reward_epochs=0,
+    )
 
     class DummyModel(torch.nn.Module):
         def __init__(self):
