@@ -226,14 +226,14 @@ def startup_options_dialog(
     except Exception as exc:  # pragma: no cover
         logging.warning("Tk unavailable: %s; using defaults", exc)
         return {
-            "skip_sentiment": bool(defaults.get("skip_sentiment", False)),
+            "skip_sentiment": bool(defaults.get("skip_sentiment", True)),
             "use_live": bool(defaults.get("use_live", False)),
-            "use_prev_weights": bool(defaults.get("use_prev_weights", True)),
+            "use_prev_weights": bool(defaults.get("use_prev_weights", False)),
             "threads": int(defaults.get("threads", os.cpu_count() or 1)),
         }
 
     root.title("Startup Options")
-    skip_var = tk_module.BooleanVar(value=bool(defaults.get("skip_sentiment", False)))
+    skip_var = tk_module.BooleanVar(value=bool(defaults.get("skip_sentiment", True)))
     live_var = tk_module.BooleanVar(value=bool(defaults.get("use_live", False)))
 
     weights_var = tk_module.BooleanVar(
@@ -241,11 +241,11 @@ def startup_options_dialog(
     )
     threads_max = os.cpu_count() or 1
     threads_var = tk_module.IntVar(value=int(defaults.get("threads", threads_max)))
-    risk_var = tk_module.BooleanVar(value=bool(defaults.get("risk_filter", True)))
+    risk_var = tk_module.BooleanVar(value=bool(defaults.get("risk_filter", False)))
     net_var = tk_module.BooleanVar(value=bool(defaults.get("use_net_term", True)))
     sharpe_var = tk_module.BooleanVar(value=bool(defaults.get("use_sharpe_term", True)))
     dd_var = tk_module.BooleanVar(value=bool(defaults.get("use_drawdown_term", True)))
-    trade_var = tk_module.BooleanVar(value=bool(defaults.get("use_trade_term", True)))
+    trade_var = tk_module.BooleanVar(value=bool(defaults.get("use_trade_term", False)))
     days_var = tk_module.BooleanVar(
         value=bool(defaults.get("use_profit_days_term", True))
     )
