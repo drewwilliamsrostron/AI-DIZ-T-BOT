@@ -11,7 +11,13 @@ def test_defcon5_logging(monkeypatch, caplog):
     class DummyStudy:
         def __init__(self):
             self.trials = []
-            self.params = {"lr": 0.001, "entropy_beta": 0.001}
+            self.params = {
+                "lr": 0.001,
+                "entropy_beta": 0.001,
+                "USE_SMA": True,
+                "SMA_PERIOD": 10,
+                "USE_RSI": False,
+            }
 
         def optimize(self, func, n_trials=1, timeout=None):
             trial = types.SimpleNamespace(params=self.params)
@@ -29,3 +35,4 @@ def test_defcon5_logging(monkeypatch, caplog):
     training.run_hpo(n_trials=1)
 
     assert any("ENTERING DEFCON 5" in r.message for r in caplog.records)
+    assert any("Active indicators" in r.message for r in caplog.records)

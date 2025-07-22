@@ -165,3 +165,4 @@ def test_meta_mutation_logging(monkeypatch, caplog):
     caplog.set_level(logging.INFO)
     agent.apply_action(ens.hp, ens.indicator_hparams, act)
     assert any("META_MUTATION" in r.message for r in caplog.records)
+    assert any("TOGGLE ATR" in r.message for r in caplog.records)

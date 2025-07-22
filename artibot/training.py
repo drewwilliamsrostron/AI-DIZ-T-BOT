@@ -975,6 +975,25 @@ def run_hpo(n_trials: int = 50) -> dict:
         logging.info(
             "--- Hyperparam Set %d/%d --- Indicator combo: %s", idx, n_trials, param_str
         )
+        active_inds: list[str] = []
+        for key, val in params.items():
+            if key.startswith("USE_") and val is True:
+                ind_name = key[4:]
+                if ind_name == "MACD":
+                    fast = params.get("MACD_FAST")
+                    slow = params.get("MACD_SLOW")
+                    sig = params.get("MACD_SIGNAL")
+                    active_inds.append(f"MACD(f{fast}/s{slow}/sig{sig})")
+                elif ind_name == "DISPLACEMENT":
+                    period = params.get("DISPLACEMENT")
+                    active_inds.append(f"DISP(p{period})")
+                elif ind_name in {"SENTIMENT", "MACRO", "RVOL"}:
+                    active_inds.append(ind_name)
+                else:
+                    period = params.get(f"{ind_name}_PERIOD")
+                    active_inds.append(f"{ind_name}(p{period})")
+        active_str = ", ".join(active_inds) if active_inds else "None"
+        logging.info("Trial %d: Active indicators = %s", idx, active_str)
     best = study.best_params
     G.global_best_lr = best.get("lr")
     G.global_best_wd = best.get("entropy_beta")
