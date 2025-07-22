@@ -75,6 +75,7 @@ def test_robust_backtest_simple(monkeypatch):
     assert round(result["net_pct"], 2) == 0.93
     # Composite reward should heavily penalise draw-downs.
     assert result["composite_reward"] == pytest.approx(2.19581, rel=1e-3)
+    assert "sortino" in result and "omega" in result and "calmar" in result
 
 
 def test_robust_backtest_unbounded_reward(monkeypatch):

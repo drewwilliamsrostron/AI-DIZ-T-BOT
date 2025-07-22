@@ -29,6 +29,7 @@ from .metrics import (
     compute_trade_metrics,
     summarise_net_positions,
 )
+from .utils.reward_utils import sortino_ratio, omega_ratio, calmar_ratio
 
 FIXED_FEATURES = None
 
@@ -591,6 +592,9 @@ def robust_backtest(
     if len(eqdf) < 2:
         sharpe = 0.0
         mdd = 0.0
+        sortino = torch.tensor(0.0)
+        omega = torch.tensor(0.0)
+        calmar = 0.0
     else:
         dret = eqdf["balance"].pct_change().dropna()
         mu = dret.mean()
@@ -599,6 +603,11 @@ def robust_backtest(
         rollmax = eqdf["balance"].cummax()
         dd = (eqdf["balance"] - rollmax) / rollmax
         mdd = dd.min()
+        dret_t = torch.tensor(dret.values, dtype=torch.float32)
+        sortino = sortino_ratio(dret_t)
+        omega = omega_ratio(dret_t)
+        period_days = max(1, int((end_date - start_date) / 86400))
+        calmar = calmar_ratio(net_pct, float(mdd), period_days)
 
     metrics = compute_trade_metrics(trades)
     win_rate = metrics["win_rate"]
@@ -606,6 +615,10 @@ def robust_backtest(
     avg_duration = metrics["avg_duration"]
     avg_win = metrics["avg_win"]
     avg_loss = metrics["avg_loss"]
+
+    sortino_score = float(np.clip(sortino.item(), -1.0, 1.0))
+    omega_score = float(np.clip(omega.item(), -1.0, 1.0))
+    calmar_score = float(np.clip(calmar, -1.0, 1.0))
 
     net_score = net_pct
     shr_score = float(np.clip(sharpe, -1.0, 1.0))
@@ -619,10 +632,16 @@ def robust_backtest(
         composite_reward += alpha * net_score
     if G.use_sharpe_term:
         composite_reward += beta * shr_score * 2
-    if G.use_drawdown_term:
+    if G.use_drawdown_term and not G.use_calmar_term:
         # Penalise large draw-downs exponentially beyond 10%.
         dd_pen = np.exp(max(abs(mdd) - 0.10, 0) * 10) - 1
         composite_reward -= gamma * dd_pen
+    if G.use_sortino_term:
+        composite_reward += G.theta * sortino_score * 2
+    if G.use_omega_term:
+        composite_reward += G.phi * omega_score * 2
+    if G.use_calmar_term:
+        composite_reward += G.chi * calmar_score * 2
     if G.use_trade_term:
         composite_reward += trade_term * 3
     if G.use_profit_days_term:
@@ -645,6 +664,9 @@ def robust_backtest(
         "avg_trade_duration": avg_duration,
         "avg_win": avg_win,
         "avg_loss": avg_loss,
+        "sortino": float(sortino),
+        "omega": float(omega),
+        "calmar": float(calmar),
         "exposure": exposure_stats,
         # flag promoting results from a complete dataset span
         # (1337 days or more qualifies as a full data run)

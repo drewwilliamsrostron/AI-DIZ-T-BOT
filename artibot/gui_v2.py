@@ -249,6 +249,16 @@ def startup_options_dialog(
     days_var = tk_module.BooleanVar(
         value=bool(defaults.get("use_profit_days_term", True))
     )
+    sortino_var = tk_module.BooleanVar(
+        value=bool(defaults.get("use_sortino_term", False))
+    )
+    omega_var = tk_module.BooleanVar(value=bool(defaults.get("use_omega_term", False)))
+    calmar_var = tk_module.BooleanVar(
+        value=bool(defaults.get("use_calmar_term", False))
+    )
+    theta_var = tk_module.DoubleVar(value=float(defaults.get("theta", 1.0)))
+    phi_var = tk_module.DoubleVar(value=float(defaults.get("phi", 1.0)))
+    chi_var = tk_module.DoubleVar(value=float(defaults.get("chi", 1.0)))
 
     tk_module.Checkbutton(
         root, text="Skip GDELT sentiment download", variable=skip_var
@@ -268,6 +278,15 @@ def startup_options_dialog(
     tk_module.Checkbutton(root, text="Drawdown", variable=dd_var).pack(anchor="w")
     tk_module.Checkbutton(root, text="Trades", variable=trade_var).pack(anchor="w")
     tk_module.Checkbutton(root, text="Profit Days", variable=days_var).pack(anchor="w")
+    tk_module.Checkbutton(root, text="Sortino", variable=sortino_var).pack(anchor="w")
+    tk_module.Checkbutton(root, text="Omega", variable=omega_var).pack(anchor="w")
+    tk_module.Checkbutton(root, text="Calmar", variable=calmar_var).pack(anchor="w")
+    tk_module.Label(root, text="Theta:").pack(anchor="w")
+    tk_module.Entry(root, textvariable=theta_var, width=5).pack(anchor="w")
+    tk_module.Label(root, text="Phi:").pack(anchor="w")
+    tk_module.Entry(root, textvariable=phi_var, width=5).pack(anchor="w")
+    tk_module.Label(root, text="Chi:").pack(anchor="w")
+    tk_module.Entry(root, textvariable=chi_var, width=5).pack(anchor="w")
     tk_module.Label(root, text="CPU threads:").pack(anchor="w")
     tk_module.Spinbox(
         root, from_=1, to=threads_max, textvariable=threads_var, width=5
@@ -285,6 +304,12 @@ def startup_options_dialog(
         result["use_drawdown_term"] = dd_var.get()
         result["use_trade_term"] = trade_var.get()
         result["use_profit_days_term"] = days_var.get()
+        result["use_sortino_term"] = sortino_var.get()
+        result["use_omega_term"] = omega_var.get()
+        result["use_calmar_term"] = calmar_var.get()
+        result["theta"] = theta_var.get()
+        result["phi"] = phi_var.get()
+        result["chi"] = chi_var.get()
 
         root.quit()
         root.destroy()
@@ -559,8 +584,14 @@ class TradingGUI:
         self.current_avg_loss_label.grid(row=4, column=0, sticky="w")
         self.current_inactivity_label = ttk.Label(self.current_stats, text="Inact: N/A")
         self.current_inactivity_label.grid(row=4, column=1, sticky="w")
+        self.current_sortino_label = ttk.Label(self.current_stats, text="Sortino: N/A")
+        self.current_sortino_label.grid(row=5, column=0, sticky="w")
+        self.current_omega_label = ttk.Label(self.current_stats, text="Omega: N/A")
+        self.current_omega_label.grid(row=5, column=1, sticky="w")
+        self.current_calmar_label = ttk.Label(self.current_stats, text="Calmar: N/A")
+        self.current_calmar_label.grid(row=6, column=0, sticky="w")
         self.current_composite_label = ttk.Label(self.current_stats, text="Comp: N/A")
-        self.current_composite_label.grid(row=5, column=0, columnspan=2, sticky="w")
+        self.current_composite_label.grid(row=7, column=0, columnspan=2, sticky="w")
 
         self.current_params = ttk.LabelFrame(self.info, text="Current Params")
         self.current_params.grid(row=4, column=2, sticky="nsew", padx=5, pady=5)
@@ -609,8 +640,14 @@ class TradingGUI:
         self.best_avg_loss_label.grid(row=4, column=0, sticky="w")
         self.best_inactivity_label = ttk.Label(self.best_stats, text="Best Inact: N/A")
         self.best_inactivity_label.grid(row=4, column=1, sticky="w")
+        self.best_sortino_label = ttk.Label(self.best_stats, text="Best Sortino: N/A")
+        self.best_sortino_label.grid(row=5, column=0, sticky="w")
+        self.best_omega_label = ttk.Label(self.best_stats, text="Best Omega: N/A")
+        self.best_omega_label.grid(row=5, column=1, sticky="w")
+        self.best_calmar_label = ttk.Label(self.best_stats, text="Best Calmar: N/A")
+        self.best_calmar_label.grid(row=6, column=0, sticky="w")
         self.best_composite_label = ttk.Label(self.best_stats, text="Best Comp: N/A")
-        self.best_composite_label.grid(row=5, column=0, columnspan=2, sticky="w")
+        self.best_composite_label.grid(row=7, column=0, columnspan=2, sticky="w")
 
         self.best_params = ttk.LabelFrame(self.info, text="Best Params")
         self.best_params.grid(row=5, column=2, sticky="nsew", padx=5, pady=5)
@@ -1037,6 +1074,9 @@ class TradingGUI:
         )
         self.current_avg_win_label.config(text=f"Avg Win: {G.global_avg_win:.3f}")
         self.current_avg_loss_label.config(text=f"Avg Loss: {G.global_avg_loss:.3f}")
+        self.current_sortino_label.config(text=f"Sortino: {G.global_sortino:.2f}")
+        self.current_omega_label.config(text=f"Omega: {G.global_omega:.2f}")
+        self.current_calmar_label.config(text=f"Calmar: {G.global_calmar:.2f}")
 
         inds = _active_indicators()
         self.curr_ind_label.config(text=f"Indicators: {inds}")
@@ -1093,6 +1133,13 @@ class TradingGUI:
             self.best_avg_loss_label.config(
                 text=f"Best Avg Loss: {G.global_best_avg_loss:.3f}"
             )
+            self.best_sortino_label.config(
+                text=f"Best Sortino: {G.global_best_sortino:.2f}"
+            )
+            self.best_omega_label.config(text=f"Best Omega: {G.global_best_omega:.2f}")
+            self.best_calmar_label.config(
+                text=f"Best Calmar: {G.global_best_calmar:.2f}"
+            )
             self.best_ind_label.config(text=f"Indicators: {inds_best}")
             self.best_sl_label.config(
                 text=f"SL: {G.global_best_params.get('SL_multiplier', 'N/A')}"
@@ -1128,6 +1175,9 @@ class TradingGUI:
             self.best_profit_factor_label.config(text="Best Profit Factor: N/A")
             self.best_avg_win_label.config(text="Best Avg Win: N/A")
             self.best_avg_loss_label.config(text="Best Avg Loss: N/A")
+            self.best_sortino_label.config(text="Best Sortino: N/A")
+            self.best_omega_label.config(text="Best Omega: N/A")
+            self.best_calmar_label.config(text="Best Calmar: N/A")
             self.best_ind_label.config(text="Indicators: N/A")
             self.best_sl_label.config(text="SL: N/A")
             self.best_tp_label.config(text="TP: N/A")
