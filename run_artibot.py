@@ -204,6 +204,12 @@ def main() -> None:
         "use_drawdown_term": G.use_drawdown_term,
         "use_trade_term": G.use_trade_term,
         "use_profit_days_term": G.use_profit_days_term,
+        "use_sortino_term": G.use_sortino_term,
+        "use_omega_term": G.use_omega_term,
+        "use_calmar_term": G.use_calmar_term,
+        "theta": DEFAULT_CFG.get("reward", {}).get("theta", G.theta),
+        "phi": DEFAULT_CFG.get("reward", {}).get("phi", G.phi),
+        "chi": DEFAULT_CFG.get("reward", {}).get("chi", G.chi),
         "risk_filter": G.is_risk_filter_enabled(),
     }
     opts = startup_options_dialog(defaults)
@@ -226,6 +232,14 @@ def main() -> None:
     G.use_profit_days_term = bool(
         opts.get("use_profit_days_term", defaults["use_profit_days_term"])
     )
+    G.use_sortino_term = bool(
+        opts.get("use_sortino_term", defaults["use_sortino_term"])
+    )
+    G.use_omega_term = bool(opts.get("use_omega_term", defaults["use_omega_term"]))
+    G.use_calmar_term = bool(opts.get("use_calmar_term", defaults["use_calmar_term"]))
+    G.theta = float(opts.get("theta", defaults["theta"]))
+    G.phi = float(opts.get("phi", defaults["phi"]))
+    G.chi = float(opts.get("chi", defaults["chi"]))
     G.set_risk_filter_enabled(bool(opts.get("risk_filter", defaults["risk_filter"])))
 
     from artibot.utils import setup_logging

@@ -21,3 +21,28 @@ def differential_sharpe(returns: torch.Tensor) -> torch.Tensor:
 
     dr = torch.diff(returns, prepend=returns[:1])
     return dr.mean() / (dr.std(unbiased=False) + 1e-6)
+
+
+def sortino_ratio(returns: torch.Tensor, target: float = 0.0) -> torch.Tensor:
+    """Return Sortino ratio of ``returns`` relative to ``target``.
+
+    Uses downside deviation to penalise negative volatility. A small
+    epsilon is added to avoid division by zero.
+    """
+    downside = torch.clamp(target - returns, min=0.0)
+    dd = downside.std(unbiased=False)
+    excess = returns.mean() - target
+    return excess / (dd + 1e-6)
+
+
+def omega_ratio(returns: torch.Tensor, threshold: float = 0.0) -> torch.Tensor:
+    """Return Omega ratio of ``returns`` around ``threshold``."""
+    gains = torch.clamp(returns - threshold, min=0.0).mean()
+    losses = torch.clamp(threshold - returns, min=0.0).mean()
+    return gains / (losses + 1e-6)
+
+
+def calmar_ratio(net_pct: float, max_drawdown: float, period_days: int) -> float:
+    """Return Calmar ratio based on annualised return and drawdown."""
+    annualised = net_pct / max(period_days / 365.0, 1e-6)
+    return annualised / (abs(max_drawdown) + 1e-6)

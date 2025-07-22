@@ -136,6 +136,9 @@ global_profit_factor = 0.0
 global_avg_trade_duration = 0.0
 global_avg_win = 0.0
 global_avg_loss = 0.0
+global_sortino = 0.0
+global_omega = 0.0
+global_calmar = 0.0
 global_inactivity_penalty = None  # RL penalty when idle
 global_composite_reward = None  # most recent composite reward
 global_composite_reward_ema = 0.0
@@ -168,6 +171,11 @@ global_best_composite_reward = float("-inf")
 global_best_days_in_profit = None
 global_best_trade_details = []  # list of trades from the best run
 
+# Additional best risk metrics
+global_best_sortino = 0.0
+global_best_omega = 0.0
+global_best_calmar = 0.0
+
 # Global best hyperparameters:
 global_best_lr = None  # best learning rate so far
 global_best_wd = None  # best weight decay so far
@@ -183,6 +191,12 @@ use_sharpe_term = True  # include Sharpe ratio
 use_drawdown_term = True  # include drawdown term
 use_trade_term = True  # include trade count
 use_profit_days_term = True  # include days in profit
+use_sortino_term = False  # include Sortino ratio
+use_omega_term = False  # include Omega ratio
+use_calmar_term = False  # include Calmar ratio
+theta = 1.0  # Sortino weight
+phi = 1.0  # Omega weight
+chi = 1.0  # Calmar weight
 risk_filter_enabled = False  # training loss gating disabled by default
 
 ###############################################################################
@@ -530,6 +544,12 @@ def push_backtest_metrics(result: dict) -> None:
     global global_avg_trade_duration
     global global_avg_win
     global global_avg_loss
+    global global_sortino
+    global global_omega
+    global global_calmar
+    global global_best_sortino
+    global global_best_omega
+    global global_best_calmar
     global global_exposure_stats
     with state_lock:
         global_equity_curve = result["equity_curve"]
@@ -548,5 +568,14 @@ def push_backtest_metrics(result: dict) -> None:
         global_avg_trade_duration = result["avg_trade_duration"]
         global_avg_win = result.get("avg_win", 0.0)
         global_avg_loss = result.get("avg_loss", 0.0)
+        global_sortino = result.get("sortino", 0.0)
+        global_omega = result.get("omega", 0.0)
+        global_calmar = result.get("calmar", 0.0)
+        if global_sortino > global_best_sortino:
+            global_best_sortino = global_sortino
+        if global_omega > global_best_omega:
+            global_best_omega = global_omega
+        if global_calmar > global_best_calmar:
+            global_best_calmar = global_calmar
         global_exposure_stats = result.get("exposure", {})
     gui_event.set()

@@ -3,3 +3,11 @@ heartbeat_interval = 120
 
 [risk_filter]
 enabled = true
+
+[reward]
+use_sortino_term = false
+use_omega_term = false
+use_calmar_term = false
+theta = 1.0
+phi = 1.0
+chi = 1.0
