@@ -520,6 +520,8 @@ class TradingGUI:
         self.balance_label.grid(row=2, column=0, sticky="w", padx=5, pady=2)
         self.position_label = ttk.Label(self.info, text="Position: None")
         self.position_label.grid(row=2, column=1, sticky="w", padx=5, pady=2)
+        self.exposure_label = ttk.Label(self.info, text="Open Contracts: 0")
+        self.exposure_label.grid(row=3, column=1, sticky="w", padx=5, pady=2)
 
         self.info.columnconfigure(0, weight=1)
         self.info.columnconfigure(1, weight=1)
@@ -981,6 +983,19 @@ class TradingGUI:
         else:
             pos = "None"
         self.position_label.config(text=f"Position: {pos}")
+        if G.global_exposure_stats:
+            ex = G.global_exposure_stats
+            self.exposure_label.config(
+                text=(
+                    f"Flips:{ex.get('flips',0)} Avg:{ex.get('avg_exposure',0):.1f} "
+                    f"MaxL:{ex.get('max_long',0):.1f} MaxS:{ex.get('max_short',0):.1f} "
+                    f"Time:{ex.get('time_in_market_pct',0):.1f}%"
+                )
+            )
+        else:
+            self.exposure_label.config(
+                text=f"Open Contracts: {G.global_position_size:.4f}"
+            )
 
         if self.ensemble is not None:
             current_lr = self.ensemble.optimizers[0].param_groups[0]["lr"]
@@ -1174,6 +1189,22 @@ class TradingGUI:
         side, sz, entry = _fetch_position(self.connector.exchange)
         self.update_position(side, sz, entry)
         self.root.after(10000, self.refresh_stats)
+
+    def set_exposure_stats(self, stats: dict[str, float] | None) -> None:
+        """Expose backtest exposure metrics to the GUI."""
+        G.global_exposure_stats = stats or {}
+        if stats:
+            self.exposure_label.config(
+                text=(
+                    f"Flips:{stats.get('flips',0)} Avg:{stats.get('avg_exposure',0):.1f} "
+                    f"MaxL:{stats.get('max_long',0):.1f} MaxS:{stats.get('max_short',0):.1f} "
+                    f"Time:{stats.get('time_in_market_pct',0):.1f}%"
+                )
+            )
+        else:
+            self.exposure_label.config(
+                text=f"Open Contracts: {G.global_position_size:.4f}"
+            )
 
     def log_trade(self, msg: str) -> None:
         """Append ``msg`` to the trade log list box."""

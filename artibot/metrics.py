@@ -270,3 +270,47 @@ def nuclear_key_condition(sharpe: float, max_dd: float, profit_factor: float) ->
     """Return ``True`` when metrics allow live trading."""
 
     return sharpe >= 1.5 and max_dd >= -0.20 and profit_factor >= 1.5
+
+
+def summarise_net_positions(net_positions: list[float]) -> dict[str, float]:
+    """Return summary statistics for a sequence of net positions.
+
+    Parameters
+    ----------
+    net_positions:
+        List of position sizes with positive values for longs and negative
+        values for shorts. Entries can be zero when flat.
+
+    Returns
+    -------
+    dict[str, float]
+        Dictionary containing ``flips``, ``avg_exposure``, ``max_long``,
+        ``max_short`` and ``time_in_market_pct`` keys.
+    """
+
+    if not net_positions:
+        return {
+            "flips": 0,
+            "avg_exposure": 0.0,
+            "max_long": 0.0,
+            "max_short": 0.0,
+            "time_in_market_pct": 0.0,
+        }
+
+    arr = np.asarray(net_positions, dtype=float)
+    signs = np.sign(arr)
+    non_zero = signs[signs != 0]
+    flips = int(np.sum(np.diff(non_zero) != 0)) if non_zero.size else 0
+
+    avg_exposure = float(np.mean(np.abs(arr)))
+    max_long = float(np.max(arr)) if np.max(arr) > 0 else 0.0
+    max_short = float(np.min(arr)) if np.min(arr) < 0 else 0.0
+    time_in_market_pct = float(np.count_nonzero(arr != 0) / arr.size * 100.0)
+
+    return {
+        "flips": flips,
+        "avg_exposure": avg_exposure,
+        "max_long": max_long,
+        "max_short": max_short,
+        "time_in_market_pct": time_in_market_pct,
+    }

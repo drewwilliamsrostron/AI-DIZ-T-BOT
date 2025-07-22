@@ -247,3 +247,18 @@ def test_on_test_trade_places_order(monkeypatch):
     )
     after_args["func"]()
     assert called[1]["side"] == "sell"
+
+
+def test_set_exposure_stats_updates_label():
+    stats = {
+        "flips": 3,
+        "avg_exposure": 4.5,
+        "max_long": 10,
+        "max_short": -5,
+        "time_in_market_pct": 75,
+    }
+    ui.exposure_label = DummyWidget()
+    ui.set_exposure_stats(stats)
+    assert "Flips:3" in ui.exposure_label["text"] or "Flips:3" in str(
+        ui.exposure_label["text"]
+    )

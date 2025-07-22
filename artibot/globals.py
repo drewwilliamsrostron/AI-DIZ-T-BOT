@@ -141,6 +141,7 @@ global_composite_reward = None  # most recent composite reward
 global_composite_reward_ema = 0.0
 global_days_without_trading = None
 global_trade_details = []  # list of trade dicts
+global_exposure_stats: dict = {}  # backtest exposure summary
 global_holdout_sharpe = 0.0  # validation Sharpe
 global_holdout_max_drawdown = 0.0  # validation DD
 
@@ -529,6 +530,7 @@ def push_backtest_metrics(result: dict) -> None:
     global global_avg_trade_duration
     global global_avg_win
     global global_avg_loss
+    global global_exposure_stats
     with state_lock:
         global_equity_curve = result["equity_curve"]
         global_backtest_profit.append(result["net_pct"])
@@ -546,4 +548,5 @@ def push_backtest_metrics(result: dict) -> None:
         global_avg_trade_duration = result["avg_trade_duration"]
         global_avg_win = result.get("avg_win", 0.0)
         global_avg_loss = result.get("avg_loss", 0.0)
+        global_exposure_stats = result.get("exposure", {})
     gui_event.set()

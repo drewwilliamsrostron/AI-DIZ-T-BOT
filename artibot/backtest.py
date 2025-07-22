@@ -27,6 +27,7 @@ from .metrics import (
     inactivity_exponential_penalty,
     compute_days_in_profit,
     compute_trade_metrics,
+    summarise_net_positions,
 )
 
 FIXED_FEATURES = None
@@ -350,6 +351,8 @@ def robust_backtest(
     bal = init_bal
     eq_curve = []
     trades = []
+    net_positions: list[float] = []
+    current_position = 0.0
     pos = {
         "size": 0.0,
         "side": None,
@@ -494,6 +497,8 @@ def robust_backtest(
             else:
                 curr_eq += abs(pos["size"]) * (pos["entry_price"] - cur_p)
         eq_curve.append((cur_t, curr_eq))
+        current_position = pos["size"]
+        net_positions.append(current_position)
 
     if pos["size"] != 0:
         final_price = closes[-1]
@@ -541,6 +546,8 @@ def robust_backtest(
             }
         )
         eq_curve[-1] = (int(timestamps[-1]), bal)
+        current_position = 0.0
+        net_positions.append(current_position)
 
     final_profit = bal - init_bal
     net_pct = (final_profit / init_bal) * 100.0
@@ -548,6 +555,8 @@ def robust_backtest(
         net_pct = 0.0
     # Clamp extreme values so a runaway trade does not dominate training
     eff_net_pct = float(np.clip(net_pct, -1000.0, 1000.0))
+
+    exposure_stats = summarise_net_positions(net_positions)
 
     # inactivity penalty
     tot_inact_pen = 0.0
@@ -636,6 +645,7 @@ def robust_backtest(
         "avg_trade_duration": avg_duration,
         "avg_win": avg_win,
         "avg_loss": avg_loss,
+        "exposure": exposure_stats,
         # flag promoting results from a complete dataset span
         # (1337 days or more qualifies as a full data run)
         "full_data_run": (end_date - start_date) >= 1337 * 86400,
