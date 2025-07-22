@@ -825,6 +825,8 @@ class TradingGUI:
         self.ax_loss.plot(x[: len(train_vals)], train_vals, label="Train", marker="o")
 
         val_vals = [np.nan if v is None else v for v in G.global_validation_loss]
+        # Without a validation loader ``global_validation_loss`` holds zeros,
+        # meaning the plotted line remains flat at the origin.
         val_vals = val_vals[:n]
         if pd is not None and any(not np.isnan(v) for v in val_vals):
             val_vals = pd.Series(val_vals).ewm(span=10).mean().tolist()
