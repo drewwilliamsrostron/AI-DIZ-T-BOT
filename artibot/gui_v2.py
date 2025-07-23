@@ -69,7 +69,7 @@ def format_trade_details(trades: list[dict], limit: int = 50) -> str:
 
 
 def _active_indicators(params: dict | None = None) -> str:
-    """Return comma-separated indicator names with periods."""
+    """Return newline-separated indicator names with periods."""
 
     if params is None:
         use_sma = G.global_use_SMA
@@ -151,7 +151,7 @@ def _active_indicators(params: dict | None = None) -> str:
         )
         names.append(f"DISP(p{period})")
 
-    return ", ".join(names) if names else "None"
+    return "\n".join(names) if names else "None"
 
 
 def _trade_counts(trades: list[dict]) -> tuple[int, int]:
@@ -595,7 +595,7 @@ class TradingGUI:
 
         self.current_params = ttk.LabelFrame(self.info, text="Current Params")
         self.current_params.grid(row=4, column=2, sticky="nsew", padx=5, pady=5)
-        self.curr_ind_label = ttk.Label(self.current_params, text="Indicators: N/A")
+        self.curr_ind_label = ttk.Label(self.current_params, text="Indicators:\nN/A")
         self.curr_ind_label.grid(row=0, column=0, columnspan=2, sticky="w")
         self.curr_sl_label = ttk.Label(self.current_params, text="SL: N/A")
         self.curr_sl_label.grid(row=1, column=0, sticky="w")
@@ -651,7 +651,7 @@ class TradingGUI:
 
         self.best_params = ttk.LabelFrame(self.info, text="Best Params")
         self.best_params.grid(row=5, column=2, sticky="nsew", padx=5, pady=5)
-        self.best_ind_label = ttk.Label(self.best_params, text="Indicators: N/A")
+        self.best_ind_label = ttk.Label(self.best_params, text="Indicators:\nN/A")
         self.best_ind_label.grid(row=0, column=0, columnspan=2, sticky="w")
         self.best_sl_label = ttk.Label(self.best_params, text="SL: N/A")
         self.best_sl_label.grid(row=1, column=0, sticky="w")
@@ -1079,7 +1079,7 @@ class TradingGUI:
         self.current_calmar_label.config(text=f"Calmar: {G.global_calmar:.2f}")
 
         inds = _active_indicators()
-        self.curr_ind_label.config(text=f"Indicators: {inds}")
+        self.curr_ind_label.config(text=f"Indicators:\n{inds}")
         self.curr_sl_label.config(text=f"SL: {G.global_SL_multiplier}")
         self.curr_tp_label.config(text=f"TP: {G.global_TP_multiplier}")
         long_c, short_c = _trade_counts(G.global_trade_details)
@@ -1140,7 +1140,7 @@ class TradingGUI:
             self.best_calmar_label.config(
                 text=f"Best Calmar: {G.global_best_calmar:.2f}"
             )
-            self.best_ind_label.config(text=f"Indicators: {inds_best}")
+            self.best_ind_label.config(text=f"Indicators:\n{inds_best}")
             self.best_sl_label.config(
                 text=f"SL: {G.global_best_params.get('SL_multiplier', 'N/A')}"
             )
