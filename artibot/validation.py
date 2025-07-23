@@ -17,7 +17,7 @@ import artibot.globals as G
 from .backtest import robust_backtest
 from .dataset import load_csv_hourly, HourlyDataset
 from .ensemble import EnsembleModel
-from .hyperparams import HyperParams, IndicatorHyperparams
+from .hyperparams import HyperParams, IndicatorHyperparams, WARMUP_STEPS
 from .training import csv_training_thread
 from artibot.core.device import get_device
 
@@ -95,6 +95,7 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
         lr=3e-4,
         weight_decay=1e-4,
         n_features=n_features,
+        warmup_steps=WARMUP_STEPS,
     )
     ensemble.indicator_hparams = indicator_hp
     ensemble.hp = HyperParams(indicator_hp=indicator_hp)

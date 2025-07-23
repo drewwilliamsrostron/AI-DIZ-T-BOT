@@ -32,7 +32,7 @@ def load_master_config(path: str = "master_config.json") -> dict:
 
 from .dataset import HourlyDataset, load_csv_hourly
 from .ensemble import EnsembleModel
-from .hyperparams import HyperParams, IndicatorHyperparams
+from .hyperparams import HyperParams, IndicatorHyperparams, WARMUP_STEPS
 import artibot.globals as G
 from .gui import TradingGUI, ask_use_prev_weights
 from .rl import MetaTransformerRL, meta_control_loop
@@ -175,6 +175,7 @@ def run_bot(max_epochs: int | None = None, *, overfit_toy: bool = False) -> None
         lr=1e-3,
         weight_decay=0.0,
         n_features=n_features,
+        warmup_steps=WARMUP_STEPS,
     )
     ensemble.indicator_hparams = indicator_hp
     ensemble.hp = HyperParams(indicator_hp=indicator_hp)

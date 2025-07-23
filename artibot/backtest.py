@@ -17,7 +17,7 @@ from .utils import (
     rolling_zscore,
 )
 from .dataset import trailing_sma, HourlyDataset
-from .hyperparams import IndicatorHyperparams
+from .hyperparams import IndicatorHyperparams, WARMUP_STEPS
 from . import indicators
 
 import artibot.globals as G
@@ -696,7 +696,12 @@ if __name__ == "__main__":
         train_mode=False,
     )
     n_features = ds_tmp[0][0].shape[1]
-    ens = EnsembleModel(device=get_device(), n_models=1, n_features=n_features)
+    ens = EnsembleModel(
+        device=get_device(),
+        n_models=1,
+        n_features=n_features,
+        warmup_steps=WARMUP_STEPS,
+    )
     stop = threading.Event()
     csv_training_thread(
         ens,
