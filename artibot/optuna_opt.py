@@ -1,12 +1,13 @@
-from __future__ import annotations
-
 """Unified hyper-parameter optimisation using Optuna BOHB."""
+
+from __future__ import annotations
 
 from dataclasses import fields
 from typing import Dict, Tuple
 import random
 
 import optuna
+
 try:  # pragma: no cover - optional dependency during tests
     from optuna.samplers import TPESampler
     from optuna.pruners import HyperbandPruner

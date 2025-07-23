@@ -134,11 +134,13 @@ class IndicatorHyperparams:
         for attr, key in mapping.items():
             if key in _CONFIG:
                 cur = getattr(self, attr)
-                typ = type(cur)
-                try:
-                    setattr(self, attr, typ(_CONFIG[key]))
-                except Exception:
-                    pass
+                default = IndicatorHyperparams.__dataclass_fields__[attr].default
+                if cur == default:
+                    typ = type(cur)
+                    try:
+                        setattr(self, attr, typ(_CONFIG[key]))
+                    except Exception:
+                        pass
 
 
 # ---------------------------------------------------------------------------

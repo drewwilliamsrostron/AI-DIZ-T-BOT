@@ -15,4 +15,3 @@ def test_bohb_range():
             assert 1 <= val <= 200
     assert 1e-5 <= params["learning_rate"] <= 1e-2
     assert 1e-6 <= params["weight_decay"] <= 1e-2
-
