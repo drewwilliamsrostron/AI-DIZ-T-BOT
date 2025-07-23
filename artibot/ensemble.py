@@ -380,8 +380,13 @@ class EnsembleModel(nn.Module):
         best_result: dict | None = None
         if run_sweep:
             from .optuna_opt import run_bohb
+            from .hyperparams import _CONFIG
 
             hp, _ = run_bohb(n_trials=10)
+            for name, val in vars(hp).items():
+                setattr(self.hp.indicator_hp, name, val)
+                _CONFIG[name.upper()] = val
+            G.sync_globals(self.hp, self.hp.indicator_hp)
             self.indicator_hparams = hp
             best_result = robust_backtest(self, data_full)
 
