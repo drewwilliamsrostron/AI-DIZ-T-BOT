@@ -169,6 +169,7 @@ def build_model(
     entropy_beta: float | None = None,
 ) -> "EnsembleModel":
     """Return an :class:`EnsembleModel` configured with HPO params."""
+    from artibot.hyperparams import WARMUP_STEPS
 
     model = EnsembleModel(
         device=device,
@@ -178,6 +179,7 @@ def build_model(
         n_features=n_features,
         total_steps=10000,
         grad_accum_steps=4,
+        warmup_steps=WARMUP_STEPS,
     )
     if entropy_beta is not None:
         model.entropy_beta = entropy_beta

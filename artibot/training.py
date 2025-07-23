@@ -968,7 +968,11 @@ def objective(trial: optuna.trial.Trial) -> float:
     )
     n_features = ds_tmp[0][0].shape[1]
     model = EnsembleModel(
-        device=get_device(), n_models=1, lr=params["lr"], n_features=n_features
+        device=get_device(),
+        n_models=1,
+        lr=params["lr"],
+        n_features=n_features,
+        warmup_steps=hyperparams.WARMUP_STEPS,
     )
     model.entropy_beta = params["entropy_beta"]
     model.indicator_hparams = indicator_hp
@@ -1043,7 +1047,11 @@ def run_hpo(n_trials: int = 50) -> dict:
     )
     n_features = ds_tmp[0][0].shape[1]
     model = EnsembleModel(
-        device=get_device(), n_models=1, lr=best.get("lr", 1e-4), n_features=n_features
+        device=get_device(),
+        n_models=1,
+        lr=best.get("lr", 1e-4),
+        n_features=n_features,
+        warmup_steps=hyperparams.WARMUP_STEPS,
     )
     model.entropy_beta = best.get("entropy_beta", 1e-4)
     model.indicator_hparams = indicator_hp
@@ -1091,7 +1099,9 @@ def walk_forward_backtest(data: list, train_window: int, test_horizon: int) -> l
         fold_idx += 1
         train_slice = data[start : start + train_window]
         test_slice = data[start + train_window : start + train_window + test_horizon]
-        model = EnsembleModel(device=get_device(), n_models=1)
+        model = EnsembleModel(
+            device=get_device(), n_models=1, warmup_steps=hyperparams.WARMUP_STEPS
+        )
         quick_fit(model, train_slice, epochs=1)
         metrics = robust_backtest(model, test_slice)
         if metrics.get("trades", 0) == 0:

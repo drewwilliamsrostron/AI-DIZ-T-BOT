@@ -232,6 +232,7 @@ class EnsembleModel(nn.Module):
         total_steps: int = 10000,
         grad_accum_steps: int = 1,
         delayed_reward_epochs: int = 0,
+        warmup_steps: int = 1000,
     ) -> None:
         super().__init__()
         device = torch.device(device) if device is not None else get_device()
@@ -292,6 +293,7 @@ class EnsembleModel(nn.Module):
         self.max_reward_loss_weight = 0.2
         self.patience = 0
         self.delayed_reward_epochs = delayed_reward_epochs
+        self.warmup_steps = warmup_steps
 
         # per-epoch attention stats
         self.entropies: list[float] = []
@@ -658,7 +660,10 @@ class EnsembleModel(nn.Module):
                             )
                             continue
 
-                        use_reward = self.train_steps > self.delayed_reward_epochs
+                        use_reward = self.train_steps > self.warmup_steps
+                        logging.info(
+                            f"RL active: {use_reward} at train_step {self.train_steps}"
+                        )
                         if use_reward:
                             r_loss = self.mse_loss_fn(
                                 pred_reward, scaled_target.expand_as(pred_reward)
