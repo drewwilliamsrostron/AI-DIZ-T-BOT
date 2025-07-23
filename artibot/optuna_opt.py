@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import fields
+from typing import get_args, get_origin
 from typing import Dict, Tuple
 import random
 
@@ -27,8 +28,15 @@ def _trial_indicator_params(trial: optuna.trial.Trial) -> IndicatorHyperparams:
     for f in fields(IndicatorHyperparams):
         if f.name.startswith("use_"):
             params[f.name] = trial.suggest_categorical(f.name, [True, False])
-        elif f.type is int:
-            params[f.name] = trial.suggest_int(f.name, 1, 200)
+        else:
+            ftype = f.type
+            origin = get_origin(ftype)
+            if origin is None:
+                if ftype is int:
+                    params[f.name] = trial.suggest_int(f.name, 1, 200)
+            else:
+                if int in get_args(ftype):
+                    params[f.name] = trial.suggest_int(f.name, 1, 200)
     return IndicatorHyperparams(**params)
 
 
