@@ -119,7 +119,6 @@ to enable FlashAttention‑v2.  Benchmarks show 1.5–3× speed‑ups on sequenc
 To automatically install a FlashAttention-capable PyTorch nightly on CUDA 11.8:
 
 ```bash
-export FLASH_SDP_AUTO_INSTALL=1
 python run_artibot.py
 ```
 
@@ -165,11 +164,9 @@ stop‑loss/take‑profit parameters and ATR threshold:
 
 ### Hyperparameter Sweep
 
-Define `experiment_axes` in your config YAML and run:
-
+Run the BOHB optimiser to tune indicator periods:
 ```bash
-export FLASH_SDP_AUTO_INSTALL=1
-python scripts/sweep.py --config config/hyperparams.yaml --early_stop_epochs 3 --top_k 3
+python scripts/sweep.py --data Gemini_BTCUSD_1h.csv --n_trials 20
 ```
 
 ## Usage

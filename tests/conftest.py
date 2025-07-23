@@ -95,6 +95,7 @@ def pytest_configure(config):
         torch_mod.arange = lambda *a, **k: FakeTensor(np.arange(*a, **k))
         torch_mod.zeros_like = lambda x: FakeTensor(np.zeros_like(x))
         torch_mod.randn = lambda *s: FakeTensor(np.random.randn(*s))
+        torch_mod.exp = np.exp
         torch_mod.manual_seed = np.random.seed
         torch_mod.is_tensor = lambda x: isinstance(x, np.ndarray)
         torch_mod.float32 = np.float32
@@ -102,6 +103,14 @@ def pytest_configure(config):
         nn_mod = types.ModuleType("torch.nn")
         nn_mod.Module = FakeModule
         nn_mod.Parameter = FakeTensor
+        class Linear(FakeModule):
+            def __init__(self, *a, **k):
+                pass
+
+            def forward(self, x):
+                return x
+
+        nn_mod.Linear = Linear
         fn_mod = types.ModuleType("torch.nn.functional")
         fn_mod.relu = lambda x: x
         fn_mod.__spec__ = ModuleSpec("torch.nn.functional", loader=None)
@@ -232,14 +241,39 @@ def pytest_configure(config):
         optuna = types.ModuleType("optuna")
         trial_mod = types.ModuleType("optuna.trial")
         trial_mod.Trial = object
+        optuna.pruners = types.ModuleType("optuna.pruners")
+        optuna.samplers = types.ModuleType("optuna.samplers")
         optuna.trial = trial_mod
-        optuna.create_study = lambda *a, **k: types.SimpleNamespace(
-            optimize=lambda *a, **k: None, best_params={}
-        )
+        def _dummy_study(*a, **k):
+            class DS:
+                def __init__(self) -> None:
+                    self.best_trial = types.SimpleNamespace(params={})
+
+                def optimize(self, func, n_trials=1, timeout=None):
+                    for _ in range(n_trials):
+                        func(
+                            types.SimpleNamespace(
+                                suggest_int=lambda *a, **k: 1,
+                                suggest_float=lambda *a, **k: 0.1,
+                                suggest_categorical=lambda *a, **k: True,
+                                report=lambda *a, **k: None,
+                                should_prune=lambda: False,
+                            )
+                        )
+
+            return DS()
+
+        optuna.create_study = _dummy_study
         optuna.__spec__ = ModuleSpec("optuna", loader=None)
         trial_mod.__spec__ = ModuleSpec("optuna.trial", loader=None)
+        optuna.pruners.__spec__ = ModuleSpec("optuna.pruners", loader=None)
+        optuna.samplers.__spec__ = ModuleSpec("optuna.samplers", loader=None)
+        optuna.pruners.HyperbandPruner = lambda *a, **k: None
+        optuna.samplers.TPESampler = lambda *a, **k: None
         sys.modules["optuna"] = optuna
         sys.modules["optuna.trial"] = trial_mod
+        sys.modules["optuna.pruners"] = optuna.pruners
+        sys.modules["optuna.samplers"] = optuna.samplers
 
     if "psutil" not in sys.modules:
         psutil = types.ModuleType("psutil")
