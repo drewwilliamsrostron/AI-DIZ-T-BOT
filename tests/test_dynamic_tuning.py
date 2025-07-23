@@ -4,8 +4,8 @@ from artibot.rl import ACTION_KEYS, MetaTransformerRL
 
 
 def test_apply_action_syncs_globals():
-    hp = HyperParams()
-    ind_hp = IndicatorHyperparams()
+    ind_hp = IndicatorHyperparams(vortex_period=14, rsi_period=9)
+    hp = HyperParams(indicator_hp=ind_hp)
     agent = MetaTransformerRL(ensemble=None)
 
     act = {k: 0 for k in ACTION_KEYS}
@@ -37,8 +37,8 @@ def test_apply_action_syncs_globals():
 
 
 def test_toggle_ema_period_updates_globals():
-    hp = HyperParams()
-    ind_hp = IndicatorHyperparams()
+    ind_hp = IndicatorHyperparams(ema_period=20)
+    hp = HyperParams(indicator_hp=ind_hp)
     agent = MetaTransformerRL(ensemble=None)
 
     act = {k: 0 for k in ACTION_KEYS}

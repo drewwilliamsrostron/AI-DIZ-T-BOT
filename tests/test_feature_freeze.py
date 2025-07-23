@@ -8,7 +8,7 @@ from artibot.ensemble import EnsembleModel
 def test_actions_apply_after_warmup(monkeypatch):
     ens = EnsembleModel(device=torch.device("cpu"), n_models=1)
     agent = MetaTransformerRL(ens)
-    hp_inst = hp.HyperParams()
+    hp_inst = hp.HyperParams(indicator_hp=hp.IndicatorHyperparams(sma_period=10))
     ihp = hp_inst.indicator_hp
     sma_flag = ihp.use_sma
     period = ihp.sma_period

@@ -19,7 +19,21 @@ from artibot.hyperparams import IndicatorHyperparams  # noqa: E402
 class DummyEnsemble:
     def __init__(self):
         self.device = "cpu"
-        self.indicator_hparams = IndicatorHyperparams()
+        self.indicator_hparams = IndicatorHyperparams(
+            sma_period=5,
+            rsi_period=10,
+            macd_fast=12,
+            macd_slow=26,
+            macd_signal=9,
+            atr_period=14,
+            vortex_period=14,
+            cmf_period=20,
+            ema_period=20,
+            donchian_period=20,
+            kijun_period=26,
+            tenkan_period=9,
+            displacement=26,
+        )
 
     def vectorized_predict(self, windows_t, batch_size=512):
         preds = np.zeros(len(windows_t), dtype=np.int64)

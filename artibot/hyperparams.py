@@ -81,29 +81,29 @@ class IndicatorHyperparams:
     """Periods and toggles for optional indicators."""
 
     use_sma: bool = False
-    sma_period: int = 10
+    sma_period: int | None = None
     use_rsi: bool = False
-    rsi_period: int = 9
+    rsi_period: int | None = None
     use_macd: bool = False
-    macd_fast: int = 12
-    macd_slow: int = 26
-    macd_signal: int = 9
+    macd_fast: int | None = None
+    macd_slow: int | None = None
+    macd_signal: int | None = None
     use_atr: bool = False
-    atr_period: int = 14
+    atr_period: int | None = None
     use_vortex: bool = False
-    vortex_period: int = 14
+    vortex_period: int | None = None
     use_cmf: bool = False
-    cmf_period: int = 20
+    cmf_period: int | None = None
     use_ema: bool = False
-    ema_period: int = 20
+    ema_period: int | None = None
     use_donchian: bool = False
-    donchian_period: int = 20
+    donchian_period: int | None = None
     use_kijun: bool = False
-    kijun_period: int = 26
+    kijun_period: int | None = None
     use_tenkan: bool = False
-    tenkan_period: int = 9
+    tenkan_period: int | None = None
     use_displacement: bool = False
-    displacement: int = 26
+    displacement: int | None = None
     use_sentiment: bool = False
     use_macro: bool = False
     use_rvol: bool = False
@@ -126,21 +126,33 @@ class IndicatorHyperparams:
             "displacement": "DISPLACEMENT",
         }
 
-        # automatically include every ``use_*`` flag
+        # automatically include every ``use_*`` flag for convenience
         for field in fields(self):
             if field.name.startswith("use_"):
                 mapping[field.name] = field.name.upper()
 
+        # integer overrides only when attribute is ``None``
         for attr, key in mapping.items():
-            if key in _CONFIG:
-                cur = getattr(self, attr)
-                default = IndicatorHyperparams.__dataclass_fields__[attr].default
-                if cur == default:
-                    typ = type(cur)
-                    try:
-                        setattr(self, attr, typ(_CONFIG[key]))
-                    except Exception:
-                        pass
+            if attr.startswith("use_"):
+                continue
+            if getattr(self, attr) is None and key in _CONFIG:
+                try:
+                    val = int(_CONFIG[key])
+                    setattr(self, attr, max(1, min(val, 200)))
+                except Exception:
+                    pass
+
+        # ``use_*`` flags default to config values when False
+        for f in fields(self):
+            if (
+                f.name.startswith("use_")
+                and f.name.upper() in _CONFIG
+                and getattr(self, f.name) is False
+            ):
+                try:
+                    setattr(self, f.name, bool(_CONFIG[f.name.upper()]))
+                except Exception:
+                    pass
 
 
 # ---------------------------------------------------------------------------
