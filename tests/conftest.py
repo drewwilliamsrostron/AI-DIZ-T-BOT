@@ -42,6 +42,12 @@ def pytest_configure(config):
         torch_mod.__spec__ = ModuleSpec("torch", loader=None)
 
         class FakeModule:
+            def __init__(self, *a, **k):
+                pass
+
+            def __call__(self, *a, **k):
+                return FakeTensor(np.zeros((len(a[0]), 3))) if a else None
+
             def parameters(self):
                 return []
 
@@ -76,6 +82,11 @@ def pytest_configure(config):
                     out = np.minimum(out, max)
                 return out
 
+            def argmax(self, axis=None, **k):
+                if "dim" in k:
+                    axis = k.pop("dim")
+                return np.ndarray.argmax(self, axis=axis, **k)
+
             def unsqueeze(self, axis):
                 return np.expand_dims(self, axis).view(FakeTensor)
 
@@ -101,9 +112,11 @@ def pytest_configure(config):
         torch_mod.float = np.float32
         nn_mod = types.ModuleType("torch.nn")
         nn_mod.Module = FakeModule
+        nn_mod.Linear = FakeModule
         nn_mod.Parameter = FakeTensor
         fn_mod = types.ModuleType("torch.nn.functional")
         fn_mod.relu = lambda x: x
+        fn_mod.cross_entropy = lambda logits, target: FakeTensor(0.0)
         fn_mod.__spec__ = ModuleSpec("torch.nn.functional", loader=None)
         nn_mod.functional = fn_mod
         nn_mod.__spec__ = ModuleSpec("torch.nn", loader=None)
