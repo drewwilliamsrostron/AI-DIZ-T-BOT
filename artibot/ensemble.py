@@ -660,7 +660,7 @@ class EnsembleModel(nn.Module):
                             )
                             continue
 
-                        use_reward = self.train_steps > self.warmup_steps
+                        use_reward = self.train_steps >= self.warmup_steps
                         logging.info(
                             f"RL active: {use_reward} at train_step {self.train_steps}"
                         )
@@ -760,6 +760,8 @@ class EnsembleModel(nn.Module):
                             pg["weight_decay"] = _hp.mutate_lr(
                                 pg.get("weight_decay", 0.0), 0.0
                             )
+                    self.train_steps += 1
+                    logging.debug(f"Incremented train_steps to {self.train_steps}")
                     batch_loss = sum(loss_i.item() for loss_i in losses)
                     total_loss += (
                         (batch_loss / len(self.models))
@@ -782,6 +784,8 @@ class EnsembleModel(nn.Module):
                     else:
                         self.scaler.update()
                     opt_.zero_grad()
+                self.train_steps += 1
+                logging.debug(f"Incremented train_steps to {self.train_steps}")
                 accum_counter = 0
 
             train_loss = total_loss / nb
