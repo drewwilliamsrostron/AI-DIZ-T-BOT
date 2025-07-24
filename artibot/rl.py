@@ -390,7 +390,8 @@ class MetaTransformerRL:
             for p in self.model.parameters():
                 if p.requires_grad:
                     p.grad = torch.zeros_like(p)
-        torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+        grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+        logging.debug("PPO_GRAD_NORM %.6f", float(grad_norm))
         self.opt.step()
         if self.scheduler is not None:
             try:

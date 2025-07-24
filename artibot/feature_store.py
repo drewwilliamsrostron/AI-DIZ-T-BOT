@@ -18,6 +18,7 @@ import duckdb
 import threading
 import numpy as np
 import json
+import logging
 import pathlib
 
 from .constants import FEATURE_DIMENSION
@@ -46,6 +47,7 @@ def freeze_feature_dim(dim: int) -> int:
     if _STORE.exists():
         dim = max(dim, json.load(_STORE.open())["dim"])
     json.dump({"dim": dim}, _STORE.open("w"))
+    logging.info("FROZEN_DIM %d", dim)
     return dim
 
 
