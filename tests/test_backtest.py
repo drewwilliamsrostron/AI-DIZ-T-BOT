@@ -27,6 +27,7 @@ from artibot.backtest import robust_backtest
 from artibot.backtest import compute_indicators
 import artibot.execution as execution
 from artibot.hyperparams import IndicatorHyperparams
+import artibot.globals as G
 
 
 class DummyEnsemble:
@@ -73,8 +74,14 @@ def test_robust_backtest_simple(monkeypatch):
     result = robust_backtest(DummyEnsemble(), data)
     assert result["trades"] == 1
     assert round(result["net_pct"], 2) == 0.93
-    # Composite reward should heavily penalise draw-downs.
-    assert result["composite_reward"] == pytest.approx(2.19581, rel=1e-3)
+    expected = (
+        G.beta * float(np.clip(result["sharpe"], -1.0, 1.0))
+        + G.theta * float(np.clip(result["sortino"], -1.0, 1.0))
+        + G.phi * float(np.clip(result["omega"], -1.0, 1.0))
+        + G.chi * float(np.clip(result["calmar"], -1.0, 1.0))
+        - result["inactivity_penalty"]
+    )
+    assert result["composite_reward"] == pytest.approx(expected, rel=1e-6)
     assert "sortino" in result and "omega" in result and "calmar" in result
 
 

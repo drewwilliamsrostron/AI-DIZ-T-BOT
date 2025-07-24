@@ -186,17 +186,18 @@ global_monthly_stats_table = ""
 global_best_monthly_stats_table = ""
 
 # Flags controlling components of the composite reward
-use_net_term = True  # include net profit in reward
+use_net_term = False  # include net profit in reward
 use_sharpe_term = True  # include Sharpe ratio
-use_drawdown_term = True  # include drawdown term
-use_trade_term = True  # include trade count
-use_profit_days_term = True  # include days in profit
-use_sortino_term = False  # include Sortino ratio
-use_omega_term = False  # include Omega ratio
-use_calmar_term = False  # include Calmar ratio
-theta = 1.0  # Sortino weight
-phi = 1.0  # Omega weight
-chi = 1.0  # Calmar weight
+use_drawdown_term = False  # include drawdown term
+use_trade_term = False  # include trade count
+use_profit_days_term = False  # include days in profit
+use_sortino_term = True  # include Sortino ratio
+use_omega_term = True  # include Omega ratio
+use_calmar_term = True  # include Calmar ratio
+beta = 0.5  # Sharpe weight
+theta = 0.5  # Sortino weight
+phi = 0.5  # Omega weight
+chi = 0.5  # Calmar weight
 risk_filter_enabled = False  # training loss gating disabled by default
 
 ###############################################################################

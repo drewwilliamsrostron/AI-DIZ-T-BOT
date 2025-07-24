@@ -167,6 +167,7 @@ def build_model(
     n_features: int,
     lr: float = 1e-3,
     entropy_beta: float | None = None,
+    warmup_steps: int | None = None,
 ) -> "EnsembleModel":
     """Return an :class:`EnsembleModel` configured with HPO params."""
     from artibot.hyperparams import WARMUP_STEPS
@@ -179,7 +180,7 @@ def build_model(
         n_features=n_features,
         total_steps=10000,
         grad_accum_steps=4,
-        warmup_steps=WARMUP_STEPS,
+        warmup_steps=warmup_steps or WARMUP_STEPS,
     )
     if entropy_beta is not None:
         model.entropy_beta = entropy_beta
@@ -212,6 +213,8 @@ def main() -> None:
         "theta": DEFAULT_CFG.get("reward", {}).get("theta", G.theta),
         "phi": DEFAULT_CFG.get("reward", {}).get("phi", G.phi),
         "chi": DEFAULT_CFG.get("reward", {}).get("chi", G.chi),
+        "beta": DEFAULT_CFG.get("reward", {}).get("beta", G.beta),
+        "warmup_steps": DEFAULT_CFG.get("WARMUP_STEPS", 200),
         "risk_filter": G.is_risk_filter_enabled(),
     }
     opts = startup_options_dialog(defaults)
@@ -242,6 +245,10 @@ def main() -> None:
     G.theta = float(opts.get("theta", defaults["theta"]))
     G.phi = float(opts.get("phi", defaults["phi"]))
     G.chi = float(opts.get("chi", defaults["chi"]))
+    G.beta = float(opts.get("beta", defaults["beta"]))
+    from artibot.hyperparams import _CONFIG
+
+    _CONFIG["WARMUP_STEPS"] = int(opts.get("warmup_steps", defaults["warmup_steps"]))
     G.set_risk_filter_enabled(bool(opts.get("risk_filter", defaults["risk_filter"])))
 
     from artibot.utils import setup_logging
@@ -342,6 +349,7 @@ def main() -> None:
             n_features=n_features,
             lr=lr,
             entropy_beta=entropy_beta,
+            warmup_steps=int(opts.get("warmup_steps", defaults["warmup_steps"])),
         )
         ensemble.indicator_hparams = indicator_hp
         ensemble.hp = HyperParams(indicator_hp=indicator_hp)

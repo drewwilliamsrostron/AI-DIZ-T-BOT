@@ -290,11 +290,15 @@ def robust_backtest(
     # threshold = ensemble.dynamic_threshold if ensemble.dynamic_threshold is not None else GLOBAL_THRESHOLD
     # or pass it in the function signature.
 
-    # (9) Composite Reward: alpha=2.0, beta=0.5, gamma=4.0, delta=0.1
-    # Tuned so draw-down heavily penalises performance while profit
-    # still plays a role. Sharpe and trade-count terms remain intact.
+    # ------------------------------------------------------------------
+    # Composite Reward Weights
+    # ------------------------------------------------------------------
+    # ``alpha`` and ``gamma`` are legacy weights for optional net-profit and
+    # draw-down terms.  The main reward now uses risk metrics weighted by
+    # ``G.beta`` (Sharpe), ``G.theta`` (Sortino), ``G.phi`` (Omega) and
+    # ``G.chi`` (Calmar) in line with recent research on risk-adjusted
+    # reinforcement learning.
     alpha = 2.0
-    beta = 0.5
     gamma = 4.0
     delta = 0.1
 
@@ -624,24 +628,29 @@ def robust_backtest(
     shr_score = float(np.clip(sharpe, -1.0, 1.0))
     trade_count = len(trades)
     trade_term = trade_count * delta
-    # final composite
-    # composite_reward= (alpha* net_score + beta* shr_score - gamma* dd_pen + trade_term)
-    # composite_reward-= tot_inact_pen
+    # ------------------------------------------------------------------
+    # Composite reward based solely on risk-adjusted metrics.  Recent
+    # literature recommends combining Sharpe, Sortino, Calmar and Omega
+    # ratios to capture complementary aspects of downside risk.
+    # Net profit and draw-down terms are optionally included but are
+    # disabled by default.  Each ratio is clipped to [-1, 1] so no single
+    # metric dominates the reward signal.
+    # ------------------------------------------------------------------
     composite_reward = 0.0
     if G.use_net_term:
         composite_reward += alpha * net_score
     if G.use_sharpe_term:
-        composite_reward += beta * shr_score * 2
+        composite_reward += G.beta * shr_score
     if G.use_drawdown_term and not G.use_calmar_term:
         # Penalise large draw-downs exponentially beyond 10%.
         dd_pen = np.exp(max(abs(mdd) - 0.10, 0) * 10) - 1
         composite_reward -= gamma * dd_pen
     if G.use_sortino_term:
-        composite_reward += G.theta * sortino_score * 2
+        composite_reward += G.theta * sortino_score
     if G.use_omega_term:
-        composite_reward += G.phi * omega_score * 2
+        composite_reward += G.phi * omega_score
     if G.use_calmar_term:
-        composite_reward += G.chi * calmar_score * 2
+        composite_reward += G.chi * calmar_score
     if G.use_trade_term:
         composite_reward += trade_term * 3
     if G.use_profit_days_term:
