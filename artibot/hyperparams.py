@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
+import logging
 
 import artibot.globals as G
 
@@ -80,33 +81,33 @@ class HyperParams:
 class IndicatorHyperparams:
     """Periods and toggles for optional indicators."""
 
-    use_sma: bool = False
-    sma_period: int | None = None
-    use_rsi: bool = False
-    rsi_period: int | None = None
-    use_macd: bool = False
-    macd_fast: int | None = None
-    macd_slow: int | None = None
-    macd_signal: int | None = None
-    use_atr: bool = False
-    atr_period: int | None = None
-    use_vortex: bool = False
-    vortex_period: int | None = None
-    use_cmf: bool = False
-    cmf_period: int | None = None
-    use_ema: bool = False
-    ema_period: int | None = None
-    use_donchian: bool = False
-    donchian_period: int | None = None
-    use_kijun: bool = False
-    kijun_period: int | None = None
-    use_tenkan: bool = False
-    tenkan_period: int | None = None
-    use_displacement: bool = False
-    displacement: int | None = None
-    use_sentiment: bool = False
-    use_macro: bool = False
-    use_rvol: bool = False
+    use_sma: bool = True
+    sma_period: int = 1
+    use_rsi: bool = True
+    rsi_period: int = 1
+    use_macd: bool = True
+    macd_fast: int = 1
+    macd_slow: int = 1
+    macd_signal: int = 1
+    use_atr: bool = True
+    atr_period: int = 1
+    use_vortex: bool = True
+    vortex_period: int = 1
+    use_cmf: bool = True
+    cmf_period: int = 1
+    use_ema: bool = True
+    ema_period: int = 1
+    use_donchian: bool = True
+    donchian_period: int = 1
+    use_kijun: bool = True
+    kijun_period: int = 1
+    use_tenkan: bool = True
+    tenkan_period: int = 1
+    use_displacement: bool = True
+    displacement: int = 1
+    use_sentiment: bool = True
+    use_macro: bool = True
+    use_rvol: bool = True
 
     def __post_init__(self) -> None:
         """Override defaults with any ``USE_*`` or period values in the config."""
@@ -131,28 +132,33 @@ class IndicatorHyperparams:
             if field.name.startswith("use_"):
                 mapping[field.name] = field.name.upper()
 
-        # integer overrides only when attribute is ``None``
+        # integer overrides when config value available and attribute matches default
         for attr, key in mapping.items():
             if attr.startswith("use_"):
                 continue
-            if getattr(self, attr) is None and key in _CONFIG:
+            if (
+                key in _CONFIG
+                and getattr(self, attr) == self.__dataclass_fields__[attr].default
+            ):
                 try:
                     val = int(_CONFIG[key])
                     setattr(self, attr, max(1, min(val, 200)))
                 except Exception:
                     pass
 
-        # ``use_*`` flags default to config values when False
+        # ``use_*`` flags default to config values when provided and attribute matches default
         for f in fields(self):
-            if (
-                f.name.startswith("use_")
-                and f.name.upper() in _CONFIG
-                and getattr(self, f.name) is False
-            ):
-                try:
-                    setattr(self, f.name, bool(_CONFIG[f.name.upper()]))
-                except Exception:
-                    pass
+            if f.name.startswith("use_") and f.name.upper() in _CONFIG:
+                if getattr(self, f.name) == self.__dataclass_fields__[f.name].default:
+                    try:
+                        setattr(self, f.name, bool(_CONFIG[f.name.upper()]))
+                    except Exception:
+                        pass
+
+        logging.info(
+            "Indicator hyperparams: %s",
+            {f.name: getattr(self, f.name) for f in fields(self)},
+        )
 
 
 # ---------------------------------------------------------------------------
