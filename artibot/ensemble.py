@@ -257,6 +257,10 @@ class EnsembleModel(nn.Module):
             TradingModel(input_size=dim).to(device, non_blocking=True)
             for _ in range(n_models)
         ]
+        for model in self.models:
+            for name, param in model.named_parameters():
+                if not param.requires_grad:
+                    logging.warning("Frozen param: %s", name)
         self._mask_lock = threading.Lock()
         self.register_buffer("feature_mask", torch.ones(1, dim, device=device))
         print("[DEBUG] Model moved to device")
@@ -372,6 +376,14 @@ class EnsembleModel(nn.Module):
         tuple[float, Optional[float]]
             ``train_loss`` and ``val_loss`` (``None`` when no ``dl_val``).
         """
+        first_epoch = self.train_steps == 0
+        target_wd = 0.0 if first_epoch else self.hp.weight_decay
+        for opt in self.optimizers:
+            for pg in opt.param_groups:
+                pg["weight_decay"] = target_wd
+        if first_epoch:
+            logging.info("Epoch 0: temporarily disabled weight decay")
+
         # Mutate shared state on the globals module so the GUI sees progress
 
         # ------------------------------------------------------------------
@@ -573,7 +585,7 @@ class EnsembleModel(nn.Module):
 
         else:
             logging.info(
-                "\u274C SKIPPED: full_data_run=%s, span=%d days, reward=%.2f",
+                "\u274c SKIPPED: full_data_run=%s, span=%d days, reward=%.2f",
                 current_result.get("full_data_run", False),
                 span_days,
                 current_result["composite_reward"],
@@ -707,8 +719,6 @@ class EnsembleModel(nn.Module):
                         opt.zero_grad()
                     continue
 
-                debug_ce = float(np.mean(ce_vals)) if ce_vals else 0.0
-                debug_r = float(np.mean(r_vals)) if r_vals else 0.0
                 total_batch_loss = torch.stack(losses).sum() / self.grad_accum_steps
                 self.scaler.scale(total_batch_loss).backward()
 
@@ -721,12 +731,12 @@ class EnsembleModel(nn.Module):
                         if idx_m == 0 and hasattr(model, "fc"):
                             g = model.fc.weight.grad
                             g_norm = g.abs().mean().item() if g is not None else 0.0
+                            lr = opt_.param_groups[0]["lr"]
                             logging.debug(
-                                "GRAD_CHECK step=%d ce_loss=%.6f r_loss=%.6f grad=%.6f",
+                                "Epoch %d, grad_norm=%.6f, lr=%.6f",
                                 self.train_steps,
-                                debug_ce,
-                                debug_r,
                                 g_norm,
+                                lr,
                             )
                         torch.nn.utils.clip_grad_norm_(
                             self.models[idx_m].parameters(), 1.0
