@@ -10,10 +10,12 @@ def test_hyperparams_defaults():
     assert isinstance(hp.use_sma, bool)
 
 
-def test_indicator_defaults_none():
+def test_indicator_defaults_one_and_true():
     importlib.reload(hyperparams)
     ihp = hyperparams.IndicatorHyperparams()
     for f in hyperparams.fields(hyperparams.IndicatorHyperparams):
+        val = getattr(ihp, f.name)
         if f.name.startswith("use_"):
-            continue
-        assert getattr(ihp, f.name) is None
+            assert val is True
+        else:
+            assert val == 1
