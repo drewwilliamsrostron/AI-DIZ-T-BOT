@@ -293,8 +293,10 @@ class EnsembleModel(nn.Module):
         self.best_state_dicts = None
         self.train_steps = 0
         # Start with a small reward weight and no delay
-        self.reward_loss_weight = 0.05
+        self.reward_loss_weight = 0.01
         self.max_reward_loss_weight = 0.2
+        self.reward_running_mean = 0.0
+        self.reward_running_var = 1.0
         self.patience = 0
         self.delayed_reward_epochs = delayed_reward_epochs
         self.warmup_steps = warmup_steps
@@ -399,9 +401,9 @@ class EnsembleModel(nn.Module):
             hp, _ = run_bohb(n_trials=10)
             for name, val in vars(hp).items():
                 setattr(self.hp.indicator_hp, name, val)
+                setattr(self.indicator_hparams, name, val)
                 _CONFIG[name.upper()] = val
             G.sync_globals(self.hp, self.hp.indicator_hp)
-            self.indicator_hparams = hp
             best_result = robust_backtest(self, data_full)
 
         # Run a back-test with the best parameters found (or current settings)
@@ -595,26 +597,17 @@ class EnsembleModel(nn.Module):
         # but that happens in meta_control_loop.
         # For the main training, we keep your code.
 
-        # The composite reward is used as training target with a baseline
-        baseline = (
-            G.global_composite_reward_ema
-            if G.global_composite_reward_ema is not None
-            else 0.0
+        reward_val = current_result["composite_reward"]
+        # Update running statistics to normalise the reward signal
+        self.reward_running_mean = 0.99 * self.reward_running_mean + 0.01 * reward_val
+        diff = reward_val - self.reward_running_mean
+        self.reward_running_var = 0.99 * self.reward_running_var + 0.01 * diff**2
+        std = float(self.reward_running_var**0.5 + 1e-6)
+        norm_reward = diff / std
+        scaled_target = torch.tanh(
+            torch.tensor(norm_reward, dtype=torch.float32, device=self.device)
         )
-        scaled_target = F.softsign(
-            torch.tensor(
-                (current_result["composite_reward"] - baseline) / 100.0,
-                dtype=torch.float32,
-                device=self.device,
-            )
-        )
-        raw_advantage = current_result["composite_reward"] - baseline
-        # Scale the advantage to avoid exploding RL losses when a backtest
-        # returns an unusually large composite reward.  ``tanh`` keeps the value
-        # bounded within ``[-1, 1]`` so ``rl_loss`` stays numerically stable.
-        advantage = torch.tanh(
-            torch.tensor(raw_advantage / 50.0, dtype=torch.float32, device=self.device)
-        )
+        advantage = scaled_target.clone()
         total_loss = 0.0
         nb = 0
         for m in self.models:

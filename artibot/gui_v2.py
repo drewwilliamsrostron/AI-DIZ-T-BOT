@@ -256,9 +256,11 @@ def startup_options_dialog(
     calmar_var = tk_module.BooleanVar(
         value=bool(defaults.get("use_calmar_term", False))
     )
-    theta_var = tk_module.DoubleVar(value=float(defaults.get("theta", 1.0)))
-    phi_var = tk_module.DoubleVar(value=float(defaults.get("phi", 1.0)))
-    chi_var = tk_module.DoubleVar(value=float(defaults.get("chi", 1.0)))
+    theta_var = tk_module.DoubleVar(value=float(defaults.get("theta", 0.5)))
+    phi_var = tk_module.DoubleVar(value=float(defaults.get("phi", 0.5)))
+    chi_var = tk_module.DoubleVar(value=float(defaults.get("chi", 0.5)))
+    beta_var = tk_module.DoubleVar(value=float(defaults.get("beta", 0.5)))
+    warmup_var = tk_module.IntVar(value=int(defaults.get("warmup_steps", 200)))
 
     tk_module.Checkbutton(
         root, text="Skip GDELT sentiment download", variable=skip_var
@@ -281,12 +283,16 @@ def startup_options_dialog(
     tk_module.Checkbutton(root, text="Sortino", variable=sortino_var).pack(anchor="w")
     tk_module.Checkbutton(root, text="Omega", variable=omega_var).pack(anchor="w")
     tk_module.Checkbutton(root, text="Calmar", variable=calmar_var).pack(anchor="w")
+    tk_module.Label(root, text="Sharpe weight:").pack(anchor="w")
+    tk_module.Entry(root, textvariable=beta_var, width=5).pack(anchor="w")
     tk_module.Label(root, text="Theta:").pack(anchor="w")
     tk_module.Entry(root, textvariable=theta_var, width=5).pack(anchor="w")
     tk_module.Label(root, text="Phi:").pack(anchor="w")
     tk_module.Entry(root, textvariable=phi_var, width=5).pack(anchor="w")
     tk_module.Label(root, text="Chi:").pack(anchor="w")
     tk_module.Entry(root, textvariable=chi_var, width=5).pack(anchor="w")
+    tk_module.Label(root, text="Warmup steps:").pack(anchor="w")
+    tk_module.Entry(root, textvariable=warmup_var, width=7).pack(anchor="w")
     tk_module.Label(root, text="CPU threads:").pack(anchor="w")
     tk_module.Spinbox(
         root, from_=1, to=threads_max, textvariable=threads_var, width=5
@@ -307,9 +313,11 @@ def startup_options_dialog(
         result["use_sortino_term"] = sortino_var.get()
         result["use_omega_term"] = omega_var.get()
         result["use_calmar_term"] = calmar_var.get()
+        result["beta"] = beta_var.get()
         result["theta"] = theta_var.get()
         result["phi"] = phi_var.get()
         result["chi"] = chi_var.get()
+        result["warmup_steps"] = warmup_var.get()
 
         root.quit()
         root.destroy()
