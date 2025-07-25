@@ -202,7 +202,12 @@ def update_indicator_toggles(window: np.ndarray, hp: IndicatorHyperparams) -> No
 # robust_backtest
 ###############################################################################
 def robust_backtest(
-    ensemble, data_full, indicators=None, *, dynamic_indicators: bool = False
+    ensemble,
+    data_full,
+    indicators=None,
+    *,
+    indicator_hp=None,
+    dynamic_indicators: bool = False,
 ):
     """Run a simplified backtest and return key metrics.
 
@@ -214,8 +219,10 @@ def robust_backtest(
         Full OHLCV history used for backtesting. Must contain raw OHLCV rows
         with at least five columns ``[ts, open, high, low, close, ...]``.
     indicators:
-        Optional dictionary with precomputed ``sma``, ``rsi`` and ``macd``
-        arrays. When ``None`` (default), they are derived on the fly.
+        Optional dictionary with precomputed indicator arrays.
+    indicator_hp:
+        ``IndicatorHyperparams`` instance overriding ``ensemble.indicator_hparams``.
+        When ``None`` (default) the ensemble's stored settings are used.
     """
     # Ensure ``data_full`` is a NumPy array for shape checks
     if isinstance(data_full, list):
@@ -238,7 +245,9 @@ def robust_backtest(
 
     prepare_backtest_data(data_full)
 
-    base_hp = getattr(ensemble, "indicator_hparams", IndicatorHyperparams())
+    base_hp = indicator_hp or getattr(
+        ensemble, "indicator_hparams", IndicatorHyperparams()
+    )
     hp_dyn = (
         base_hp if not dynamic_indicators else IndicatorHyperparams(**vars(base_hp))
     )
@@ -283,7 +292,7 @@ def robust_backtest(
     FUNDING_RATE = 0.0001
     device = ensemble.device
 
-    hp = getattr(ensemble, "indicator_hparams", IndicatorHyperparams())
+    hp = base_hp
 
     # (5) If meta-agent is adjusting threshold, store it in ensemble or define a separate variable.
     # For a simpler demonstration, we keep using GLOBAL_THRESHOLD, but you could do:
@@ -620,12 +629,13 @@ def robust_backtest(
     avg_win = metrics["avg_win"]
     avg_loss = metrics["avg_loss"]
 
-    sortino_score = float(np.clip(sortino.item(), -1.0, 1.0))
-    omega_score = float(np.clip(omega.item(), -1.0, 1.0))
-    calmar_score = float(np.clip(calmar, -1.0, 1.0))
+    # Example re-scaling to emphasise positive performance
+    sharpe_score = float(np.tanh(sharpe / 2.0))
+    sortino_score = float(np.tanh(sortino.item() / 2.0))
+    omega_score = float(np.tanh((omega.item() - 1.0) / 2.0))
+    calmar_score = float(np.tanh((calmar - 1.0) / 2.0))
 
     net_score = net_pct
-    shr_score = float(np.clip(sharpe, -1.0, 1.0))
     trade_count = len(trades)
     trade_term = trade_count * delta
     # ------------------------------------------------------------------
@@ -640,7 +650,7 @@ def robust_backtest(
     if G.use_net_term:
         composite_reward += alpha * net_score
     if G.use_sharpe_term:
-        composite_reward += G.beta * shr_score
+        composite_reward += G.beta * sharpe_score
     if G.use_drawdown_term and not G.use_calmar_term:
         # Penalise large draw-downs exponentially beyond 10%.
         dd_pen = np.exp(max(abs(mdd) - 0.10, 0) * 10) - 1
@@ -656,6 +666,7 @@ def robust_backtest(
     if G.use_profit_days_term:
         composite_reward += (days_in_pf / 365) * 10
     composite_reward -= tot_inact_pen
+    composite_reward = float(np.clip(composite_reward, -2.0, 2.0))
     return {
         "net_pct": net_pct,
         "trades": trade_count,
@@ -720,7 +731,7 @@ if __name__ == "__main__":
         use_prev_weights=False,
         max_epochs=1,
     )
-    result = robust_backtest(ens, data)
+    result = robust_backtest(ens, data, indicator_hp=ens.indicator_hparams)
     if result.get("trades", 0) == 0:
         logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
     else:

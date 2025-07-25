@@ -66,7 +66,7 @@ def _quick_backtest(
         n_features=n_features,
     )
     model.indicator_hparams = hp
-    result = robust_backtest(model, data)
+    result = robust_backtest(model, data, indicator_hp=hp)
     return (
         result.get("composite_reward", 0.0),
         result.get("net_pct", 0.0),

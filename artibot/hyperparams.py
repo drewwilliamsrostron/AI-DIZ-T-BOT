@@ -176,7 +176,7 @@ LR_MAX = 5e-4
 LR_FN_MAX_DELTA = 0.2
 
 # Number of mini-batches for warm-up period
-WARMUP_STEPS = int(_CONFIG.get("WARMUP_STEPS", 200))
+WARMUP_STEPS = int(_CONFIG.get("WARMUP_STEPS", 50))
 
 # Allowed actions for the meta agent once indicator toggles are disabled.
 # Keeping this list in ``hyperparams`` lets other modules share the frozen action

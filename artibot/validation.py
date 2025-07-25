@@ -131,7 +131,9 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
         else:
             sample = test[0, :FEATURE_DIMENSION]
         print(f"[VALIDATION] Feature sample: {sample}")
-        metrics = robust_backtest(ensemble, test)
+        metrics = robust_backtest(
+            ensemble, test, indicator_hp=ensemble.indicator_hparams
+        )
         if metrics.get("trades", 0) == 0:
             logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
         else:
