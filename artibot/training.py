@@ -972,7 +972,7 @@ def objective(trial: optuna.trial.Trial) -> float:
         n_models=1,
         lr=params["lr"],
         n_features=n_features,
-        warmup_steps=hyperparams.WARMUP_STEPS,
+        warmup_steps=G.warmup_steps,
     )
     model.entropy_beta = params["entropy_beta"]
     model.indicator_hparams = indicator_hp
@@ -986,7 +986,7 @@ def objective(trial: optuna.trial.Trial) -> float:
         max_epochs=10,
         update_globals=False,
     )
-    metrics = robust_backtest(model, data)
+    metrics = robust_backtest(model, data, indicator_hp=model.indicator_hparams)
     if metrics.get("trades", 0) == 0:
         logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
     else:
@@ -1051,12 +1051,12 @@ def run_hpo(n_trials: int = 50) -> dict:
         n_models=1,
         lr=best.get("lr", 1e-4),
         n_features=n_features,
-        warmup_steps=hyperparams.WARMUP_STEPS,
+        warmup_steps=G.warmup_steps,
     )
     model.entropy_beta = best.get("entropy_beta", 1e-4)
     model.indicator_hparams = indicator_hp
     quick_fit(model, data, epochs=1)
-    full_result = robust_backtest(model, data)
+    full_result = robust_backtest(model, data, indicator_hp=model.indicator_hparams)
     if full_result.get("trades", 0) == 0:
         logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
     else:
@@ -1100,10 +1100,12 @@ def walk_forward_backtest(data: list, train_window: int, test_horizon: int) -> l
         train_slice = data[start : start + train_window]
         test_slice = data[start + train_window : start + train_window + test_horizon]
         model = EnsembleModel(
-            device=get_device(), n_models=1, warmup_steps=hyperparams.WARMUP_STEPS
+            device=get_device(), n_models=1, warmup_steps=G.warmup_steps
         )
         quick_fit(model, train_slice, epochs=1)
-        metrics = robust_backtest(model, test_slice)
+        metrics = robust_backtest(
+            model, test_slice, indicator_hp=model.indicator_hparams
+        )
         if metrics.get("trades", 0) == 0:
             logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
         else:

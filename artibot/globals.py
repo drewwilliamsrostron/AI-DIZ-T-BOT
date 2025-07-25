@@ -194,10 +194,11 @@ use_profit_days_term = False  # include days in profit
 use_sortino_term = True  # include Sortino ratio
 use_omega_term = True  # include Omega ratio
 use_calmar_term = True  # include Calmar ratio
-beta = 0.5  # Sharpe weight
-theta = 0.5  # Sortino weight
-phi = 0.5  # Omega weight
-chi = 0.5  # Calmar weight
+beta = 0.75  # Sharpe weight
+theta = 0.75  # Sortino weight
+phi = 0.75  # Omega weight
+chi = 0.75  # Calmar weight
+warmup_steps = 50  # mini-batches before RL activates
 risk_filter_enabled = False  # training loss gating disabled by default
 
 ###############################################################################

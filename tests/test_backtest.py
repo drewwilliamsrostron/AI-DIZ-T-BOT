@@ -23,8 +23,8 @@ sys.modules["talib"] = types.SimpleNamespace(
     EMA=lambda arr, timeperiod=20: np.zeros_like(arr),
 )
 
-from artibot.backtest import robust_backtest
-from artibot.backtest import compute_indicators
+import artibot.backtest as bt
+from artibot.backtest import robust_backtest, compute_indicators
 import artibot.execution as execution
 from artibot.hyperparams import IndicatorHyperparams
 import artibot.globals as G
@@ -75,12 +75,13 @@ def test_robust_backtest_simple(monkeypatch):
     assert result["trades"] == 1
     assert round(result["net_pct"], 2) == 0.93
     expected = (
-        G.beta * float(np.clip(result["sharpe"], -1.0, 1.0))
-        + G.theta * float(np.clip(result["sortino"], -1.0, 1.0))
-        + G.phi * float(np.clip(result["omega"], -1.0, 1.0))
-        + G.chi * float(np.clip(result["calmar"], -1.0, 1.0))
+        G.beta * float(np.tanh(result["sharpe"] / 2.0))
+        + G.theta * float(np.tanh(result["sortino"] / 2.0))
+        + G.phi * float(np.tanh((result["omega"] - 1.0) / 2.0))
+        + G.chi * float(np.tanh((result["calmar"] - 1.0) / 2.0))
         - result["inactivity_penalty"]
     )
+    expected = float(np.clip(expected, -2.0, 2.0))
     assert result["composite_reward"] == pytest.approx(expected, rel=1e-6)
     assert "sortino" in result and "omega" in result and "calmar" in result
 
@@ -121,9 +122,32 @@ def test_backtest_with_precomputed_features(monkeypatch):
     ]
     ens = DummyEnsemble()
     indicators = compute_indicators(data, ens.indicator_hparams)
-    result_pre = robust_backtest(ens, data, indicators=indicators)
-    result_std = robust_backtest(ens, data)
+    result_pre = robust_backtest(
+        ens, data, indicators=indicators, indicator_hp=ens.indicator_hparams
+    )
+    result_std = robust_backtest(ens, data, indicator_hp=ens.indicator_hparams)
     assert result_pre["net_pct"] == pytest.approx(result_std["net_pct"], rel=5e-3)
+
+
+def test_backtest_respects_indicator_hp(monkeypatch):
+    """Indicator periods should persist when passed to robust_backtest."""
+
+    def stub_submit(func, side, amount, price, **kw):
+        return func(side=side, amount=amount, price=price, **kw)
+
+    monkeypatch.setattr(execution, "submit_order", stub_submit)
+    data = [[i * 3600, 100.0, 101.0, 99.0, 100.0, 0.0] for i in range(30)]
+    ens = DummyEnsemble()
+    hp = IndicatorHyperparams(rsi_period=20)
+    called = {}
+
+    def spy_compute(data_full, indicator_hp, **kw):
+        called["rsi"] = indicator_hp.rsi_period
+        return compute_indicators(data_full, indicator_hp, **kw)
+
+    monkeypatch.setattr(bt, "compute_indicators", spy_compute)
+    robust_backtest(ens, data, indicator_hp=hp)
+    assert called["rsi"] == 20
 
 
 def test_trade_details_have_size(monkeypatch):

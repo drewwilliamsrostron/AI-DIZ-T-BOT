@@ -249,6 +249,7 @@ def main() -> None:
     from artibot.hyperparams import _CONFIG
 
     _CONFIG["WARMUP_STEPS"] = int(opts.get("warmup_steps", defaults["warmup_steps"]))
+    G.warmup_steps = _CONFIG["WARMUP_STEPS"]
     G.set_risk_filter_enabled(bool(opts.get("risk_filter", defaults["risk_filter"])))
 
     from artibot.utils import setup_logging

@@ -232,7 +232,7 @@ class EnsembleModel(nn.Module):
         total_steps: int = 10000,
         grad_accum_steps: int = 1,
         delayed_reward_epochs: int = 0,
-        warmup_steps: int = 1000,
+        warmup_steps: int | None = None,
     ) -> None:
         super().__init__()
         device = torch.device(device) if device is not None else get_device()
@@ -293,13 +293,13 @@ class EnsembleModel(nn.Module):
         self.best_state_dicts = None
         self.train_steps = 0
         # Start with a small reward weight and no delay
-        self.reward_loss_weight = 0.01
+        self.reward_loss_weight = 0.05
         self.max_reward_loss_weight = 0.2
         self.reward_running_mean = 0.0
         self.reward_running_var = 1.0
         self.patience = 0
         self.delayed_reward_epochs = delayed_reward_epochs
-        self.warmup_steps = warmup_steps
+        self.warmup_steps = warmup_steps if warmup_steps is not None else G.warmup_steps
 
         # per-epoch attention stats
         self.entropies: list[float] = []
@@ -404,13 +404,15 @@ class EnsembleModel(nn.Module):
                 setattr(self.indicator_hparams, name, val)
                 _CONFIG[name.upper()] = val
             G.sync_globals(self.hp, self.hp.indicator_hp)
-            best_result = robust_backtest(self, data_full)
+            best_result = robust_backtest(
+                self, data_full, indicator_hp=self.indicator_hparams
+            )
 
         # Run a back-test with the best parameters found (or current settings)
         logging.info(">>> ENTERING DEFCON 3: Full Backtest")
         logging.info(">>> Using current best hyperparams")
         current_result = best_result or robust_backtest(
-            self, data_full, indicators=features
+            self, data_full, indicator_hp=self.indicator_hparams
         )
         span_days = 0
         if data_full:
@@ -1190,7 +1192,9 @@ class EnsembleModel(nn.Module):
                 for m, sd in zip(self.models, self.best_state_dicts):
                     m.load_state_dict(sd, strict=False)
                 if data_full and len(data_full) > 24:
-                    loaded_result = robust_backtest(self, data_full)
+                    loaded_result = robust_backtest(
+                        self, data_full, indicator_hp=self.indicator_hparams
+                    )
                     G.global_equity_curve = loaded_result["equity_curve"]
                     G.global_backtest_profit.append(loaded_result["net_pct"])
                     G.global_sharpe = loaded_result["sharpe"]
