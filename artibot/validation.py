@@ -2,7 +2,6 @@
 
 import threading
 from typing import Iterable
-from dataclasses import asdict
 import torch
 
 import numpy as np
@@ -18,8 +17,7 @@ import artibot.globals as G
 from .backtest import robust_backtest
 from .dataset import load_csv_hourly, HourlyDataset
 from .ensemble import EnsembleModel
-from .hyperparams import IndicatorHyperparams
-from .constants import WARMUP_STEPS
+from .hyperparams import IndicatorHyperparams, WARMUP_STEPS
 from .training import csv_training_thread
 from artibot.core.device import get_device
 
@@ -104,7 +102,6 @@ def walk_forward_analysis(
         n_features=n_features,
         warmup_steps=WARMUP_STEPS,
         indicator_hp=indicator_hp,
-        freeze_features=True,
     )
     if hasattr(torch, "set_float32_matmul_precision"):
         torch.set_float32_matmul_precision("high")
@@ -115,11 +112,6 @@ def walk_forward_analysis(
     one_month = YEAR_HOURS // 12
     seven_months = 7 * one_month
     for start in range(0, len(data) - seven_months + 1, one_month):
-        logging.info(
-            "USING_INDICATOR_HP fold=%d %s",
-            (start // one_month) + 1,
-            asdict(indicator_hp),
-        )
         train = data[start : start + 6 * one_month]
         test = data[start + 6 * one_month : start + seven_months]
         if len(test) < one_month:

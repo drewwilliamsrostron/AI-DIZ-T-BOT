@@ -17,4 +17,4 @@ beta = 0.6
 theta = 0.6
 phi = 0.5
 chi = 0.5
-WARMUP_STEPS = 500
+WARMUP_STEPS = 0

@@ -17,7 +17,7 @@ import threading
 import os
 from pathlib import Path
 
-from dataclasses import fields, asdict
+from dataclasses import fields
 from .dataset import HourlyDataset, trailing_sma, load_csv_hourly
 from .ensemble import reject_if_risky, EnsembleModel, update_best
 from .hyperparams import IndicatorHyperparams
@@ -226,13 +226,7 @@ def csv_training_thread(
 
         # Perform walk-forward validation to establish holdout metrics
         one_month = 24 * 30
-        walk_results = walk_forward_backtest(
-            train_data,
-            12 * one_month,
-            one_month,
-            indicator_hp=ensemble.indicator_hparams,
-            freeze_features=True,
-        )
+        walk_results = walk_forward_backtest(train_data, 12 * one_month, one_month)
         if walk_results:
             mean_sharpe = float(np.mean([r.get("sharpe", 0.0) for r in walk_results]))
             mean_dd = float(np.mean([r.get("max_drawdown", 0.0) for r in walk_results]))
@@ -471,8 +465,7 @@ def csv_training_thread(
                 },
             )
 
-            from artibot.hyperparams import RISK_FILTER
-            from artibot.constants import WARMUP_STEPS
+            from artibot.hyperparams import RISK_FILTER, WARMUP_STEPS
 
             if G.get_warmup_step() >= WARMUP_STEPS:
                 RISK_FILTER["MIN_REWARD"] = 0.5
@@ -981,7 +974,6 @@ def objective(trial: optuna.trial.Trial) -> float:
         n_features=n_features,
         warmup_steps=G.warmup_steps,
         indicator_hp=indicator_hp,
-        freeze_features=True,
     )
     model.entropy_beta = params["entropy_beta"]
     stop = threading.Event()
@@ -1061,7 +1053,6 @@ def run_hpo(n_trials: int = 50) -> dict:
         n_features=n_features,
         warmup_steps=G.warmup_steps,
         indicator_hp=indicator_hp,
-        freeze_features=True,
     )
     model.entropy_beta = best.get("entropy_beta", 1e-4)
     quick_fit(model, data, epochs=1)
@@ -1087,14 +1078,7 @@ def run_hpo(n_trials: int = 50) -> dict:
     return best
 
 
-def walk_forward_backtest(
-    data: list,
-    train_window: int,
-    test_horizon: int,
-    *,
-    indicator_hp: IndicatorHyperparams | None = None,
-    freeze_features: bool = True,
-) -> list:
+def walk_forward_backtest(data: list, train_window: int, test_horizon: int) -> list:
     """Perform walk-forward validation across ``data``."""
 
     logging.info(">>> ENTERING DEFCON 4: Walk Forward Evaluation")
@@ -1115,23 +1099,11 @@ def walk_forward_backtest(
         fold_idx += 1
         train_slice = data[start : start + train_window]
         test_slice = data[start + train_window : start + train_window + test_horizon]
-        if indicator_hp is None:
-            indicator_hp = IndicatorHyperparams()
-        logging.info(
-            "USING_INDICATOR_HP fold=%d %s",
-            fold_idx,
-            asdict(indicator_hp),
-        )
-        from artibot.rl import MetaTransformerRL
-
-        G.global_step = 0
-        MetaTransformerRL.reset_policy()
         model = EnsembleModel(
             device=get_device(),
             n_models=1,
             warmup_steps=G.warmup_steps,
-            indicator_hp=indicator_hp,
-            freeze_features=freeze_features,
+            indicator_hp=IndicatorHyperparams(),
         )
         quick_fit(model, train_slice, epochs=1)
         metrics = robust_backtest(
