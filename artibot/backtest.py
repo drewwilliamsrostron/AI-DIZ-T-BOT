@@ -17,7 +17,8 @@ from .utils import (
     rolling_zscore,
 )
 from .dataset import trailing_sma, HourlyDataset
-from .hyperparams import IndicatorHyperparams, WARMUP_STEPS
+from .hyperparams import IndicatorHyperparams
+from .constants import WARMUP_STEPS
 from . import indicators
 
 import artibot.globals as G

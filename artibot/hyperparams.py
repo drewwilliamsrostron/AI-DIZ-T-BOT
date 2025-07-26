@@ -55,6 +55,9 @@ class HyperParams:
     use_momentum: bool = bool(_CONFIG.get("USE_MOMENTUM", False))
     use_bbw: bool = bool(_CONFIG.get("USE_BBW", False))
 
+    # When ``True`` the meta agent cannot toggle indicators or adjust periods.
+    freeze_features: bool = True
+
     def __post_init__(self) -> None:
         if self.indicator_hp is None:
             self.indicator_hp = IndicatorHyperparams()
@@ -66,6 +69,8 @@ class HyperParams:
         self.long_frac = max(0.0, min(self.long_frac, G.MAX_SIDE_EXPOSURE_PCT))
         self.short_frac = max(0.0, min(self.short_frac, G.MAX_SIDE_EXPOSURE_PCT))
         G.sync_globals(self, self.indicator_hp)
+        if G.use_sandbox or getattr(G, "mode", "") in {"SANDBOX", "BACKTEST"}:
+            self.freeze_features = True
 
     @property
     def atr_period(self) -> int:
@@ -161,10 +166,12 @@ class IndicatorHyperparams:
             or (isinstance(val, int) and val == 1)
             for val in params.values()
         )
-        if not all_default:
-            logging.info("Indicator hyperparams: %s", params)
+        if all_default:
+            logging.debug(
+                "Indicator hyperparams: %s", params, extra={"source": "default"}
+            )
         else:
-            logging.debug("Indicator hyperparams (default): %s", params)
+            logging.info("Indicator hyperparams: %s", params, extra={"source": "tuned"})
 
 
 # ---------------------------------------------------------------------------
@@ -181,8 +188,6 @@ LR_MAX = 5e-4
 # largest change allowed in a single mutate call (±20 %)
 LR_FN_MAX_DELTA = 0.2
 
-# Number of mini-batches for warm-up period
-WARMUP_STEPS = int(_CONFIG.get("WARMUP_STEPS", 0))
 
 # Allowed actions for the meta agent once indicator toggles are disabled.
 # Keeping this list in ``hyperparams`` lets other modules share the frozen action

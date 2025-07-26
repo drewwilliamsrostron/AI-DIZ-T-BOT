@@ -238,6 +238,7 @@ class EnsembleModel(nn.Module):
         delayed_reward_epochs: int = 0,
         warmup_steps: int | None = None,
         indicator_hp: IndicatorHyperparams | None = None,
+        freeze_features: bool | None = None,
     ) -> None:
         super().__init__()
         device = torch.device(device) if device is not None else get_device()
@@ -248,6 +249,8 @@ class EnsembleModel(nn.Module):
             indicator_hp if indicator_hp is not None else IndicatorHyperparams()
         )
         self.hp = HyperParams(indicator_hp=self._indicator_hparams)
+        if freeze_features is not None:
+            self.hp.freeze_features = freeze_features
         if lr is not None:
             self.hp.learning_rate = lr
 
@@ -340,6 +343,12 @@ class EnsembleModel(nn.Module):
 
         self._indicator_hparams = hp
         self.hp.indicator_hp = hp
+
+    @property
+    def freeze_features(self) -> bool:
+        """Return whether indicator features are frozen."""
+
+        return self.hp.freeze_features
 
     def _align_features(self, x: torch.Tensor) -> torch.Tensor:
         """Validate feature dimension and zero disabled columns."""
