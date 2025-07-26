@@ -441,7 +441,10 @@ def main() -> None:
         meta_th.start()
 
         validate_th = threading.Thread(
-            target=lambda: validate_and_gate(csv_path, CONFIG), daemon=True
+            target=lambda: validate_and_gate(
+                csv_path, CONFIG, indicator_hp=indicator_hp
+            ),
+            daemon=True,
         )
         validate_th.start()
 
