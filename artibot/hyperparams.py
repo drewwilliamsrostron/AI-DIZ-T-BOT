@@ -155,10 +155,16 @@ class IndicatorHyperparams:
                     except Exception:
                         pass
 
-        logging.info(
-            "Indicator hyperparams: %s",
-            {f.name: getattr(self, f.name) for f in fields(self)},
+        params = {f.name: getattr(self, f.name) for f in fields(self)}
+        all_default = all(
+            (isinstance(val, bool) and val is True)
+            or (isinstance(val, int) and val == 1)
+            for val in params.values()
         )
+        if not all_default:
+            logging.info("Indicator hyperparams: %s", params)
+        else:
+            logging.debug("Indicator hyperparams (default): %s", params)
 
 
 # ---------------------------------------------------------------------------
