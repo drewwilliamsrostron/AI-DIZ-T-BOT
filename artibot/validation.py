@@ -17,7 +17,7 @@ import artibot.globals as G
 from .backtest import robust_backtest
 from .dataset import load_csv_hourly, HourlyDataset
 from .ensemble import EnsembleModel
-from .hyperparams import HyperParams, IndicatorHyperparams, WARMUP_STEPS
+from .hyperparams import IndicatorHyperparams, WARMUP_STEPS
 from .training import csv_training_thread
 from artibot.core.device import get_device
 
@@ -96,9 +96,8 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
         weight_decay=1e-4,
         n_features=n_features,
         warmup_steps=WARMUP_STEPS,
+        indicator_hp=indicator_hp,
     )
-    ensemble.indicator_hparams = indicator_hp
-    ensemble.hp = HyperParams(indicator_hp=indicator_hp)
     if hasattr(torch, "set_float32_matmul_precision"):
         torch.set_float32_matmul_precision("high")
     from artibot.utils.safe_compile import safe_compile

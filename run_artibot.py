@@ -14,6 +14,7 @@ from artibot.utils.torch_threads import set_threads
 from artibot.gui import startup_options_dialog
 from dataclasses import fields
 from artibot.ensemble import EnsembleModel
+from artibot.hyperparams import IndicatorHyperparams
 import artibot.globals as G
 
 import os
@@ -168,6 +169,7 @@ def build_model(
     lr: float = 1e-3,
     entropy_beta: float | None = None,
     warmup_steps: int | None = None,
+    indicator_hp: IndicatorHyperparams | None = None,
 ) -> "EnsembleModel":
     """Return an :class:`EnsembleModel` configured with HPO params."""
     from artibot.hyperparams import WARMUP_STEPS
@@ -181,6 +183,7 @@ def build_model(
         total_steps=10000,
         grad_accum_steps=4,
         warmup_steps=warmup_steps or WARMUP_STEPS,
+        indicator_hp=indicator_hp,
     )
     if entropy_beta is not None:
         model.entropy_beta = entropy_beta
@@ -271,7 +274,7 @@ def main() -> None:
     from artibot.utils import setup_logging
     from artibot.core.device import get_device
     from artibot.dataset import HourlyDataset, load_csv_hourly
-    from artibot.hyperparams import HyperParams, IndicatorHyperparams
+    from artibot.hyperparams import IndicatorHyperparams
     from artibot.training import (
         PhemexConnector,
         csv_training_thread,
@@ -367,9 +370,8 @@ def main() -> None:
             lr=lr,
             entropy_beta=entropy_beta,
             warmup_steps=int(opts.get("warmup_steps", defaults["warmup_steps"])),
+            indicator_hp=indicator_hp,
         )
-        ensemble.indicator_hparams = indicator_hp
-        ensemble.hp = HyperParams(indicator_hp=indicator_hp)
 
         weights_dir = os.path.abspath(
             os.path.expanduser(CONFIG.get("WEIGHTS_DIR", "weights"))

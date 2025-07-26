@@ -23,11 +23,19 @@ sys.modules.setdefault("matplotlib.backends.backend_tkagg", backend)
 import torch
 import artibot.globals as G
 from artibot.ensemble import EnsembleModel
+from artibot.hyperparams import IndicatorHyperparams
+import pickle
 
 
 def test_load_best_weights_updates_stats(tmp_path, monkeypatch):
-    ckpt = {"best_composite_reward": 1.0, "state_dicts": [{}]}
+    ckpt = {
+        "best_composite_reward": 1.0,
+        "state_dicts": [{}],
+        "indicator_hparams": {"atr_period": 42},
+    }
     path = tmp_path / "best.pth"
+    torch.save = lambda obj, p: pickle.dump(obj, open(p, "wb"))
+    torch.load = lambda p, map_location=None: pickle.load(open(p, "rb"))
     torch.save(ckpt, path)
 
     def dummy_backtest(*_a, **_k):
@@ -64,6 +72,8 @@ def test_load_best_weights_updates_stats(tmp_path, monkeypatch):
     ens.optimizers = [
         types.SimpleNamespace(param_groups=[{"lr": 1e-3, "weight_decay": 0.0}])
     ]
+    ens._indicator_hparams = IndicatorHyperparams()
+    ens.hp = types.SimpleNamespace(indicator_hp=ens._indicator_hparams)
     ens.load_best_weights(str(path), data_full=[[0, 0, 0, 0, 0, 0]] * 30)
 
     assert G.global_net_pct == 123.0
@@ -71,3 +81,4 @@ def test_load_best_weights_updates_stats(tmp_path, monkeypatch):
     assert G.global_num_trades == 4
     assert G.global_win_rate == 0.5
     assert G.global_profit_factor == 1.2
+    assert ens.indicator_hparams.atr_period == 42
