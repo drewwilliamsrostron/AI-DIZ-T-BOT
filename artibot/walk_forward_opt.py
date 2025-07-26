@@ -51,6 +51,7 @@ class EnsembleEstimator(BaseEstimator):
             weight_decay=self.weight_decay,
             n_models=1,
             warmup_steps=WARMUP_STEPS,
+            indicator_hp=self.indicator_hp,
         )
         self.model_.indicator_hparams = self.indicator_hp
         stop = threading.Event()
