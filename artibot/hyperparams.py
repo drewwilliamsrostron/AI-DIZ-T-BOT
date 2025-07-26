@@ -6,6 +6,7 @@ from dataclasses import dataclass, fields
 import logging
 
 import artibot.globals as G
+from .constants import WARMUP_STEPS as DEFAULT_WARMUP_STEPS
 
 import json
 import os
@@ -46,6 +47,11 @@ class HyperParams:
     short_frac: float = float(_CONFIG.get("SHORT_FRAC", 0.05))
 
     indicator_hp: "IndicatorHyperparams" = None
+    freeze_features: bool = bool(
+        _CONFIG.get(
+            "FREEZE_FEATURES", G.use_sandbox or G.mode in {"SANDBOX", "BACKTEST"}
+        )
+    )
 
     use_sma: bool = bool(_CONFIG.get("USE_SMA", True))
     use_vortex: bool = bool(_CONFIG.get("USE_VORTEX", True))
@@ -161,10 +167,11 @@ class IndicatorHyperparams:
             or (isinstance(val, int) and val == 1)
             for val in params.values()
         )
+        src = "default" if all_default else "tuned"
         if not all_default:
-            logging.info("Indicator hyperparams: %s", params)
+            logging.info("Indicator hyperparams: %s source=%s", params, src)
         else:
-            logging.debug("Indicator hyperparams (default): %s", params)
+            logging.debug("Indicator hyperparams (default): %s source=%s", params, src)
 
 
 # ---------------------------------------------------------------------------
@@ -182,7 +189,7 @@ LR_MAX = 5e-4
 LR_FN_MAX_DELTA = 0.2
 
 # Number of mini-batches for warm-up period
-WARMUP_STEPS = int(_CONFIG.get("WARMUP_STEPS", 0))
+WARMUP_STEPS = int(_CONFIG.get("WARMUP_STEPS", DEFAULT_WARMUP_STEPS))
 
 # Allowed actions for the meta agent once indicator toggles are disabled.
 # Keeping this list in ``hyperparams`` lets other modules share the frozen action

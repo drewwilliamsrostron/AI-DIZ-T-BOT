@@ -209,6 +209,8 @@ python scripts/smoke.py --summary
 Answer `n` at the startup prompt or set `LIVE_TRADING` to `false` in the config
 to route orders to the Phemex sandbox while still running the full trading
 cycle. Respond `y` for real trades on the live exchange.
+Indicator periods found during hyper‑parameter search stay fixed when
+`--freeze_features` is enabled (default in sandbox and backtest modes).
 
 ### Dashboard
 

@@ -17,8 +17,10 @@ import artibot.globals as G
 from .backtest import robust_backtest
 from .dataset import load_csv_hourly, HourlyDataset
 from .ensemble import EnsembleModel
+from dataclasses import asdict
 from .hyperparams import IndicatorHyperparams, WARMUP_STEPS
 from .training import csv_training_thread
+from .rl import MetaTransformerRL
 from artibot.core.device import get_device
 
 YEAR_HOURS = 365 * 24
@@ -111,11 +113,16 @@ def walk_forward_analysis(
     results = []
     one_month = YEAR_HOURS // 12
     seven_months = 7 * one_month
+    fold_idx = 1
     for start in range(0, len(data) - seven_months + 1, one_month):
         train = data[start : start + 6 * one_month]
         test = data[start + 6 * one_month : start + seven_months]
         if len(test) < one_month:
             break
+        logging.info("USING_INDICATOR_HP fold=%d %s", fold_idx, asdict(indicator_hp))
+        G.global_step = 0
+        MetaTransformerRL.reset_policy()
+        fold_idx += 1
         stop_event = threading.Event()
         csv_training_thread(
             ensemble,

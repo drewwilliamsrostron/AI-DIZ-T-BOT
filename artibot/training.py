@@ -17,9 +17,10 @@ import threading
 import os
 from pathlib import Path
 
-from dataclasses import fields
+from dataclasses import fields, asdict
 from .dataset import HourlyDataset, trailing_sma, load_csv_hourly
 from .ensemble import reject_if_risky, EnsembleModel, update_best
+from .rl import MetaTransformerRL
 from .hyperparams import IndicatorHyperparams
 from .backtest import robust_backtest, compute_indicators
 from .core.device import get_device
@@ -226,7 +227,12 @@ def csv_training_thread(
 
         # Perform walk-forward validation to establish holdout metrics
         one_month = 24 * 30
-        walk_results = walk_forward_backtest(train_data, 12 * one_month, one_month)
+        walk_results = walk_forward_backtest(
+            train_data,
+            12 * one_month,
+            one_month,
+            indicator_hp=ensemble.indicator_hparams,
+        )
         if walk_results:
             mean_sharpe = float(np.mean([r.get("sharpe", 0.0) for r in walk_results]))
             mean_dd = float(np.mean([r.get("max_drawdown", 0.0) for r in walk_results]))
@@ -1078,10 +1084,18 @@ def run_hpo(n_trials: int = 50) -> dict:
     return best
 
 
-def walk_forward_backtest(data: list, train_window: int, test_horizon: int) -> list:
+def walk_forward_backtest(
+    data: list,
+    train_window: int,
+    test_horizon: int,
+    *,
+    indicator_hp: IndicatorHyperparams | None = None,
+) -> list:
     """Perform walk-forward validation across ``data``."""
 
     logging.info(">>> ENTERING DEFCON 4: Walk Forward Evaluation")
+    if indicator_hp is None:
+        indicator_hp = IndicatorHyperparams()
     results: list = []
     n_folds = max(1, (len(data) - train_window - test_horizon) // test_horizon + 1)
     fold_idx = 1
@@ -1096,6 +1110,9 @@ def walk_forward_backtest(data: list, train_window: int, test_horizon: int) -> l
             start_dt,
             end_dt,
         )
+        logging.info("USING_INDICATOR_HP fold=%d %s", fold_idx, asdict(indicator_hp))
+        G.global_step = 0
+        MetaTransformerRL.reset_policy()
         fold_idx += 1
         train_slice = data[start : start + train_window]
         test_slice = data[start + train_window : start + train_window + test_horizon]
@@ -1103,7 +1120,7 @@ def walk_forward_backtest(data: list, train_window: int, test_horizon: int) -> l
             device=get_device(),
             n_models=1,
             warmup_steps=G.warmup_steps,
-            indicator_hp=IndicatorHyperparams(),
+            indicator_hp=indicator_hp,
         )
         quick_fit(model, train_slice, epochs=1)
         metrics = robust_backtest(
