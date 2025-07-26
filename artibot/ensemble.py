@@ -12,6 +12,7 @@ import threading
 import logging
 import random
 import hashlib
+from dataclasses import asdict
 
 import os
 import shutil
@@ -218,6 +219,9 @@ class EnsembleModel(nn.Module):
     n_features:
         Number of columns expected in the feature matrix.  When ``None`` the
         value from :data:`~artibot.constants.FEATURE_DIMENSION` is used.
+    indicator_hp:
+        Optional :class:`IndicatorHyperparams` to initialise the ensemble with
+        tuned indicator settings.
     """
 
     def __init__(
@@ -233,13 +237,16 @@ class EnsembleModel(nn.Module):
         grad_accum_steps: int = 1,
         delayed_reward_epochs: int = 0,
         warmup_steps: int | None = None,
+        indicator_hp: IndicatorHyperparams | None = None,
     ) -> None:
         super().__init__()
         device = torch.device(device) if device is not None else get_device()
         self.device = device
         self.weights_path = weights_path
-        # use config defaults for all indicator settings
-        self._indicator_hparams = IndicatorHyperparams()
+        # use provided settings or fall back to config defaults
+        self._indicator_hparams = (
+            indicator_hp if indicator_hp is not None else IndicatorHyperparams()
+        )
         self.hp = HyperParams(indicator_hp=self._indicator_hparams)
         if lr is not None:
             self.hp.learning_rate = lr
@@ -1192,6 +1199,7 @@ class EnsembleModel(nn.Module):
             {
                 "best_composite_reward": self.best_composite_reward,
                 "state_dicts": self.best_state_dicts,
+                "indicator_hparams": asdict(self.indicator_hparams),
             },
             path,
         )
@@ -1207,6 +1215,9 @@ class EnsembleModel(nn.Module):
                     "best_composite_reward", float("-inf")
                 )
                 self.best_state_dicts = ckpt["state_dicts"]
+                ihp = ckpt.get("indicator_hparams")
+                if ihp:
+                    self.indicator_hparams = IndicatorHyperparams(**ihp)
                 for m, sd in zip(self.models, self.best_state_dicts):
                     m.load_state_dict(sd, strict=False)
                 if data_full and len(data_full) > 24:
