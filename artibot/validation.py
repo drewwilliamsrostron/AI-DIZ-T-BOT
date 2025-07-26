@@ -68,7 +68,11 @@ def monte_carlo_sharpe(returns: Iterable[float], runs: int = 1000) -> list[float
     return dist
 
 
-def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
+def walk_forward_analysis(
+    csv_path: str,
+    config: dict,
+    indicator_hp: IndicatorHyperparams | None = None,
+) -> list[dict]:
     """Train on 6 months, test the next month then roll forward."""
     data = load_csv_hourly(csv_path, cfg=config)
     if not data:
@@ -79,7 +83,8 @@ def walk_forward_analysis(csv_path: str, config: dict) -> list[dict]:
     data = sanitize_features(raw_data)
     device = get_device()
 
-    indicator_hp = IndicatorHyperparams()
+    if indicator_hp is None:
+        indicator_hp = IndicatorHyperparams()
     ds_tmp = HourlyDataset(
         data,
         seq_len=24,
@@ -149,10 +154,14 @@ def gate_nuclear_key(sharpes: Iterable[float], threshold: float = 1.0) -> bool:
     return enabled
 
 
-def validate_and_gate(csv_path: str, config: dict) -> dict:
+def validate_and_gate(
+    csv_path: str,
+    config: dict,
+    indicator_hp: IndicatorHyperparams | None = None,
+) -> dict:
     """Run validation and update globals."""
     logging.info("VALIDATION_START")
-    results = walk_forward_analysis(csv_path, config)
+    results = walk_forward_analysis(csv_path, config, indicator_hp=indicator_hp)
     distributions = [
         monte_carlo_sharpe(equity_returns(r.get("equity_curve", []))) for r in results
     ]
@@ -171,7 +180,11 @@ def validate_and_gate(csv_path: str, config: dict) -> dict:
 
 
 def schedule_monthly_validation(
-    csv_path: str, config: dict, *, interval: float = MONTH_SECONDS
+    csv_path: str,
+    config: dict,
+    *,
+    interval: float = MONTH_SECONDS,
+    indicator_hp: IndicatorHyperparams | None = None,
 ) -> threading.Timer:
     """Start recurring validation every ``interval`` seconds."""
 
@@ -180,8 +193,10 @@ def schedule_monthly_validation(
 
     def _run() -> None:
         logging.info("VALIDATION_TRIGGER")
-        validate_and_gate(csv_path, config)
-        schedule_monthly_validation(csv_path, config, interval=interval)
+        validate_and_gate(csv_path, config, indicator_hp=indicator_hp)
+        schedule_monthly_validation(
+            csv_path, config, interval=interval, indicator_hp=indicator_hp
+        )
 
     timer = threading.Timer(interval, _run)
     timer.daemon = True
