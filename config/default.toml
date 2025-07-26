@@ -5,9 +5,16 @@ heartbeat_interval = 120
 enabled = true
 
 [reward]
-use_sortino_term = false
-use_omega_term = false
-use_calmar_term = false
-theta = 1.0
-phi = 1.0
-chi = 1.0
+use_net_term = false
+use_drawdown_term = false
+use_trade_term = false
+use_profit_days_term = false
+use_sharpe_term = true
+use_sortino_term = true
+use_omega_term = true
+use_calmar_term = true
+beta = 0.6
+theta = 0.6
+phi = 0.5
+chi = 0.5
+WARMUP_STEPS = 0

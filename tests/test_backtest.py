@@ -150,6 +150,29 @@ def test_backtest_respects_indicator_hp(monkeypatch):
     assert called["rsi"] == 20
 
 
+def test_indicator_hp_persists(monkeypatch):
+    """Indicator settings should persist across consecutive backtests."""
+
+    def stub_submit(func, side, amount, price, **kw):
+        return func(side=side, amount=amount, price=price, **kw)
+
+    monkeypatch.setattr(execution, "submit_order", stub_submit)
+    data = [[i * 3600, 100.0, 101.0, 99.0, 100.0, 0.0] for i in range(30)]
+    ens = DummyEnsemble()
+    hp = IndicatorHyperparams(rsi_period=15)
+    ens.indicator_hparams = hp
+    calls = []
+
+    def spy_compute(data_full, indicator_hp, **kw):
+        calls.append(indicator_hp.rsi_period)
+        return compute_indicators(data_full, indicator_hp, **kw)
+
+    monkeypatch.setattr(bt, "compute_indicators", spy_compute)
+    robust_backtest(ens, data, indicator_hp=ens.indicator_hparams)
+    robust_backtest(ens, data, indicator_hp=ens.indicator_hparams)
+    assert calls[-1] == 15
+
+
 def test_trade_details_have_size(monkeypatch):
     def stub_submit(func, side, amount, price, **kw):
         return func(side=side, amount=amount, price=price, **kw)

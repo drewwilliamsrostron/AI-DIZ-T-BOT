@@ -640,10 +640,11 @@ def robust_backtest(
     trade_term = trade_count * delta
     # ------------------------------------------------------------------
     # Composite reward based solely on risk-adjusted metrics.  Recent
-    # literature recommends combining Sharpe, Sortino, Calmar and Omega
-    # ratios to capture complementary aspects of downside risk.
-    # Net profit and draw-down terms are optionally included but are
-    # disabled by default.  Each ratio is clipped to [-1, 1] so no single
+    # literature recommends combining Sharpe, Sortino, Omega and Calmar
+    # ratios to capture complementary aspects of downside risk
+    # (see raw.githubusercontent.com for references).  Net profit and
+    # draw-down penalties are disabled by default.  Each ratio is
+    # transformed with ``tanh`` and clipped to [-1, 1] so no single
     # metric dominates the reward signal.
     # ------------------------------------------------------------------
     composite_reward = 0.0
