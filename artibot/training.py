@@ -973,9 +973,9 @@ def objective(trial: optuna.trial.Trial) -> float:
         lr=params["lr"],
         n_features=n_features,
         warmup_steps=G.warmup_steps,
+        indicator_hp=indicator_hp,
     )
     model.entropy_beta = params["entropy_beta"]
-    model.indicator_hparams = indicator_hp
     stop = threading.Event()
     csv_training_thread(
         model,
@@ -1052,9 +1052,9 @@ def run_hpo(n_trials: int = 50) -> dict:
         lr=best.get("lr", 1e-4),
         n_features=n_features,
         warmup_steps=G.warmup_steps,
+        indicator_hp=indicator_hp,
     )
     model.entropy_beta = best.get("entropy_beta", 1e-4)
-    model.indicator_hparams = indicator_hp
     quick_fit(model, data, epochs=1)
     full_result = robust_backtest(model, data, indicator_hp=model.indicator_hparams)
     if full_result.get("trades", 0) == 0:
@@ -1100,7 +1100,10 @@ def walk_forward_backtest(data: list, train_window: int, test_horizon: int) -> l
         train_slice = data[start : start + train_window]
         test_slice = data[start + train_window : start + train_window + test_horizon]
         model = EnsembleModel(
-            device=get_device(), n_models=1, warmup_steps=G.warmup_steps
+            device=get_device(),
+            n_models=1,
+            warmup_steps=G.warmup_steps,
+            indicator_hp=IndicatorHyperparams(),
         )
         quick_fit(model, train_slice, epochs=1)
         metrics = robust_backtest(
