@@ -239,10 +239,10 @@ class EnsembleModel(nn.Module):
         self.device = device
         self.weights_path = weights_path
         # use config defaults for all indicator settings
-        self.indicator_hparams = IndicatorHyperparams()
-        self.hp = HyperParams(indicator_hp=self.indicator_hparams)
+        self._indicator_hparams = IndicatorHyperparams()
+        self._hp = HyperParams(indicator_hp=self._indicator_hparams)
         if lr is not None:
-            self.hp.learning_rate = lr
+            self._hp.learning_rate = lr
 
         # Determine the feature dimension either from the caller or fall back
         # to the package constant.  This allows the ensemble to align its input
@@ -266,7 +266,7 @@ class EnsembleModel(nn.Module):
         print("[DEBUG] Model moved to device")
         from . import hyperparams as _hp
 
-        lr = max(self.hp.learning_rate, _hp.LR_MIN)
+        lr = max(self._hp.learning_rate, _hp.LR_MIN)
         self.optimizers = [
             optim.AdamW(
                 m.parameters(),
@@ -316,6 +316,32 @@ class EnsembleModel(nn.Module):
 
         self.grad_accum_steps = grad_accum_steps
         self.total_steps = total_steps
+
+    @property
+    def indicator_hparams(self) -> IndicatorHyperparams:
+        """Return the current indicator hyper-parameters."""
+
+        return self._indicator_hparams
+
+    @indicator_hparams.setter
+    def indicator_hparams(self, hp: IndicatorHyperparams) -> None:
+        """Set ``hp`` and keep :class:`HyperParams` in sync."""
+
+        self._indicator_hparams = hp
+        self._hp.indicator_hp = hp
+
+    @property
+    def hp(self) -> HyperParams:
+        """Return the ensemble's :class:`HyperParams`."""
+
+        return self._hp
+
+    @hp.setter
+    def hp(self, hp_obj: HyperParams) -> None:
+        """Replace ``hp`` and sync indicator settings."""
+
+        self._hp = hp_obj
+        self._indicator_hparams = hp_obj.indicator_hp
 
     def _align_features(self, x: torch.Tensor) -> torch.Tensor:
         """Validate feature dimension and zero disabled columns."""
@@ -380,7 +406,7 @@ class EnsembleModel(nn.Module):
             ``train_loss`` and ``val_loss`` (``None`` when no ``dl_val``).
         """
         first_epoch = self.train_steps == 0
-        target_wd = 0.0 if first_epoch else self.hp.weight_decay
+        target_wd = 0.0 if first_epoch else self._hp.weight_decay
         for opt in self.optimizers:
             for pg in opt.param_groups:
                 pg["weight_decay"] = target_wd
@@ -401,10 +427,10 @@ class EnsembleModel(nn.Module):
 
             hp, _ = run_bohb(n_trials=10)
             for name, val in vars(hp).items():
-                setattr(self.hp.indicator_hp, name, val)
+                setattr(self._hp.indicator_hp, name, val)
                 setattr(self.indicator_hparams, name, val)
                 _CONFIG[name.upper()] = val
-            G.sync_globals(self.hp, self.hp.indicator_hp)
+            G.sync_globals(self._hp, self._hp.indicator_hp)
             best_result = robust_backtest(
                 self, data_full, indicator_hp=self.indicator_hparams
             )
