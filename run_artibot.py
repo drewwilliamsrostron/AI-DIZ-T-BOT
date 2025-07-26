@@ -170,10 +170,9 @@ def build_model(
     entropy_beta: float | None = None,
     warmup_steps: int | None = None,
     indicator_hp: IndicatorHyperparams | None = None,
-    freeze_features: bool | None = None,
 ) -> "EnsembleModel":
     """Return an :class:`EnsembleModel` configured with HPO params."""
-    from artibot.constants import WARMUP_STEPS
+    from artibot.hyperparams import WARMUP_STEPS
 
     model = EnsembleModel(
         device=device,
@@ -185,7 +184,6 @@ def build_model(
         grad_accum_steps=4,
         warmup_steps=warmup_steps or WARMUP_STEPS,
         indicator_hp=indicator_hp,
-        freeze_features=freeze_features,
     )
     if entropy_beta is not None:
         model.entropy_beta = entropy_beta
@@ -373,7 +371,6 @@ def main() -> None:
             entropy_beta=entropy_beta,
             warmup_steps=int(opts.get("warmup_steps", defaults["warmup_steps"])),
             indicator_hp=indicator_hp,
-            freeze_features=True,
         )
 
         weights_dir = os.path.abspath(

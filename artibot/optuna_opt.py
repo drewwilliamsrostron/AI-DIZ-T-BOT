@@ -64,9 +64,8 @@ def _quick_backtest(
         device=torch.device("cpu"),
         n_models=1,
         n_features=n_features,
-        indicator_hp=hp,
-        freeze_features=True,
     )
+    model.indicator_hparams = hp
     result = robust_backtest(model, data, indicator_hp=hp)
     return (
         result.get("composite_reward", 0.0),

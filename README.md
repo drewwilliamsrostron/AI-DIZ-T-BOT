@@ -210,9 +210,6 @@ Answer `n` at the startup prompt or set `LIVE_TRADING` to `false` in the config
 to route orders to the Phemex sandbox while still running the full trading
 cycle. Respond `y` for real trades on the live exchange.
 
-When running in sandbox or during back-tests leave `--freeze_features` enabled so
-the RL agent doesn't alter indicator selection between folds.
-
 ### Dashboard
 
 The Tkinter GUI displays several live metrics. The **Attention Weights** tab

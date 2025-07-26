@@ -128,8 +128,6 @@ class TransformerMetaAgent(nn.Module):
 
 
 class MetaTransformerRL:
-    _instances: list["MetaTransformerRL"] = []
-
     def __init__(
         self,
         ensemble,
@@ -185,7 +183,6 @@ class MetaTransformerRL:
         self.steps = 0
         self.last_improvement = 0
         self.batch_buffer: list[tuple] = []
-        self.__class__._instances.append(self)
 
     def _to_device(self, *tensors):
         """Move tensors to ``self.device``.
@@ -205,19 +202,6 @@ class MetaTransformerRL:
         if not hasattr(self._model, "state_dim"):
             self._model.state_dim = self.state_dim
         self._model.to(self.device, non_blocking=True)
-
-    @classmethod
-    def reset_policy(cls) -> None:
-        """Clear optimizer state and step counters for all agents."""
-
-        for inst in cls._instances:
-            inst.steps = 0
-            inst.low_kl_count = 0
-            inst.last_improvement = 0
-            inst.batch_buffer.clear()
-            if hasattr(inst, "opt"):
-                inst.opt.state.clear()
-        cls._instances.clear()
 
     def pick_action(self, state_np):
         """Return an action dictionary with PPO-compatible log probability."""
@@ -313,13 +297,12 @@ class MetaTransformerRL:
         self.prev_logprob = logp.detach()
         self.prev_action_idx = action_idx
         filtered = {}
-        freeze = hyperparams.should_freeze_features(G.get_warmup_step()) or getattr(
-            self.ensemble.hp, "freeze_features", False
-        )
+        freeze = hyperparams.should_freeze_features(G.get_warmup_step())
         for action_name, val in act.items():
             if freeze and (
                 action_name.startswith("toggle_")
-                or action_name.endswith("_period_delta")
+                or action_name.endswith("_period")
+                or action_name.endswith("_frac")
             ):
                 continue
             if action_name not in hyperparams.ALLOWED_META_ACTIONS:
@@ -436,13 +419,12 @@ class MetaTransformerRL:
             logging.info("FEATURE_IMPORTANCE %s %.3f", k, prob)
 
         filtered = {}
-        freeze = hyperparams.should_freeze_features(G.get_warmup_step()) or getattr(
-            hp, "freeze_features", False
-        )
+        freeze = hyperparams.should_freeze_features(G.get_warmup_step())
         for action_name, val in act.items():
             if freeze and (
                 action_name.startswith("toggle_")
-                or action_name.endswith("_period_delta")
+                or action_name.endswith("_period")
+                or action_name.endswith("_frac")
             ):
                 continue
             if action_name not in hyperparams.ALLOWED_META_ACTIONS:
@@ -807,13 +789,12 @@ def meta_control_loop(
             state = np.nan_to_num(state, nan=0.0, posinf=1e6, neginf=-1e6)
             act, logp, val_s = agent.pick_action(state)
             filtered = {}
-            freeze = hyperparams.should_freeze_features(G.get_warmup_step()) or getattr(
-                hp, "freeze_features", False
-            )
+            freeze = hyperparams.should_freeze_features(G.get_warmup_step())
             for action_name, val in act.items():
                 if freeze and (
                     action_name.startswith("toggle_")
-                    or action_name.endswith("_period_delta")
+                    or action_name.endswith("_period")
+                    or action_name.endswith("_frac")
                 ):
                     continue
                 if action_name not in hyperparams.ALLOWED_META_ACTIONS:
