@@ -53,7 +53,6 @@ class EnsembleEstimator(BaseEstimator):
             warmup_steps=WARMUP_STEPS,
             indicator_hp=self.indicator_hp,
         )
-        self.model_.indicator_hparams = self.indicator_hp
         stop = threading.Event()
         csv_training_thread(
             self.model_,

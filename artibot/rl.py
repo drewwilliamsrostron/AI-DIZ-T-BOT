@@ -128,6 +128,8 @@ class TransformerMetaAgent(nn.Module):
 
 
 class MetaTransformerRL:
+    _last_instance: "MetaTransformerRL | None" = None
+
     def __init__(
         self,
         ensemble,
@@ -183,6 +185,7 @@ class MetaTransformerRL:
         self.steps = 0
         self.last_improvement = 0
         self.batch_buffer: list[tuple] = []
+        MetaTransformerRL._last_instance = self
 
     def _to_device(self, *tensors):
         """Move tensors to ``self.device``.
@@ -297,12 +300,13 @@ class MetaTransformerRL:
         self.prev_logprob = logp.detach()
         self.prev_action_idx = action_idx
         filtered = {}
-        freeze = hyperparams.should_freeze_features(G.get_warmup_step())
+        freeze = False
+        if self.ensemble is not None:
+            freeze = bool(getattr(self.ensemble.hp, "freeze_features", False))
         for action_name, val in act.items():
             if freeze and (
                 action_name.startswith("toggle_")
-                or action_name.endswith("_period")
-                or action_name.endswith("_frac")
+                or action_name.endswith("_period_delta")
             ):
                 continue
             if action_name not in hyperparams.ALLOWED_META_ACTIONS:
@@ -419,12 +423,11 @@ class MetaTransformerRL:
             logging.info("FEATURE_IMPORTANCE %s %.3f", k, prob)
 
         filtered = {}
-        freeze = hyperparams.should_freeze_features(G.get_warmup_step())
+        freeze = bool(getattr(hp, "freeze_features", False))
         for action_name, val in act.items():
             if freeze and (
                 action_name.startswith("toggle_")
-                or action_name.endswith("_period")
-                or action_name.endswith("_frac")
+                or action_name.endswith("_period_delta")
             ):
                 continue
             if action_name not in hyperparams.ALLOWED_META_ACTIONS:
@@ -716,6 +719,20 @@ class MetaTransformerRL:
             G.global_best_lr = G.global_lr
             G.global_best_wd = G.global_wd
 
+    @classmethod
+    def reset_policy(cls) -> None:
+        """Clear cached policy state for new folds."""
+        inst = getattr(cls, "_last_instance", None)
+        if inst is None:
+            return
+        inst.steps = 0
+        inst.last_improvement = 0
+        inst.batch_buffer.clear()
+        inst.prev_logits = None
+        inst.prev_logprob = None
+        inst.prev_action_idx = None
+        inst.opt.state.clear()
+
 
 ###############################################################################
 # meta_control_loop
@@ -789,12 +806,11 @@ def meta_control_loop(
             state = np.nan_to_num(state, nan=0.0, posinf=1e6, neginf=-1e6)
             act, logp, val_s = agent.pick_action(state)
             filtered = {}
-            freeze = hyperparams.should_freeze_features(G.get_warmup_step())
+            freeze = bool(getattr(hp, "freeze_features", False))
             for action_name, val in act.items():
                 if freeze and (
                     action_name.startswith("toggle_")
-                    or action_name.endswith("_period")
-                    or action_name.endswith("_frac")
+                    or action_name.endswith("_period_delta")
                 ):
                     continue
                 if action_name not in hyperparams.ALLOWED_META_ACTIONS:
