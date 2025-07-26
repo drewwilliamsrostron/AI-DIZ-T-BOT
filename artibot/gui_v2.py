@@ -242,25 +242,23 @@ def startup_options_dialog(
     threads_max = os.cpu_count() or 1
     threads_var = tk_module.IntVar(value=int(defaults.get("threads", threads_max)))
     risk_var = tk_module.BooleanVar(value=bool(defaults.get("risk_filter", False)))
-    net_var = tk_module.BooleanVar(value=bool(defaults.get("use_net_term", True)))
+    net_var = tk_module.BooleanVar(value=bool(defaults.get("use_net_term", False)))
     sharpe_var = tk_module.BooleanVar(value=bool(defaults.get("use_sharpe_term", True)))
-    dd_var = tk_module.BooleanVar(value=bool(defaults.get("use_drawdown_term", True)))
+    dd_var = tk_module.BooleanVar(value=bool(defaults.get("use_drawdown_term", False)))
     trade_var = tk_module.BooleanVar(value=bool(defaults.get("use_trade_term", False)))
     days_var = tk_module.BooleanVar(
-        value=bool(defaults.get("use_profit_days_term", True))
+        value=bool(defaults.get("use_profit_days_term", False))
     )
     sortino_var = tk_module.BooleanVar(
-        value=bool(defaults.get("use_sortino_term", False))
+        value=bool(defaults.get("use_sortino_term", True))
     )
-    omega_var = tk_module.BooleanVar(value=bool(defaults.get("use_omega_term", False)))
-    calmar_var = tk_module.BooleanVar(
-        value=bool(defaults.get("use_calmar_term", False))
-    )
-    theta_var = tk_module.DoubleVar(value=float(defaults.get("theta", 0.5)))
+    omega_var = tk_module.BooleanVar(value=bool(defaults.get("use_omega_term", True)))
+    calmar_var = tk_module.BooleanVar(value=bool(defaults.get("use_calmar_term", True)))
+    theta_var = tk_module.DoubleVar(value=float(defaults.get("theta", 0.6)))
     phi_var = tk_module.DoubleVar(value=float(defaults.get("phi", 0.5)))
     chi_var = tk_module.DoubleVar(value=float(defaults.get("chi", 0.5)))
-    beta_var = tk_module.DoubleVar(value=float(defaults.get("beta", 0.5)))
-    warmup_var = tk_module.IntVar(value=int(defaults.get("warmup_steps", 200)))
+    beta_var = tk_module.DoubleVar(value=float(defaults.get("beta", 0.6)))
+    warmup_var = tk_module.IntVar(value=int(defaults.get("warmup_steps", 0)))
 
     tk_module.Checkbutton(
         root, text="Skip GDELT sentiment download", variable=skip_var

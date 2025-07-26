@@ -69,7 +69,9 @@ class EnsembleEstimator(BaseEstimator):
         if self.model_ is None:
             raise RuntimeError("Estimator not fitted")
         df = pd.concat([X.reset_index(drop=True), y.reset_index(drop=True)], axis=1)
-        metrics = robust_backtest(self.model_, df.values.tolist())
+        metrics = robust_backtest(
+            self.model_, df.values.tolist(), indicator_hp=self.model_.indicator_hparams
+        )
         if metrics.get("trades", 0) == 0:
             logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
         else:
@@ -106,7 +108,11 @@ def walk_forward_opt(data: pd.DataFrame) -> List[Dict[str, Any]]:
             update_globals=False,
         )
 
-        metrics = robust_backtest(est.model_, test_df.values.tolist())
+        metrics = robust_backtest(
+            est.model_,
+            test_df.values.tolist(),
+            indicator_hp=est.model_.indicator_hparams,
+        )
         if metrics.get("trades", 0) == 0:
             logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
         else:

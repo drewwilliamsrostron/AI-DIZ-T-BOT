@@ -291,7 +291,8 @@ class EnsembleModel(nn.Module):
         self.best_val_loss = float("inf")
         self.best_composite_reward = float("-inf")
         self.best_state_dicts = None
-        self.train_steps = 0
+        # Persist step count across folds so RL stays active
+        self.train_steps = G.global_step
         # Start with a small reward weight and no delay
         self.reward_loss_weight = 0.05
         self.max_reward_loss_weight = 0.2

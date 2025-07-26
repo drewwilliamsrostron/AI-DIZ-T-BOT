@@ -202,19 +202,35 @@ def main() -> None:
         "use_live": CONFIG.get("API", {}).get("LIVE_TRADING", False),
         "use_prev_weights": CONFIG.get("USE_PREV_WEIGHTS", True),
         "threads": CONFIG.get("CPU_LIMIT", os.cpu_count() or 1),
-        "use_net_term": G.use_net_term,
-        "use_sharpe_term": G.use_sharpe_term,
-        "use_drawdown_term": G.use_drawdown_term,
-        "use_trade_term": G.use_trade_term,
-        "use_profit_days_term": G.use_profit_days_term,
-        "use_sortino_term": G.use_sortino_term,
-        "use_omega_term": G.use_omega_term,
-        "use_calmar_term": G.use_calmar_term,
+        "use_net_term": DEFAULT_CFG.get("reward", {}).get(
+            "use_net_term", G.use_net_term
+        ),
+        "use_sharpe_term": DEFAULT_CFG.get("reward", {}).get(
+            "use_sharpe_term", G.use_sharpe_term
+        ),
+        "use_drawdown_term": DEFAULT_CFG.get("reward", {}).get(
+            "use_drawdown_term", G.use_drawdown_term
+        ),
+        "use_trade_term": DEFAULT_CFG.get("reward", {}).get(
+            "use_trade_term", G.use_trade_term
+        ),
+        "use_profit_days_term": DEFAULT_CFG.get("reward", {}).get(
+            "use_profit_days_term", G.use_profit_days_term
+        ),
+        "use_sortino_term": DEFAULT_CFG.get("reward", {}).get(
+            "use_sortino_term", G.use_sortino_term
+        ),
+        "use_omega_term": DEFAULT_CFG.get("reward", {}).get(
+            "use_omega_term", G.use_omega_term
+        ),
+        "use_calmar_term": DEFAULT_CFG.get("reward", {}).get(
+            "use_calmar_term", G.use_calmar_term
+        ),
         "theta": DEFAULT_CFG.get("reward", {}).get("theta", G.theta),
         "phi": DEFAULT_CFG.get("reward", {}).get("phi", G.phi),
         "chi": DEFAULT_CFG.get("reward", {}).get("chi", G.chi),
         "beta": DEFAULT_CFG.get("reward", {}).get("beta", G.beta),
-        "warmup_steps": DEFAULT_CFG.get("WARMUP_STEPS", 200),
+        "warmup_steps": DEFAULT_CFG.get("WARMUP_STEPS", G.warmup_steps),
         "risk_filter": G.is_risk_filter_enabled(),
     }
     opts = startup_options_dialog(defaults)
