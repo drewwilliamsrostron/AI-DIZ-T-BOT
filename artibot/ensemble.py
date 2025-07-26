@@ -239,8 +239,8 @@ class EnsembleModel(nn.Module):
         self.device = device
         self.weights_path = weights_path
         # use config defaults for all indicator settings
-        self.indicator_hparams = IndicatorHyperparams()
-        self.hp = HyperParams(indicator_hp=self.indicator_hparams)
+        self._indicator_hparams = IndicatorHyperparams()
+        self.hp = HyperParams(indicator_hp=self._indicator_hparams)
         if lr is not None:
             self.hp.learning_rate = lr
 
@@ -316,6 +316,21 @@ class EnsembleModel(nn.Module):
 
         self.grad_accum_steps = grad_accum_steps
         self.total_steps = total_steps
+
+    # ------------------------------------------------------------------
+    @property
+    def indicator_hparams(self) -> IndicatorHyperparams:
+        """Return indicator hyper-parameters."""
+
+        return self._indicator_hparams
+
+    @indicator_hparams.setter
+    def indicator_hparams(self, hp: IndicatorHyperparams) -> None:
+        """Synchronise indicator settings across sub-objects."""
+
+        self._indicator_hparams = hp
+        if hasattr(self, "hp"):
+            self.hp.indicator_hp = hp
 
     def _align_features(self, x: torch.Tensor) -> torch.Tensor:
         """Validate feature dimension and zero disabled columns."""

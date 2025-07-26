@@ -1055,7 +1055,6 @@ def run_hpo(n_trials: int = 50) -> dict:
     )
     model.entropy_beta = best.get("entropy_beta", 1e-4)
     model.indicator_hparams = indicator_hp
-    model.hp.indicator_hp = indicator_hp
     quick_fit(model, data, epochs=1)
     full_result = robust_backtest(model, data, indicator_hp=model.indicator_hparams)
     if full_result.get("trades", 0) == 0:
