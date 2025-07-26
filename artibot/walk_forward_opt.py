@@ -10,7 +10,8 @@ import pandas as pd
 from sklearn.base import BaseEstimator
 
 from .ensemble import EnsembleModel
-from .hyperparams import IndicatorHyperparams, WARMUP_STEPS
+from .hyperparams import IndicatorHyperparams
+from .constants import WARMUP_STEPS
 from .training import csv_training_thread
 from .backtest import robust_backtest
 from .optuna_opt import run_bohb
@@ -52,8 +53,8 @@ class EnsembleEstimator(BaseEstimator):
             n_models=1,
             warmup_steps=WARMUP_STEPS,
             indicator_hp=self.indicator_hp,
+            freeze_features=True,
         )
-        self.model_.indicator_hparams = self.indicator_hp
         stop = threading.Event()
         csv_training_thread(
             self.model_,

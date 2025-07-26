@@ -214,8 +214,12 @@ def pytest_configure(config):
 
     if "pandas" not in sys.modules:
         pd = types.ModuleType("pandas")
+        pd.__spec__ = ModuleSpec("pandas", loader=None)
         pd.Series = lambda *a, **k: object()
         pd.DataFrame = lambda *a, **k: object()
+        pd.to_datetime = lambda x, unit="s": types.SimpleNamespace(
+            strftime=lambda f: "2020-01"
+        )
         sys.modules["pandas"] = pd
 
     if "transformers" not in sys.modules:
@@ -235,7 +239,9 @@ def pytest_configure(config):
 
     if "sklearn" not in sys.modules:
         sk = types.ModuleType("sklearn")
+        sk.__spec__ = ModuleSpec("sklearn", loader=None)
         impute_mod = types.ModuleType("sklearn.impute")
+        impute_mod.__spec__ = ModuleSpec("sklearn.impute", loader=None)
         impute_mod.KNNImputer = object
         sk.impute = impute_mod
         sys.modules["sklearn"] = sk

@@ -45,7 +45,7 @@ def main() -> None:
     hp = HyperParams(indicator_hp=indicator_hp)
     if args.learning_rate:
         hp.learning_rate = args.learning_rate
-    from artibot.hyperparams import WARMUP_STEPS
+    from artibot.constants import WARMUP_STEPS
 
     ensemble = EnsembleModel(
         device=get_device(),
