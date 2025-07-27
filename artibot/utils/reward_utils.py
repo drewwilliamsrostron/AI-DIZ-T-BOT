@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import numpy as np
+import pandas as pd
 import torch
 
 
@@ -46,3 +48,35 @@ def calmar_ratio(net_pct: float, max_drawdown: float, period_days: int) -> float
     """Return Calmar ratio based on annualised return and drawdown."""
     annualised = net_pct / max(period_days / 365.0, 1e-6)
     return annualised / (abs(max_drawdown) + 1e-6)
+
+
+def trade_pnl(df: pd.DataFrame) -> np.ndarray:
+    """Return per-trade profit and loss values.
+
+    Parameters
+    ----------
+    df:
+        DataFrame containing trade records with ``entry_price``, ``exit_price``,
+        ``side`` and ``size`` columns.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of P&L for each trade in the same currency units as ``size``.
+    """
+
+    if df.empty:
+        return np.array([], dtype=float)
+
+    entry = df["entry_price"].to_numpy(dtype=float)
+    exit_p = df["exit_price"].to_numpy(dtype=float)
+    size = df["size"].to_numpy(dtype=float)
+    side = df["side"].to_numpy()
+
+    long_mask = side == "long"
+    pnl = np.empty(len(df), dtype=float)
+    pnl[long_mask] = (exit_p[long_mask] - entry[long_mask]) * size[long_mask]
+    pnl[~long_mask] = (entry[~long_mask] - exit_p[~long_mask]) * np.abs(
+        size[~long_mask]
+    )
+    return pnl
