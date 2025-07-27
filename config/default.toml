@@ -18,3 +18,8 @@ theta = 0.6
 phi = 0.5
 chi = 0.5
 WARMUP_STEPS = 0
+
+[META]
+buffer = 1024
+batch = 256
+
