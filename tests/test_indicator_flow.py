@@ -1,4 +1,3 @@
-import torch
 import artibot.training as training
 from artibot.hyperparams import IndicatorHyperparams
 from artibot.constants import FEATURE_DIMENSION

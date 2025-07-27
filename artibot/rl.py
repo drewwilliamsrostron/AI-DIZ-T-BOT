@@ -769,6 +769,8 @@ def meta_control_loop(
         dtype=np.float32,
     )
 
+    prev_profit_factor = getattr(G, "global_profit_factor", 0.0)
+
     cycle_count = 0
     while True:
         if not G.is_bot_running():
@@ -829,7 +831,28 @@ def meta_control_loop(
 
             curr2 = G.global_composite_reward if G.global_composite_reward else 0.0
             reward_val = curr2
+            bonus = 0.0
+            if new_state[2] > state[2]:
+                bonus += 0.1
+            if new_state[3] < state[3]:
+                bonus += 0.1
+            curr_pf = getattr(G, "global_profit_factor", None)
+            if (
+                curr_pf is not None
+                and isinstance(curr_pf, (int, float))
+                and curr_pf > prev_profit_factor
+            ):
+                bonus += 0.05
+            val_loss = getattr(G, "global_validation_loss", None)
+            if (
+                isinstance(val_loss, list)
+                and len(val_loss) > 1
+                and val_loss[-1] < val_loss[-2]
+            ):
+                bonus += 0.05
+            reward_val += bonus
             agent.update(state, 0, reward_val, new_state, logp, val_s)
+            prev_profit_factor = curr_pf if curr_pf is not None else prev_profit_factor
             rew_delta = reward_val
 
             G.set_status(

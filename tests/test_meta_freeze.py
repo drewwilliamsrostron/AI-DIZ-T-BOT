@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 from artibot.rl import MetaTransformerRL
 from artibot.hyperparams import HyperParams
 
