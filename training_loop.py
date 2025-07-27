@@ -1,4 +1,32 @@
+import logging
+import numpy as np
 import torch
+
+
+def policy_gradient_loss(
+    log_probs: torch.Tensor, trade_pnl: torch.Tensor
+) -> torch.Tensor:
+    """Return policy gradient loss weighted by normalised P&L advantage."""
+
+    advantage = trade_pnl - trade_pnl.mean()
+    advantage = advantage / (trade_pnl.std() + 1e-6)
+    return -(advantage.detach() * log_probs).mean()
+
+
+def log_btc_correlation(
+    strategy_returns: np.ndarray,
+    btc_returns_last30d: np.ndarray,
+    profit_factor: float,
+) -> float:
+    """Log correlation with BTC and issue tracking warning when high."""
+
+    if strategy_returns.size == 0 or btc_returns_last30d.size == 0:
+        return float("nan")
+    corr = float(np.corrcoef(strategy_returns, btc_returns_last30d)[0, 1])
+    logging.info("BTC_CORR %.3f", corr)
+    if corr > 0.85 and profit_factor < 1.2:
+        logging.warning("Tracking BTC?")
+    return corr
 
 
 def train_step(model, optimizer, scheduler, batch):
