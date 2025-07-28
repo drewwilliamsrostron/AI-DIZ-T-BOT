@@ -45,6 +45,7 @@ from .utils import zero_disabled
 import artibot.globals as G
 from .metrics import compute_yearly_stats, compute_monthly_stats
 from .model import TradingModel
+from .dataset import TradeParams
 from .constants import FEATURE_DIMENSION
 from .feature_manager import validate_and_align_features
 
@@ -239,11 +240,13 @@ class EnsembleModel(nn.Module):
         warmup_steps: int | None = None,
         indicator_hp: IndicatorHyperparams | None = None,
         freeze_features: bool | None = None,
+        tau: float = 1.0,
     ) -> None:
         super().__init__()
         device = torch.device(device) if device is not None else get_device()
         self.device = device
         self.weights_path = weights_path
+        self.tau = float(tau)
         # use provided settings or fall back to config defaults
         self._indicator_hparams = (
             indicator_hp if indicator_hp is not None else IndicatorHyperparams()
@@ -268,9 +271,12 @@ class EnsembleModel(nn.Module):
             for _ in range(n_models)
         ]
         for model in self.models:
+            # track whether any parameters are frozen
             for name, param in model.named_parameters():
                 if not param.requires_grad:
                     logging.warning("Frozen param: %s", name)
+            model.score_history = []
+            model.sharpe_ema = 0.0
         self._mask_lock = threading.Lock()
         self.register_buffer("feature_mask", torch.ones(1, dim, device=device))
         print("[DEBUG] Model moved to device")
@@ -357,10 +363,45 @@ class EnsembleModel(nn.Module):
         return zero_disabled(x, mask)
 
     @validate_and_align_features
-    def forward(self, x: torch.Tensor) -> list[torch.Tensor]:
+    def forward(self, x: torch.Tensor):
+        """Return weighted ensemble output."""
         x = x.to(self.device)
         outs = [m(x) for m in self.models]
-        return outs
+        scores = torch.tensor(
+            [m.score_history[-1] if m.score_history else 0.0 for m in self.models],
+            dtype=torch.float32,
+            device=self.device,
+        )
+        weights = torch.softmax(scores / self.tau, dim=0)
+        logits = torch.stack([o[0] for o in outs])
+        w_logits = (weights.view(-1, 1, 1) * logits).sum(dim=0)
+        params = [o[1] for o in outs]
+
+        def _get_attr(p, name, default):
+            val = getattr(p, name, None)
+            if val is None:
+                return torch.tensor(default, device=self.device)
+            if not torch.is_tensor(val):
+                return torch.tensor(val, device=self.device)
+            return val
+
+        risk_frac = sum(
+            w * _get_attr(p, "risk_fraction", 0.1) for w, p in zip(weights, params)
+        )
+        sl_mult = sum(
+            w * _get_attr(p, "sl_multiplier", 5.0) for w, p in zip(weights, params)
+        )
+        tp_mult = sum(
+            w * _get_attr(p, "tp_multiplier", 5.0) for w, p in zip(weights, params)
+        )
+        att = sum(
+            w * _get_attr(p, "attention", torch.zeros(1))
+            for w, p in zip(weights, params)
+        )
+        reward_pred = torch.stack([o[2] for o in outs])
+        pred_reward = (weights.view(-1, 1) * reward_pred).sum(dim=0)
+        logging.info("MODEL_WEIGHTS %s", [round(float(w), 3) for w in weights.cpu()])
+        return w_logits, TradeParams(risk_frac, sl_mult, tp_mult, att), pred_reward
 
     def configure_one_cycle(self, total_steps: int) -> None:
         """Initialise OneCycle schedulers with ``total_steps``."""
@@ -442,6 +483,20 @@ class EnsembleModel(nn.Module):
         current_result = best_result or robust_backtest(
             self, data_full, indicator_hp=self.indicator_hparams
         )
+        # Evaluate each model individually for adaptive weighting
+        for idx_m, m in enumerate(self.models):
+            orig = self.models
+            self.models = [m]
+            try:
+                res_m = robust_backtest(
+                    self, data_full, indicator_hp=self.indicator_hparams
+                )
+            finally:
+                self.models = orig
+            m.score_history.append(res_m.get("composite_reward", 0.0))
+            m.sharpe_ema = 0.9 * getattr(m, "sharpe_ema", 0.0) + 0.1 * res_m.get(
+                "sharpe", 0.0
+            )
         span_days = 0
         if data_full:
             try:
@@ -1114,14 +1169,20 @@ class EnsembleModel(nn.Module):
 
         with torch.no_grad():
             x = self._align_features(x.to(self.device))
-            outs = []
-            for m in self.models:
-                lg, _, _ = m(x)
-                p_ = torch.softmax(lg, dim=1).cpu()
-                outs.append(p_)
-            avgp = torch.mean(torch.stack(outs), dim=0)
+            outs = [m(x) for m in self.models]
+            scores = torch.tensor(
+                [m.score_history[-1] if m.score_history else 0.0 for m in self.models],
+                dtype=torch.float32,
+                device=self.device,
+            )
+            weights = torch.softmax(scores / self.tau, dim=0).cpu()
+            probs = torch.stack([torch.softmax(o[0], dim=1).cpu() for o in outs])
+            avgp = (weights.view(-1, 1, 1) * probs).sum(dim=0)
             idx = int(avgp[0].argmax().item())
             conf = float(avgp[0, idx].item())
+            logging.info(
+                "ACTION weights=%s index=%s", [round(float(w), 3) for w in weights], idx
+            )
             return idx, conf, None
 
     def vectorized_predict(
@@ -1150,6 +1211,12 @@ class EnsembleModel(nn.Module):
         with torch.no_grad():
             all_probs = []
             n_ = windows_tensor.shape[0]
+            scores = torch.tensor(
+                [m.score_history[-1] if m.score_history else 0.0 for m in self.models],
+                dtype=torch.float32,
+                device=self.device,
+            )
+            weights = torch.softmax(scores / self.tau, dim=0).cpu()
             for i in range(0, n_, batch_size):
                 batch = self._align_features(windows_tensor[i : i + batch_size])
                 batch_probs = []
@@ -1157,7 +1224,8 @@ class EnsembleModel(nn.Module):
                     lg, tpars, _ = m(batch)
                     pr_ = torch.softmax(lg, dim=1).cpu()
                     batch_probs.append(pr_)
-                avg_probs = torch.mean(torch.stack(batch_probs), dim=0)
+                batch_probs_t = torch.stack(batch_probs)
+                avg_probs = (weights.view(-1, 1, 1) * batch_probs_t).sum(dim=0)
                 all_probs.append(avg_probs)
 
             ret_probs = torch.cat(all_probs, dim=0)
@@ -1170,6 +1238,11 @@ class EnsembleModel(nn.Module):
                 "sl_multiplier": torch.tensor([5.0]),
                 "tp_multiplier": torch.tensor([5.0]),
             }
+            logging.info(
+                "ACTION_BATCH weights=%s first_action=%s",
+                [round(float(w), 3) for w in weights],
+                int(idxs[0]) if len(idxs) > 0 else -1,
+            )
             return idxs.cpu(), confs.cpu(), dummy_t
 
     def optimize_models(self, dummy_input):
@@ -1185,6 +1258,34 @@ class EnsembleModel(nn.Module):
         None
         """
         pass
+
+    def prune(self, delta: float = 0.1) -> None:
+        """Replace models whose EMA Sharpe underperforms."""
+
+        if not self.models:
+            return
+        ema_vals = [getattr(m, "sharpe_ema", 0.0) for m in self.models]
+        best = max(ema_vals)
+        threshold = best - delta
+        new_models: list[TradingModel] = []
+        replaced = 0
+        for m, v in zip(self.models, ema_vals):
+            if v < threshold:
+                replaced += 1
+                nm = TradingModel(input_size=self.n_features).to(self.device)
+                nm.score_history = []
+                nm.sharpe_ema = 0.0
+                new_models.append(nm)
+            else:
+                new_models.append(m)
+        if replaced:
+            lr = self.optimizers[0].param_groups[0]["lr"]
+            wd = self.optimizers[0].param_groups[0].get("weight_decay", 0.0)
+            self.models = new_models
+            self.optimizers = [
+                optim.AdamW(m.parameters(), lr=lr, weight_decay=wd) for m in self.models
+            ]
+            logging.info("PRUNED %d models threshold=%.2f", replaced, threshold)
 
     def save_best_weights(self, path: str | None = None) -> None:
         """Persist the best-performing weights to disk.

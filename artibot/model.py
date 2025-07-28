@@ -94,6 +94,9 @@ class TradingModel(nn.Module):
         self.layernorm = nn.LayerNorm(hidden_size)
         self.dropout = nn.Dropout(dropout)
         self.fc = nn.Linear(hidden_size, num_classes + 4)
+        # per-model score history and EMA Sharpe for ensemble weighting
+        self.score_history: list[float] = []
+        self.sharpe_ema: float = 0.0
 
     def forward(self, x):
         if x.size(-1) != self.d_model:

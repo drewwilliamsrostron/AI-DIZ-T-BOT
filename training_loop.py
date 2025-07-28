@@ -2,6 +2,8 @@ import logging
 import numpy as np
 import torch
 
+PATIENCE = 10
+
 
 def policy_gradient_loss(
     log_probs: torch.Tensor, trade_pnl: torch.Tensor
@@ -49,3 +51,16 @@ def train_step(model, optimizer, scheduler, batch):
     if scheduler is not None:
         scheduler.step()  # then adjust learning rate
     return loss.item()
+
+
+def run_training_loop(ensemble, dataloader, optimizer, scheduler=None, epochs=1):
+    """Simple loop calling :func:`train_step` and pruning periodically."""
+
+    wait = 0
+    for _ in range(epochs):
+        for batch in dataloader:
+            train_step(ensemble, optimizer, scheduler, batch)
+        wait += 1
+        if wait >= PATIENCE:
+            ensemble.prune()
+            wait = 0
