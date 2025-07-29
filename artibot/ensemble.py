@@ -1175,7 +1175,20 @@ class EnsembleModel(nn.Module):
                 dtype=torch.float32,
                 device=self.device,
             )
-            weights = torch.softmax(scores / self.tau, dim=0).cpu()
+            regime = None
+            if hasattr(G, "current_regime"):
+                regime = G.current_regime
+
+            if regime is not None and len(self.models) == 2:
+                if regime == 0:
+                    weights = torch.tensor([1.0, 0.0], device=self.device)
+                elif regime == 1:
+                    weights = torch.tensor([0.0, 1.0], device=self.device)
+                else:
+                    weights = torch.softmax(scores / self.tau, dim=0)
+            else:
+                weights = torch.softmax(scores / self.tau, dim=0)
+            weights = weights.cpu()
             probs = torch.stack([torch.softmax(o[0], dim=1).cpu() for o in outs])
             avgp = (weights.view(-1, 1, 1) * probs).sum(dim=0)
             idx = int(avgp[0].argmax().item())
