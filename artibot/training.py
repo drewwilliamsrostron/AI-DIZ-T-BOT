@@ -28,6 +28,7 @@ from .utils import heartbeat
 from .feature_manager import enforce_feature_dim
 from artibot.hyperparams import RISK_FILTER
 from artibot.utils.reward_utils import ema, differential_sharpe
+from .regime import detect_volatility_regime
 
 import sys
 import json
@@ -179,6 +180,24 @@ def apply_risk_curriculum(epoch: int) -> None:
         RISK_FILTER["MAX_DRAWDOWN"] = -0.25
 
 
+def adjust_for_regime(regime: int, ensemble: EnsembleModel) -> None:
+    """Update hyperparameters when the market ``regime`` changes."""
+
+    if regime == 1:
+        ensemble.hp.long_frac = 0.0
+        ensemble.hp.short_frac = 0.0
+        ensemble.indicator_hparams.use_tenkan = False
+        ensemble.indicator_hparams.use_kijun = False
+    else:
+        ensemble.hp.long_frac = 0.1
+        ensemble.hp.short_frac = 0.1
+        ensemble.indicator_hparams.use_tenkan = True
+        ensemble.indicator_hparams.use_kijun = True
+
+    G.current_regime = regime
+    G.sync_globals(ensemble.hp, ensemble.indicator_hparams)
+
+
 ###############################################################################
 def csv_training_thread(
     ensemble,
@@ -224,6 +243,8 @@ def csv_training_thread(
         train_data: list[list[float]] = []
         for row in data:
             train_data.append([float(v) for v in row])
+
+        prev_regime: int | None = None
 
         # Perform walk-forward validation to establish holdout metrics
         one_month = 24 * 30
@@ -332,6 +353,13 @@ def csv_training_thread(
             ensemble.train_steps += 1
             epochs += 1
             apply_risk_curriculum(ensemble.train_steps)
+
+            prices = np.array([row[4] for row in train_data], dtype=float)
+            current_regime = detect_volatility_regime(prices)
+            if prev_regime is None or current_regime != prev_regime:
+                logging.info("REGIME_CHANGE %s", current_regime)
+                adjust_for_regime(current_regime, ensemble)
+                prev_regime = current_regime
 
             progress = int(100 * ensemble.train_steps / max_epochs) if max_epochs else 0
             G.global_progress_pct = progress
