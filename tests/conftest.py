@@ -16,6 +16,9 @@ import contextlib
 from importlib.machinery import ModuleSpec
 import numpy as np
 import pytest
+import sklearn as _sklearn  # ensure real sklearn is loaded for hmmlearn
+
+_ = _sklearn.__version__
 
 sys.modules.setdefault("openai", types.SimpleNamespace())
 
@@ -237,9 +240,17 @@ def pytest_configure(config):
         sk = types.ModuleType("sklearn")
         impute_mod = types.ModuleType("sklearn.impute")
         impute_mod.KNNImputer = object
+        cluster_mod = types.ModuleType("sklearn.cluster")
+        cluster_mod.KMeans = object
+        utils_mod = types.ModuleType("sklearn.utils")
+        utils_mod.check_random_state = lambda seed=None: None
         sk.impute = impute_mod
+        sk.cluster = cluster_mod
+        sk.utils = utils_mod
         sys.modules["sklearn"] = sk
         sys.modules["sklearn.impute"] = impute_mod
+        sys.modules["sklearn.cluster"] = cluster_mod
+        sys.modules["sklearn.utils"] = utils_mod
 
     if "optuna" not in sys.modules:
         optuna = types.ModuleType("optuna")

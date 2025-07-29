@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
+import logging
 
 import artibot.globals as G
 
@@ -44,6 +45,10 @@ class HedgeBook:
         return int(usd / price)
 
     def open_long(self, connector: "PhemexConnector", price: float, hp) -> None:
+        if hasattr(G, "current_regime") and G.current_regime == 1:
+            logging.info("Regime is high-volatility, skipping opening long position.")
+            self.close_long(connector, price)
+            return
         if hp.long_frac == 0:
             self.close_long(connector, price)
             return
@@ -59,6 +64,10 @@ class HedgeBook:
         )
 
     def open_short(self, connector: "PhemexConnector", price: float, hp) -> None:
+        if hasattr(G, "current_regime") and G.current_regime == 1:
+            logging.info("High-vol regime, skipping opening short position.")
+            self.close_short(connector, price)
+            return
         if hp.short_frac == 0:
             self.close_short(connector, price)
             return
