@@ -24,7 +24,9 @@ class MetaConfig:
 class MetaTransformerRL:
     """Tiny PPO agent used to tune high level settings."""
 
-    def __init__(self, state_dim: int, action_dim: int, cfg: dict | None = None) -> None:
+    def __init__(
+        self, state_dim: int, action_dim: int, cfg: dict | None = None
+    ) -> None:
         meta = (cfg or {}).get("META", {})
         self.cfg = MetaConfig(
             buffer=meta.get("buffer", 1024),
@@ -87,7 +89,9 @@ class MetaTransformerRL:
         adv = np.zeros_like(deltas)
         gae = 0.0
         for t in range(len(deltas) - 1, -1, -1):
-            gae = deltas[t] + self.cfg.gamma * self.cfg.gae_lambda * (1 - dones[t]) * gae
+            gae = (
+                deltas[t] + self.cfg.gamma * self.cfg.gae_lambda * (1 - dones[t]) * gae
+            )
             adv[t] = gae
         returns = adv + values
 
@@ -108,4 +112,3 @@ class MetaTransformerRL:
         self.writer.add_scalar("meta/value_loss", float(value_loss), self.step)
         self.writer.add_scalar("meta/entropy", float(entropy), self.step)
         self.step += 1
-

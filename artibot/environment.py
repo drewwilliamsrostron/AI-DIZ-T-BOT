@@ -175,6 +175,7 @@ def install_dependencies() -> None:
         "transformers": "transformers==4.52.4",  # FinBERT sentiment model
         "schedule": "schedule",  # cron-like job scheduler
         "psutil": "psutil",
+        "hmmlearn": "hmmlearn",
     }
     for import_name, pip_name in pkgs.items():
         try:
