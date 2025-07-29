@@ -1,5 +1,4 @@
 import threading
-import types
 import numpy as np
 import torch
 
@@ -23,7 +22,10 @@ def test_regime_retrain_trigger(monkeypatch):
     monkeypatch.setattr("torch.utils.data.random_split", lambda ds, lens: (ds, ds))
     monkeypatch.setattr(
         "artibot.training.compute_indicators",
-        lambda *a, **k: {"scaled": np.zeros((0, 16), dtype=np.float32), "mask": np.ones(16, dtype=bool)},
+        lambda *a, **k: {
+            "scaled": np.zeros((0, 16), dtype=np.float32),
+            "mask": np.ones(16, dtype=bool),
+        },
     )
 
     class DummyDS:
@@ -40,10 +42,16 @@ def test_regime_retrain_trigger(monkeypatch):
 
     # Simulate regime shift persisting for 3 epochs
     states = iter([0, 1, 1, 1])
-    monkeypatch.setattr(training, "detect_volatility_regime", lambda prices: next(states))
+    monkeypatch.setattr(
+        training, "detect_volatility_regime", lambda prices: next(states)
+    )
 
     retrain_calls = {"n": 0}
-    monkeypatch.setattr(training, "quick_fit", lambda *a, **k: retrain_calls.__setitem__("n", retrain_calls["n"] + 1))
+    monkeypatch.setattr(
+        training,
+        "quick_fit",
+        lambda *a, **k: retrain_calls.__setitem__("n", retrain_calls["n"] + 1),
+    )
 
     ens = EnsembleModel(device=torch.device("cpu"), n_models=1)
     monkeypatch.setattr(ens, "load_best_weights", lambda *a, **k: None)
