@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 from hmmlearn.hmm import GaussianHMM
+from sklearn.cluster import KMeans
 
 
 def detect_volatility_regime(prices: np.ndarray, n_states: int = 2) -> int:
@@ -29,3 +30,37 @@ def detect_volatility_regime(prices: np.ndarray, n_states: int = 2) -> int:
     model.fit(returns)
     states = model.predict(returns)
     return int(states[-1])
+
+
+def classify_market_regime(prices: np.ndarray, lookback: int = 168) -> int:
+    """Cluster recent volatility and trend data to label the market regime.
+
+    Parameters
+    ----------
+    prices : np.ndarray
+        Sequence of prices ordered by time.
+    lookback : int, default 168
+        Number of recent observations used for the features.
+
+    Returns
+    -------
+    int
+        Regime index predicted by the fitted :class:`~sklearn.cluster.KMeans`.
+    """
+
+    if prices.size < lookback:
+        return 0
+
+    recent_prices = prices[-lookback:]
+    returns = np.diff(np.log(recent_prices))
+    vol7d = np.std(returns)
+
+    short_ma = np.mean(recent_prices[-20:])
+    long_ma = np.mean(recent_prices[-100:])
+    trend_strength = short_ma - long_ma
+
+    features = np.array([[vol7d, trend_strength]], dtype=float)
+
+    kmeans = KMeans(n_clusters=3, n_init=10, random_state=42)
+    kmeans.fit(np.vstack([features, features * 1.01, features * 0.99]))
+    return int(kmeans.predict(features)[0])
