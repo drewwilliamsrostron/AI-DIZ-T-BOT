@@ -513,6 +513,14 @@ class EnsembleModel(nn.Module):
         # --- ❹  Push to globals & ping GUI ------------------------------------------
         if not ignore_result:
             G.push_backtest_metrics(current_result)
+            regime = getattr(G, "current_regime", None)
+            if regime is not None:
+                try:
+                    from artibot import regime_cache
+
+                    regime_cache.save_best_for_regime(regime, self, current_result)
+                except Exception as e:  # pragma: no cover - cache failures non-critical
+                    logging.error(f"Regime caching failed: {e}")
         # ---------------- END merged block ----------------
 
         if data_full:
