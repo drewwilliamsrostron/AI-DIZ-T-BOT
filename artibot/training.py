@@ -245,6 +245,7 @@ def csv_training_thread(
             train_data.append([float(v) for v in row])
 
         prev_regime: int | None = None
+        regime_change_epochs = 0
 
         # Perform walk-forward validation to establish holdout metrics
         one_month = 24 * 30
@@ -356,10 +357,27 @@ def csv_training_thread(
 
             prices = np.array([row[4] for row in train_data], dtype=float)
             current_regime = detect_volatility_regime(prices)
-            if prev_regime is None or current_regime != prev_regime:
+            if prev_regime is None:
+                prev_regime = current_regime
+            if G.current_regime is None or current_regime != G.current_regime:
                 logging.info("REGIME_CHANGE %s", current_regime)
                 adjust_for_regime(current_regime, ensemble)
+
+            if current_regime != prev_regime:
+                regime_change_epochs += 1
+            else:
+                regime_change_epochs = 0
+
+            if regime_change_epochs >= 3:
+                logging.info("Significant regime change detected – retraining models.")
+                for i, m in enumerate(ensemble.models):
+                    ensemble.models[i] = type(m)(input_size=m.input_size).to(
+                        ensemble.device
+                    )
+                recent_data = train_data[-1000:]
+                quick_fit(ensemble, recent_data, epochs=2)
                 prev_regime = current_regime
+                regime_change_epochs = 0
 
             progress = int(100 * ensemble.train_steps / max_epochs) if max_epochs else 0
             G.global_progress_pct = progress
