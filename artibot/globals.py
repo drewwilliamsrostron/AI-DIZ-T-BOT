@@ -236,6 +236,9 @@ live_sharpe_history = collections.deque(maxlen=1000)  # GUI plot cache
 live_drawdown_history = collections.deque(maxlen=1000)
 trading_paused = False  # hot pause flag
 
+# Current market regime label used for ensemble gating
+current_regime: int | None = None
+
 # When ``True`` orders are routed to the Phemex testnet
 use_sandbox = True  # True for testnet
 
