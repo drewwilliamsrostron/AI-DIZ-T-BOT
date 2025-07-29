@@ -7,4 +7,3 @@ def test_replay_buffer_capped():
     for _ in range(10):
         agent.store_transition([0.0, 0.0], 0, 1.0, [0.0, 0.0], False)
     assert len(agent.replay) <= cfg["META"]["buffer"]
-
