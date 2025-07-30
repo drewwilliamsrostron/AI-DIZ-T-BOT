@@ -320,17 +320,17 @@ def robust_backtest(
 
     timestamps = raw_data[:, 0]
 
-    # Determine market regime for each time step (using unsupervised classification)
-    regimes = []
-    prices = raw_data[:, 4]  # closing prices
-    for t in range(len(prices)):
-        try:
-            from artibot.regime import classify_market_regime
+    # --------------------------------------------------------------------- #
+    # Fast vectorised regime labelling – fits K-Means **once** instead of    #
+    # refitting for every bar.  Cuts O(n²) down to O(n).                     #
+    # --------------------------------------------------------------------- #
+    prices = raw_data[:, 4]  # close column
+    try:
+        from artibot.regime import classify_market_regime_batch
 
-            regime_t = classify_market_regime(prices[: t + 1])
-        except Exception:
-            regime_t = 0
-        regimes.append(int(regime_t))
+        regimes = classify_market_regime_batch(prices)
+    except Exception:
+        regimes = [0] * len(prices)
 
     from numpy.lib.stride_tricks import sliding_window_view
 
