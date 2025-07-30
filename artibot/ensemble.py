@@ -277,6 +277,49 @@ class EnsembleModel(nn.Module):
                     logging.warning("Frozen param: %s", name)
             model.score_history = []
             model.sharpe_ema = 0.0
+
+        for i, model in enumerate(self.models):
+            if i == 0:
+                model.strategy_name = "trend_following"
+            elif i == 1:
+                model.strategy_name = "mean_reversion"
+            elif i == 2:
+                model.strategy_name = "volatility_adaptive"
+            else:
+                model.strategy_name = f"strategy_{i}"
+
+        if len(self.models) >= 3:
+            from copy import deepcopy
+
+            base_hp = self._indicator_hparams
+
+            hp0 = deepcopy(base_hp)
+            hp0.use_momentum = True
+            hp0.use_rsi = False
+            hp0.sma_period = max(hp0.sma_period, 50)
+
+            hp1 = deepcopy(base_hp)
+            hp1.use_rsi = True
+            hp1.rsi_period = 14
+            hp1.use_momentum = False
+
+            hp2 = deepcopy(base_hp)
+            hp2.use_atr = True
+            hp2.atr_period = min(hp2.atr_period, 14)
+            hp2.use_bbw = True
+
+            specialized_hps = [hp0, hp1, hp2]
+            for idx, m in enumerate(self.models[:3]):
+                m.indicator_hparams = specialized_hps[idx]
+
+        logging.info(
+            "Ensemble initialized with %d models: %s",
+            len(self.models),
+            ", ".join(
+                getattr(m, "strategy_name", str(idx))
+                for idx, m in enumerate(self.models)
+            ),
+        )
         self._mask_lock = threading.Lock()
         self.register_buffer("feature_mask", torch.ones(1, dim, device=device))
         print("[DEBUG] Model moved to device")
