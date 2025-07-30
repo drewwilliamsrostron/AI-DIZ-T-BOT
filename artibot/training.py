@@ -362,6 +362,42 @@ def csv_training_thread(
             if G.current_regime is None or current_regime != G.current_regime:
                 logging.info("REGIME_CHANGE %s", current_regime)
                 adjust_for_regime(current_regime, ensemble)
+                # Attempt to load a cached best model for this regime
+                try:
+                    from artibot import regime_cache
+
+                    loaded_info = regime_cache.load_best_for_regime(
+                        current_regime, ensemble
+                    )
+                except Exception:
+                    loaded_info = None
+                if loaded_info:
+                    logging.info(
+                        "LOADED_CACHED_MODEL regime=%d  prev_best_sharpe=%.2f  prev_net_pct=%.2f",
+                        current_regime,
+                        loaded_info.get("sharpe", 0.0),
+                        loaded_info.get("net_pct", 0.0),
+                    )
+                    # Evaluate the cached model on recent data to compare performance
+                    recent_window = 1000
+                    recent_data = (
+                        train_data[-recent_window:]
+                        if len(train_data) > recent_window
+                        else train_data
+                    )
+                    recent_result = robust_backtest(
+                        ensemble,
+                        recent_data,
+                        indicator_hp=ensemble.indicator_hparams,
+                    )
+                    logging.info(
+                        "RECENT_PERFORMANCE regime=%d  sharpe=%.2f  (cached model historical sharpe=%.2f)",
+                        current_regime,
+                        recent_result.get("sharpe", 0.0),
+                        loaded_info.get("sharpe", 0.0),
+                    )
+                    prev_regime = current_regime
+                    regime_change_epochs = 0
 
             if current_regime != prev_regime:
                 regime_change_epochs += 1
