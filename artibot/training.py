@@ -366,6 +366,17 @@ def csv_training_thread(
             if G.current_regime is None or current_regime != G.current_regime:
                 logging.info("REGIME_CHANGE %s", current_regime)
                 adjust_for_regime(current_regime, ensemble)
+                if current_regime < len(ensemble.models):
+                    strat_name = getattr(
+                        ensemble.models[current_regime],
+                        "strategy_name",
+                        str(current_regime),
+                    )
+                    logging.info(
+                        "ACTIVE_STRATEGY regime=%d strategy=%s",
+                        current_regime,
+                        strat_name,
+                    )
                 # Attempt to load a cached best model for this regime
                 try:
                     from artibot import regime_cache
@@ -461,10 +472,11 @@ def csv_training_thread(
                     num_workers=workers,
                 )
 
+            desc = "High-volatility" if G.current_regime == 1 else "Stable trend"
             status_msg = (
-                f"Epoch {ensemble.train_steps}/{max_epochs} – loss {tl:.4f}"
+                f"Epoch {ensemble.train_steps}/{max_epochs} – loss {tl:.4f} – Regime: {desc}"
                 if max_epochs
-                else f"Epoch {ensemble.train_steps} – loss {tl:.4f}"
+                else f"Epoch {ensemble.train_steps} – loss {tl:.4f} – Regime: {desc}"
             )
             G.set_status("Training", status_msg)
 
