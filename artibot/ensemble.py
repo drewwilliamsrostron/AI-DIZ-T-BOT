@@ -540,6 +540,20 @@ class EnsembleModel(nn.Module):
             m.sharpe_ema = 0.9 * getattr(m, "sharpe_ema", 0.0) + 0.1 * res_m.get(
                 "sharpe", 0.0
             )
+            if hasattr(G, "current_regime"):
+                r = G.current_regime
+                if r is not None:
+                    if not hasattr(m, "sharpe_by_regime"):
+                        m.sharpe_by_regime = {}
+                        m.reward_by_regime = {}
+                    prev_sharpe = m.sharpe_by_regime.get(r, 0.0)
+                    prev_reward = m.reward_by_regime.get(r, 0.0)
+                    m.sharpe_by_regime[r] = 0.9 * prev_sharpe + 0.1 * res_m.get(
+                        "sharpe", 0.0
+                    )
+                    m.reward_by_regime[r] = 0.9 * prev_reward + 0.1 * res_m.get(
+                        "composite_reward", 0.0
+                    )
         span_days = 0
         if data_full:
             try:
@@ -1229,13 +1243,14 @@ class EnsembleModel(nn.Module):
             regime = None
             if hasattr(G, "current_regime"):
                 regime = G.current_regime
-
-            if regime is not None and len(self.models) == 2:
-                if regime == 0:
-                    weights = torch.tensor([1.0, 0.0], device=self.device)
-                elif regime == 1:
-                    weights = torch.tensor([0.0, 1.0], device=self.device)
+            if regime is not None:
+                if regime < len(self.models):
+                    weights = torch.zeros(len(self.models), device=self.device)
+                    weights[regime] = 1.0
                 else:
+                    for idx, m in enumerate(self.models):
+                        if hasattr(m, "reward_by_regime"):
+                            scores[idx] = m.reward_by_regime.get(regime, scores[idx])
                     weights = torch.softmax(scores / self.tau, dim=0)
             else:
                 weights = torch.softmax(scores / self.tau, dim=0)
@@ -1280,7 +1295,21 @@ class EnsembleModel(nn.Module):
                 dtype=torch.float32,
                 device=self.device,
             )
-            weights = torch.softmax(scores / self.tau, dim=0).cpu()
+            regime = None
+            if hasattr(G, "current_regime"):
+                regime = G.current_regime
+            if regime is not None:
+                if regime < len(self.models):
+                    w_ = torch.zeros(len(self.models), device=self.device)
+                    w_[regime] = 1.0
+                    weights = w_.cpu()
+                else:
+                    for idx, m in enumerate(self.models):
+                        if hasattr(m, "reward_by_regime"):
+                            scores[idx] = m.reward_by_regime.get(regime, scores[idx])
+                    weights = torch.softmax(scores / self.tau, dim=0).cpu()
+            else:
+                weights = torch.softmax(scores / self.tau, dim=0).cpu()
             for i in range(0, n_, batch_size):
                 batch = self._align_features(windows_tensor[i : i + batch_size])
                 batch_probs = []
