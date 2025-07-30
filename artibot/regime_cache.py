@@ -59,7 +59,7 @@ def save_best_for_regime(regime: int, ensemble, result: dict) -> None:
 
 
 def load_best_for_regime(regime: int, ensemble):
-    """Load the cached model for ``regime`` into ``ensemble`` if available."""
+    """Load cached weights for ``regime`` into ``ensemble`` if available."""
 
     filepath = os.path.join(CACHE_DIR, f"cluster_{regime}", "best.pt")
     if not os.path.isfile(filepath):
@@ -74,8 +74,11 @@ def load_best_for_regime(regime: int, ensemble):
         except Exception:
             pass
 
-    for model, sd in zip(ensemble.models, state_dicts):
-        model.load_state_dict(sd, strict=False)
+    if regime < len(state_dicts) and regime < len(ensemble.models):
+        ensemble.models[regime].load_state_dict(state_dicts[regime], strict=False)
+    else:
+        for model, sd in zip(ensemble.models, state_dicts):
+            model.load_state_dict(sd, strict=False)
 
     return {
         "best_composite_reward": ckpt.get("best_composite_reward", 0.0),

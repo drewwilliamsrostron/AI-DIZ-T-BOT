@@ -30,4 +30,3 @@ def test_classify_market_regime_batch_stub(monkeypatch):
     labels = rg.classify_market_regime_batch(prices)
     assert isinstance(labels, list) and len(labels) == len(prices)
     assert set(labels) == {0}
-

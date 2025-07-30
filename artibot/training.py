@@ -366,17 +366,20 @@ def csv_training_thread(
             if G.current_regime is None or current_regime != G.current_regime:
                 logging.info("REGIME_CHANGE %s", current_regime)
                 adjust_for_regime(current_regime, ensemble)
-                if current_regime < len(ensemble.models):
+                if ensemble.models:
+                    idx = current_regime % len(ensemble.models)
                     strat_name = getattr(
-                        ensemble.models[current_regime],
+                        ensemble.models[idx],
                         "strategy_name",
                         str(current_regime),
                     )
-                    logging.info(
-                        "ACTIVE_STRATEGY regime=%d strategy=%s",
-                        current_regime,
-                        strat_name,
-                    )
+                else:
+                    strat_name = str(current_regime)
+                logging.info(
+                    "ACTIVE_STRATEGY regime=%d strategy=%s",
+                    current_regime,
+                    strat_name,
+                )
                 # Attempt to load a cached best model for this regime
                 try:
                     from artibot import regime_cache
@@ -472,7 +475,18 @@ def csv_training_thread(
                     num_workers=workers,
                 )
 
-            desc = "High-volatility" if G.current_regime == 1 else "Stable trend"
+            if G.current_regime is not None and G.current_regime < len(ensemble.models):
+                desc = getattr(
+                    ensemble.models[G.current_regime],
+                    "strategy_name",
+                    str(G.current_regime),
+                )
+            else:
+                desc = (
+                    f"Regime {G.current_regime}"
+                    if G.current_regime is not None
+                    else "N/A"
+                )
             status_msg = (
                 f"Epoch {ensemble.train_steps}/{max_epochs} – loss {tl:.4f} – Regime: {desc}"
                 if max_epochs
@@ -1073,7 +1087,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     n_features = ds_tmp[0][0].shape[1]
     model = EnsembleModel(
         device=get_device(),
-        n_models=1,
+        n_models=3,
         lr=params["lr"],
         n_features=n_features,
         warmup_steps=G.warmup_steps,
@@ -1152,7 +1166,7 @@ def run_hpo(n_trials: int = 50) -> dict:
     n_features = ds_tmp[0][0].shape[1]
     model = EnsembleModel(
         device=get_device(),
-        n_models=1,
+        n_models=3,
         lr=best.get("lr", 1e-4),
         n_features=n_features,
         warmup_steps=G.warmup_steps,
@@ -1216,7 +1230,7 @@ def walk_forward_backtest(
         test_slice = data[start + train_window : start + train_window + test_horizon]
         model = EnsembleModel(
             device=get_device(),
-            n_models=1,
+            n_models=3,
             warmup_steps=G.warmup_steps,
             indicator_hp=indicator_hp,
         )
