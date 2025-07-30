@@ -42,9 +42,7 @@ def test_regime_retrain_trigger(monkeypatch):
 
     # Simulate regime shift persisting for 3 epochs
     states = iter([0, 1, 1, 1])
-    monkeypatch.setattr(
-        training, "detect_volatility_regime", lambda prices: next(states)
-    )
+    monkeypatch.setattr(training, "classify_market_regime", lambda prices: next(states))
 
     retrain_calls = {"n": 0}
     monkeypatch.setattr(

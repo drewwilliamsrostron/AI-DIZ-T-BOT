@@ -41,9 +41,7 @@ def test_regime_cache_load(monkeypatch):
     monkeypatch.setattr("artibot.training.HourlyDataset", DummyDS)
 
     states = iter([0, 1, 1, 1])
-    monkeypatch.setattr(
-        training, "detect_volatility_regime", lambda prices: next(states)
-    )
+    monkeypatch.setattr(training, "classify_market_regime", lambda prices: next(states))
 
     load_calls = {"n": 0}
 
