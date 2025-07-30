@@ -43,7 +43,7 @@ class DummyEnsemble:
             macd_signal=9,
         )
 
-    def vectorized_predict(self, windows_t, batch_size: int = 512):
+    def vectorized_predict(self, windows_t, batch_size: int = 512, regime_labels=None):
         preds = torch.zeros(len(windows_t), dtype=torch.long)
         avg = {
             "sl_multiplier": torch.tensor(1.0),
