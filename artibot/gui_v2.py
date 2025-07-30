@@ -819,6 +819,9 @@ class TradingGUI:
         status = ttk.Label(self.footer, textvariable=self.status_var)
         status.pack(side=tk.LEFT, padx=5)
 
+        self.regime_var = tk.StringVar(value="Regime: N/A")
+        ttk.Label(self.footer, textvariable=self.regime_var).pack(side=tk.LEFT, padx=5)
+
         self.progress = ttk.Progressbar(
             self.footer, mode="determinate", maximum=100, length=150
         )
@@ -1198,6 +1201,12 @@ class TradingGUI:
         nk_state = "ARMED" if G.nuke_armed else "SAFE"
         self.phase_var.set(f"{primary}\n{secondary}")
         self.status_var.set(f"{primary} | NK {nk_state} \n{secondary}")
+        if self.ensemble is not None and G.current_regime is not None:
+            idx = G.current_regime % len(self.ensemble.models)
+            name = getattr(self.ensemble.models[idx], "strategy_name", idx)
+            self.regime_var.set(f"Regime: {name}")
+        else:
+            self.regime_var.set("Regime: N/A")
         self.progress["value"] = G.global_progress_pct
 
         _ = G.live_equity - G.start_equity
