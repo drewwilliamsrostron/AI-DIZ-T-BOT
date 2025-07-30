@@ -28,7 +28,6 @@ from .utils import heartbeat
 from .feature_manager import enforce_feature_dim
 from artibot.hyperparams import RISK_FILTER
 from artibot.utils.reward_utils import ema, differential_sharpe
-from .regime import detect_volatility_regime
 
 import sys
 import json
@@ -356,7 +355,12 @@ def csv_training_thread(
             apply_risk_curriculum(ensemble.train_steps)
 
             prices = np.array([row[4] for row in train_data], dtype=float)
-            current_regime = detect_volatility_regime(prices)
+            try:
+                from artibot.regime import classify_market_regime
+
+                current_regime = classify_market_regime(prices)
+            except Exception:
+                current_regime = 0
             if prev_regime is None:
                 prev_regime = current_regime
             if G.current_regime is None or current_regime != G.current_regime:
