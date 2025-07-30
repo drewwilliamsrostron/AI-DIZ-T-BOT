@@ -72,9 +72,19 @@ These vectors are appended to the model’s input **and are updated live** by
 `artibot/feature_ingest.py`, which runs automatically when you start
 `run_artibot.py`.  The job fetches:
 
-* CryptoPanic headlines → FinBERT sentiment (+1 = bullish, -1 = bearish)  
-* Economic-surprise numbers (e.g. CPI) → Z-scores  
+* CryptoPanic headlines → FinBERT sentiment (+1 = bullish, -1 = bearish)
+* Economic-surprise numbers (e.g. CPI) → Z-scores
 * BTC 7-day realised volatility via the bundled CSV plus live Phemex data
+
+## Regime-Specific Strategy Cache
+
+Market conditions are labelled automatically using `detect_volatility_regime()`
+and `classify_market_regime()`. The current label is stored in
+`G.current_regime` with no manual input. When an ensemble produces a positive
+net profit, `regime_cache.save_best_for_regime()` writes the weights under
+`regime_model_cache/`.  Should the same regime return, `load_best_for_regime()`
+restores those weights automatically. Over time the cache evolves into a library
+of specialised models that the bot switches between without user intervention.
 
 ## Installation
 
