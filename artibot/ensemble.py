@@ -1265,9 +1265,12 @@ class EnsembleModel(nn.Module):
             return idx, conf, None
 
     def vectorized_predict(
-        self, windows_tensor: torch.Tensor, batch_size: int = 256
+        self,
+        windows_tensor: torch.Tensor,
+        batch_size: int = 256,
+        regime_labels: list[int] | None = None,
     ) -> Tuple[torch.Tensor, torch.Tensor, dict]:
-        """Return predictions for ``windows_tensor`` in mini-batches."""
+        """Return predictions for each window in ``windows_tensor``, allowing regime-specific strategy selection."""
         # [FIXED]# Robust feature-dimension handling
         expected_dim = self.n_features
         actual_dim = windows_tensor.shape[2]
@@ -1289,36 +1292,35 @@ class EnsembleModel(nn.Module):
 
         with torch.no_grad():
             all_probs = []
-            n_ = windows_tensor.shape[0]
+            n_samples = windows_tensor.shape[0]
             scores = torch.tensor(
                 [m.score_history[-1] if m.score_history else 0.0 for m in self.models],
                 dtype=torch.float32,
                 device=self.device,
             )
-            regime = None
-            if hasattr(G, "current_regime"):
-                regime = G.current_regime
-            if regime is not None:
-                if regime < len(self.models):
-                    w_ = torch.zeros(len(self.models), device=self.device)
-                    w_[regime] = 1.0
-                    weights = w_.cpu()
-                else:
-                    for idx, m in enumerate(self.models):
-                        if hasattr(m, "reward_by_regime"):
-                            scores[idx] = m.reward_by_regime.get(regime, scores[idx])
-                    weights = torch.softmax(scores / self.tau, dim=0).cpu()
-            else:
-                weights = torch.softmax(scores / self.tau, dim=0).cpu()
-            for i in range(0, n_, batch_size):
+            base_weights = torch.softmax(scores / self.tau, dim=0).cpu()
+            for i in range(0, n_samples, batch_size):
                 batch = self._align_features(windows_tensor[i : i + batch_size])
                 batch_probs = []
                 for m in self.models:
-                    lg, tpars, _ = m(batch)
-                    pr_ = torch.softmax(lg, dim=1).cpu()
-                    batch_probs.append(pr_)
-                batch_probs_t = torch.stack(batch_probs)
-                avg_probs = (weights.view(-1, 1, 1) * batch_probs_t).sum(dim=0)
+                    logits, _, _ = m(batch)
+                    prob = torch.softmax(logits, dim=1).cpu()
+                    batch_probs.append(prob)
+                batch_probs = torch.stack(batch_probs)
+                avg_probs = []
+                for j in range(batch_probs.shape[1]):
+                    global_index = i + j
+                    if regime_labels is not None and regime_labels[global_index] < len(
+                        self.models
+                    ):
+                        regime_idx = regime_labels[global_index]
+                        avg_probs.append(batch_probs[regime_idx, j])
+                    else:
+                        avg = (base_weights.view(-1, 1) * batch_probs[:, j, :]).sum(
+                            dim=0
+                        )
+                        avg_probs.append(avg)
+                avg_probs = torch.stack(avg_probs, dim=0)
                 all_probs.append(avg_probs)
 
             ret_probs = torch.cat(all_probs, dim=0)
@@ -1332,8 +1334,8 @@ class EnsembleModel(nn.Module):
                 "tp_multiplier": torch.tensor([5.0]),
             }
             logging.info(
-                "ACTION_BATCH weights=%s first_action=%s",
-                [round(float(w), 3) for w in weights],
+                "ACTION_BATCH regime_switching=%s first_action=%s",
+                "ON" if regime_labels is not None else "OFF",
                 int(idxs[0]) if len(idxs) > 0 else -1,
             )
             return idxs.cpu(), confs.cpu(), dummy_t

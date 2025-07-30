@@ -58,7 +58,7 @@ def test_composite_reward_uses_risk_metrics(monkeypatch):
             self.device = torch.device("cpu")
             self.indicator_hparams = IndicatorHyperparams()
 
-        def vectorized_predict(self, w, batch_size=512):
+        def vectorized_predict(self, w, batch_size=512, regime_labels=None):
             preds = torch.zeros(len(w), dtype=torch.long)
             avg = {
                 "sl_multiplier": torch.tensor(1.0),

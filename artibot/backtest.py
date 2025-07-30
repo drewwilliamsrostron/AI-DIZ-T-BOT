@@ -320,6 +320,18 @@ def robust_backtest(
 
     timestamps = raw_data[:, 0]
 
+    # Determine market regime for each time step (using unsupervised classification)
+    regimes = []
+    prices = raw_data[:, 4]  # closing prices
+    for t in range(len(prices)):
+        try:
+            from artibot.regime import classify_market_regime
+
+            regime_t = classify_market_regime(prices[: t + 1])
+        except Exception:
+            regime_t = 0
+        regimes.append(int(regime_t))
+
     from numpy.lib.stride_tricks import sliding_window_view
 
     windows = (
@@ -338,7 +350,10 @@ def robust_backtest(
         windows.shape[2] == mask.size
     ), f"Expected {mask.size} features, got {windows.shape[2]}"
     windows_t = torch.tensor(windows, dtype=torch.float32, device=device)
-    pred_indices, _, avg_params = ensemble.vectorized_predict(windows_t, batch_size=512)
+    regime_subset = regimes[-windows.shape[0] :]
+    pred_indices, _, avg_params = ensemble.vectorized_predict(
+        windows_t, batch_size=512, regime_labels=regime_subset
+    )
     preds = [2] * 23 + pred_indices.tolist()
 
     timestamps = timestamps.astype(np.int64)
@@ -374,6 +389,7 @@ def robust_backtest(
         "stop_loss": 0.0,
         "take_profit": 0.0,
         "entry_time": None,
+        "regime": None,
     }
 
     sl_m = avg_params["sl_multiplier"].item()
@@ -461,6 +477,7 @@ def robust_backtest(
                         "return": (exit_price / pos["entry_price"] - 1)
                         * (1 if pos["side"] == "long" else -1),
                         "duration": cur_t - pos["entry_time"],
+                        "regime": pos.get("regime"),
                     }
                 )
                 pos = {
@@ -470,6 +487,7 @@ def robust_backtest(
                     "stop_loss": 0.0,
                     "take_profit": 0.0,
                     "entry_time": None,
+                    "regime": None,
                 }
         if pos["size"] == 0 and pred in (0, 1):
             atr_val = atr_i if not np.isnan(atr_i) else 1.0
@@ -491,6 +509,7 @@ def robust_backtest(
                         "stop_loss": fill_p - st_dist,
                         "take_profit": tp_val,
                         "entry_time": cur_t,
+                        "regime": regimes[i],
                     }
                 )
             else:
@@ -502,6 +521,7 @@ def robust_backtest(
                         "stop_loss": fill_p + st_dist,
                         "take_profit": tp_val,
                         "entry_time": cur_t,
+                        "regime": regimes[i],
                     }
                 )
         curr_eq = bal
@@ -557,6 +577,7 @@ def robust_backtest(
                 "return": (exit_price / pos["entry_price"] - 1)
                 * (1 if pos["side"] == "long" else -1),
                 "duration": int(timestamps[-1]) - pos["entry_time"],
+                "regime": pos.get("regime"),
             }
         )
         eq_curve[-1] = (int(timestamps[-1]), bal)
@@ -622,7 +643,40 @@ def robust_backtest(
         period_days = max(1, int((end_date - start_date) / 86400))
         calmar = calmar_ratio(net_pct, float(mdd), period_days)
 
+    # Calculate performance broken down by regime
+    equity = np.array(eq_curve, dtype=float)[:, 1] if eq_curve else np.array([])
+    cluster_perf: dict[int, dict] = {}
+    if equity.size > 1:
+        initial_balance = equity[0]
+        rets = np.diff(equity) / (equity[:-1] + 1e-9)
+        regime_series = (
+            regimes[1:] if len(regimes) == len(equity) else regimes[: len(rets)]
+        )
+        regime_series = regime_series[: len(rets)]
+        for reg in set(regime_series):
+            reg_indices = [idx for idx, r in enumerate(regime_series) if r == reg]
+            if not reg_indices:
+                continue
+            profit = float(np.sum(np.diff(equity)[reg_indices]))
+            reg_rets = rets[reg_indices]
+            avg_ret = float(np.mean(reg_rets))
+            vol_ret = float(np.std(reg_rets))
+            sharpe_reg = (avg_ret / (vol_ret + 1e-9)) * (len(reg_rets) ** 0.5)
+            cluster_perf[int(reg)] = {
+                "net_pct": (profit / (initial_balance + 1e-9)) * 100.0,
+                "sharpe": sharpe_reg,
+                "trades": (
+                    sum(1 for trade in trades if trade.get("regime") == reg)
+                    if trades
+                    else None
+                ),
+            }
+
     metrics = compute_trade_metrics(trades)
+    for reg, stats in cluster_perf.items():
+        logging.info(
+            f"REGIME_{reg}_PERF net_pct={stats['net_pct']:.2f}%, Sharpe={stats['sharpe']:.2f}, trades={stats.get('trades', 'N/A')}"
+        )
     win_rate = metrics["win_rate"]
     profit_factor = metrics["profit_factor"]
     avg_duration = metrics["avg_duration"]
@@ -689,6 +743,7 @@ def robust_backtest(
         "omega": float(omega),
         "calmar": float(calmar),
         "exposure": exposure_stats,
+        "cluster_performance": cluster_perf,
         # flag promoting results from a complete dataset span
         # (1337 days or more qualifies as a full data run)
         "full_data_run": (end_date - start_date) >= 1337 * 86400,

@@ -35,7 +35,7 @@ class DummyEnsemble:
             displacement=26,
         )
 
-    def vectorized_predict(self, windows_t, batch_size=512):
+    def vectorized_predict(self, windows_t, batch_size=512, regime_labels=None):
         preds = np.zeros(len(windows_t), dtype=np.int64)
         import torch
 

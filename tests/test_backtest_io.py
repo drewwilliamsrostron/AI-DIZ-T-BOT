@@ -6,7 +6,7 @@ import artibot.backtest as bt
 class DummyEnsemble:
     device = "cpu"
 
-    def vectorized_predict(self, w, batch_size):
+    def vectorized_predict(self, w, batch_size, regime_labels=None):
         return (
             np.zeros(len(w), dtype=int),
             None,
