@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 from hmmlearn.hmm import GaussianHMM
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 
 
 def detect_volatility_regime(prices: np.ndarray, n_states: int = 2) -> int:
@@ -32,8 +33,11 @@ def detect_volatility_regime(prices: np.ndarray, n_states: int = 2) -> int:
     return int(states[-1])
 
 
+_last_regime_model: KMeans | None = None
+
+
 def classify_market_regime(prices: np.ndarray, lookback: int = 168) -> int:
-    """Cluster recent volatility and trend data to label the market regime.
+    """Predict the current market regime using the last fitted model.
 
     Parameters
     ----------
@@ -48,22 +52,23 @@ def classify_market_regime(prices: np.ndarray, lookback: int = 168) -> int:
         Regime index predicted by the fitted :class:`~sklearn.cluster.KMeans`.
     """
 
-    if prices.size < lookback:
+    global _last_regime_model
+
+    if prices.size < lookback or _last_regime_model is None:
         return 0
 
     recent_prices = prices[-lookback:]
-    returns = np.diff(np.log(recent_prices))
-    vol7d = np.std(returns)
+    log_ret = np.diff(np.log(recent_prices), prepend=np.log(recent_prices[0]))
+    vol = float(np.std(log_ret[-20:]))
+    sma_short = np.mean(recent_prices[-5:])
+    sma_long = np.mean(recent_prices[-20:])
+    trend = (sma_short - sma_long) / (recent_prices[-1] + 1e-9)
+    feat = np.array([[vol, trend]], dtype=float)
 
-    short_ma = np.mean(recent_prices[-20:])
-    long_ma = np.mean(recent_prices[-100:])
-    trend_strength = short_ma - long_ma
-
-    features = np.array([[vol7d, trend_strength]], dtype=float)
-
-    kmeans = KMeans(n_clusters=3, n_init=10, random_state=42)
-    kmeans.fit(np.vstack([features, features * 1.01, features * 0.99]))
-    return int(kmeans.predict(features)[0])
+    try:
+        return int(_last_regime_model.predict(feat)[0])
+    except Exception:
+        return 0
 
 
 # --------------------------------------------------------------------------- #
@@ -89,12 +94,11 @@ def classify_market_regime(prices: np.ndarray, lookback: int = 168) -> int:
 
 
 def classify_market_regime_batch(
-    prices: np.ndarray, *, n_clusters: int = 3, vol_window: int = 20
+    prices: np.ndarray, *, n_clusters: int | str = 3, vol_window: int = 20
 ) -> list[int]:
     """Vectorised K-Means regime labelling for an entire price series."""
 
-    import numpy as np
-    from sklearn.cluster import KMeans
+    global _last_regime_model
 
     prices = np.asarray(prices, dtype=float)
     if prices.ndim != 1 or prices.size < vol_window + 2:
@@ -111,6 +115,22 @@ def classify_market_regime_batch(
 
     feats = np.column_stack([vol, trend])
 
-    km = KMeans(n_clusters=n_clusters, n_init=10, random_state=42)
+    if n_clusters == "auto":
+        best_k = 2
+        best_score = -1.0
+        max_k = min(10, len(feats) - 1)
+        for k in range(2, max_k + 1):
+            km_tmp = KMeans(n_clusters=k, n_init=10, random_state=42)
+            labels_tmp = km_tmp.fit_predict(feats)
+            if len(set(labels_tmp)) <= 1:
+                continue
+            score = silhouette_score(feats, labels_tmp)
+            if score > best_score:
+                best_score = score
+                best_k = k
+        n_clusters = best_k
+
+    km = KMeans(n_clusters=int(n_clusters), n_init=10, random_state=42)
     labels = km.fit_predict(feats)
+    _last_regime_model = km
     return labels.tolist()
