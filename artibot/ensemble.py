@@ -278,17 +278,15 @@ class EnsembleModel(nn.Module):
             model.score_history = []
             model.sharpe_ema = 0.0
 
-        for i, model in enumerate(self.models):
-            if i == 0:
-                model.strategy_name = "trend_following"
-            elif i == 1:
-                model.strategy_name = "mean_reversion"
-            elif i == 2:
-                model.strategy_name = "volatility_adaptive"
-            else:
-                model.strategy_name = f"strategy_{i}"
+        if len(self.models) == 3:
+            names = ["trend_following", "mean_reversion", "volatility_adaptive"]
+            for i, model in enumerate(self.models):
+                model.strategy_name = names[i]
+        else:
+            for i, model in enumerate(self.models):
+                model.strategy_name = f"regime_{i}"
 
-        if len(self.models) >= 3:
+        if len(self.models) == 3:
             from copy import deepcopy
 
             base_hp = self._indicator_hparams

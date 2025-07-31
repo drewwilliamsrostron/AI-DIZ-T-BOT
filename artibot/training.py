@@ -79,6 +79,23 @@ def quick_fit(model: EnsembleModel, data: list[list[float]], epochs: int = 1) ->
         G.global_validation_loss.append(vl if dl_val is not None else 0.0)
 
 
+def slice_by_regime(labels: list[int]) -> list[tuple[int, int, int]]:
+    """Return contiguous segments as ``(start, end, label)`` for ``labels``."""
+
+    if not labels:
+        return []
+    segments = []
+    start = 0
+    prev = labels[0]
+    for idx, lbl in enumerate(labels[1:], start=1):
+        if lbl != prev:
+            segments.append((start, idx, prev))
+            start = idx
+            prev = lbl
+    segments.append((start, len(labels), prev))
+    return segments
+
+
 logger = logging.getLogger(__name__)
 
 CPU_LIMIT_DEFAULT = max(1, multiprocessing.cpu_count() - 2)
@@ -242,6 +259,40 @@ def csv_training_thread(
         train_data: list[list[float]] = []
         for row in data:
             train_data.append([float(v) for v in row])
+
+        prices = np.array([r[4] for r in train_data], dtype=float)
+        try:
+            from artibot.regime import classify_market_regime_batch
+
+            regime_labels = classify_market_regime_batch(prices, n_clusters="auto")
+        except Exception as exc:
+            logging.error("Regime clustering failed: %s", exc)
+            regime_labels = [0] * len(prices)
+
+        unique_regs = sorted(set(regime_labels)) or [0]
+        if len(ensemble.models) != len(unique_regs):
+            logging.info(
+                "Expected %d models for regimes but ensemble has %d",
+                len(unique_regs),
+                len(ensemble.models),
+            )
+
+        segments = slice_by_regime(regime_labels)
+        for reg in unique_regs:
+            subset = []
+            for start, end, lbl in segments:
+                if lbl == reg:
+                    subset.extend(train_data[start:end])
+            logging.info("PRETRAIN regime=%d samples=%d", reg, len(subset))
+            if subset and reg < len(ensemble.models):
+                for i, m in enumerate(ensemble.models):
+                    req_grad = i == reg
+                    for p in m.parameters():
+                        p.requires_grad = req_grad
+                quick_fit(ensemble, subset, epochs=1)
+                for m in ensemble.models:
+                    for p in m.parameters():
+                        p.requires_grad = True
 
         prev_regime: int | None = None
         regime_change_epochs = 0

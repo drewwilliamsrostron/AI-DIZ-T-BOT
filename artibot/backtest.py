@@ -328,9 +328,19 @@ def robust_backtest(
     try:
         from artibot.regime import classify_market_regime_batch
 
-        regimes = classify_market_regime_batch(prices)
+        num_models = len(getattr(ensemble, "models", []))
+        n_clust = num_models if num_models > 1 else 1
+        regimes = classify_market_regime_batch(prices, n_clusters=n_clust)
     except Exception:
         regimes = [0] * len(prices)
+
+    transitions: list[int] = []
+    if regimes:
+        prev_r = regimes[0]
+        for idx, r in enumerate(regimes[1:], start=1):
+            if r != prev_r:
+                transitions.append(int(timestamps[idx]))
+                prev_r = r
 
     from numpy.lib.stride_tricks import sliding_window_view
 
@@ -744,6 +754,7 @@ def robust_backtest(
         "calmar": float(calmar),
         "exposure": exposure_stats,
         "cluster_performance": cluster_perf,
+        "regime_transitions": transitions,
         # flag promoting results from a complete dataset span
         # (1337 days or more qualifies as a full data run)
         "full_data_run": (end_date - start_date) >= 1337 * 86400,
