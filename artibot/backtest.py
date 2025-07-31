@@ -208,7 +208,8 @@ def robust_backtest(
     *,
     indicator_hp=None,
     dynamic_indicators: bool = False,
-):
+    cluster_count: int | None = None,
+) -> dict:
     """Run a simplified backtest and return key metrics.
 
     Parameters
@@ -223,6 +224,9 @@ def robust_backtest(
     indicator_hp:
         ``IndicatorHyperparams`` instance overriding ``ensemble.indicator_hparams``.
         When ``None`` (default) the ensemble's stored settings are used.
+    cluster_count:
+        Explicit number of market regimes. When ``None`` the ensemble size
+        determines the count.
     """
     # Ensure ``data_full`` is a NumPy array for shape checks
     if isinstance(data_full, list):
@@ -329,7 +333,7 @@ def robust_backtest(
         from artibot.regime import classify_market_regime_batch
 
         num_models = len(getattr(ensemble, "models", []))
-        n_clust = num_models if num_models > 1 else 1
+        n_clust = cluster_count or (num_models if num_models > 1 else 1)
         regimes = classify_market_regime_batch(prices, n_clusters=n_clust)
     except Exception:
         regimes = [0] * len(prices)

@@ -16,6 +16,7 @@ import time
 import threading
 import os
 from pathlib import Path
+import numpy as np
 
 from dataclasses import fields, asdict
 from .dataset import HourlyDataset, trailing_sma, load_csv_hourly
@@ -23,6 +24,7 @@ from .ensemble import reject_if_risky, EnsembleModel, update_best
 from .rl import MetaTransformerRL
 from .hyperparams import IndicatorHyperparams
 from .backtest import robust_backtest, compute_indicators
+from artibot.regime import classify_market_regime_batch
 from .core.device import get_device
 from .utils import heartbeat
 from .feature_manager import enforce_feature_dim
@@ -270,6 +272,8 @@ def csv_training_thread(
             regime_labels = [0] * len(prices)
 
         unique_regs = sorted(set(regime_labels)) or [0]
+        cluster_count = len(unique_regs)
+        logging.info("Detected %d market regimes for this dataset", cluster_count)
         if len(ensemble.models) != len(unique_regs):
             logging.info(
                 "Expected %d models for regimes but ensemble has %d",
@@ -458,6 +462,7 @@ def csv_training_thread(
                         ensemble,
                         recent_data,
                         indicator_hp=ensemble.indicator_hparams,
+                        cluster_count=cluster_count,
                     )
                     logging.info(
                         "RECENT_PERFORMANCE regime=%d  sharpe=%.2f  (cached model historical sharpe=%.2f)",
@@ -1128,6 +1133,10 @@ def objective(trial: optuna.trial.Trial) -> float:
     data = load_csv_hourly("Gemini_BTCUSD_1h.csv")
     if not data:
         return 0.0
+    prices = np.array([row[4] for row in data], dtype=float)
+    regime_labels = classify_market_regime_batch(prices, n_clusters="auto")
+    cluster_count = len(set(regime_labels)) or 1
+    logging.info("Detected %d market regimes for this dataset", cluster_count)
     ds_tmp = HourlyDataset(
         data,
         seq_len=24,
@@ -1138,7 +1147,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     n_features = ds_tmp[0][0].shape[1]
     model = EnsembleModel(
         device=get_device(),
-        n_models=3,
+        n_models=cluster_count,
         lr=params["lr"],
         n_features=n_features,
         warmup_steps=G.warmup_steps,
@@ -1155,7 +1164,12 @@ def objective(trial: optuna.trial.Trial) -> float:
         max_epochs=10,
         update_globals=False,
     )
-    metrics = robust_backtest(model, data, indicator_hp=model.indicator_hparams)
+    metrics = robust_backtest(
+        model,
+        data,
+        indicator_hp=model.indicator_hparams,
+        cluster_count=cluster_count,
+    )
     if metrics.get("trades", 0) == 0:
         logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
     else:
@@ -1207,6 +1221,10 @@ def run_hpo(n_trials: int = 50) -> dict:
 
     # Verify on the whole dataset so the result can be promoted
     data = load_csv_hourly("Gemini_BTCUSD_1h.csv")
+    prices = np.array([row[4] for row in data], dtype=float)
+    regime_labels = classify_market_regime_batch(prices, n_clusters="auto")
+    cluster_count = len(set(regime_labels)) or 1
+    logging.info("Detected %d market regimes for this dataset", cluster_count)
     ds_tmp = HourlyDataset(
         data,
         seq_len=24,
@@ -1217,7 +1235,7 @@ def run_hpo(n_trials: int = 50) -> dict:
     n_features = ds_tmp[0][0].shape[1]
     model = EnsembleModel(
         device=get_device(),
-        n_models=3,
+        n_models=cluster_count,
         lr=best.get("lr", 1e-4),
         n_features=n_features,
         warmup_steps=G.warmup_steps,
@@ -1225,7 +1243,12 @@ def run_hpo(n_trials: int = 50) -> dict:
     )
     model.entropy_beta = best.get("entropy_beta", 1e-4)
     quick_fit(model, data, epochs=1)
-    full_result = robust_backtest(model, data, indicator_hp=model.indicator_hparams)
+    full_result = robust_backtest(
+        model,
+        data,
+        indicator_hp=model.indicator_hparams,
+        cluster_count=cluster_count,
+    )
     if full_result.get("trades", 0) == 0:
         logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
     else:
@@ -1259,6 +1282,10 @@ def walk_forward_backtest(
     logging.info(">>> ENTERING DEFCON 4: Walk Forward Evaluation")
     if indicator_hp is None:
         indicator_hp = IndicatorHyperparams()
+    prices = np.array([row[4] for row in data], dtype=float)
+    regime_labels = classify_market_regime_batch(prices, n_clusters="auto")
+    cluster_count = len(set(regime_labels)) or 1
+    logging.info("Detected %d market regimes for this dataset", cluster_count)
     results: list = []
     n_folds = max(1, (len(data) - train_window - test_horizon) // test_horizon + 1)
     fold_idx = 1
@@ -1281,13 +1308,16 @@ def walk_forward_backtest(
         test_slice = data[start + train_window : start + train_window + test_horizon]
         model = EnsembleModel(
             device=get_device(),
-            n_models=3,
+            n_models=cluster_count,
             warmup_steps=G.warmup_steps,
             indicator_hp=indicator_hp,
         )
         quick_fit(model, train_slice, epochs=1)
         metrics = robust_backtest(
-            model, test_slice, indicator_hp=model.indicator_hparams
+            model,
+            test_slice,
+            indicator_hp=model.indicator_hparams,
+            cluster_count=cluster_count,
         )
         if metrics.get("trades", 0) == 0:
             logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
