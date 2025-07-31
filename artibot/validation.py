@@ -18,6 +18,7 @@ from .backtest import robust_backtest
 from .dataset import load_csv_hourly, HourlyDataset
 from .ensemble import EnsembleModel
 from dataclasses import asdict
+from artibot.regime import classify_market_regime_batch
 from .hyperparams import IndicatorHyperparams, WARMUP_STEPS
 from .training import csv_training_thread
 from .rl import MetaTransformerRL
@@ -83,6 +84,10 @@ def walk_forward_analysis(
     # Raw CSV data only contains OHLCV columns. Skip dimension checks and
     # simply sanitise before feature generation.
     data = sanitize_features(raw_data)
+    prices = raw_data[:, 4]
+    regime_labels = classify_market_regime_batch(prices, n_clusters="auto")
+    cluster_count = len(set(regime_labels)) or 1
+    logging.info("Detected %d market regimes for this dataset", cluster_count)
     device = get_device()
 
     if indicator_hp is None:
@@ -98,7 +103,7 @@ def walk_forward_analysis(
 
     ensemble = EnsembleModel(
         device=device,
-        n_models=1,
+        n_models=cluster_count,
         lr=3e-4,
         weight_decay=1e-4,
         n_features=n_features,
@@ -143,7 +148,10 @@ def walk_forward_analysis(
             sample = test[0, :FEATURE_DIMENSION]
         print(f"[VALIDATION] Feature sample: {sample}")
         metrics = robust_backtest(
-            ensemble, test, indicator_hp=ensemble.indicator_hparams
+            ensemble,
+            test,
+            indicator_hp=ensemble.indicator_hparams,
+            cluster_count=cluster_count,
         )
         if metrics.get("trades", 0) == 0:
             logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")

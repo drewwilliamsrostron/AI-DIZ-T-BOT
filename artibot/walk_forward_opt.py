@@ -14,6 +14,7 @@ from .hyperparams import IndicatorHyperparams, WARMUP_STEPS
 from .training import csv_training_thread
 from .backtest import robust_backtest
 from .optuna_opt import run_bohb
+from artibot.regime import classify_market_regime_batch
 import artibot.globals as G
 
 
@@ -42,14 +43,20 @@ class EnsembleEstimator(BaseEstimator):
         self.weight_decay = weight_decay
         self.indicator_hp = indicator_hp or IndicatorHyperparams()
         self.model_: EnsembleModel | None = None
+        self.cluster_count = 1
 
     def fit(self, X: pd.DataFrame, y: pd.Series | None = None) -> "EnsembleEstimator":
         df = pd.concat([X.reset_index(drop=True), y.reset_index(drop=True)], axis=1)
+        prices = df["close"].to_numpy(dtype=float)
+        regime_labels = classify_market_regime_batch(prices, n_clusters="auto")
+        cluster_count = len(set(regime_labels)) or 1
+        logging.info("Detected %d market regimes for this dataset", cluster_count)
+        self.cluster_count = cluster_count
         self.model_ = EnsembleModel(
             n_features=self.n_features,
             lr=self.lr,
             weight_decay=self.weight_decay,
-            n_models=1,
+            n_models=cluster_count,
             warmup_steps=WARMUP_STEPS,
             indicator_hp=self.indicator_hp,
         )
@@ -70,7 +77,10 @@ class EnsembleEstimator(BaseEstimator):
             raise RuntimeError("Estimator not fitted")
         df = pd.concat([X.reset_index(drop=True), y.reset_index(drop=True)], axis=1)
         metrics = robust_backtest(
-            self.model_, df.values.tolist(), indicator_hp=self.model_.indicator_hparams
+            self.model_,
+            df.values.tolist(),
+            indicator_hp=self.model_.indicator_hparams,
+            cluster_count=self.cluster_count,
         )
         if metrics.get("trades", 0) == 0:
             logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
@@ -112,6 +122,7 @@ def walk_forward_opt(data: pd.DataFrame) -> List[Dict[str, Any]]:
             est.model_,
             test_df.values.tolist(),
             indicator_hp=est.model_.indicator_hparams,
+            cluster_count=est.cluster_count,
         )
         if metrics.get("trades", 0) == 0:
             logging.info("IGNORED_EMPTY_BACKTEST: 0 trades in result")
