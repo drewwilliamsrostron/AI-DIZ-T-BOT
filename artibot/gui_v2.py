@@ -680,6 +680,8 @@ class TradingGUI:
         self.validation_label.grid(
             row=6, column=0, columnspan=2, sticky="w", padx=5, pady=2
         )
+        self.cluster_label = ttk.Label(self.info, text="Clusters: N/A")
+        self.cluster_label.grid(row=6, column=2, sticky="w", padx=5, pady=2)
 
         self.pos_frame = ttk.LabelFrame(self.info, text="Current Position")
         self.pos_frame.grid(row=7, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
@@ -905,6 +907,9 @@ class TradingGUI:
             ts_dt = [_dt.datetime.fromtimestamp(t) for t in ts]
 
             self.ax_equity.plot(ts_dt, bal, color="green", label="Best")
+        for ts in G.global_regime_transitions:
+            dt = _dt.datetime.fromtimestamp(ts)
+            self.ax_equity.axvline(dt, linestyle="--", color="grey", alpha=0.3)
         handles, labels = self.ax_equity.get_legend_handles_labels()
         if labels:
             self.ax_equity.legend(handles, labels)
@@ -1054,6 +1059,14 @@ class TradingGUI:
             sharpe = G.global_validation_summary.get("mean_sharpe", 0.0)
             enabled = G.nuclear_key_enabled
             self.validation_label.config(text=f"Val Sharpe: {sharpe:.2f} NK: {enabled}")
+        if G.global_cluster_performance:
+            table = " ".join(
+                f"{k}:{v.get('net_pct',0):.0f}% S{v.get('sharpe',0):.1f}"
+                for k, v in G.global_cluster_performance.items()
+            )
+            self.cluster_label.config(text=table)
+        else:
+            self.cluster_label.config(text="Clusters: N/A")
 
         self.current_sharpe_label.config(text=f"Sharpe: {G.global_sharpe:.2f}")
         self.current_drawdown_label.config(text=f"Max DD: {G.global_max_drawdown:.3f}")

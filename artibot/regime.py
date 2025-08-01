@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import numpy as np
 from hmmlearn.hmm import GaussianHMM
 from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import (
+    calinski_harabasz_score,
+    davies_bouldin_score,
+    silhouette_score,
+)
 
 
 def detect_volatility_regime(prices: np.ndarray, n_states: int = 2) -> int:
@@ -116,19 +121,34 @@ def classify_market_regime_batch(
     feats = np.column_stack([vol, trend])
 
     if n_clusters == "auto":
-        best_k = 2
-        best_score = -1.0
-        max_k = min(10, len(feats) - 1)
-        for k in range(2, max_k + 1):
-            km_tmp = KMeans(n_clusters=k, n_init=10, random_state=42)
-            labels_tmp = km_tmp.fit_predict(feats)
-            if len(set(labels_tmp)) <= 1:
-                continue
-            score = silhouette_score(feats, labels_tmp)
-            if score > best_score:
-                best_score = score
-                best_k = k
-        n_clusters = best_k
+        if feats.shape[0] < 1500:
+            n_clusters = 2
+        else:
+            feats_s = feats
+            if feats.shape[0] > 10_000:
+                step = feats.shape[0] // 10_000
+                feats_s = feats[::step]
+            best_k = 2
+            best_score = float("-inf")
+            max_k = min(10, len(feats_s) - 1)
+            for k in range(2, max_k + 1):
+                logging.info(
+                    "Silhouette sweep: trying k=%d on %d samples",
+                    k,
+                    feats_s.shape[0],
+                )
+                km_tmp = KMeans(n_clusters=k, n_init=10, random_state=42)
+                labels_tmp = km_tmp.fit_predict(feats_s)
+                if len(set(labels_tmp)) <= 1:
+                    continue
+                sil = silhouette_score(feats_s, labels_tmp)
+                cal = calinski_harabasz_score(feats_s, labels_tmp)
+                dbi = -davies_bouldin_score(feats_s, labels_tmp)
+                score = sil + 0.3 * cal / 1e4 + 0.3 * dbi
+                if score > best_score:
+                    best_score = score
+                    best_k = k
+            n_clusters = best_k
 
     km = KMeans(n_clusters=int(n_clusters), n_init=10, random_state=42)
     labels = km.fit_predict(feats)
