@@ -238,6 +238,10 @@ trading_paused = False  # hot pause flag
 
 # Current market regime label used for ensemble gating
 current_regime: int | None = None
+# Most recent regime probability vector
+global_current_regime_prob: list | None = None
+# History of regime probability vectors
+global_regime_prob_history: list = []
 
 # When ``True`` orders are routed to the Phemex testnet
 use_sandbox = True  # True for testnet
