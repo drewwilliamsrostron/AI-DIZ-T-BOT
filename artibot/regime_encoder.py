@@ -62,9 +62,7 @@ class RegimeEncoder(nn.Module):
         if prices.ndim != 1:
             raise ValueError("prices must be 1-D array")
         log_ret = np.diff(np.log(prices), prepend=np.log(prices[0]))
-        vol = (
-            np.convolve(log_ret**2, np.ones(20), "full")[: len(log_ret)] / 20
-        ) ** 0.5
+        vol = (np.convolve(log_ret**2, np.ones(20), "full")[: len(log_ret)] / 20) ** 0.5
         sma_short = np.convolve(prices, np.ones(5) / 5.0, "same")
         sma_long = np.convolve(prices, np.ones(20) / 20.0, "same")
         trend = (sma_short - sma_long) / (prices + 1e-9)
@@ -99,7 +97,9 @@ class RegimeEncoder(nn.Module):
                 loss.backward()
                 opt.step()
                 epoch_loss += loss.item() * batch.size(0)
-            _LOG.info("[RegimeEncoder] epoch %d recon loss %.6f", epoch, epoch_loss / len(ds))
+            _LOG.info(
+                "[RegimeEncoder] epoch %d recon loss %.6f", epoch, epoch_loss / len(ds)
+            )
         # cluster latent space
         self.eval()
         with torch.no_grad():
@@ -111,7 +111,9 @@ class RegimeEncoder(nn.Module):
             Z = torch.cat(all_z).numpy()
         self.kmeans = KMeans(n_clusters=self.n_regimes, n_init=10, random_state=42)
         labels = self.kmeans.fit_predict(Z)
-        cl_ds = TensorDataset(torch.tensor(Z, dtype=torch.float32), torch.tensor(labels, dtype=torch.long))
+        cl_ds = TensorDataset(
+            torch.tensor(Z, dtype=torch.float32), torch.tensor(labels, dtype=torch.long)
+        )
         cl_dl = DataLoader(cl_ds, batch_size=32, shuffle=True)
         opt = torch.optim.Adam(self.classifier.parameters(), lr=5e-4)
         for epoch in range(epochs):

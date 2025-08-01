@@ -24,7 +24,8 @@ from .ensemble import reject_if_risky, EnsembleModel, update_best
 from .rl import MetaTransformerRL
 from .hyperparams import IndicatorHyperparams
 from .backtest import robust_backtest, compute_indicators
-from artibot.regime import classify_market_regime_batch
+import artibot.regime as regime
+from artibot.regime_encoder import RegimeEncoder
 from .core.device import get_device
 from .utils import heartbeat
 from .feature_manager import enforce_feature_dim
@@ -99,6 +100,55 @@ def slice_by_regime(labels: list[int]) -> list[tuple[int, int, int]]:
 
 
 logger = logging.getLogger(__name__)
+
+_REGIME_ENCODER: RegimeEncoder | None = None
+
+
+def _ensure_encoder(prices: np.ndarray) -> tuple[list[int], int]:
+    """Return regime labels for ``prices`` using a persistent encoder."""
+
+    global _REGIME_ENCODER
+
+    if _REGIME_ENCODER is None:
+        _REGIME_ENCODER = RegimeEncoder()
+        if os.path.isfile("encoder.pt"):
+            try:
+                _REGIME_ENCODER.load("encoder.pt")
+            except Exception as exc:  # pragma: no cover - load failure
+                logging.warning("failed to load encoder: %s", exc)
+                _REGIME_ENCODER.train_unsupervised(prices, epochs=1)
+                _REGIME_ENCODER.save("encoder.pt")
+        else:
+            _REGIME_ENCODER.train_unsupervised(prices, epochs=1)
+            _REGIME_ENCODER.save("encoder.pt")
+        regime._last_regime_encoder = _REGIME_ENCODER
+
+    try:
+        probs = _REGIME_ENCODER.encode_sequence(prices)
+    except Exception as exc:  # pragma: no cover - encode failure
+        logging.error("Regime encoding failed: %s", exc)
+        probs = np.empty((0, _REGIME_ENCODER.n_regimes))
+
+    if len(probs) == 0:
+        labels = np.zeros(len(prices), dtype=int)
+    else:
+        labels = probs.argmax(axis=1)
+        pad = len(prices) - len(labels)
+        if pad > 0:
+            labels = np.pad(labels, (pad, 0), constant_values=int(labels[0]))
+
+    smooth = labels.copy()
+    for i in range(1, len(smooth)):
+        if i >= 2 and smooth[i] != smooth[i - 1] and smooth[i] != smooth[i - 2]:
+            smooth[i] = smooth[i - 1]
+    labels = smooth
+
+    cluster_count = _REGIME_ENCODER.n_regimes or len(set(labels)) or 1
+    logging.info("Detected %d market regimes from encoder", cluster_count)
+    transitions = [i for i in range(1, len(labels)) if labels[i] != labels[i - 1]]
+    logging.info("Regime sequence computed, transitions at indices: %s", transitions)
+    return labels.tolist(), cluster_count
+
 
 CPU_LIMIT_DEFAULT = max(1, multiprocessing.cpu_count() - 2)
 with G.state_lock:
@@ -264,12 +314,11 @@ def csv_training_thread(
 
         prices = np.array([r[4] for r in train_data], dtype=float)
         try:
-            from artibot.regime import classify_market_regime_batch
-
-            regime_labels = classify_market_regime_batch(prices, n_clusters="auto")
+            regime_labels, cluster_count = _ensure_encoder(prices)
         except Exception as exc:
             logging.error("Regime clustering failed: %s", exc)
             regime_labels = [0] * len(prices)
+            cluster_count = 1
 
         unique_regs = sorted(set(regime_labels)) or [0]
         cluster_count = len(unique_regs)
@@ -411,9 +460,7 @@ def csv_training_thread(
 
             prices = np.array([row[4] for row in train_data], dtype=float)
             try:
-                from artibot.regime import classify_market_regime
-
-                current_regime = classify_market_regime(prices)
+                current_regime = regime.classify_market_regime(prices)
             except Exception:
                 current_regime = 0
             if prev_regime is None:
@@ -1134,9 +1181,7 @@ def objective(trial: optuna.trial.Trial) -> float:
     if not data:
         return 0.0
     prices = np.array([row[4] for row in data], dtype=float)
-    regime_labels = classify_market_regime_batch(prices, n_clusters="auto")
-    cluster_count = len(set(regime_labels)) or 1
-    logging.info("Detected %d market regimes for this dataset", cluster_count)
+    regime_labels, cluster_count = _ensure_encoder(prices)
     ds_tmp = HourlyDataset(
         data,
         seq_len=24,
@@ -1222,9 +1267,7 @@ def run_hpo(n_trials: int = 50) -> dict:
     # Verify on the whole dataset so the result can be promoted
     data = load_csv_hourly("Gemini_BTCUSD_1h.csv")
     prices = np.array([row[4] for row in data], dtype=float)
-    regime_labels = classify_market_regime_batch(prices, n_clusters="auto")
-    cluster_count = len(set(regime_labels)) or 1
-    logging.info("Detected %d market regimes for this dataset", cluster_count)
+    regime_labels, cluster_count = _ensure_encoder(prices)
     ds_tmp = HourlyDataset(
         data,
         seq_len=24,
@@ -1283,9 +1326,7 @@ def walk_forward_backtest(
     if indicator_hp is None:
         indicator_hp = IndicatorHyperparams()
     prices = np.array([row[4] for row in data], dtype=float)
-    regime_labels = classify_market_regime_batch(prices, n_clusters="auto")
-    cluster_count = len(set(regime_labels)) or 1
-    logging.info("Detected %d market regimes for this dataset", cluster_count)
+    regime_labels, cluster_count = _ensure_encoder(prices)
     results: list = []
     n_folds = max(1, (len(data) - train_window - test_horizon) // test_horizon + 1)
     fold_idx = 1
