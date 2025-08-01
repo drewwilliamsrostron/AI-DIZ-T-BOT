@@ -1227,39 +1227,66 @@ class EnsembleModel(nn.Module):
             m.train()
         return val_loss
 
-    def predict(self, x: torch.Tensor) -> Tuple[int, float, None]:
-        """Predict a single sample and return ``(index, confidence, None)``."""
+    def predict(
+        self, x: torch.Tensor, regime_probs: np.ndarray | None = None
+    ) -> Tuple[int, float, None]:
+        """Predict a single sample using optional regime probabilities."""
 
+        log = logging.getLogger(__name__)
         with torch.no_grad():
             x = self._align_features(x.to(self.device))
             outs = [m(x) for m in self.models]
-            scores = torch.tensor(
-                [m.score_history[-1] if m.score_history else 0.0 for m in self.models],
-                dtype=torch.float32,
-                device=self.device,
-            )
-            regime = None
-            if hasattr(G, "current_regime"):
-                regime = G.current_regime
-            if regime is not None:
-                if regime < len(self.models):
+
+            if regime_probs is not None:
+                try:
+                    G.global_current_regime_prob = regime_probs.tolist()
+                except Exception:
+                    G.global_current_regime_prob = None
+                rp = torch.tensor(regime_probs, dtype=torch.float32, device=self.device)
+                rp = rp[: len(self.models)]
+                conf, cluster_idx = float(rp.max().item()), int(rp.argmax().item())
+                if conf > 0.8 and cluster_idx < len(self.models):
                     weights = torch.zeros(len(self.models), device=self.device)
-                    weights[regime] = 1.0
+                    weights[cluster_idx] = 1.0
+                    log.info("HARD_SWITCH regime=%s conf=%.2f", cluster_idx, conf)
                 else:
-                    for idx, m in enumerate(self.models):
-                        if hasattr(m, "reward_by_regime"):
-                            scores[idx] = m.reward_by_regime.get(regime, scores[idx])
-                    weights = torch.softmax(scores / self.tau, dim=0)
+                    weights = rp
+                    log.info("BLEND regime_probs=%s", [round(float(v), 3) for v in rp])
             else:
-                weights = torch.softmax(scores / self.tau, dim=0)
+                scores = torch.tensor(
+                    [
+                        m.score_history[-1] if m.score_history else 0.0
+                        for m in self.models
+                    ],
+                    dtype=torch.float32,
+                    device=self.device,
+                )
+                regime = getattr(G, "current_regime", None)
+                if regime is not None:
+                    if regime < len(self.models):
+                        weights = torch.zeros(len(self.models), device=self.device)
+                        weights[regime] = 1.0
+                    else:
+                        for idx, m in enumerate(self.models):
+                            if hasattr(m, "reward_by_regime"):
+                                scores[idx] = m.reward_by_regime.get(
+                                    regime, scores[idx]
+                                )
+                        weights = torch.softmax(scores / self.tau, dim=0)
+                else:
+                    weights = torch.softmax(scores / self.tau, dim=0)
+
             weights = weights.cpu()
             probs = torch.stack([torch.softmax(o[0], dim=1).cpu() for o in outs])
             avgp = (weights.view(-1, 1, 1) * probs).sum(dim=0)
             idx = int(avgp[0].argmax().item())
             conf = float(avgp[0, idx].item())
-            logging.info(
-                "ACTION weights=%s index=%s", [round(float(w), 3) for w in weights], idx
+            log.debug(
+                "blend_weights=%s avg_prob=%s",
+                [round(float(w), 3) for w in weights],
+                conf,
             )
+            log.info("ACTION index=%s", idx)
             return idx, conf, None
 
     def vectorized_predict(
@@ -1267,6 +1294,7 @@ class EnsembleModel(nn.Module):
         windows_tensor: torch.Tensor,
         batch_size: int = 256,
         regime_labels: list[int] | None = None,
+        regime_probs: np.ndarray | None = None,
     ) -> Tuple[torch.Tensor, torch.Tensor, dict]:
         """Return predictions for each window in ``windows_tensor``, allowing regime-specific strategy selection."""
         # [FIXED]# Robust feature-dimension handling
@@ -1297,6 +1325,11 @@ class EnsembleModel(nn.Module):
                 device=self.device,
             )
             base_weights = torch.softmax(scores / self.tau, dim=0).cpu()
+            if regime_probs is not None:
+                try:
+                    G.global_regime_prob_history = [list(p) for p in regime_probs]
+                except Exception:
+                    G.global_regime_prob_history = []
             for i in range(0, n_samples, batch_size):
                 batch = self._align_features(windows_tensor[i : i + batch_size])
                 batch_probs = []
@@ -1308,9 +1341,19 @@ class EnsembleModel(nn.Module):
                 avg_probs = []
                 for j in range(batch_probs.shape[1]):
                     global_index = i + j
-                    if regime_labels is not None and regime_labels[global_index] < len(
-                        self.models
-                    ):
+                    if regime_probs is not None:
+                        rp = np.asarray(regime_probs[global_index])[: len(self.models)]
+                        rp_t = torch.tensor(rp, dtype=torch.float32)
+                        top_conf = float(rp_t.max().item())
+                        top_idx = int(rp_t.argmax().item())
+                        if top_conf > 0.8 and top_idx < len(self.models):
+                            avg_probs.append(batch_probs[top_idx, j])
+                        else:
+                            avg = (rp_t.view(-1, 1) * batch_probs[:, j, :]).sum(dim=0)
+                            avg_probs.append(avg)
+                    elif regime_labels is not None and regime_labels[
+                        global_index
+                    ] < len(self.models):
                         regime_idx = regime_labels[global_index]
                         avg_probs.append(batch_probs[regime_idx, j])
                     else:
@@ -1333,7 +1376,11 @@ class EnsembleModel(nn.Module):
             }
             logging.info(
                 "ACTION_BATCH regime_switching=%s first_action=%s",
-                "ON" if regime_labels is not None else "OFF",
+                (
+                    "ON"
+                    if (regime_labels is not None or regime_probs is not None)
+                    else "OFF"
+                ),
                 int(idxs[0]) if len(idxs) > 0 else -1,
             )
             return idxs.cpu(), confs.cpu(), dummy_t
