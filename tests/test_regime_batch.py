@@ -13,18 +13,26 @@ def test_classify_market_regime_batch_stub(monkeypatch):
     sys.modules.setdefault("hmmlearn", types.ModuleType("hmmlearn"))
     sys.modules["hmmlearn.hmm"] = hmm_mod
 
-    kmeans_stub = types.SimpleNamespace(
-        fit_predict=lambda x: np.zeros(len(x), dtype=int)
-    )
-    cluster_mod = types.ModuleType("sklearn.cluster")
-    cluster_mod.KMeans = lambda *a, **k: kmeans_stub
-    sys.modules.setdefault("sklearn", types.ModuleType("sklearn"))
-    sys.modules["sklearn.cluster"] = cluster_mod
+    class DummyEncoder:
+        def __init__(self, *a, **k):
+            self.n_regimes = k.get("n_regimes", 3)
+            self.seq_len = k.get("seq_len", 32)
+
+        def train_unsupervised(self, *a, **k):
+            pass
+
+        def encode_sequence(self, prices, *a, **k):
+            num = len(prices) - self.seq_len + 1
+            if num <= 0:
+                return np.empty((0, self.n_regimes))
+            probs = np.zeros((num, self.n_regimes), dtype=float)
+            return probs
 
     import importlib
     import artibot.regime as rg
 
     importlib.reload(rg)
+    rg.RegimeEncoder = DummyEncoder
 
     prices = np.linspace(100, 120, 200, dtype=float)
     labels = rg.classify_market_regime_batch(prices)

@@ -7,11 +7,17 @@ for name in ["openai", "ccxt", "tkinter", "tkinter.ttk"]:
     mod.__spec__ = ModuleSpec(name, loader=None)
     sys.modules.setdefault(name, mod)
 
-import numpy as np
-import artibot.regime_encoder as re
+import numpy as np  # noqa: E402
+import artibot.regime_encoder as re  # noqa: E402
 
 # ensure openai stub has a spec after import
 sys.modules["openai"].__spec__ = ModuleSpec("openai", loader=None)
+pd_mod = types.ModuleType("pandas")
+pd_mod.__spec__ = ModuleSpec("pandas", loader=None)
+pd_mod.DataFrame = type("DataFrame", (), {})
+pd_mod.Series = type("Series", (), {})
+sys.modules["pandas"] = pd_mod
+
 
 def test_encoder_train_and_encode(monkeypatch):
     monkeypatch.setenv("ARTIBOT_SKIP_INSTALL", "1")
