@@ -334,7 +334,11 @@ def robust_backtest(
 
         num_models = len(getattr(ensemble, "models", []))
         n_clust = cluster_count or (num_models if num_models > 1 else 1)
-        regimes = classify_market_regime_batch(prices, n_clusters=n_clust)
+        regime_labels = classify_market_regime_batch(prices, n_clusters=n_clust)
+        if isinstance(regime_labels, np.ndarray) and regime_labels.ndim == 2:
+            regimes = regime_labels.argmax(axis=1).tolist()
+        else:
+            regimes = regime_labels
     except Exception:
         regimes = [0] * len(prices)
 
@@ -657,33 +661,26 @@ def robust_backtest(
         period_days = max(1, int((end_date - start_date) / 86400))
         calmar = calmar_ratio(net_pct, float(mdd), period_days)
 
-    # Calculate performance broken down by regime
-    equity = np.array(eq_curve, dtype=float)[:, 1] if eq_curve else np.array([])
+    # Calculate performance broken down by regime using trade history
     cluster_perf: dict[int, dict] = {}
-    if equity.size > 1:
-        initial_balance = equity[0]
-        rets = np.diff(equity) / (equity[:-1] + 1e-9)
-        regime_series = (
-            regimes[1:] if len(regimes) == len(equity) else regimes[: len(rets)]
-        )
-        regime_series = regime_series[: len(rets)]
-        for reg in set(regime_series):
-            reg_indices = [idx for idx, r in enumerate(regime_series) if r == reg]
-            if not reg_indices:
+    if trades:
+        for reg in {t.get("regime") for t in trades if t.get("regime") is not None}:
+            reg_trades = [t for t in trades if t.get("regime") == reg]
+            if not reg_trades:
                 continue
-            profit = float(np.sum(np.diff(equity)[reg_indices]))
-            reg_rets = rets[reg_indices]
-            avg_ret = float(np.mean(reg_rets))
-            vol_ret = float(np.std(reg_rets))
-            sharpe_reg = (avg_ret / (vol_ret + 1e-9)) * (len(reg_rets) ** 0.5)
+            rets = np.array([t.get("return", 0.0) for t in reg_trades], dtype=float)
+            net_pct_reg = (np.prod(rets + 1.0) - 1.0) * 100.0
+            avg_ret = float(rets.mean())
+            vol_ret = float(rets.std())
+            sharpe_reg = (
+                (avg_ret / (vol_ret + 1e-9)) * (len(rets) ** 0.5)
+                if len(rets) > 1
+                else avg_ret / (vol_ret + 1e-9)
+            )
             cluster_perf[int(reg)] = {
-                "net_pct": (profit / (initial_balance + 1e-9)) * 100.0,
+                "net_pct": net_pct_reg,
                 "sharpe": sharpe_reg,
-                "trades": (
-                    sum(1 for trade in trades if trade.get("regime") == reg)
-                    if trades
-                    else None
-                ),
+                "trades": len(reg_trades),
             }
 
     metrics = compute_trade_metrics(trades)
@@ -691,6 +688,20 @@ def robust_backtest(
         logging.info(
             f"REGIME_{reg}_PERF net_pct={stats['net_pct']:.2f}%, Sharpe={stats['sharpe']:.2f}, trades={stats.get('trades', 'N/A')}"
         )
+
+    if (cluster_count or len(cluster_perf)) and len(cluster_perf) > 1:
+        best_sharpe = (
+            max(v["sharpe"] for v in cluster_perf.values()) if cluster_perf else sharpe
+        )
+        best_net = (
+            max(v["net_pct"] for v in cluster_perf.values())
+            if cluster_perf
+            else net_pct
+        )
+        if sharpe < best_sharpe or net_pct < best_net:
+            logging.warning(
+                "PERFORMANCE WARNING: Multi-regime strategy underperforms a single regime. Regime switching may have degraded performance."
+            )
     win_rate = metrics["win_rate"]
     profit_factor = metrics["profit_factor"]
     avg_duration = metrics["avg_duration"]
