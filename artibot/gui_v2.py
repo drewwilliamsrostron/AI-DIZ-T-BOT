@@ -24,6 +24,11 @@ from tkinter import ttk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+try:
+    import matplotlib.patches as mpatches
+except Exception:  # pragma: no cover - optional dependency
+    mpatches = None  # type: ignore
+
 import artibot.globals as G
 
 from .live_risk import update_auto_pause
@@ -33,6 +38,15 @@ if hasattr(plt, "style"):
     plt.style.use("dark_background")
 
 GUI_INSTANCE: Optional["TradingGUI"] = None
+
+# Color mapping for regime shading on the equity plot
+REGIME_COLORS = {
+    0: "#6baed6",  # light blue
+    1: "#74c476",  # light green
+    2: "#fdd0a2",  # light orange
+    3: "#dadaeb",  # light purple
+    4: "#fccaaf",  # peach
+}
 
 
 # ---------------------------------------------------------------------------
@@ -897,22 +911,64 @@ class TradingGUI:
         self.ax_equity.clear()
         self.ax_equity.set_title("Equity")
         eq = G.global_equity_curve
+        start_dt = end_dt = None
         if eq:
             ts, bal = zip(*eq)
-
             ts_dt = [_dt.datetime.fromtimestamp(t) for t in ts]
+            start_dt = ts_dt[0]
+            end_dt = ts_dt[-1]
             self.ax_equity.plot(ts_dt, bal, color="red", label="Current")
         if G.global_best_equity_curve:
             ts, bal = zip(*G.global_best_equity_curve)
             ts_dt = [_dt.datetime.fromtimestamp(t) for t in ts]
-
+            start_dt = start_dt or ts_dt[0]
+            if end_dt is None or ts_dt[-1] > end_dt:
+                end_dt = ts_dt[-1]
             self.ax_equity.plot(ts_dt, bal, color="green", label="Best")
-        for ts in G.global_regime_transitions:
-            dt = _dt.datetime.fromtimestamp(ts)
-            self.ax_equity.axvline(dt, linestyle="--", color="grey", alpha=0.3)
+
+        # Shade background by regime using transition timestamps
+        if start_dt and end_dt:
+            trans = sorted(G.global_regime_transitions)
+            seg_times = (
+                [start_dt] + [_dt.datetime.fromtimestamp(t) for t in trans] + [end_dt]
+            )
+            regimes = sorted(G.global_cluster_performance.keys()) or [0]
+            for idx in range(len(seg_times) - 1):
+                reg = regimes[idx % len(regimes)]
+                color = REGIME_COLORS.get(
+                    reg, list(REGIME_COLORS.values())[idx % len(REGIME_COLORS)]
+                )
+                self.ax_equity.axvspan(
+                    seg_times[idx],
+                    seg_times[idx + 1],
+                    color=color,
+                    alpha=0.2,
+                    zorder=0,
+                )
+
+        # Legend patches showing regime performance
+        legend_patches = []
+        if mpatches is not None:
+            for reg in sorted(G.global_cluster_performance.keys()):
+                stats = G.global_cluster_performance[reg]
+                color = REGIME_COLORS.get(
+                    reg, list(REGIME_COLORS.values())[reg % len(REGIME_COLORS)]
+                )
+                patch = mpatches.Patch(
+                    color=color,
+                    alpha=0.3,
+                    label=f"Regime {reg}: Sharpe {stats.get('sharpe', 0):.2f}, Net {stats.get('net_pct', 0):.1f}%",
+                )
+                legend_patches.append(patch)
+
         handles, labels = self.ax_equity.get_legend_handles_labels()
-        if labels:
-            self.ax_equity.legend(handles, labels)
+        handles += legend_patches
+        if handles:
+            self.ax_equity.legend(
+                handles=handles,
+                labels=[h.get_label() for h in handles],
+                loc="upper left",
+            )
 
         # Attention
         self.ax_attention.clear()
