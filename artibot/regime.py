@@ -3,14 +3,10 @@
 from __future__ import annotations
 
 import logging
+import os
 import numpy as np
 from hmmlearn.hmm import GaussianHMM
-from sklearn.cluster import KMeans
-from sklearn.metrics import (
-    calinski_harabasz_score,
-    davies_bouldin_score,
-    silhouette_score,
-)
+from artibot.regime_encoder import RegimeEncoder
 
 
 def detect_volatility_regime(prices: np.ndarray, n_states: int = 2) -> int:
@@ -38,41 +34,25 @@ def detect_volatility_regime(prices: np.ndarray, n_states: int = 2) -> int:
     return int(states[-1])
 
 
-_last_regime_model: KMeans | None = None
+_last_regime_encoder: RegimeEncoder | None = None
 
 
 def classify_market_regime(prices: np.ndarray, lookback: int = 168) -> int:
-    """Predict the current market regime using the last fitted model.
+    """Return the most likely current regime using the global encoder."""
 
-    Parameters
-    ----------
-    prices : np.ndarray
-        Sequence of prices ordered by time.
-    lookback : int, default 168
-        Number of recent observations used for the features.
+    global _last_regime_encoder
 
-    Returns
-    -------
-    int
-        Regime index predicted by the fitted :class:`~sklearn.cluster.KMeans`.
-    """
-
-    global _last_regime_model
-
-    if prices.size < lookback or _last_regime_model is None:
+    if prices.size < lookback or _last_regime_encoder is None:
         return 0
 
-    recent_prices = prices[-lookback:]
-    log_ret = np.diff(np.log(recent_prices), prepend=np.log(recent_prices[0]))
-    vol = float(np.std(log_ret[-20:]))
-    sma_short = np.mean(recent_prices[-5:])
-    sma_long = np.mean(recent_prices[-20:])
-    trend = (sma_short - sma_long) / (recent_prices[-1] + 1e-9)
-    feat = np.array([[vol, trend]], dtype=float)
-
+    window = prices[-lookback:]
     try:
-        return int(_last_regime_model.predict(feat)[0])
-    except Exception:
+        probs = _last_regime_encoder.encode_sequence(window)
+        if len(probs) == 0:
+            return 0
+        return int(np.argmax(probs[-1]))
+    except Exception as exc:  # pragma: no cover - safety net
+        logging.warning("regime classification failed: %s", exc)
         return 0
 
 
@@ -101,56 +81,53 @@ def classify_market_regime(prices: np.ndarray, lookback: int = 168) -> int:
 def classify_market_regime_batch(
     prices: np.ndarray, *, n_clusters: int | str = 3, vol_window: int = 20
 ) -> list[int]:
-    """Vectorised K-Means regime labelling for an entire price series."""
+    """Vectorised regime labelling using the :class:`RegimeEncoder`."""
 
-    global _last_regime_model
+    global _last_regime_encoder
 
     prices = np.asarray(prices, dtype=float)
-    if prices.ndim != 1 or prices.size < vol_window + 2:
+    if prices.ndim != 1:
         return [0] * len(prices)
 
-    log_ret = np.diff(np.log(prices), prepend=np.log(prices[0]))
-    vol = (
-        np.convolve(log_ret**2, np.ones(vol_window), "full")[: len(log_ret)]
-        / vol_window
-    ) ** 0.5
-    sma_short = np.convolve(prices, np.ones(5) / 5.0, "same")
-    sma_long = np.convolve(prices, np.ones(20) / 20.0, "same")
-    trend = (sma_short - sma_long) / (prices + 1e-9)
-
-    feats = np.column_stack([vol, trend])
-
     if n_clusters == "auto":
-        if feats.shape[0] < 1500:
-            n_clusters = 2
-        else:
-            feats_s = feats
-            if feats.shape[0] > 10_000:
-                step = feats.shape[0] // 10_000
-                feats_s = feats[::step]
-            best_k = 2
-            best_score = float("-inf")
-            max_k = min(10, len(feats_s) - 1)
-            for k in range(2, max_k + 1):
-                logging.info(
-                    "Silhouette sweep: trying k=%d on %d samples",
-                    k,
-                    feats_s.shape[0],
-                )
-                km_tmp = KMeans(n_clusters=k, n_init=10, random_state=42)
-                labels_tmp = km_tmp.fit_predict(feats_s)
-                if len(set(labels_tmp)) <= 1:
-                    continue
-                sil = silhouette_score(feats_s, labels_tmp)
-                cal = calinski_harabasz_score(feats_s, labels_tmp)
-                dbi = -davies_bouldin_score(feats_s, labels_tmp)
-                score = sil + 0.3 * cal / 1e4 + 0.3 * dbi
-                if score > best_score:
-                    best_score = score
-                    best_k = k
-            n_clusters = best_k
+        n_clusters = 2 if len(prices) < 1500 else 3
 
-    km = KMeans(n_clusters=int(n_clusters), n_init=10, random_state=42)
-    labels = km.fit_predict(feats)
-    _last_regime_model = km
+    if _last_regime_encoder is None:
+        _last_regime_encoder = RegimeEncoder(n_regimes=int(n_clusters))
+        if os.path.isfile("encoder.pt"):
+            try:
+                _last_regime_encoder.load("encoder.pt")
+            except Exception as exc:  # pragma: no cover - load failure
+                logging.warning("failed to load encoder: %s", exc)
+        else:
+            try:
+                _last_regime_encoder.train_unsupervised(prices, epochs=1)
+                _last_regime_encoder.save("encoder.pt")
+            except Exception as exc:  # pragma: no cover - train failure
+                logging.warning("failed to train encoder: %s", exc)
+                return [0] * len(prices)
+
+    try:
+        probs = _last_regime_encoder.encode_sequence(prices)
+    except Exception as exc:  # pragma: no cover - encode failure
+        logging.warning("failed to encode sequence: %s", exc)
+        return [0] * len(prices)
+
+    if len(probs) == 0:
+        return [0] * len(prices)
+
+    labels = probs.argmax(axis=1)
+    pad = len(prices) - len(labels)
+    if pad > 0:
+        labels = np.pad(labels, (pad, 0), constant_values=labels[0])
+
+    # simple smoothing: ignore single-sample spikes
+    smooth = labels.copy()
+    for i in range(1, len(smooth)):
+        if i >= 2 and smooth[i] != smooth[i - 1] and smooth[i] != smooth[i - 2]:
+            smooth[i] = smooth[i - 1]
+    labels = smooth
+
+    transitions = [i for i in range(1, len(labels)) if labels[i] != labels[i - 1]]
+    logging.info("Regime sequence computed, transitions at indices: %s", transitions)
     return labels.tolist()
