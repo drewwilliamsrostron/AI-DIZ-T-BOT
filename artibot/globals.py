@@ -30,9 +30,7 @@ import logging
 
 import openai
 
-logging.basicConfig(
-    level=logging.WARNING, format="%(asctime)s [%(levelname)s] %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 client = openai  # alias
 
 # GUI scale factor, updated on startup
@@ -145,6 +143,8 @@ global_composite_reward_ema = 0.0
 global_days_without_trading = None
 global_trade_details = []  # list of trade dicts
 global_exposure_stats: dict = {}  # backtest exposure summary
+global_cluster_performance: dict = {}
+global_regime_transitions: list = []
 global_holdout_sharpe = 0.0  # validation Sharpe
 global_holdout_max_drawdown = 0.0  # validation DD
 
@@ -556,6 +556,8 @@ def push_backtest_metrics(result: dict) -> None:
     global global_best_omega
     global global_best_calmar
     global global_exposure_stats
+    global global_cluster_performance
+    global global_regime_transitions
     with state_lock:
         global_equity_curve = result["equity_curve"]
         global_backtest_profit.append(result["net_pct"])
@@ -583,4 +585,6 @@ def push_backtest_metrics(result: dict) -> None:
         if global_calmar > global_best_calmar:
             global_best_calmar = global_calmar
         global_exposure_stats = result.get("exposure", {})
+        global_cluster_performance = result.get("cluster_performance", {})
+        global_regime_transitions = result.get("regime_transitions", [])
     gui_event.set()
