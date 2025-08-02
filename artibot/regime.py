@@ -9,6 +9,22 @@ from hmmlearn.hmm import GaussianHMM
 from artibot.regime_encoder import RegimeEncoder
 
 
+def _probs_to_labels(probs, thresh: float = 0.6):
+    """
+    Convert an (N, K) soft‑probability matrix to integer labels.
+    If max‑probability < thresh the label is −1 (signals ‘blend’ mode).
+    Returns (labels, probs) so the caller can keep the original soft scores.
+    """
+    labels = []
+    for p in probs:  # 1‑D np.ndarray of length K
+        top = int(p.argmax())
+        if p[top] >= thresh:
+            labels.append(top)  # confident – hard switch
+        else:
+            labels.append(-1)  # low‑confidence – soft blend
+    return labels, probs
+
+
 def detect_volatility_regime(prices: np.ndarray, n_states: int = 2) -> int:
     """Infer the current volatility regime using a Gaussian HMM.
 
@@ -73,24 +89,26 @@ def classify_market_regime(prices: np.ndarray, lookback: int = 168) -> int:
 #                                                                             #
 # Returns                                                                     #
 # -------                                                                     #
-# list[int]                                                                   #
-#   Regime label for every bar, length == len(prices).                        #
+# tuple[list[int], np.ndarray]                                                #
+#   Hard regime labels and the corresponding soft probabilities.              #
 # --------------------------------------------------------------------------- #
 
 
 def classify_market_regime_batch(
     prices: np.ndarray, *, n_clusters: int | str = 3, vol_window: int = 20
-) -> list[int]:
+) -> tuple[list[int], np.ndarray]:
     """Vectorised regime labelling using the :class:`RegimeEncoder`."""
 
     global _last_regime_encoder
 
     prices = np.asarray(prices, dtype=float)
     if prices.ndim != 1:
-        return [0] * len(prices)
+        k = int(n_clusters) if isinstance(n_clusters, int) else 3
+        return [0] * len(prices), np.zeros((len(prices), k))
 
     if n_clusters == "auto":
         n_clusters = 2 if len(prices) < 1500 else 3
+    k = int(n_clusters)
 
     if _last_regime_encoder is None:
         _last_regime_encoder = RegimeEncoder(n_regimes=int(n_clusters))
@@ -105,18 +123,25 @@ def classify_market_regime_batch(
                 _last_regime_encoder.save("encoder.pt")
             except Exception as exc:  # pragma: no cover - train failure
                 logging.warning("failed to train encoder: %s", exc)
-                return [0] * len(prices)
+                return [0] * len(prices), np.zeros((len(prices), k))
 
     try:
         probs = _last_regime_encoder.encode_sequence(prices)
     except Exception as exc:  # pragma: no cover - encode failure
         logging.warning("failed to encode sequence: %s", exc)
-        return [0] * len(prices)
+        return [0] * len(prices), np.zeros((len(prices), k))
 
     if len(probs) == 0:
-        return [0] * len(prices)
+        return [0] * len(prices), np.zeros((len(prices), k))
 
-    labels = probs.argmax(axis=1)
+    labels, probs = _probs_to_labels(probs, thresh=0.6)
+    uniq = np.unique(labels)
+    if len(uniq) == 1:
+        logging.warning(
+            "Encoder produced only one hard regime label – switching to blend‑mode everywhere"
+        )
+        labels = [-1] * len(labels)
+
     pad = len(prices) - len(labels)
     if pad > 0:
         labels = np.pad(labels, (pad, 0), constant_values=labels[0])
@@ -130,4 +155,4 @@ def classify_market_regime_batch(
 
     transitions = [i for i in range(1, len(labels)) if labels[i] != labels[i - 1]]
     logging.info("Regime sequence computed, transitions at indices: %s", transitions)
-    return labels.tolist()
+    return labels.tolist(), probs
