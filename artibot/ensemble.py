@@ -1291,12 +1291,13 @@ class EnsembleModel(nn.Module):
 
     def vectorized_predict(
         self,
-        windows_tensor: torch.Tensor,
-        batch_size: int = 256,
-        regime_labels: list[int] | None = None,
-        regime_probs: np.ndarray | None = None,
+        X,
+        batch_size: int = 1024,
+        regime_labels=None,
+        regime_probs=None,
     ) -> Tuple[torch.Tensor, torch.Tensor, dict]:
         """Return predictions for each window in ``windows_tensor``, allowing regime-specific strategy selection."""
+        windows_tensor = X
         # [FIXED]# Robust feature-dimension handling
         expected_dim = self.n_features
         actual_dim = windows_tensor.shape[2]
@@ -1340,27 +1341,15 @@ class EnsembleModel(nn.Module):
                 batch_probs = torch.stack(batch_probs)
                 avg_probs = []
                 for j in range(batch_probs.shape[1]):
-                    global_index = i + j
-                    if regime_probs is not None:
-                        rp = np.asarray(regime_probs[global_index])[: len(self.models)]
-                        rp_t = torch.tensor(rp, dtype=torch.float32)
-                        top_conf = float(rp_t.max().item())
-                        top_idx = int(rp_t.argmax().item())
-                        if top_conf > 0.8 and top_idx < len(self.models):
-                            avg_probs.append(batch_probs[top_idx, j])
-                        else:
-                            avg = (rp_t.view(-1, 1) * batch_probs[:, j, :]).sum(dim=0)
-                            avg_probs.append(avg)
-                    elif regime_labels is not None and regime_labels[
-                        global_index
-                    ] < len(self.models):
-                        regime_idx = regime_labels[global_index]
-                        avg_probs.append(batch_probs[regime_idx, j])
-                    else:
-                        avg = (base_weights.view(-1, 1) * batch_probs[:, j, :]).sum(
-                            dim=0
-                        )
-                        avg_probs.append(avg)
+                    probs_ij = (base_weights.view(-1, 1) * batch_probs[:, j, :]).sum(0)
+                    if regime_labels is not None:
+                        label = regime_labels[i + j]
+                        if label >= 0:  # hard route
+                            probs_ij = batch_probs[label, j, :]
+                        else:  # soft blend
+                            w = torch.tensor(regime_probs[i + j], device=self.device)
+                            probs_ij = (w.view(-1, 1) * batch_probs[:, j, :]).sum(0)
+                    avg_probs.append(probs_ij)
                 avg_probs = torch.stack(avg_probs, dim=0)
                 all_probs.append(avg_probs)
 
