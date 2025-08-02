@@ -1339,6 +1339,12 @@ class EnsembleModel(nn.Module):
                     prob = torch.softmax(logits, dim=1).cpu()
                     batch_probs.append(prob)
                 batch_probs = torch.stack(batch_probs)
+                if i == 0:
+                    logging.debug(
+                        "batch_probs.device=%s  regime_probs device=%s",
+                        batch_probs.device,
+                        getattr(regime_probs, "device", "n/a"),
+                    )
                 avg_probs = []
                 for j in range(batch_probs.shape[1]):
                     probs_ij = (base_weights.view(-1, 1) * batch_probs[:, j, :]).sum(0)
@@ -1347,7 +1353,11 @@ class EnsembleModel(nn.Module):
                         if label >= 0:  # hard route
                             probs_ij = batch_probs[label, j, :]
                         else:  # soft blend
-                            w = torch.tensor(regime_probs[i + j], device=self.device)
+                            w = torch.as_tensor(
+                                regime_probs[i + j],
+                                dtype=batch_probs.dtype,
+                                device=batch_probs.device,
+                            )
                             probs_ij = (w.view(-1, 1) * batch_probs[:, j, :]).sum(0)
                     avg_probs.append(probs_ij)
                 avg_probs = torch.stack(avg_probs, dim=0)
