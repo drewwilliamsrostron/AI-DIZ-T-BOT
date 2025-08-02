@@ -329,18 +329,23 @@ def robust_backtest(
     # refitting for every bar.  Cuts O(n²) down to O(n).                     #
     # --------------------------------------------------------------------- #
     prices = raw_data[:, 4]  # close column
+    num_models = len(getattr(ensemble, "models", []))
+    n_clust = cluster_count or (num_models if num_models > 1 else 1)
     try:
         from artibot.regime import classify_market_regime_batch
 
-        num_models = len(getattr(ensemble, "models", []))
-        n_clust = cluster_count or (num_models if num_models > 1 else 1)
-        regime_labels = classify_market_regime_batch(prices, n_clusters=n_clust)
-        if isinstance(regime_labels, np.ndarray) and regime_labels.ndim == 2:
-            regimes = regime_labels.argmax(axis=1).tolist()
-        else:
-            regimes = regime_labels
+        regime_labels, regime_probs = classify_market_regime_batch(
+            prices, n_clusters=n_clust
+        )
+        regime_probs = np.asarray(regime_probs)
+        regimes = (
+            regime_labels.tolist()
+            if isinstance(regime_labels, np.ndarray)
+            else regime_labels
+        )
     except Exception:
         regimes = [0] * len(prices)
+        regime_probs = np.zeros((len(prices), n_clust))
 
     transitions: list[int] = []
     if regimes:
@@ -369,8 +374,12 @@ def robust_backtest(
     ), f"Expected {mask.size} features, got {windows.shape[2]}"
     windows_t = torch.tensor(windows, dtype=torch.float32, device=device)
     regime_subset = regimes[-windows.shape[0] :]
+    probs_subset = regime_probs[-windows.shape[0] :]
     pred_indices, _, avg_params = ensemble.vectorized_predict(
-        windows_t, batch_size=512, regime_labels=regime_subset
+        windows_t,
+        batch_size=512,
+        regime_labels=regime_subset,
+        regime_probs=probs_subset,
     )
     preds = [2] * 23 + pred_indices.tolist()
 
