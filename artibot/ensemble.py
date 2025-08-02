@@ -1346,15 +1346,25 @@ class EnsembleModel(nn.Module):
                         getattr(regime_probs, "device", "n/a"),
                     )
                 avg_probs = []
+                labels_batch = (
+                    regime_labels[i : i + batch_probs.shape[1]]
+                    if regime_labels is not None
+                    else None
+                )
+                probs_batch = (
+                    regime_probs[i : i + batch_probs.shape[1]]
+                    if regime_probs is not None
+                    else None
+                )
                 for j in range(batch_probs.shape[1]):
                     probs_ij = (base_weights.view(-1, 1) * batch_probs[:, j, :]).sum(0)
-                    if regime_labels is not None:
-                        label = regime_labels[i + j]
+                    if labels_batch is not None:
+                        label = labels_batch[j]
                         if label >= 0:  # hard route
                             probs_ij = batch_probs[label, j, :]
                         else:  # soft blend
                             w = torch.as_tensor(
-                                regime_probs[i + j],
+                                probs_batch[j],
                                 dtype=batch_probs.dtype,
                                 device=batch_probs.device,
                             )
